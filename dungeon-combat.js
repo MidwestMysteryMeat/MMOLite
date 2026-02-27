@@ -633,6 +633,7 @@ function initCombat(dungeonId, players, enemies, floor, callbacks) {
       combatId: combatId,
       players: playerList,
       enemies: enemyList,
+      units: serializeUnits(combat),
       initiative: initiative,
       turnNumber: 0,
       groupScaling: combat.groupScaling ? {

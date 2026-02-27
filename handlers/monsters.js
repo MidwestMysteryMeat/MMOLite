@@ -615,6 +615,390 @@ function runDespawnCycle() {
 }
 
 // ---------------------------------------------------------------------------
+// Auto-engage combat — called by patrol tick when monster catches a player
+// Mirrors zone_combat_engage but runs outside a socket handler scope.
+// ---------------------------------------------------------------------------
+
+function _engageMonsterCombat(io, monster, playerSocketId, zoneId) {
+  // Look up player socket
+  var playerSocket = io.sockets.sockets.get(playerSocketId);
+  if (!playerSocket) return;
+
+  // Prevent double-engagement
+  if (_overworldCombatPlayers.has(playerSocketId)) return;
+  if (dungeonCombat.getCombatBySocketId(playerSocketId)) return;
+  if (monster.inCombat || !monster.alive) return;
+
+  var zone = _state.zones.get(zoneId);
+  if (!zone || !zone.chunkCache) return;
+
+  var pos = _state.playerPositions.get(playerSocketId);
+  if (!pos) return;
+
+  var accKey = _socketAccountMap.get(playerSocketId);
+  if (!accKey) return;
+
+  var acc = _accounts.loadAccount(accKey);
+  if (!acc) return;
+
+  // Biome from monster position
+  var biomeId = 6;
+  if (worldgen.getBiomeAtPixel) {
+    biomeId = worldgen.getBiomeAtPixel(monster.x, monster.y);
+    if (biomeId === null || biomeId === undefined) biomeId = 6;
+  }
+
+  var arena = dungeonData.generateOverworldArena(biomeId, monster.id);
+
+  // Build player combat state
+  var computed = rpgData.computeStats(acc.rpgStats || rpgData.getDefaultStats(), acc.level || 1, acc.race);
+
+  var equippedCardObjects = [];
+  if (acc.rpgCards && Array.isArray(acc.rpgCards) && acc.equippedCards && Array.isArray(acc.equippedCards)) {
+    var _cardMap = {};
+    for (var cm = 0; cm < acc.rpgCards.length; cm++) {
+      if (acc.rpgCards[cm] && acc.rpgCards[cm].instanceId) {
+        _cardMap[acc.rpgCards[cm].instanceId] = acc.rpgCards[cm];
+      }
+    }
+    for (var ce = 0; ce < acc.equippedCards.length; ce++) {
+      var _cid = acc.equippedCards[ce];
+      if (_cid && _cardMap[_cid]) equippedCardObjects.push(_cardMap[_cid]);
+    }
+  }
+
+  var bonusHp = 0, bonusCrit = 0, bonusDodge = 0, bonusMeleeDmg = 0, bonusMagicDmg = 0;
+  var bonusDungeonDmg = 0, bonusBossDmg = 0, bonusDungeonDef = 0;
+  for (var ci = 0; ci < equippedCardObjects.length; ci++) {
+    var card = equippedCardObjects[ci];
+    if (!card || !card.effects) continue;
+    for (var ei = 0; ei < card.effects.length; ei++) {
+      var eff = card.effects[ei];
+      if (eff.type === 'hp_bonus') bonusHp += (eff.value || 0);
+      if (eff.type === 'crit_bonus') bonusCrit += (eff.value || 0);
+      if (eff.type === 'dodge_bonus') bonusDodge += (eff.value || 0);
+      if (eff.type === 'melee_damage_bonus') {
+        var val = (acc.race && eff.raceValue && acc.race === (card.raceBonus || '')) ? eff.raceValue : (eff.value || 0);
+        bonusMeleeDmg += val;
+      }
+      if (eff.type === 'dungeon_damage_bonus') bonusDungeonDmg += (eff.value || 0);
+      if (eff.type === 'boss_damage_bonus') bonusBossDmg += (eff.value || 0);
+      if (eff.type === 'dungeon_def_bonus') bonusDungeonDef += (eff.value || 0);
+      if (eff.type === 'stat_boost_all') bonusHp += (eff.value || 0) * 10;
+    }
+  }
+
+  var maxHp = computed.hp + bonusHp;
+  var handStats = _accounts.getEquippedHandStats ? _accounts.getEquippedHandStats(accKey) : { mainHand: null, offHand: null };
+  var mh = handStats.mainHand;
+  var oh = handStats.offHand;
+  var weaponDamage = mh ? (mh.damage || 0) : 0;
+  var weaponMagicDamage = mh ? (mh.magicDamage || 0) : 0;
+  var weaponCategory = mh ? (mh.category || 'melee_blade') : 'melee_blade';
+  var weaponRange = mh ? (mh.range || 1.5) : 1.5;
+  var weaponSpeed = mh ? (mh.speed || 1.0) : 1.0;
+  var blockChance = 0;
+  var offHandDefense = 0;
+  if (oh) {
+    if (oh.slot === 'shield' || oh.defense) {
+      blockChance = oh.blockChance || 0;
+      offHandDefense = oh.defense || 0;
+    }
+  }
+  var armorStats = _accounts.getEquippedArmorStats ? _accounts.getEquippedArmorStats(accKey) : { totalDefense: 0, totalMagicResist: 0, totalMagicDamage: 0, totalCritBonus: 0, totalSpeedMod: 0 };
+  var armorTotal = armorStats.totalDefense + offHandDefense;
+
+  var combatSkillBonuses = rpgData.getCombatSkillBonuses(acc.skills, weaponCategory);
+
+  var armorType = 'none';
+  if (acc.equipment && acc.equipment.chest && acc.mmoInventory && acc.mmoInventory.items) {
+    var bodyItem = acc.mmoInventory.items.find(function(it) { return it.id === acc.equipment.chest; });
+    if (bodyItem) {
+      var bodyType = bodyItem.type || '';
+      if (bodyType.indexOf('leather') >= 0) armorType = 'leather';
+      else if (bodyType.indexOf('cloth') >= 0 || bodyType.indexOf('robe') >= 0) armorType = 'cloth';
+      else if (bodyType.indexOf('mithril') >= 0 || bodyType.indexOf('plate') >= 0 || bodyType.indexOf('steel') >= 0 || bodyType.indexOf('iron') >= 0 || bodyType.indexOf('gold') >= 0 || bodyType.indexOf('silver') >= 0) armorType = 'plate';
+      else if (bodyType.indexOf('bronze') >= 0 || bodyType.indexOf('copper') >= 0 || bodyType.indexOf('chain') >= 0 || bodyType.indexOf('mail') >= 0) armorType = 'chain';
+    }
+  }
+
+  var combat = {
+    hp: maxHp,
+    maxHp: maxHp,
+    mana: 50 + ((acc.rpgStats || {}).acumen || 5) * 5,
+    maxMana: 50 + ((acc.rpgStats || {}).acumen || 5) * 5,
+    critChance: computed.critChance + bonusCrit + (combatSkillBonuses.critBonus || 0) + armorStats.totalCritBonus,
+    dodgeChance: computed.dodgeChance + bonusDodge,
+    meleeDmgMult: computed.meleeDamageMultiplier + bonusMeleeDmg + (combatSkillBonuses.damageBonus || 0),
+    magicDmgMult: computed.magicPowerMultiplier + bonusMagicDmg,
+    dungeonDmgBonus: bonusDungeonDmg,
+    bossDmgBonus: bonusBossDmg,
+    dungeonDefBonus: bonusDungeonDef,
+    hpRegen: computed.hpRegen,
+    baseArmor: computed.baseArmor + armorTotal,
+    magicResist: (computed.magicResist || 0) + armorStats.totalMagicResist,
+    armorType: armorType,
+    weaponDamage: weaponDamage,
+    weaponMagicDamage: weaponMagicDamage + armorStats.totalMagicDamage,
+    weaponCategory: weaponCategory,
+    weaponRange: weaponRange,
+    weaponSpeed: weaponSpeed,
+    blockChance: blockChance,
+  };
+
+  var players = [{
+    socketId: playerSocketId,
+    x: arena.entranceX,
+    y: arena.entranceY,
+    name: acc.username || 'Player',
+    race: acc.race,
+    rpgStats: acc.rpgStats || rpgData.getDefaultStats(),
+    level: acc.level || 1,
+    equippedCards: equippedCardObjects,
+    combat: combat,
+  }];
+
+  var archetype = dungeonData.inferArchetype(monster);
+  var enemyDefaults = dungeonData.ENEMY_DEFAULTS[archetype] || dungeonData.ENEMY_DEFAULTS.bruiser;
+  var monsterElement = monster.element || (BIOME_ELEMENT_MAP[biomeId] || null);
+  var enemies = [{
+    id: monster.id,
+    name: monster.name,
+    hp: monster.hp,
+    maxHp: monster.maxHp,
+    atk: monster.atk,
+    def: monster.def,
+    speed: 8 + (monster.level || 1),
+    xp: monster.xp,
+    gold: monster.goldDrop,
+    archetype: archetype,
+    abilities: enemyDefaults.abilities || [],
+    x: arena.enemyX,
+    y: arena.enemyY,
+    lootTable: monster.possibleLoot,
+    element: monsterElement,
+    alive: true,
+  }];
+
+  var arenaFloor = {
+    grid: arena.grid,
+    rooms: arena.rooms,
+    width: arena.width,
+    height: arena.height,
+  };
+
+  // Capture references for callbacks closure
+  var capturedZoneId = zoneId;
+  var capturedMonsterId = monster.id;
+  var capturedMonster = monster;
+  var capturedAccKey = accKey;
+  var capturedSocketId = playerSocketId;
+  var capturedArenaGrid = arena.grid;
+  var capturedArenaTheme = arena.themeColors;
+
+  var callbacks = {
+    broadcastToFloor: function(event, eventData) {
+      if (event === 'tc_combat_start') {
+        var playerUnitId = 'player_' + capturedSocketId;
+        var enriched = {};
+        for (var k in eventData) { enriched[k] = eventData[k]; }
+        enriched.myUnitId = playerUnitId;
+        enriched.arenaGrid = capturedArenaGrid;
+        enriched.arenaTheme = capturedArenaTheme;
+        var targetSocket = io.sockets.sockets.get(capturedSocketId);
+        if (targetSocket) targetSocket.emit(event, enriched);
+      } else if (event === 'tc_combat_end') {
+        var result = eventData.result;
+        var targetSock = io.sockets.sockets.get(capturedSocketId);
+
+        if (result === 'victory') {
+          var xpRate = (_serverRules && _serverRules.xpRate) ? _serverRules.xpRate : undefined;
+          var xpResult = _accounts.addSkillXp(capturedAccKey, 'melee', capturedMonster.xp, xpRate);
+
+          // Monster XP: award XP to player's active monster
+          try {
+            var monAcc = _accounts.loadAccount(capturedAccKey);
+            if (monAcc && monAcc.monsters && monAcc.activeParty && monAcc.activeParty.length > 0) {
+              var activeMonId = monAcc.activeParty[0];
+              var activeMon = monAcc.monsters.find(function(m) { return m.instanceId === activeMonId; });
+              if (activeMon) {
+                if (!activeMon.xp) activeMon.xp = 0;
+                if (!activeMon.level) activeMon.level = 1;
+                activeMon.xp += capturedMonster.xp;
+                var monXpNeeded = Math.floor(50 * Math.pow(activeMon.level, 1.5));
+                while (activeMon.xp >= monXpNeeded && activeMon.level < 100) {
+                  activeMon.xp -= monXpNeeded;
+                  activeMon.level++;
+                  if (activeMon.baseHp) activeMon.baseHp = Math.round(activeMon.baseHp * 1.03);
+                  if (activeMon.baseAtk) activeMon.baseAtk = Math.round(activeMon.baseAtk * 1.03);
+                  if (activeMon.baseDef) activeMon.baseDef = Math.round(activeMon.baseDef * 1.03);
+                  activeMon.maxHp = activeMon.baseHp;
+                  activeMon.hp = activeMon.maxHp;
+                  monXpNeeded = Math.floor(50 * Math.pow(activeMon.level, 1.5));
+                }
+                _accounts.saveAccount(monAcc);
+              }
+            }
+          } catch (monXpErr) {
+            console.error('[overworld_combat] Monster XP error:', monXpErr.message);
+          }
+
+          // Phantom Skill XP: skinning for beast-type, anatomy for all kills
+          var _owBeastPattern = /wolf|bear|boar|spider|lizard|bat|crab|scorpion|viper|raptor|toad|beetle|hound|drake|serpent|worm|ape|bird|insect|crawler|goat|imp|hawk/i;
+          if (capturedMonster.name && _owBeastPattern.test(capturedMonster.name)) {
+            _accounts.addSkillXp(capturedAccKey, 'skinning', 10 + Math.floor(Math.random() * 11), xpRate);
+          }
+          _accounts.addSkillXp(capturedAccKey, 'anatomy', 3, xpRate);
+
+          // Gold
+          var goldAmount = capturedMonster.goldDrop;
+          if (goldAmount > 0) _accounts.updateChips(capturedAccKey, goldAmount);
+
+          // Loot
+          var lootDropped = [];
+          if (capturedMonster.possibleLoot && capturedMonster.possibleLoot.length > 0) {
+            for (var li = 0; li < capturedMonster.possibleLoot.length; li++) {
+              var loot = capturedMonster.possibleLoot[li];
+              if (Math.random() < loot.chance) {
+                var addResult = _accounts.addResource(capturedAccKey, loot.type, loot.amount);
+                if (addResult) {
+                  var itemName = loot.type.replace(/_/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); });
+                  lootDropped.push({ type: loot.type, name: itemName, amount: loot.amount });
+                }
+              }
+            }
+          }
+
+          // Remove monster from zone
+          capturedMonster.alive = false;
+          capturedMonster.hp = 0;
+          capturedMonster.inCombat = false;
+          var mList = _state.zoneMonsters.get(capturedZoneId);
+          if (mList) {
+            for (var ri = mList.length - 1; ri >= 0; ri--) {
+              if (mList[ri].id === capturedMonsterId) { mList.splice(ri, 1); break; }
+            }
+          }
+          io.to('zone:' + capturedZoneId).emit('zone_monster_died', { id: capturedMonsterId });
+
+          if (targetSock) {
+            targetSock.emit('zone_monster_killed', {
+              id: capturedMonsterId,
+              name: capturedMonster.name,
+              xp: capturedMonster.xp,
+              gold: goldAmount,
+              loot: lootDropped,
+              skillLevel: xpResult ? xpResult.level : 1,
+              skillXp: xpResult ? xpResult.xp : 0,
+              xpNeeded: xpResult ? xpResult.xpNeeded : 100,
+              leveledUp: xpResult ? xpResult.leveledUp : false,
+              overallLevel: xpResult ? xpResult.overallLevel : 1,
+              overallLeveledUp: xpResult ? xpResult.overallLeveledUp : false,
+              pendingPacks: xpResult ? xpResult.pendingPacks : 0,
+            });
+          }
+
+          // Quest progress
+          try {
+            var qAcc = _accounts.loadAccount(capturedAccKey);
+            if (qAcc && qAcc.questProgress && qAcc.questProgress.active) {
+              var qChanged = false;
+              for (var qi = 0; qi < qAcc.questProgress.active.length; qi++) {
+                var quest = qAcc.questProgress.active[qi];
+                var tmpl = rpgData.WORLD_QUEST_TEMPLATES ? rpgData.WORLD_QUEST_TEMPLATES.find(function(t) { return t.questId === quest.questId; }) : null;
+                if (tmpl && tmpl.type === 'kill' && (tmpl.target.monster === capturedMonster.baseId || tmpl.target.monster === capturedMonster.templateId)) {
+                  quest.progress = Math.min(quest.progress + 1, quest.targetCount);
+                  qChanged = true;
+                  if (targetSock) {
+                    targetSock.emit('quest_progress', { questId: quest.questId, progress: quest.progress, targetCount: quest.targetCount, complete: quest.progress >= quest.targetCount });
+                  }
+                }
+              }
+              if (qChanged) _accounts.saveAccount(qAcc);
+            }
+          } catch (qErr) { /* non-fatal */ }
+
+          // Durability
+          try {
+            var durAcc = _accounts.loadAccount(capturedAccKey);
+            if (durAcc && durAcc.equipment) {
+              var durCardEffects = _accounts.getEquippedCardEffects ? _accounts.getEquippedCardEffects(capturedAccKey) : [];
+              var durWarnings = [];
+              var owWepResults = _accounts.reduceWeaponDurability(durAcc, 0.01, durCardEffects);
+              if (owWepResults) { for (var owwi = 0; owwi < owWepResults.length; owwi++) durWarnings.push(owWepResults[owwi]); }
+              var owArmorResults = _accounts.reduceArmorDurability(durAcc, 0.005, durCardEffects);
+              for (var owdi = 0; owdi < owArmorResults.length; owdi++) durWarnings.push(owArmorResults[owdi]);
+              _accounts.saveAccount(durAcc);
+              if (targetSock) {
+                for (var dwi = 0; dwi < durWarnings.length; dwi++) {
+                  if (durWarnings[dwi].broken) {
+                    targetSock.emit('item_broken', { slot: durWarnings[dwi].slot, itemName: durWarnings[dwi].itemName });
+                  } else if (durWarnings[dwi].lowDurability) {
+                    targetSock.emit('durability_warning', { slot: durWarnings[dwi].slot, itemName: durWarnings[dwi].itemName, durability: durWarnings[dwi].durability, maxDurability: durWarnings[dwi].maxDurability });
+                  }
+                }
+              }
+            }
+          } catch (owDurErr) {
+            console.error('[overworld_combat] Durability error:', owDurErr.message);
+          }
+        } else {
+          // Defeat: restore monster
+          capturedMonster.hp = capturedMonster.maxHp;
+          capturedMonster.inCombat = false;
+        }
+
+        _overworldCombatPlayers.delete(capturedSocketId);
+        if (targetSock) targetSock.emit(event, eventData);
+      } else {
+        var sock = io.sockets.sockets.get(capturedSocketId);
+        if (sock) sock.emit(event, eventData);
+      }
+    },
+
+    emitToPlayer: function(socketId, event, eventData) {
+      var targetSocket = io.sockets.sockets.get(socketId);
+      if (targetSocket) targetSocket.emit(event, eventData);
+    },
+
+    awardKillRewards: function() {
+      // Handled in broadcastToFloor tc_combat_end
+    },
+
+    handleDeath: function() {
+      // Handled in broadcastToFloor tc_combat_end defeat path
+    },
+
+    getPlayerInfo: function(socketId) {
+      var pAccKey = _socketAccountMap.get(socketId);
+      if (!pAccKey) return null;
+      var pAcc = _accounts.loadAccount(pAccKey);
+      if (!pAcc) return null;
+      return {
+        accKey: pAccKey,
+        race: pAcc.race,
+        rpgStats: pAcc.rpgStats || rpgData.getDefaultStats(),
+        level: pAcc.level || 1,
+        equippedCards: pAcc.equippedCards || [],
+        name: pAcc.username || 'Player',
+      };
+    },
+  };
+
+  // Mark in-combat
+  monster.inCombat = true;
+  var overworldDungeonId = 'overworld_' + monster.id + '_' + Date.now();
+  _overworldCombatPlayers.set(playerSocketId, {
+    monsterId: monster.id,
+    zoneId: zoneId,
+    dungeonId: overworldDungeonId,
+  });
+
+  // Start combat
+  dungeonCombat.initCombat(overworldDungeonId, players, enemies, arenaFloor, callbacks);
+}
+
+// ---------------------------------------------------------------------------
 // Patrol AI — monster wandering, chasing, and leashing
 // ---------------------------------------------------------------------------
 
@@ -712,9 +1096,19 @@ function runPatrolCycle() {
           // Step toward target
           var wnx = wdx / wdist;
           var wny = wdy / wdist;
-          m.x = Math.round(m.x + wnx * stepPx);
-          m.y = Math.round(m.y + wny * stepPx);
-          moved = true;
+          var wnewX = Math.round(m.x + wnx * stepPx);
+          var wnewY = Math.round(m.y + wny * stepPx);
+          if (!worldgen.isWalkable || worldgen.isWalkable(wnewX, wnewY, null)) {
+            m.x = wnewX;
+            m.y = wnewY;
+            moved = true;
+          } else {
+            // Blocked by terrain, pick new wander target
+            m.patrolMode = 'idle';
+            m.idleUntil = now + PATROL_IDLE_MIN_MS;
+            m.patrolTargetX = null;
+            m.patrolTargetY = null;
+          }
         }
       } else if (m.patrolMode === 'chase') {
         // Find chase target position
@@ -756,12 +1150,28 @@ function runPatrolCycle() {
               m.chaseTargetSid = null;
               m.patrolTargetX = m.spawnX;
               m.patrolTargetY = m.spawnY;
+            } else if (chdist <= ATTACK_RANGE_PX && m.chaseTargetSid && !m.inCombat) {
+              // Monster caught the player — auto-engage combat
+              var engageTarget = m.chaseTargetSid;
+              m.patrolMode = 'idle';
+              m.chaseTargetSid = null;
+              _engageMonsterCombat(io, m, engageTarget, zoneId);
             } else if (chdist > 5) {
               var cnx = chdx / chdist;
               var cny = chdy / chdist;
-              m.x = Math.round(m.x + cnx * chaseStepPx);
-              m.y = Math.round(m.y + cny * chaseStepPx);
-              moved = true;
+              var cnewX = Math.round(m.x + cnx * chaseStepPx);
+              var cnewY = Math.round(m.y + cny * chaseStepPx);
+              if (!worldgen.isWalkable || worldgen.isWalkable(cnewX, cnewY, null)) {
+                m.x = cnewX;
+                m.y = cnewY;
+                moved = true;
+              } else {
+                // Blocked by terrain, stop chasing
+                m.patrolMode = 'returning';
+                m.chaseTargetSid = null;
+                m.patrolTargetX = m.spawnX;
+                m.patrolTargetY = m.spawnY;
+              }
             }
           }
         }
@@ -782,9 +1192,20 @@ function runPatrolCycle() {
         } else {
           var rnx = rdx / rdist;
           var rny = rdy / rdist;
-          m.x = Math.round(m.x + rnx * chaseStepPx);
-          m.y = Math.round(m.y + rny * chaseStepPx);
-          moved = true;
+          var rnewX = Math.round(m.x + rnx * chaseStepPx);
+          var rnewY = Math.round(m.y + rny * chaseStepPx);
+          if (!worldgen.isWalkable || worldgen.isWalkable(rnewX, rnewY, null)) {
+            m.x = rnewX;
+            m.y = rnewY;
+            moved = true;
+          } else {
+            // Blocked returning, snap to spawn
+            m.x = Math.round(m.spawnX);
+            m.y = Math.round(m.spawnY);
+            m.patrolMode = 'idle';
+            m.idleUntil = now + PATROL_IDLE_MIN_MS;
+            moved = true;
+          }
         }
       }
 

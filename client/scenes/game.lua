@@ -244,9 +244,9 @@ local function getContextMenuItems(targetId)
         table.insert(items, item)
     end
     -- Add "Kick from Party" if we are party leader and target is in our party
-    if partyData and partyData.leader == myId and targetId then
+    if raid.partyData and raid.partyData.leader == myId and targetId then
         local targetInParty = false
-        for _, m in ipairs(partyData.members) do
+        for _, m in ipairs(raid.partyData.members) do
             if m.id == targetId then
                 targetInParty = true
                 break
@@ -435,20 +435,20 @@ local tcState = {
 -- AI Event Director UI state
 local directorEvents = {}       -- world event banners (gold banner, fade)
 local zoneTicker = {}           -- zone director updates (bottom-right)
-local raidState = nil           -- current raid floor state
-local raidBossHp = nil          -- raid boss health bar data
-local lichRaidGathering = nil   -- { totalPlayers, minRequired, maxAllowed, parties, countdownStarted, countdownEndsAt, phase }
-local lichRaidMyParty = nil     -- partyId assigned in lich raid
-local lichRaidPhase = nil       -- { phase, phaseName, message }
-local lichRaidCorruptionZones = {}  -- { x, y, radius, damage, timer }
-local lichRaidPhylacteries = {}     -- { id, hp, maxHp, name }
-local purificationVfx = nil     -- { x, y, timer, maxTimer, radius }
-
--- Party state
-local partyData = nil           -- { partyId, leader, members[] }
-local partyInvitePending = nil  -- { fromId, fromName, partyId }
-local partyInviteInput = ""     -- text input for inviting by username
-local partyInviteActive = false -- true when invite input is focused
+local raid = {
+    state = nil,                  -- current raid floor state
+    bossHp = nil,                 -- raid boss health bar data
+    gathering = nil,              -- lich raid gathering phase
+    myParty = nil,                -- partyId assigned in lich raid
+    phase = nil,                  -- { phase, phaseName, message }
+    corruptionZones = {},         -- { x, y, radius, damage, timer }
+    phylacteries = {},            -- { id, hp, maxHp, name }
+    purificationVfx = nil,        -- { x, y, timer, maxTimer, radius }
+    partyData = nil,              -- { partyId, leader, members[] }
+    partyInvitePending = nil,     -- { fromId, fromName, partyId }
+    partyInviteInput = "",        -- text input for inviting by username
+    partyInviteActive = false,    -- true when invite input is focused
+}
 
 local hoverNpc = nil            -- NPC we're near in town (guild master etc)
 
@@ -576,11 +576,13 @@ local PORTAL_TOWN_RACE = {
 }
 
 -- Admin panel state (F10 for server hosts)
-local showAdminPanel = false
-local adminXpRate = 1.0
-local adminDropRate = 1.0
-local adminResultMsg = nil      -- { text, color, timer }
-local adminShutdownWarning = nil -- countdown timer
+local admin = {
+    showPanel = false,
+    xpRate = 1.0,
+    dropRate = 1.0,
+    resultMsg = nil,              -- { text, color, timer }
+    shutdownWarning = nil,        -- countdown timer
+}
 
 -- Dungeon tile type constants (must match server dungeon-data.js)
 local DTILE = {
@@ -815,10 +817,10 @@ function game.load()
     ui.showDungeonQuests = false
     ui.showLeaderboard = false
     ui.showPartyPanel = false
-    partyData = nil
-    partyInvitePending = nil
-    partyInviteInput = ""
-    partyInviteActive = false
+    raid.partyData = nil
+    raid.partyInvitePending = nil
+    raid.partyInviteInput = ""
+    raid.partyInviteActive = false
     hoverNpc = nil
     portal.show = false
     portal.destinations = {}
@@ -959,8 +961,8 @@ function game.closeAllPanels()
     ui.farmingPlotId = nil
     ui.equipmentScroll = 0
     ui.selectedCard = nil
-    partyInviteActive = false
-    partyInviteInput = ""
+    raid.partyInviteActive = false
+    raid.partyInviteInput = ""
     portal.show = false
     portal.scroll = 0
     portal.message = nil
@@ -3142,7 +3144,7 @@ function game.setupListeners()
     -- Raid: state update (waiting/active/completed)
     client:on("raid_state_update", function(data)
         if not data then return end
-        raidState = {
+        raid.state = {
             state = data.state or "waiting",
             playerCount = data.playerCount or 0,
             minPlayers = data.minPlayers or 8,
@@ -3154,9 +3156,9 @@ function game.setupListeners()
     -- Raid: barrier drops, boss ready
     client:on("raid_boss_ready", function(data)
         if not data then return end
-        if raidState then
-            raidState.state = "active"
-            raidState.barrierActive = false
+        if raid.state then
+            raid.state.state = "active"
+            raid.state.barrierActive = false
         end
         local me = players[myId]
         if me then
@@ -3172,7 +3174,7 @@ function game.setupListeners()
     -- Raid: boss HP update for health bar
     client:on("raid_boss_hp", function(data)
         if not data then return end
-        raidBossHp = {
+        raid.bossHp = {
             hp = data.hp or 0,
             maxHp = data.maxHp or 1,
             name = data.name or "Raid Boss",
@@ -3214,7 +3216,7 @@ function game.setupListeners()
 
     client:on("raid_gathering_update", function(data)
         if not data then return end
-        lichRaidGathering = {
+        raid.gathering = {
             totalPlayers = data.totalPlayers or 0,
             minRequired = data.minRequired or 16,
             maxAllowed = data.maxAllowed or 32,
@@ -3227,7 +3229,7 @@ function game.setupListeners()
 
     client:on("raid_joined", function(data)
         if not data then return end
-        lichRaidMyParty = data.partyId
+        raid.myParty = data.partyId
         local me = players[myId]
         if me then
             addFloatingText({
@@ -3241,7 +3243,7 @@ function game.setupListeners()
 
     client:on("raid_activated", function(data)
         if not data then return end
-        lichRaidGathering = nil
+        raid.gathering = nil
         local me = players[myId]
         if me then
             addFloatingText({
@@ -3256,8 +3258,8 @@ function game.setupListeners()
     end)
 
     client:on("raid_cancelled", function(data)
-        lichRaidGathering = nil
-        lichRaidMyParty = nil
+        raid.gathering = nil
+        raid.myParty = nil
         local me = players[myId]
         if me then
             addFloatingText({
@@ -3309,11 +3311,11 @@ function game.setupListeners()
     end)
 
     client:on("raid_complete", function(data)
-        lichRaidGathering = nil
-        lichRaidMyParty = nil
-        lichRaidPhase = nil
-        lichRaidCorruptionZones = {}
-        lichRaidPhylacteries = {}
+        raid.gathering = nil
+        raid.myParty = nil
+        raid.phase = nil
+        raid.corruptionZones = {}
+        raid.phylacteries = {}
         local me = players[myId]
         if me then
             addFloatingText({
@@ -3331,7 +3333,7 @@ function game.setupListeners()
             -- Start purification VFX
             local me = players[myId]
             if me then
-                purificationVfx = { x = me.x, y = me.y, timer = 2.0, maxTimer = 2.0, radius = 0 }
+                raid.purificationVfx = { x = me.x, y = me.y, timer = 2.0, maxTimer = 2.0, radius = 0 }
                 addFloatingText({
                     text = "Corruption cleansed! (" .. (data.cleansed or 0) .. " chunks)",
                     x = me.x, y = me.y - 50,
@@ -3368,7 +3370,7 @@ function game.setupListeners()
             local me = players[myId]
             if me then
                 -- Dramatic purification VFX (bigger than crystal cleanse)
-                purificationVfx = { x = me.x, y = me.y, timer = 3.0, maxTimer = 3.0, radius = 0 }
+                raid.purificationVfx = { x = me.x, y = me.y, timer = 3.0, maxTimer = 3.0, radius = 0 }
                 addFloatingText({
                     text = (data.cardName or "Holy Power") .. "! " .. (data.cleansed or 0) .. " chunks cleansed!",
                     x = me.x, y = me.y - 60,
@@ -3416,7 +3418,7 @@ function game.setupListeners()
 
     client:on("tc_boss_phase_change", function(data)
         if not data then return end
-        lichRaidPhase = {
+        raid.phase = {
             phase = data.phase or 1,
             phaseName = data.phaseName or "",
             message = data.message or "",
@@ -3436,7 +3438,7 @@ function game.setupListeners()
         if not data or not data.units then return end
         for _, unit in ipairs(data.units) do
             if unit.isPhylactery then
-                table.insert(lichRaidPhylacteries, {
+                table.insert(raid.phylacteries, {
                     id = unit.id,
                     hp = unit.hp or 100,
                     maxHp = unit.maxHp or 100,
@@ -3457,9 +3459,9 @@ function game.setupListeners()
 
     client:on("tc_corruption_zones", function(data)
         if not data or not data.zones then return end
-        lichRaidCorruptionZones = {}
+        raid.corruptionZones = {}
         for _, zone in ipairs(data.zones) do
-            table.insert(lichRaidCorruptionZones, {
+            table.insert(raid.corruptionZones, {
                 x = zone.x or 0, y = zone.y or 0,
                 radius = zone.radius or 1,
                 damage = zone.damage or 20,
@@ -3500,7 +3502,7 @@ function game.setupListeners()
 
     client:on("party_created", function(data)
         if not data then return end
-        partyData = {
+        raid.partyData = {
             partyId = data.partyId,
             leader = data.leader,
             members = data.members or {},
@@ -3518,10 +3520,10 @@ function game.setupListeners()
 
     client:on("party_updated", function(data)
         if not data then return end
-        partyData = partyData or {}
-        partyData.partyId = data.partyId or (partyData and partyData.partyId)
-        partyData.leader = data.leader
-        partyData.members = data.members or {}
+        raid.partyData = raid.partyData or {}
+        raid.partyData.partyId = data.partyId or (raid.partyData and raid.partyData.partyId)
+        raid.partyData.leader = data.leader
+        raid.partyData.members = data.members or {}
         -- Show event message if provided
         if data.event then
             local me = players[myId]
@@ -3537,7 +3539,7 @@ function game.setupListeners()
     end)
 
     client:on("party_disbanded", function(data)
-        partyData = nil
+        raid.partyData = nil
         local me = players[myId]
         if me then
             addFloatingText({
@@ -3550,7 +3552,7 @@ function game.setupListeners()
     end)
 
     client:on("party_left", function(data)
-        partyData = nil
+        raid.partyData = nil
         local me = players[myId]
         if me then
             addFloatingText({
@@ -3563,7 +3565,7 @@ function game.setupListeners()
     end)
 
     client:on("party_kicked", function(data)
-        partyData = nil
+        raid.partyData = nil
         local me = players[myId]
         if me then
             addFloatingText({
@@ -3577,7 +3579,7 @@ function game.setupListeners()
 
     client:on("party_invite_received", function(data)
         if not data then return end
-        partyInvitePending = {
+        raid.partyInvitePending = {
             fromId = data.fromId,
             fromName = data.fromName or "Someone",
             partyId = data.partyId,
@@ -3970,13 +3972,13 @@ function game.setupListeners()
 
     client:on("server_rules_updated", function(data)
         if not data then return end
-        if data.xpRate then adminXpRate = data.xpRate end
-        if data.dropRate then adminDropRate = data.dropRate end
-        adminResultMsg = { text = "Rules updated", color = {0.3, 1, 0.3}, timer = 3 }
+        if data.xpRate then admin.xpRate = data.xpRate end
+        if data.dropRate then admin.dropRate = data.dropRate end
+        admin.resultMsg = { text = "Rules updated", color = {0.3, 1, 0.3}, timer = 3 }
     end)
 
     client:on("server_shutdown", function(data)
-        adminShutdownWarning = 10
+        admin.shutdownWarning = 10
         addFloatingText({
             text = "SERVER SHUTTING DOWN",
             x = players[myId] and players[myId].x or 0,
@@ -4003,7 +4005,7 @@ function game.setupListeners()
 
     client:on("admin_result", function(data)
         if not data then return end
-        adminResultMsg = {
+        admin.resultMsg = {
             text = data.message or "Action completed",
             color = data.success and {0.3, 1, 0.3} or {1, 0.3, 0.3},
             timer = 4,
@@ -4858,12 +4860,12 @@ function game.update(dt)
     end
 
     -- Purification VFX update
-    if purificationVfx then
-        purificationVfx.timer = purificationVfx.timer - dt
-        local progress = 1 - (purificationVfx.timer / purificationVfx.maxTimer)
-        purificationVfx.radius = progress * 300  -- expand to 300px radius
-        if purificationVfx.timer <= 0 then
-            purificationVfx = nil
+    if raid.purificationVfx then
+        raid.purificationVfx.timer = raid.purificationVfx.timer - dt
+        local progress = 1 - (raid.purificationVfx.timer / raid.purificationVfx.maxTimer)
+        raid.purificationVfx.radius = progress * 300  -- expand to 300px radius
+        if raid.purificationVfx.timer <= 0 then
+            raid.purificationVfx = nil
         end
     end
 
@@ -4884,10 +4886,10 @@ function game.update(dt)
     end
 
     -- Lich raid corruption zone timers
-    for i = #lichRaidCorruptionZones, 1, -1 do
-        lichRaidCorruptionZones[i].timer = lichRaidCorruptionZones[i].timer - dt
-        if lichRaidCorruptionZones[i].timer <= 0 then
-            table.remove(lichRaidCorruptionZones, i)
+    for i = #raid.corruptionZones, 1, -1 do
+        raid.corruptionZones[i].timer = raid.corruptionZones[i].timer - dt
+        if raid.corruptionZones[i].timer <= 0 then
+            table.remove(raid.corruptionZones, i)
         end
     end
 
@@ -4985,16 +4987,16 @@ function game.update(dt)
     end
 
     -- Update admin panel timers
-    if adminResultMsg then
-        adminResultMsg.timer = adminResultMsg.timer - dt
-        if adminResultMsg.timer <= 0 then
-            adminResultMsg = nil
+    if admin.resultMsg then
+        admin.resultMsg.timer = admin.resultMsg.timer - dt
+        if admin.resultMsg.timer <= 0 then
+            admin.resultMsg = nil
         end
     end
-    if adminShutdownWarning then
-        adminShutdownWarning = adminShutdownWarning - dt
-        if adminShutdownWarning <= 0 then
-            adminShutdownWarning = nil
+    if admin.shutdownWarning then
+        admin.shutdownWarning = admin.shutdownWarning - dt
+        if admin.shutdownWarning <= 0 then
+            admin.shutdownWarning = nil
         end
     end
 
@@ -5862,12 +5864,12 @@ function game.draw()
         end
 
         -- Party HUD (dungeon, always visible when in party)
-        if partyData and partyData.members and #partyData.members > 0 and not ui.showPartyPanel then
+        if raid.partyData and raid.partyData.members and #raid.partyData.members > 0 and not ui.showPartyPanel then
             game.drawPartyHUD(W, H)
         end
 
         -- Party invite prompt (dungeon)
-        if partyInvitePending and not ui.showPartyPanel then
+        if raid.partyInvitePending and not ui.showPartyPanel then
             game.drawPartyInvitePrompt(W, H)
         end
 
@@ -6117,8 +6119,8 @@ function game.draw()
     end
 
     -- Purification VFX: expanding white ring
-    if purificationVfx then
-        local pfx = purificationVfx
+    if raid.purificationVfx then
+        local pfx = raid.purificationVfx
         local progress = 1 - (pfx.timer / pfx.maxTimer)
         local alpha = (1 - progress) * 0.8
         love.graphics.setColor(0.9, 0.85, 1, alpha)
@@ -6271,12 +6273,12 @@ function game.draw()
     end
 
     -- Party HUD (always visible when in party, not covered by panel)
-    if partyData and partyData.members and #partyData.members > 0 and not ui.showPartyPanel then
+    if raid.partyData and raid.partyData.members and #raid.partyData.members > 0 and not ui.showPartyPanel then
         game.drawPartyHUD(W, H)
     end
 
     -- Party invite prompt (always visible when pending, on top of everything)
-    if partyInvitePending and not ui.showPartyPanel then
+    if raid.partyInvitePending and not ui.showPartyPanel then
         game.drawPartyInvitePrompt(W, H)
     end
 
@@ -6495,7 +6497,7 @@ function game.draw()
     end
 
     -- Lich Raid gathering UI overlay
-    if lichRaidGathering and lichRaidGathering.phase == "gathering" then
+    if raid.gathering and raid.gathering.phase == "gathering" then
         love.graphics.setFont(fonts.ui)
         local panelW, panelH = 400, 300
         local px = (W - panelW) / 2
@@ -6513,16 +6515,16 @@ function game.draw()
         love.graphics.printf("Sanctum of Veranthos - Raid", px, py + 10, panelW, "center")
 
         -- Player count
-        local countColor = lichRaidGathering.totalPlayers >= lichRaidGathering.minRequired and {0.3, 1, 0.3} or {1, 0.8, 0.3}
+        local countColor = raid.gathering.totalPlayers >= raid.gathering.minRequired and {0.3, 1, 0.3} or {1, 0.8, 0.3}
         love.graphics.setColor(countColor[1], countColor[2], countColor[3])
-        love.graphics.printf("Players: " .. lichRaidGathering.totalPlayers .. " / " .. lichRaidGathering.minRequired .. " (recommended)  [max " .. lichRaidGathering.maxAllowed .. "]", px, py + 35, panelW, "center")
+        love.graphics.printf("Players: " .. raid.gathering.totalPlayers .. " / " .. raid.gathering.minRequired .. " (recommended)  [max " .. raid.gathering.maxAllowed .. "]", px, py + 35, panelW, "center")
 
         -- Party list
         love.graphics.setColor(0.8, 0.8, 0.9)
         local partyY = py + 60
-        if lichRaidGathering.parties then
-            for _, party in ipairs(lichRaidGathering.parties) do
-                local isMyParty = (party.partyId == lichRaidMyParty)
+        if raid.gathering.parties then
+            for _, party in ipairs(raid.gathering.parties) do
+                local isMyParty = (party.partyId == raid.myParty)
                 if isMyParty then
                     love.graphics.setColor(0.5, 0.9, 1)
                 else
@@ -6536,8 +6538,8 @@ function game.draw()
         end
 
         -- Countdown
-        if lichRaidGathering.countdownStarted and lichRaidGathering.countdownEndsAt > 0 then
-            local remaining = math.max(0, math.ceil((lichRaidGathering.countdownEndsAt - os.time() * 1000) / 1000))
+        if raid.gathering.countdownStarted and raid.gathering.countdownEndsAt > 0 then
+            local remaining = math.max(0, math.ceil((raid.gathering.countdownEndsAt - os.time() * 1000) / 1000))
             love.graphics.setColor(1, 0.85, 0.2)
             love.graphics.printf("Raid starts in: " .. remaining .. "s", px, py + panelH - 70, panelW, "center")
         end
@@ -10086,14 +10088,14 @@ function game.keypressed(key)
     end
 
     -- Lich Raid gathering: Enter = force start, Escape = leave
-    if lichRaidGathering and lichRaidGathering.phase == "gathering" then
+    if raid.gathering and raid.gathering.phase == "gathering" then
         if (key == "return" or key == "kpenter") and client then
             client:emit("raid_force_start", {})
             return
         elseif key == "escape" and client then
             client:emit("dungeon_exit", {})
-            lichRaidGathering = nil
-            lichRaidMyParty = nil
+            raid.gathering = nil
+            raid.myParty = nil
             return
         end
     end
@@ -10206,20 +10208,20 @@ function game.keypressed(key)
     end
 
     if ui.showPartyPanel then
-        if partyInviteActive then
+        if raid.partyInviteActive then
             if key == "escape" then
-                partyInviteActive = false
-                partyInviteInput = ""
+                raid.partyInviteActive = false
+                raid.partyInviteInput = ""
             elseif key == "return" or key == "kpenter" then
                 -- Send invite on Enter
-                if client and #partyInviteInput > 0 and partyData then
+                if client and #raid.partyInviteInput > 0 and raid.partyData then
                     local targetId = nil
                     for id, p in pairs(players) do
-                        if id ~= myId and p.name and p.name:lower() == partyInviteInput:lower() then
+                        if id ~= myId and p.name and p.name:lower() == raid.partyInviteInput:lower() then
                             targetId = id
                             break
                         end
-                        if id ~= myId and p.username and p.username:lower() == partyInviteInput:lower() then
+                        if id ~= myId and p.username and p.username:lower() == raid.partyInviteInput:lower() then
                             targetId = id
                             break
                         end
@@ -10227,7 +10229,7 @@ function game.keypressed(key)
                     if targetId then
                         client:emit("party_invite", { targetId = targetId })
                         addFloatingText({
-                            text = "Invite sent to " .. partyInviteInput,
+                            text = "Invite sent to " .. raid.partyInviteInput,
                             x = players[myId] and players[myId].x or 0,
                             y = players[myId] and (players[myId].y - 40) or 0,
                             color = {0.4, 0.7, 1},
@@ -10235,25 +10237,25 @@ function game.keypressed(key)
                         })
                     else
                         addFloatingText({
-                            text = "Player '" .. partyInviteInput .. "' not found in zone",
+                            text = "Player '" .. raid.partyInviteInput .. "' not found in zone",
                             x = players[myId] and players[myId].x or 0,
                             y = players[myId] and (players[myId].y - 40) or 0,
                             color = {1, 0.3, 0.3},
                             timer = 2.5,
                         })
                     end
-                    partyInviteInput = ""
+                    raid.partyInviteInput = ""
                 end
-                partyInviteActive = false
+                raid.partyInviteActive = false
             elseif key == "backspace" then
-                partyInviteInput = partyInviteInput:sub(1, -2)
+                raid.partyInviteInput = raid.partyInviteInput:sub(1, -2)
             end
             return
         end
         if key == "y" or key == "escape" then
             ui.showPartyPanel = false
-            partyInviteActive = false
-            partyInviteInput = ""
+            raid.partyInviteActive = false
+            raid.partyInviteInput = ""
         end
         return
     end
@@ -10301,7 +10303,7 @@ function game.keypressed(key)
             if #chat.input > 0 then
                 -- Check for /party or /p prefix for party chat
                 local partyMsg = chat.input:match("^/party%s+(.+)") or chat.input:match("^/p%s+(.+)")
-                if partyMsg and partyData then
+                if partyMsg and raid.partyData then
                     client:emit("party_chat", { message = partyMsg })
                 else
                     client:emit("zone_chat", { message = chat.input })
@@ -10767,7 +10769,7 @@ function game.keypressed(key)
     elseif key == "f10" then
         -- Toggle admin panel (server hosts only)
         if _G.isServerHost then
-            showAdminPanel = not showAdminPanel
+            admin.showPanel = not admin.showPanel
         end
     elseif key == "escape" then
         if ui.showKnowledge then
@@ -10777,8 +10779,8 @@ function game.keypressed(key)
             else
                 ui.showKnowledge = false
             end
-        elseif showAdminPanel then
-            showAdminPanel = false
+        elseif admin.showPanel then
+            admin.showPanel = false
         elseif ui.showDungeonQuests then
             ui.showDungeonQuests = false
         elseif ui.showLeaderboard then
@@ -10821,9 +10823,9 @@ function game.textinput(text)
         if #chat.input < 200 then
             chat.input = chat.input .. text
         end
-    elseif partyInviteActive then
-        if #partyInviteInput < 30 then
-            partyInviteInput = partyInviteInput .. text
+    elseif raid.partyInviteActive then
+        if #raid.partyInviteInput < 30 then
+            raid.partyInviteInput = raid.partyInviteInput .. text
         end
     end
 end
@@ -10901,7 +10903,7 @@ function game.mousepressed(x, y, button)
     end
 
     -- Admin panel click handling (highest priority when open)
-    if showAdminPanel and button == 1 then
+    if admin.showPanel and button == 1 then
         if game.handleAdminPanelClick(x, y) then
             return
         end
@@ -11440,7 +11442,7 @@ function game.mousepressed(x, y, button)
     -- Party panel click handling
     if ui.showPartyPanel and button == 1 then
         -- Create Party button
-        if not partyData and ui._partyCreateBtn then
+        if not raid.partyData and ui._partyCreateBtn then
             local btn = ui._partyCreateBtn
             if x >= btn.x and x <= btn.x + btn.w and y >= btn.y and y <= btn.y + btn.h then
                 if client then client:emit("party_create", {}) end
@@ -11449,50 +11451,50 @@ function game.mousepressed(x, y, button)
         end
 
         -- Accept invite button
-        if not partyData and partyInvitePending and ui._partyAcceptBtn then
+        if not raid.partyData and raid.partyInvitePending and ui._partyAcceptBtn then
             local btn = ui._partyAcceptBtn
             if x >= btn.x and x <= btn.x + btn.w and y >= btn.y and y <= btn.y + btn.h then
                 if client then
-                    client:emit("party_accept", { partyId = partyInvitePending.partyId })
+                    client:emit("party_accept", { partyId = raid.partyInvitePending.partyId })
                 end
-                partyInvitePending = nil
+                raid.partyInvitePending = nil
                 return
             end
         end
 
         -- Decline invite button
-        if not partyData and partyInvitePending and ui._partyDeclineBtn then
+        if not raid.partyData and raid.partyInvitePending and ui._partyDeclineBtn then
             local btn = ui._partyDeclineBtn
             if x >= btn.x and x <= btn.x + btn.w and y >= btn.y and y <= btn.y + btn.h then
-                partyInvitePending = nil
+                raid.partyInvitePending = nil
                 return
             end
         end
 
         -- Invite input focus
-        if partyData and ui._partyInviteInput then
-            local inp = ui._partyInviteInput
+        if raid.partyData and ui._raid.partyInviteInput then
+            local inp = ui._raid.partyInviteInput
             if x >= inp.x and x <= inp.x + inp.w and y >= inp.y and y <= inp.y + inp.h then
-                partyInviteActive = true
+                raid.partyInviteActive = true
                 return
             else
-                partyInviteActive = false
+                raid.partyInviteActive = false
             end
         end
 
         -- Send invite button
-        if partyData and ui._partyInviteSendBtn then
+        if raid.partyData and ui._partyInviteSendBtn then
             local btn = ui._partyInviteSendBtn
             if x >= btn.x and x <= btn.x + btn.w and y >= btn.y and y <= btn.y + btn.h then
-                if client and #partyInviteInput > 0 then
+                if client and #raid.partyInviteInput > 0 then
                     -- Find player by name in current zone
                     local targetId = nil
                     for id, p in pairs(players) do
-                        if id ~= myId and p.name and p.name:lower() == partyInviteInput:lower() then
+                        if id ~= myId and p.name and p.name:lower() == raid.partyInviteInput:lower() then
                             targetId = id
                             break
                         end
-                        if id ~= myId and p.username and p.username:lower() == partyInviteInput:lower() then
+                        if id ~= myId and p.username and p.username:lower() == raid.partyInviteInput:lower() then
                             targetId = id
                             break
                         end
@@ -11500,7 +11502,7 @@ function game.mousepressed(x, y, button)
                     if targetId then
                         client:emit("party_invite", { targetId = targetId })
                         addFloatingText({
-                            text = "Invite sent to " .. partyInviteInput,
+                            text = "Invite sent to " .. raid.partyInviteInput,
                             x = players[myId] and players[myId].x or 0,
                             y = players[myId] and (players[myId].y - 40) or 0,
                             color = {0.4, 0.7, 1},
@@ -11508,22 +11510,22 @@ function game.mousepressed(x, y, button)
                         })
                     else
                         addFloatingText({
-                            text = "Player '" .. partyInviteInput .. "' not found in zone",
+                            text = "Player '" .. raid.partyInviteInput .. "' not found in zone",
                             x = players[myId] and players[myId].x or 0,
                             y = players[myId] and (players[myId].y - 40) or 0,
                             color = {1, 0.3, 0.3},
                             timer = 2.5,
                         })
                     end
-                    partyInviteInput = ""
-                    partyInviteActive = false
+                    raid.partyInviteInput = ""
+                    raid.partyInviteActive = false
                 end
                 return
             end
         end
 
         -- Leave/Disband button
-        if partyData and ui._partyLeaveBtn then
+        if raid.partyData and ui._partyLeaveBtn then
             local btn = ui._partyLeaveBtn
             if x >= btn.x and x <= btn.x + btn.w and y >= btn.y and y <= btn.y + btn.h then
                 if client then
@@ -14331,9 +14333,9 @@ function game.drawDirectorUI(W, H)
 end
 
 function game.drawRaidUI(W, H)
-    if not raidState then return end
+    if not raid.state then return end
 
-    if raidState.state == "waiting" and raidState.barrierActive then
+    if raid.state.state == "waiting" and raid.state.barrierActive then
         -- Waiting room: player counter + atmospheric text
         local boxW = 320
         local boxH = 80
@@ -14349,8 +14351,8 @@ function game.drawRaidUI(W, H)
 
         -- Player count
         love.graphics.setFont(fonts.hud)
-        local countText = raidState.playerCount .. " / " .. raidState.minPlayers .. " Players Ready"
-        local countColor = raidState.playerCount >= raidState.minPlayers and {0.2, 1, 0.3} or {1, 0.85, 0.3}
+        local countText = raid.state.playerCount .. " / " .. raid.state.minPlayers .. " Players Ready"
+        local countColor = raid.state.playerCount >= raid.state.minPlayers and {0.2, 1, 0.3} or {1, 0.85, 0.3}
         love.graphics.setColor(countColor[1], countColor[2], countColor[3], 1)
         love.graphics.printf(countText, boxX, boxY + 10, boxW, "center")
 
@@ -14363,11 +14365,11 @@ function game.drawRaidUI(W, H)
         -- Boss name
         love.graphics.setFont(fonts.small)
         love.graphics.setColor(0.9, 0.5, 0.2, 0.8)
-        love.graphics.printf(raidState.bossName, boxX, boxY + 58, boxW, "center")
+        love.graphics.printf(raid.state.bossName, boxX, boxY + 58, boxW, "center")
     end
 
     -- Raid boss health bar (full-width bar at top)
-    if raidBossHp and raidState and raidState.state == "active" then
+    if raid.bossHp and raid.state and raid.state.state == "active" then
         local barH = 28
         local barPad = 40
         local barW = W - barPad * 2
@@ -14381,10 +14383,10 @@ function game.drawRaidUI(W, H)
         love.graphics.setColor(0.3, 0, 0, 0.9)
         love.graphics.rectangle("fill", barPad, barY, barW, barH, 3, 3)
 
-        local hpRatio = raidBossHp.maxHp > 0 and (raidBossHp.hp / raidBossHp.maxHp) or 0
+        local hpRatio = raid.bossHp.maxHp > 0 and (raid.bossHp.hp / raid.bossHp.maxHp) or 0
         -- Color shifts: purple for lich, red->orange for others
         local r, g, b
-        if lichRaidPhase then
+        if raid.phase then
             r = 0.5 + 0.3 * (1 - hpRatio)
             g = 0.1
             b = 0.6 + 0.2 * hpRatio
@@ -14408,25 +14410,25 @@ function game.drawRaidUI(W, H)
         -- Boss name + phase
         love.graphics.setFont(fonts.hud)
         love.graphics.setColor(1, 1, 1, 1)
-        local bossLabel = raidBossHp.name
-        if lichRaidPhase then
-            bossLabel = bossLabel .. " - " .. (lichRaidPhase.phaseName or "Phase " .. lichRaidPhase.phase)
-        elseif raidBossHp.phase and raidBossHp.phase > 1 then
-            bossLabel = bossLabel .. " (Phase " .. raidBossHp.phase .. ")"
+        local bossLabel = raid.bossHp.name
+        if raid.phase then
+            bossLabel = bossLabel .. " - " .. (raid.phase.phaseName or "Phase " .. raid.phase.phase)
+        elseif raid.bossHp.phase and raid.bossHp.phase > 1 then
+            bossLabel = bossLabel .. " (Phase " .. raid.bossHp.phase .. ")"
         end
         love.graphics.printf(bossLabel, barPad, barY + 2, barW, "center")
 
         -- HP numbers
         love.graphics.setFont(fonts.small)
         love.graphics.setColor(1, 1, 1, 0.8)
-        local hpText = math.floor(raidBossHp.hp) .. " / " .. math.floor(raidBossHp.maxHp)
+        local hpText = math.floor(raid.bossHp.hp) .. " / " .. math.floor(raid.bossHp.maxHp)
         love.graphics.printf(hpText, barPad, barY + 16, barW, "center")
 
         -- Phylactery HP bars (phase 2)
-        if #lichRaidPhylacteries > 0 then
+        if #raid.phylacteries > 0 then
             local phylY = barY + barH + 6
             local phylBarW = (barW - 20) / 4
-            for pi, phyl in ipairs(lichRaidPhylacteries) do
+            for pi, phyl in ipairs(raid.phylacteries) do
                 local phylX = barPad + (pi - 1) * (phylBarW + 5)
                 local phylRatio = phyl.maxHp > 0 and (phyl.hp / phyl.maxHp) or 0
 
@@ -14447,8 +14449,8 @@ function game.drawRaidUI(W, H)
     end
 
     -- Lich raid corruption zones on dungeon floor (pulsing purple squares)
-    if dungeon.inDungeon and #lichRaidCorruptionZones > 0 then
-        for _, zone in ipairs(lichRaidCorruptionZones) do
+    if dungeon.inDungeon and #raid.corruptionZones > 0 then
+        for _, zone in ipairs(raid.corruptionZones) do
             local zoneAlpha = 0.3 + math.sin(corruption.animTimer * 4) * 0.15
             love.graphics.setColor(0.5, 0.1, 0.6, zoneAlpha)
             local tileSize = 32
@@ -14670,7 +14672,7 @@ function game.drawPartyPanel(W, H)
 
     local contentY = py + 42
 
-    if not partyData then
+    if not raid.partyData then
         -- Not in a party
         love.graphics.setFont(fonts.chat)
         love.graphics.setColor(0.6, 0.6, 0.7, 0.8)
@@ -14695,14 +14697,14 @@ function game.drawPartyPanel(W, H)
         contentY = btnY + btnH + 15
 
         -- Pending invite section
-        if partyInvitePending then
+        if raid.partyInvitePending then
             love.graphics.setColor(0.3, 0.3, 0.5, 0.6)
             love.graphics.line(px + 15, contentY, px + panelW - 15, contentY)
             contentY = contentY + 8
 
             love.graphics.setFont(fonts.chat)
             love.graphics.setColor(0.4, 0.7, 1, 1)
-            love.graphics.printf("Invite from: " .. (partyInvitePending.fromName or "?"), px + 10, contentY, panelW - 20, "center")
+            love.graphics.printf("Invite from: " .. (raid.partyInvitePending.fromName or "?"), px + 10, contentY, panelW - 20, "center")
             contentY = contentY + 22
 
             -- Accept / Decline buttons
@@ -14739,15 +14741,15 @@ function game.drawPartyPanel(W, H)
         -- In a party: member list
         love.graphics.setFont(fonts.hud)
         love.graphics.setColor(0.6, 0.7, 0.8, 0.7)
-        love.graphics.printf("Members (" .. #partyData.members .. ")", px + 10, contentY, panelW - 20, "left")
+        love.graphics.printf("Members (" .. #raid.partyData.members .. ")", px + 10, contentY, panelW - 20, "left")
         contentY = contentY + 22
 
-        for i, member in ipairs(partyData.members) do
+        for i, member in ipairs(raid.partyData.members) do
             local my = contentY + (i - 1) * 38
             if my + 38 > py + panelH - 80 then break end
 
             -- Member row background
-            local isLeader = (member.id == partyData.leader)
+            local isLeader = (member.id == raid.partyData.leader)
             local isSelf = (member.id == myId)
             if isSelf then
                 love.graphics.setColor(0.12, 0.18, 0.25, 0.8)
@@ -14792,7 +14794,7 @@ function game.drawPartyPanel(W, H)
             end
         end
 
-        contentY = contentY + #partyData.members * 38 + 8
+        contentY = contentY + #raid.partyData.members * 38 + 8
 
         -- Separator
         love.graphics.setColor(0.3, 0.3, 0.5, 0.4)
@@ -14810,13 +14812,13 @@ function game.drawPartyPanel(W, H)
         local inputH = 22
         local inputX = px + 10
         local inputY = contentY
-        if partyInviteActive then
+        if raid.partyInviteActive then
             love.graphics.setColor(0.12, 0.12, 0.2, 0.9)
         else
             love.graphics.setColor(0.08, 0.08, 0.12, 0.7)
         end
         love.graphics.rectangle("fill", inputX, inputY, inputW, inputH, 3, 3)
-        if partyInviteActive then
+        if raid.partyInviteActive then
             love.graphics.setColor(0.3, 0.5, 0.8, 0.7)
         else
             love.graphics.setColor(0.2, 0.3, 0.4, 0.5)
@@ -14824,12 +14826,12 @@ function game.drawPartyPanel(W, H)
         love.graphics.rectangle("line", inputX, inputY, inputW, inputH, 3, 3)
 
         love.graphics.setFont(fonts.npc)
-        if partyInviteActive then
+        if raid.partyInviteActive then
             love.graphics.setColor(1, 1, 1, 0.95)
-            love.graphics.print(partyInviteInput .. (math.floor(love.timer.getTime() * 2) % 2 == 0 and "|" or ""), inputX + 4, inputY + 4)
-        elseif #partyInviteInput > 0 then
+            love.graphics.print(raid.partyInviteInput .. (math.floor(love.timer.getTime() * 2) % 2 == 0 and "|" or ""), inputX + 4, inputY + 4)
+        elseif #raid.partyInviteInput > 0 then
             love.graphics.setColor(0.8, 0.8, 0.8, 0.8)
-            love.graphics.print(partyInviteInput, inputX + 4, inputY + 4)
+            love.graphics.print(raid.partyInviteInput, inputX + 4, inputY + 4)
         else
             love.graphics.setColor(0.4, 0.4, 0.5, 0.5)
             love.graphics.print("Username...", inputX + 4, inputY + 4)
@@ -14845,13 +14847,13 @@ function game.drawPartyPanel(W, H)
         love.graphics.setColor(0.8, 0.9, 1, 1)
         love.graphics.printf("Invite", sendX, inputY + 4, sendW, "center")
 
-        ui._partyInviteInput = { x = inputX, y = inputY, w = inputW, h = inputH }
+        ui._raid.partyInviteInput = { x = inputX, y = inputY, w = inputW, h = inputH }
         ui._partyInviteSendBtn = { x = sendX, y = inputY, w = sendW, h = inputH }
 
         contentY = inputY + inputH + 12
 
         -- Leave / Disband button
-        local isLeader = (partyData.leader == myId)
+        local isLeader = (raid.partyData.leader == myId)
         local leaveBtnW = 120
         local leaveBtnH = 28
         local leaveBtnX = px + (panelW - leaveBtnW) / 2
@@ -14885,8 +14887,8 @@ function game.drawPartyPanel(W, H)
 end
 
 function game.drawPartyHUD(W, H)
-    if not partyData or not partyData.members then return end
-    if #partyData.members <= 1 then return end  -- don't show if solo
+    if not raid.partyData or not raid.partyData.members then return end
+    if #raid.partyData.members <= 1 then return end  -- don't show if solo
 
     -- Compact member list (top-right, below minimap or compass area)
     local hudX = W - 170
@@ -14899,7 +14901,7 @@ function game.drawPartyHUD(W, H)
     end
 
     -- Background
-    local memberCount = #partyData.members
+    local memberCount = #raid.partyData.members
     local hudH = 12 + memberCount * 18
     love.graphics.setColor(0, 0, 0, 0.45)
     love.graphics.rectangle("fill", hudX - 4, hudY - 2, 164, hudH, 4, 4)
@@ -14910,10 +14912,10 @@ function game.drawPartyHUD(W, H)
     love.graphics.print("Party (" .. memberCount .. ")", hudX, hudY)
 
     -- Members
-    for i, member in ipairs(partyData.members) do
+    for i, member in ipairs(raid.partyData.members) do
         local my = hudY + 12 + (i - 1) * 18
         local isSelf = (member.id == myId)
-        local isLeader = (member.id == partyData.leader)
+        local isLeader = (member.id == raid.partyData.leader)
 
         -- Leader indicator
         if isLeader then
@@ -14949,7 +14951,7 @@ function game.drawPartyHUD(W, H)
 end
 
 function game.drawPartyInvitePrompt(W, H)
-    if not partyInvitePending then return end
+    if not raid.partyInvitePending then return end
 
     -- Floating prompt at top-center
     local promptW = 300
@@ -14966,7 +14968,7 @@ function game.drawPartyInvitePrompt(W, H)
     -- Text
     love.graphics.setFont(fonts.chat)
     love.graphics.setColor(0.4, 0.7, 1, 1)
-    love.graphics.printf((partyInvitePending.fromName or "?") .. " invited you to a party!", promptX + 8, promptY + 6, promptW - 16, "center")
+    love.graphics.printf((raid.partyInvitePending.fromName or "?") .. " invited you to a party!", promptX + 8, promptY + 6, promptW - 16, "center")
 
     -- Accept/Decline hints
     love.graphics.setFont(fonts.small)
@@ -16554,7 +16556,7 @@ end
 
 -- Admin panel overlay (F10 for server hosts)
 function game.drawAdminPanel(W, H)
-    if not showAdminPanel then return end
+    if not admin.showPanel then return end
 
     local panelW = 300
     local panelX = W - panelW
@@ -16652,7 +16654,7 @@ function game.drawAdminPanel(W, H)
     -- XP Rate control
     love.graphics.setFont(smallFont)
     love.graphics.setColor(0.8, 0.8, 1, 1)
-    love.graphics.printf("XP Rate: " .. string.format("%.1fx", adminXpRate), padX, y, contentW - 80, "left")
+    love.graphics.printf("XP Rate: " .. string.format("%.1fx", admin.xpRate), padX, y, contentW - 80, "left")
 
     -- - button
     local btnMX = padX + contentW - 75
@@ -16678,7 +16680,7 @@ function game.drawAdminPanel(W, H)
 
     -- Drop Rate control
     love.graphics.setColor(0.8, 0.8, 1, 1)
-    love.graphics.printf("Drop Rate: " .. string.format("%.1fx", adminDropRate), padX, y, contentW - 80, "left")
+    love.graphics.printf("Drop Rate: " .. string.format("%.1fx", admin.dropRate), padX, y, contentW - 80, "left")
 
     -- - button
     love.graphics.setColor(0.3, 0.3, 0.5, 0.9)
@@ -16699,17 +16701,17 @@ function game.drawAdminPanel(W, H)
     y = y + btnSize + 12
 
     -- Admin result message
-    if adminResultMsg and adminResultMsg.timer > 0 then
-        local alpha = math.min(1, adminResultMsg.timer)
-        love.graphics.setColor(adminResultMsg.color[1], adminResultMsg.color[2], adminResultMsg.color[3], alpha)
-        love.graphics.printf(adminResultMsg.text, padX, y, contentW, "center")
+    if admin.resultMsg and admin.resultMsg.timer > 0 then
+        local alpha = math.min(1, admin.resultMsg.timer)
+        love.graphics.setColor(admin.resultMsg.color[1], admin.resultMsg.color[2], admin.resultMsg.color[3], alpha)
+        love.graphics.printf(admin.resultMsg.text, padX, y, contentW, "center")
         y = y + smallLineH + 4
     end
 
     -- Shutdown warning
-    if adminShutdownWarning and adminShutdownWarning > 0 then
+    if admin.shutdownWarning and admin.shutdownWarning > 0 then
         love.graphics.setColor(1, 0.2, 0.2, 1)
-        love.graphics.printf("SHUTDOWN IN " .. math.ceil(adminShutdownWarning) .. "s", padX, y, contentW, "center")
+        love.graphics.printf("SHUTDOWN IN " .. math.ceil(admin.shutdownWarning) .. "s", padX, y, contentW, "center")
         y = y + smallLineH + 4
     end
 
@@ -16739,7 +16741,7 @@ end
 
 -- Handle admin panel mouse clicks
 function game.handleAdminPanelClick(mx, my)
-    if not showAdminPanel or not client then return false end
+    if not admin.showPanel or not client then return false end
 
     local W = love.graphics.getWidth()
     local H = love.graphics.getHeight()
@@ -16769,7 +16771,7 @@ function game.handleAdminPanelClick(mx, my)
             local btnH = smallLineH - 2
             if mx >= btnX and mx <= btnX + btnW and my >= btnY and my <= btnY + btnH then
                 client:emit("admin_kick_player", { targetId = id })
-                adminResultMsg = { text = "Kick sent...", color = {1, 0.8, 0.3}, timer = 3 }
+                admin.resultMsg = { text = "Kick sent...", color = {1, 0.8, 0.3}, timer = 3 }
                 return true
             end
         end
@@ -16790,14 +16792,14 @@ function game.handleAdminPanelClick(mx, my)
 
     -- XP Rate - button (clamped to server-valid range 0.5-5.0)
     if mx >= btnMX and mx <= btnMX + btnSize and my >= y - 2 and my <= y - 2 + btnSize then
-        adminXpRate = math.max(0.5, adminXpRate - 0.5)
-        client:emit("admin_update_rules", { xpRate = adminXpRate, dropRate = adminDropRate })
+        admin.xpRate = math.max(0.5, admin.xpRate - 0.5)
+        client:emit("admin_update_rules", { xpRate = admin.xpRate, dropRate = admin.dropRate })
         return true
     end
     -- XP Rate + button
     if mx >= btnPX and mx <= btnPX + btnSize and my >= y - 2 and my <= y - 2 + btnSize then
-        adminXpRate = math.min(5.0, adminXpRate + 0.5)
-        client:emit("admin_update_rules", { xpRate = adminXpRate, dropRate = adminDropRate })
+        admin.xpRate = math.min(5.0, admin.xpRate + 0.5)
+        client:emit("admin_update_rules", { xpRate = admin.xpRate, dropRate = admin.dropRate })
         return true
     end
 
@@ -16805,14 +16807,14 @@ function game.handleAdminPanelClick(mx, my)
 
     -- Drop Rate - button (clamped to server-valid range 0.5-5.0)
     if mx >= btnMX and mx <= btnMX + btnSize and my >= y - 2 and my <= y - 2 + btnSize then
-        adminDropRate = math.max(0.5, adminDropRate - 0.5)
-        client:emit("admin_update_rules", { xpRate = adminXpRate, dropRate = adminDropRate })
+        admin.dropRate = math.max(0.5, admin.dropRate - 0.5)
+        client:emit("admin_update_rules", { xpRate = admin.xpRate, dropRate = admin.dropRate })
         return true
     end
     -- Drop Rate + button
     if mx >= btnPX and mx <= btnPX + btnSize and my >= y - 2 and my <= y - 2 + btnSize then
-        adminDropRate = math.min(5.0, adminDropRate + 0.5)
-        client:emit("admin_update_rules", { xpRate = adminXpRate, dropRate = adminDropRate })
+        admin.dropRate = math.min(5.0, admin.dropRate + 0.5)
+        client:emit("admin_update_rules", { xpRate = admin.xpRate, dropRate = admin.dropRate })
         return true
     end
 
@@ -16820,10 +16822,10 @@ function game.handleAdminPanelClick(mx, my)
     local shutBtnW = contentW - 20
     local shutBtnH = 30
     local shutBtnX = padX + 10
-    local shutBtnY = math.max(y + btnSize + 12 + (adminResultMsg and adminResultMsg.timer and adminResultMsg.timer > 0 and (smallLineH + 4) or 0) + (adminShutdownWarning and adminShutdownWarning > 0 and (smallLineH + 4) or 0), H - 50)
+    local shutBtnY = math.max(y + btnSize + 12 + (admin.resultMsg and admin.resultMsg.timer and admin.resultMsg.timer > 0 and (smallLineH + 4) or 0) + (admin.shutdownWarning and admin.shutdownWarning > 0 and (smallLineH + 4) or 0), H - 50)
     if mx >= shutBtnX and mx <= shutBtnX + shutBtnW and my >= shutBtnY and my <= shutBtnY + shutBtnH then
         client:emit("admin_shutdown", {})
-        adminResultMsg = { text = "Shutdown command sent", color = {1, 0.5, 0.2}, timer = 5 }
+        admin.resultMsg = { text = "Shutdown command sent", color = {1, 0.5, 0.2}, timer = 5 }
         return true
     end
 
@@ -16865,15 +16867,15 @@ function game.unload()
     resetTradeState()
 
     -- Clear admin state
-    showAdminPanel = false
-    adminResultMsg = nil
-    adminShutdownWarning = nil
+    admin.showPanel = false
+    admin.resultMsg = nil
+    admin.shutdownWarning = nil
 
     -- Clear director state
     directorEvents = {}
     zoneTicker = {}
-    raidState = nil
-    raidBossHp = nil
+    raid.state = nil
+    raid.bossHp = nil
 
     -- Clear leviathan state
     overworld.leviathans = {}
@@ -16888,10 +16890,10 @@ function game.unload()
     overworld.leviathanEnraged = false
 
     -- Clear party state
-    partyData = nil
-    partyInvitePending = nil
-    partyInviteInput = ""
-    partyInviteActive = false
+    raid.partyData = nil
+    raid.partyInvitePending = nil
+    raid.partyInviteInput = ""
+    raid.partyInviteActive = false
 end
 
 -- Resize: recreate fonts at new scale without resetting game state.
