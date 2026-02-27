@@ -44,6 +44,7 @@ const companionsHandler = require('./handlers/companions');
 const petsHandler = require('./handlers/pets');
 const ascensionHandler = require('./handlers/ascension');
 const prisonHandler = require('./handlers/prison');
+const afflictionsHandler = require('./handlers/afflictions');
 
 // Shared handlers (kept from BossCord era but still used)
 const inventoryHandler = require('./handlers/inventory');
@@ -551,6 +552,8 @@ function setupSocket(io) {
       directorOcean: _director ? _director.getOceanDirector() : null,
       directorLich: _director ? _director.getLichDirector() : null,
       directorRifts: _director ? _director.getRiftsDirector() : null,
+      directorWerewolf: _director ? _director.getWerewolfDirector() : null,
+      directorVampire: _director ? _director.getVampireDirector() : null,
       getPlayerCombat: dungeonHandler.getPlayerCombat,
       serverRules: shardBridge.config && shardBridge.config.rules ? shardBridge.config.rules : null,
       isServerHost: isServerHost,
@@ -592,6 +595,7 @@ function setupSocket(io) {
     petsHandler.init(io, socket, deps);
     ascensionHandler.init(io, socket, deps);
     prisonHandler.init(io, socket, deps);
+    afflictionsHandler.init(io, socket, deps);
 
     // Shared handlers
     inventoryHandler.init(io, socket, deps);

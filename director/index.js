@@ -86,7 +86,7 @@ function init(io, state, accounts, socketAccountMap) {
   }, 60000);
   if (_lichInterval && _lichInterval.unref) _lichInterval.unref();
 
-  // Initialize base raids director (5min interval)
+  // Initialize base raids director (5min lifecycle tick + 30s attack tick)
   _baseRaidsInterval = setInterval(function() {
     try {
       directorBaseRaids.tick(_io, _state, _accounts, _socketAccountMap);
@@ -95,6 +95,14 @@ function init(io, state, accounts, socketAccountMap) {
     }
   }, 5 * 60 * 1000);
   if (_baseRaidsInterval && _baseRaidsInterval.unref) _baseRaidsInterval.unref();
+
+  setInterval(function() {
+    try {
+      directorBaseRaids.attackTick(_io, _state, _accounts, _socketAccountMap);
+    } catch (err) {
+      console.error('[director] Raids attack tick error:', err.message);
+    }
+  }, 30000).unref();
 
   // Initialize vampire infiltration director (10min interval)
   directorVampire.init();

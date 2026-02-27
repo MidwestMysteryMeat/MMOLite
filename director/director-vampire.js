@@ -30,6 +30,7 @@ var EPIDEMIC_CRYPT_THRESHOLD = 5;             // 5+ infiltrators -> spawn abando
 var SUNLIGHT_DESTROY_CHANCE = 0.35;           // 35% chance per infiltrator during day
 var SPREAD_CHANCE = 0.20;                     // 20% chance to spread to adjacent town
 var MAX_CRYPT_DISTANCE_CHUNKS = 15;           // abandoned crypt spawns within 15 chunks of source
+var PLAYER_BITE_CHANCE = 0.06;               // 6% base chance per tick to bite a player in epidemic town
 
 // ---------------------------------------------------------------------------
 // Anchor towns (shared reference — same as lich director)
@@ -275,6 +276,36 @@ function _infiltrationTick(io, state, accounts, socketAccountMap) {
       });
     }
   }
+
+  // ── 6. Player exposure: chance of bite in epidemic-level towns ──
+  if (accounts && socketAccountMap && state && state.playerZones) {
+    state.playerZones.forEach(function(pZoneId, pSocketId) {
+      var infCount = townInfiltrators[pZoneId] || 0;
+      if (infCount < EPIDEMIC_RUMOR_THRESHOLD) return;
+
+      // Chance scales with infiltration level
+      var biteChance = PLAYER_BITE_CHANCE * (infCount / MAX_INFILTRATORS_PER_TOWN);
+      if (Math.random() > biteChance) return;
+
+      var pAccountKey = socketAccountMap.get(pSocketId);
+      if (!pAccountKey) return;
+
+      var pAcc = accounts.loadAccount(pAccountKey);
+      if (!pAcc || pAcc.vampireExposed) return; // already exposed
+
+      pAcc.vampireExposed = { exposedAt: Date.now() };
+      accounts.saveAccount(pAcc);
+
+      var pSock = io ? io.sockets.sockets.get(pSocketId) : null;
+      if (pSock) {
+        pSock.emit('vampire_bite_exposure', {
+          message: 'You feel a sharp pain in your neck. Something in the shadows retreated before you could see it...',
+          exposedAt: pAcc.vampireExposed.exposedAt,
+        });
+      }
+      console.log('[vampire] Player ' + pAccountKey + ' bitten in ' + pZoneId + ' (' + infCount + ' infiltrators)');
+    });
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -456,6 +487,15 @@ function getActiveCrypts() {
   return activeCrypts.slice();
 }
 
+function cureVampireExposure(accountKey, accounts) {
+  if (!accounts) return false;
+  var acc = accounts.loadAccount(accountKey);
+  if (!acc || !acc.vampireExposed) return false;
+  delete acc.vampireExposed;
+  accounts.saveAccount(acc);
+  return true;
+}
+
 // ---------------------------------------------------------------------------
 // Exports
 // ---------------------------------------------------------------------------
@@ -469,4 +509,5 @@ module.exports = {
   getInfiltrationCount: getInfiltrationCount,
   getTownInfiltrators: getTownInfiltrators,
   getActiveCrypts: getActiveCrypts,
+  cureVampireExposure: cureVampireExposure,
 };

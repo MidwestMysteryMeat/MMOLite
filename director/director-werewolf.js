@@ -208,7 +208,15 @@ function _checkLycanthropy(io, state, accounts, socketAccountMap) {
       var accountKey = socketAccountMap.get(socketId);
       if (!accountKey) continue;
 
+      // Load from account as fallback (restores state after server restart)
       var existing = lycanthropePlayers[accountKey];
+      if (!existing && accounts) {
+        var chkAcc = accounts.loadAccount(accountKey);
+        if (chkAcc && chkAcc.lycanthropy) {
+          existing = lycanthropePlayers[accountKey] = chkAcc.lycanthropy;
+        }
+      }
+
       var sock = io ? io.sockets.sockets.get(socketId) : null;
 
       if (!existing) {
@@ -217,6 +225,10 @@ function _checkLycanthropy(io, state, accounts, socketAccountMap) {
           infectedAt: Date.now(),
           stage: 'exposed',
         };
+        if (accounts) {
+          var expAcc = accounts.loadAccount(accountKey);
+          if (expAcc) { expAcc.lycanthropy = lycanthropePlayers[accountKey]; accounts.saveAccount(expAcc); }
+        }
         if (sock) {
           sock.emit('lycanthropy_exposure', {
             stage: 'exposed',
@@ -228,6 +240,10 @@ function _checkLycanthropy(io, state, accounts, socketAccountMap) {
         // Escalate to infected
         existing.stage = 'infected';
         existing.infectedAt = Date.now();
+        if (accounts) {
+          var infAcc = accounts.loadAccount(accountKey);
+          if (infAcc) { infAcc.lycanthropy = existing; accounts.saveAccount(infAcc); }
+        }
         if (sock) {
           sock.emit('lycanthropy_infected', {
             stage: 'infected',
@@ -291,6 +307,17 @@ function getLycanthropyStatus(accountKey) {
   return lycanthropePlayers[accountKey] || null;
 }
 
+function cureLycanthropy(accountKey, accounts) {
+  delete lycanthropePlayers[accountKey];
+  if (accounts) {
+    var acc = accounts.loadAccount(accountKey);
+    if (acc && acc.lycanthropy) {
+      delete acc.lycanthropy;
+      accounts.saveAccount(acc);
+    }
+  }
+}
+
 function getActivePacks() {
   return activePacks.slice();
 }
@@ -314,6 +341,7 @@ module.exports = {
   tick: tick,
   isFullMoon: isFullMoon,
   getLycanthropyStatus: getLycanthropyStatus,
+  cureLycanthropy: cureLycanthropy,
   getActivePacks: getActivePacks,
   getWerewolfSources: getWerewolfSources,
 };

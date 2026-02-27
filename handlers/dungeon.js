@@ -1761,7 +1761,7 @@ function lichRaidComplete() {
 
   // Massive corruption cleanse — if directorLich available, cleanse 50% of all corruption
   if (_directorLich) {
-    _directorLich.cleansCorruption(LICH_TOWER_DUNGEON_ID);
+    _directorLich.cleanseCorruption(LICH_TOWER_DUNGEON_ID);
   }
 
   // Teleport all players out after a short delay
@@ -3191,7 +3191,7 @@ function buildCombatCallbacks(io, state, accounts, socketAccountMap, dungeonId, 
           }
           // Lich corruption cleanse on lich dungeon boss kill
           if (killInfo && deps.directorLich) {
-            var cleanseResult = deps.directorLich.cleansCorruption(killInfo.dungeonId);
+            var cleanseResult = deps.directorLich.cleanseCorruption(killInfo.dungeonId);
             if (cleanseResult && cleanseResult.cleansed > 0) {
               console.log('[dungeon] Lich corruption cleansed: ' + cleanseResult.cleansed + ' chunks near ' + cleanseResult.sourceName);
               io.emit('world_event', {

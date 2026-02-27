@@ -263,7 +263,7 @@ function _dailySpread() {
 // Cleanse corruption (called when lich dungeon boss is killed)
 // ---------------------------------------------------------------------------
 
-function cleansCorruption(dungeonId) {
+function cleanseCorruption(dungeonId) {
   var source = null;
   for (var i = 0; i < corruptionSources.length; i++) {
     if (corruptionSources[i].dungeonId === dungeonId) {
@@ -664,7 +664,7 @@ module.exports = {
   getCorruptionDebuff: getCorruptionDebuff,
   getCorruptionForArea: getCorruptionForArea,
   getTotalCorruptedChunks: getTotalCorruptedChunks,
-  cleansCorruption: cleansCorruption,
+  cleanseCorruption: cleanseCorruption,
   cleanseRiftCorruption: cleanseRiftCorruption,
   playerCleanse: playerCleanse,
 

@@ -286,16 +286,18 @@ function _endRaid(io, state, accounts, raid, result) {
         }
       }
       // Each surviving mob destroys 1 random non-wall object
-      for (var k = 0; k < Math.min(survivingMobs, nonWallObjects.length); k++) {
+      var destroyCount = Math.min(survivingMobs, nonWallObjects.length);
+      for (var k = 0; k < destroyCount; k++) {
+        if (nonWallObjects.length === 0) break;
         var randIdx = Math.floor(Math.random() * nonWallObjects.length);
         var objIdx = nonWallObjects[randIdx];
         if (zone.placedObjects[objIdx]) {
           destroyedObjects.push(zone.placedObjects[objIdx].type);
           zone.placedObjects.splice(objIdx, 1);
-          // Re-index
-          for (var m = nonWallObjects.length - 1; m >= 0; m--) {
+          // Remove this entry from the pool, then decrement all higher indices
+          nonWallObjects.splice(randIdx, 1);
+          for (var m = 0; m < nonWallObjects.length; m++) {
             if (nonWallObjects[m] > objIdx) nonWallObjects[m]--;
-            if (nonWallObjects[m] === objIdx) nonWallObjects.splice(m, 1);
           }
         }
       }
@@ -313,6 +315,102 @@ function _endRaid(io, state, accounts, raid, result) {
   portalHandler._activeRaidAlerts.delete(raid.ownerKey);
 
   console.log('[raids] Raid ended on ' + raid.plotZoneId + ': ' + result);
+}
+
+// ---------------------------------------------------------------------------
+// Enemy attack tick (called every 30s — separate from the 5-min lifecycle tick)
+// ---------------------------------------------------------------------------
+
+var ATTACK_CHANCE_PER_ENEMY = 0.60; // 60% chance each enemy attacks per tick
+var PLAYER_TARGET_WEIGHT = 0.80;    // 80% prefer targeting a player if present
+
+function attackTick(io, state, accounts, socketAccountMap) {
+  if (activeRaids.length === 0) return;
+
+  for (var ri = 0; ri < activeRaids.length; ri++) {
+    var raid = activeRaids[ri];
+    var zone = state.zones.get(raid.plotZoneId);
+    if (!zone) continue;
+
+    // Gather players currently in the raid zone
+    var zonePlayers = [];
+    if (state.playerZones && socketAccountMap) {
+      state.playerZones.forEach(function(zoneId, socketId) {
+        if (zoneId !== raid.plotZoneId) return;
+        var pKey = socketAccountMap.get(socketId);
+        if (pKey) zonePlayers.push({ socketId: socketId, key: pKey });
+      });
+    }
+
+    for (var ei = 0; ei < raid.enemies.length; ei++) {
+      var enemy = raid.enemies[ei];
+      if (!enemy.alive) continue;
+      if (Math.random() > ATTACK_CHANCE_PER_ENEMY) continue;
+
+      // Pick target: player or placed object
+      var attackPlayer = zonePlayers.length > 0 && Math.random() < PLAYER_TARGET_WEIGHT;
+
+      if (attackPlayer) {
+        // Deal damage to a random player in the zone
+        var target = zonePlayers[Math.floor(Math.random() * zonePlayers.length)];
+        var acc = accounts.loadAccount(target.key);
+        if (!acc) continue;
+        var defense = (acc.rpgStats && acc.rpgStats.defense) ? acc.rpgStats.defense : 0;
+        var dmg = Math.max(1, enemy.atk - Math.floor(defense / 4));
+        if (acc.rpgStats) {
+          acc.rpgStats.hp = Math.max(0, (acc.rpgStats.hp || 0) - dmg);
+          accounts.saveAccount(acc);
+        }
+        var pSock = io.sockets.sockets.get(target.socketId);
+        if (pSock) {
+          pSock.emit('raid_enemy_attack', {
+            enemyName: enemy.name,
+            damage: dmg,
+            hp: acc.rpgStats ? acc.rpgStats.hp : 0,
+            maxHp: acc.rpgStats ? acc.rpgStats.maxHp : 0,
+          });
+        }
+      } else if (zone.placedObjects && zone.placedObjects.length > 0) {
+        // Deal damage to a random non-wall placed object
+        var candidates = [];
+        for (var oi = 0; oi < zone.placedObjects.length; oi++) {
+          var obj = zone.placedObjects[oi];
+          if (obj && obj.type !== 'wall' && obj.type !== 'stone_wall') {
+            candidates.push(oi);
+          }
+        }
+        if (candidates.length === 0) continue;
+        var pickedOi = candidates[Math.floor(Math.random() * candidates.length)];
+        var pickedObj = zone.placedObjects[pickedOi];
+        if (!pickedObj) continue;
+
+        // Initialize object HP from STRUCTURE_HP if not set
+        if (pickedObj._hp === undefined) {
+          pickedObj._hp = STRUCTURE_HP[pickedObj.type] || 100;
+        }
+        pickedObj._hp = Math.max(0, pickedObj._hp - enemy.atk);
+
+        if (pickedObj._hp <= 0) {
+          // Object destroyed mid-raid
+          var destroyedType = pickedObj.type;
+          zone.placedObjects.splice(pickedOi, 1);
+          placement.savePlacements(raid.plotZoneId, zone.placedObjects);
+          io.to('zone:' + raid.plotZoneId).emit('raid_object_destroyed', {
+            objectType: destroyedType,
+            enemyName: enemy.name,
+            message: 'A ' + destroyedType.replace(/_/g, ' ') + ' was destroyed by ' + enemy.name + '!',
+          });
+        } else {
+          io.to('zone:' + raid.plotZoneId).emit('raid_object_damaged', {
+            objectType: pickedObj.type,
+            enemyName: enemy.name,
+            hp: pickedObj._hp,
+            maxHp: STRUCTURE_HP[pickedObj.type] || 100,
+          });
+        }
+      }
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -367,6 +465,7 @@ function triggerCorruptionRaid(io, state, accounts, socketAccountMap, plotZoneId
 
 module.exports = {
   tick: tick,
+  attackTick: attackTick,
   getRaidByZone: getRaidByZone,
   damageRaidEnemy: damageRaidEnemy,
   getActiveRaids: getActiveRaids,
