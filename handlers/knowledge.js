@@ -118,7 +118,7 @@ function discoverBook(accounts, accKey, bookId) {
 // Handler init
 // ---------------------------------------------------------------------------
 function init(io, socket, deps) {
-  var { socketAccountMap, accounts, checkEventRate } = deps;
+  var { socketAccountMap, accounts, applyRateGrace } = deps;
 
   if (!_io) _io = io;
   if (!_accounts) _accounts = accounts;
@@ -128,7 +128,7 @@ function init(io, socket, deps) {
   // ------------------------------------------------------------------
   socket.on('knowledge_get', function(data) {
     try {
-      if (!checkEventRate(socket, 'knowledge_get', 5, 3000)) return;
+      if (!applyRateGrace(socket, 'knowledge_get', 10, 3000)) return;
       var accKey = socketAccountMap.get(socket.id);
       if (!accKey) return;
       var acc = accounts.loadAccount(accKey);
@@ -204,7 +204,7 @@ function init(io, socket, deps) {
   // ------------------------------------------------------------------
   socket.on('knowledge_read_book', function(data) {
     try {
-      if (!checkEventRate(socket, 'knowledge_read_book', 5, 3000)) return;
+      if (!applyRateGrace(socket, 'knowledge_read_book', 10, 3000)) return;
       if (!data || !data.bookId) return;
       var accKey = socketAccountMap.get(socket.id);
       if (!accKey) return;

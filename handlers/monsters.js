@@ -830,7 +830,7 @@ function calculateMonsterDamage(monster, acc) {
 
 module.exports = {
   init(io, socket, deps) {
-    var { user, socketAccountMap, accounts, checkEventRate, state } = deps;
+    var { user, socketAccountMap, accounts, checkEventRate, applyRateGrace, state } = deps;
 
     // Store module-level references for the spawn ticker (only set once)
     if (!_io) _io = io;
@@ -976,6 +976,7 @@ module.exports = {
     // --- monster_capture: attempt to capture an overworld monster ---
     socket.on('monster_capture', function(data) {
       if (!data || typeof data.monsterId !== 'string') return;
+      if (!applyRateGrace(socket, 'monster_capture', 10, 3000)) return;
 
       var key = socketAccountMap.get(socket.id);
       if (!key) return;

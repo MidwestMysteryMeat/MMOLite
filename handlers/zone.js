@@ -89,7 +89,7 @@ function _startMoveBatchTicker(io, state) {
 
 module.exports = {
   init(io, socket, deps) {
-    var { user, state, socketAccountMap, accounts, checkEventRate, filter } = deps;
+    var { user, state, socketAccountMap, accounts, checkEventRate, applyRateGrace, filter } = deps;
 
     // Per-player harvest cooldowns: Map<socketId + ':' + resourceId, timestamp>
     var harvestCooldowns = new Map();
@@ -522,6 +522,7 @@ module.exports = {
     socket.on('zone_move', function(data) {
       if (!data || typeof data.x !== 'number' || typeof data.y !== 'number') return;
       if (!isFinite(data.x) || !isFinite(data.y)) return;
+      if (!applyRateGrace(socket, 'zone_move', 120, 1000)) return;
 
       var zoneId = state.playerZones.get(socket.id);
       if (!zoneId) return;
@@ -718,7 +719,7 @@ module.exports = {
 
     // --- zone_chat: proximity-based chat within a zone ---
     socket.on('zone_chat', function(data) {
-      if (!checkEventRate(socket, 'zone_chat', 10, 5000)) return;
+      if (!applyRateGrace(socket, 'zone_chat', 20, 5000)) return;
       if (!data || typeof data.message !== 'string') return;
 
       // Server-side mute enforcement — client-side mute UI is not sufficient
@@ -1201,7 +1202,7 @@ module.exports = {
 
     // --- request_chunks: client explicitly requests chunk data for given coords ---
     socket.on('request_chunks', function(data) {
-      if (!checkEventRate(socket, 'request_chunks', 20, 5000)) return;
+      if (!applyRateGrace(socket, 'request_chunks', 40, 5000)) return;
       if (!data || typeof data.cx !== 'number' || typeof data.cy !== 'number') return;
 
       var zoneId = state.playerZones.get(socket.id);
@@ -1772,45 +1773,6 @@ module.exports = {
         playerId: socket.id,
         playerName: user.name,
         zoneId: zoneId,
-      });
-    });
-
-    // --- npc_interact: player talks to/interacts with an NPC ---
-    // NOTE: overworld.js also registers npc_interact for dialogue tree handling.
-    // This handler only updates relationship/reputation IF the NPC exists in the zone.
-    socket.on('npc_interact', function(data) {
-      if (!data || typeof data.npcId !== 'string') return;
-      var key = socketAccountMap.get(socket.id);
-      if (!key) return;
-      var account = accounts.loadAccount(key);
-      if (!account) return;
-      var currentZoneId = state.playerZones.get(socket.id);
-      if (!currentZoneId) return;
-
-      // Validate NPC actually exists in this zone
-      var zone = state.zones.get(currentZoneId);
-      if (!zone) return;
-      var npcExists = false;
-      if (zone.npcs) {
-        for (var ni = 0; ni < zone.npcs.length; ni++) {
-          if (zone.npcs[ni].id === data.npcId) { npcExists = true; break; }
-        }
-      }
-      if (!npcExists) return;
-
-      // Increment NPC relationship
-      if (!account.npcRelationships) account.npcRelationships = {};
-      var currentNpcRep = account.npcRelationships[data.npcId] || 0;
-      account.npcRelationships[data.npcId] = Math.min(100, currentNpcRep + 1);
-      // Increment town reputation
-      if (!account.townReputation) account.townReputation = {};
-      var currentTownRep = account.townReputation[currentZoneId] || 0;
-      account.townReputation[currentZoneId] = Math.min(100, currentTownRep + 0.5);
-      accounts.saveAccount(account);
-      socket.emit('npc_interact_result', {
-        npcId: data.npcId,
-        npcRelationship: account.npcRelationships[data.npcId],
-        townReputation: account.townReputation[currentZoneId],
       });
     });
 

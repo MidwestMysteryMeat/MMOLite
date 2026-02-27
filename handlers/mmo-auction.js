@@ -156,7 +156,7 @@ module.exports = {
   loadAuctionListings: loadAuctionListings,
 
   init(io, socket, deps) {
-    var { user, socketAccountMap, accounts, checkEventRate } = deps;
+    var { user, socketAccountMap, accounts, applyRateGrace } = deps;
     if (!_accounts) _accounts = accounts; // capture accounts ref for cleanExpired
 
     // Track auction viewers for scoped update broadcasts
@@ -168,7 +168,7 @@ module.exports = {
 
     // --- mmo_auction_browse: get marketplace listings (paginated) ---
     socket.on('mmo_auction_browse', function(data) {
-      if (!checkEventRate(socket, 'mmo_auction', 30, 10000)) return;
+      if (!applyRateGrace(socket, 'mmo_auction', 60, 10000)) return;
       _auctionViewers.add(socket.id);
 
       cleanExpired();
@@ -238,7 +238,7 @@ module.exports = {
 
     // --- mmo_auction_list_card: list an RPG card for sale ---
     socket.on('mmo_auction_list_card', function(data) {
-      if (!checkEventRate(socket, 'mmo_auction', 30, 10000)) return;
+      if (!applyRateGrace(socket, 'mmo_auction', 60, 10000)) return;
       if (!data || typeof data.cardInstanceId !== 'string' || typeof data.price !== 'number') {
         socket.emit('mmo_auction_error', { message: 'Invalid request' });
         return;
@@ -327,7 +327,7 @@ module.exports = {
 
     // --- mmo_auction_list_resource: list resources for sale ---
     socket.on('mmo_auction_list_resource', function(data) {
-      if (!checkEventRate(socket, 'mmo_auction', 30, 10000)) return;
+      if (!applyRateGrace(socket, 'mmo_auction', 60, 10000)) return;
       if (!data || typeof data.resource !== 'string' || typeof data.amount !== 'number' || typeof data.price !== 'number') {
         socket.emit('mmo_auction_error', { message: 'Invalid request' });
         return;
@@ -400,7 +400,7 @@ module.exports = {
 
     // --- mmo_auction_buy: purchase a listing ---
     socket.on('mmo_auction_buy', function(data) {
-      if (!checkEventRate(socket, 'mmo_auction', 30, 10000)) return;
+      if (!applyRateGrace(socket, 'mmo_auction', 60, 10000)) return;
       if (!data || typeof data.listingId !== 'string') return;
 
       var key = socketAccountMap.get(socket.id);
@@ -535,7 +535,7 @@ module.exports = {
 
     // --- mmo_auction_cancel: cancel your own listing ---
     socket.on('mmo_auction_cancel', function(data) {
-      if (!checkEventRate(socket, 'mmo_auction', 30, 10000)) return;
+      if (!applyRateGrace(socket, 'mmo_auction', 60, 10000)) return;
       if (!data || typeof data.listingId !== 'string') return;
 
       var key = socketAccountMap.get(socket.id);
@@ -575,7 +575,7 @@ module.exports = {
 
     // --- mmo_auction_my_listings: get your own listings (uses seller index) ---
     socket.on('mmo_auction_my_listings', function() {
-      if (!checkEventRate(socket, 'mmo_auction', 30, 10000)) return;
+      if (!applyRateGrace(socket, 'mmo_auction', 60, 10000)) return;
 
       var key = socketAccountMap.get(socket.id);
       if (!key) return;

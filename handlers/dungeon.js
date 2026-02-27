@@ -4418,7 +4418,7 @@ module.exports = {
     socket.on('dungeon_enter', function(data) {
       try {
         if (!data || typeof data.dungeonId !== 'string') return;
-        if (!applyRateGrace(socket, 'dungeon_enter', 6, 10000)) return;
+        if (!applyRateGrace(socket, 'dungeon_enter', 12, 10000)) return;
 
         var accKey = socketAccountMap.get(socket.id);
         if (!accKey) {
@@ -5014,7 +5014,7 @@ module.exports = {
       try {
         if (!data || typeof data.x !== 'number' || typeof data.y !== 'number') return;
         if (!isFinite(data.x) || !isFinite(data.y)) return;
-        if (!applyRateGrace(socket, 'dungeon_move', 60, 1000)) return;
+        if (!applyRateGrace(socket, 'dungeon_move', 120, 1000)) return;
 
         var info = playerDungeons.get(socket.id);
         if (!info) return;
@@ -5727,7 +5727,7 @@ module.exports = {
       try {
         if (!data || typeof data.enemyIndex !== 'number') return;
         if (!isFinite(data.enemyIndex)) return;
-        if (!applyRateGrace(socket, 'dungeon_attack', 20, 1000)) return;
+        if (!applyRateGrace(socket, 'dungeon_attack', 40, 1000)) return;
 
         var info = playerDungeons.get(socket.id);
         if (!info) return;
@@ -5812,7 +5812,7 @@ module.exports = {
       try {
         if (!data || typeof data.x !== 'number' || typeof data.y !== 'number') return;
         if (!isFinite(data.x) || !isFinite(data.y)) return;
-        if (!applyRateGrace(socket, 'dungeon_open_chest', 10, 2000)) return;
+        if (!applyRateGrace(socket, 'dungeon_open_chest', 20, 2000)) return;
 
         var info = playerDungeons.get(socket.id);
         if (!info) return;
@@ -6072,7 +6072,7 @@ module.exports = {
       try {
         if (!data || typeof data.x !== 'number' || typeof data.y !== 'number') return;
         if (!isFinite(data.x) || !isFinite(data.y)) return;
-        if (!applyRateGrace(socket, 'dungeon_examine_corpse', 10, 2000)) return;
+        if (!applyRateGrace(socket, 'dungeon_examine_corpse', 20, 2000)) return;
 
         var info = playerDungeons.get(socket.id);
         if (!info) return;
@@ -7311,7 +7311,7 @@ module.exports = {
     socket.on('dungeon_chat', function(data) {
       try {
         if (!data || typeof data.message !== 'string') return;
-        if (!applyRateGrace(socket, 'dungeon_chat', 20, 5000)) return;
+        if (!applyRateGrace(socket, 'dungeon_chat', 40, 5000)) return;
 
         var info = playerDungeons.get(socket.id);
         if (!info) return;

@@ -285,10 +285,7 @@ function init(io, socket, deps) {
         socket.emit('farm_error', { message: 'Invalid request' });
         return;
       }
-      if (!helpers.checkEventRate(socket, 'plant_seed', 10, 10000)) {
-        socket.emit('farm_error', { message: 'Too fast' });
-        return;
-      }
+      if (!helpers.applyRateGrace(socket, 'plant_seed', 20, 10000)) return;
 
       var key = socketAccountMap.get(socket.id);
       if (!key) return;
@@ -385,7 +382,7 @@ function init(io, socket, deps) {
         socket.emit('farm_error', { message: 'Invalid request' });
         return;
       }
-      if (!helpers.checkEventRate(socket, 'water_crop', 15, 10000)) return;
+      if (!helpers.applyRateGrace(socket, 'water_crop', 30, 10000)) return;
 
       var key = socketAccountMap.get(socket.id);
       if (!key) return;
@@ -432,7 +429,7 @@ function init(io, socket, deps) {
         socket.emit('farm_error', { message: 'Invalid request' });
         return;
       }
-      if (!helpers.checkEventRate(socket, 'harvest_crop', 10, 10000)) return;
+      if (!helpers.applyRateGrace(socket, 'harvest_crop', 20, 10000)) return;
 
       var key = socketAccountMap.get(socket.id);
       if (!key) return;
@@ -556,7 +553,7 @@ function init(io, socket, deps) {
         socket.emit('farm_error', { message: 'Invalid request' });
         return;
       }
-      if (!helpers.checkEventRate(socket, 'animal_buy', 5, 10000)) return;
+      if (!helpers.applyRateGrace(socket, 'animal_buy', 10, 10000)) return;
 
       var key = socketAccountMap.get(socket.id);
       if (!key) return;
@@ -618,7 +615,7 @@ function init(io, socket, deps) {
         socket.emit('farm_error', { message: 'Invalid request' });
         return;
       }
-      if (!helpers.checkEventRate(socket, 'animal_place', 5, 10000)) return;
+      if (!helpers.applyRateGrace(socket, 'animal_place', 10, 10000)) return;
 
       var key = socketAccountMap.get(socket.id);
       if (!key) return;
@@ -707,7 +704,7 @@ function init(io, socket, deps) {
         socket.emit('farm_error', { message: 'Invalid request' });
         return;
       }
-      if (!helpers.checkEventRate(socket, 'animal_feed', 10, 10000)) return;
+      if (!helpers.applyRateGrace(socket, 'animal_feed', 20, 10000)) return;
 
       var key = socketAccountMap.get(socket.id);
       if (!key) return;
@@ -781,7 +778,7 @@ function init(io, socket, deps) {
         socket.emit('farm_error', { message: 'Invalid request' });
         return;
       }
-      if (!helpers.checkEventRate(socket, 'animal_collect', 10, 10000)) return;
+      if (!helpers.applyRateGrace(socket, 'animal_collect', 20, 10000)) return;
 
       var key = socketAccountMap.get(socket.id);
       if (!key) return;
@@ -849,7 +846,7 @@ function init(io, socket, deps) {
         socket.emit('farm_error', { message: 'Invalid request' });
         return;
       }
-      if (!helpers.checkEventRate(socket, 'animal_name', 5, 10000)) return;
+      if (!helpers.applyRateGrace(socket, 'animal_name', 10, 10000)) return;
 
       var name = data.name.trim().substring(0, 20);
       if (name.length < 2) {
@@ -889,7 +886,7 @@ function init(io, socket, deps) {
         socket.emit('farm_error', { message: 'Invalid request' });
         return;
       }
-      if (!helpers.checkEventRate(socket, 'furniture_interact', 5, 10000)) return;
+      if (!helpers.applyRateGrace(socket, 'furniture_interact', 10, 10000)) return;
 
       var key = socketAccountMap.get(socket.id);
       if (!key) return;

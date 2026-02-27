@@ -18,7 +18,7 @@ module.exports = {
     // --- trade_request: initiate a trade ---
     socket.on('trade_request', function(data) {
       if (!data || typeof data.targetId !== 'string') return;
-      if (!applyRateGrace(socket, 'trade_request', 6, 10000)) return;
+      if (!applyRateGrace(socket, 'trade_request', 12, 10000)) return;
 
       // Must be in same zone
       var myZone = state.playerZones.get(socket.id);
@@ -83,6 +83,7 @@ module.exports = {
     // --- trade_offer: update what you're offering ---
     socket.on('trade_offer', function(data) {
       if (!data || typeof data.tradeId !== 'string') return;
+      if (!applyRateGrace(socket, 'trade_offer', 20, 3000)) return;
 
       var trade = trades.get(data.tradeId);
       if (!trade || trade.state !== 'active') return;
@@ -163,7 +164,7 @@ module.exports = {
     // --- trade_confirm: lock in your offer ---
     socket.on('trade_confirm', function(data) {
       if (!data || typeof data.tradeId !== 'string') return;
-      if (!applyRateGrace(socket, 'trade_confirm', 6, 5000)) return;
+      if (!applyRateGrace(socket, 'trade_confirm', 12, 5000)) return;
 
       var trade = trades.get(data.tradeId);
       if (!trade || trade.state !== 'active') return;

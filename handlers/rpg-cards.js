@@ -90,7 +90,7 @@ module.exports = {
 
     // --- card_open_pack: open a pending card pack ---
     socket.on('card_open_pack', function() {
-      if (!applyRateGrace(socket, 'card_open_pack', 6, 2000)) return;
+      if (!applyRateGrace(socket, 'card_open_pack', 12, 2000)) return;
 
       var key = socketAccountMap.get(socket.id);
       if (!key) return;
@@ -156,7 +156,7 @@ module.exports = {
         socket.emit('card_error', { message: 'Invalid request' });
         return;
       }
-      if (!applyRateGrace(socket, 'card_fuse', 10, 3000)) return;
+      if (!applyRateGrace(socket, 'card_fuse', 20, 3000)) return;
 
       var key = socketAccountMap.get(socket.id);
       if (!key) return;

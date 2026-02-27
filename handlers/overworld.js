@@ -182,6 +182,20 @@ module.exports = {
           choices: [],
         });
       }
+
+      // Increment NPC relationship + town reputation on successful interaction
+      if (account) {
+        if (!account.npcRelationships) account.npcRelationships = {};
+        account.npcRelationships[data.npcId] = Math.min(100, (account.npcRelationships[data.npcId] || 0) + 1);
+        if (!account.townReputation) account.townReputation = {};
+        account.townReputation[zoneId] = Math.min(100, (account.townReputation[zoneId] || 0) + 0.5);
+        accounts.saveAccount(account);
+        socket.emit('npc_interact_result', {
+          npcId: data.npcId,
+          npcRelationship: account.npcRelationships[data.npcId],
+          townReputation: account.townReputation[zoneId],
+        });
+      }
     });
 
     // --- npc_dialogue_choice: player selects a dialogue option ---

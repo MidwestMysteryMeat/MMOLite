@@ -981,7 +981,7 @@ module.exports = {
   init: function(io, socket, deps) {
     var socketAccountMap = deps.socketAccountMap;
     var state = deps.state;
-    var checkEventRate = deps.checkEventRate;
+    var applyRateGrace = deps.applyRateGrace;
 
     if (!_io) _io = io;
     if (!_state) _state = state;
@@ -1015,7 +1015,7 @@ module.exports = {
     socket.on('use_ability', function(data) {
       try {
         if (!data || typeof data.abilityId !== 'string') return;
-        if (!checkEventRate(socket, 'use_ability', 10, 1000)) return;
+        if (!applyRateGrace(socket, 'use_ability', 20, 1000)) return;
 
         var accKey = socketAccountMap.get(socket.id);
         if (!accKey) return;
@@ -1633,7 +1633,7 @@ module.exports = {
     socket.on('use_card_ability', function(data) {
       try {
         if (!data || typeof data.cardId !== 'string') return;
-        if (!checkEventRate(socket, 'use_card_ability', 10, 1000)) return;
+        if (!applyRateGrace(socket, 'use_card_ability', 20, 1000)) return;
 
         var accKey = socketAccountMap.get(socket.id);
         if (!accKey) return;

@@ -6,18 +6,14 @@
 
 module.exports = {
   init(io, socket, deps) {
-    var { user, socketAccountMap, accounts, filter, pow, checkEventRate, validateUrl, state } = deps;
+    var { user, socketAccountMap, accounts, filter, pow, checkEventRate, applyRateGrace, validateUrl, state } = deps;
 
     // ------------------------------------------------------------------
     // Account: create
     // ------------------------------------------------------------------
     socket.on('account_create', async (data) => {
       try {
-        // Rate limit: max 3 account creations per hour per IP
-        if (!checkEventRate(socket, 'account_create', 3, 3600000)) {
-          socket.emit('error', { message: 'Too many account creation attempts. Try again later.' });
-          return;
-        }
+        if (!applyRateGrace(socket, 'account_create', 6, 3600000)) return;
         // Proof-of-Work verification (harder difficulty for account creation)
         const acPowChallenge = data && data.powChallenge;
         const acPowNonce = data && data.powNonce;
