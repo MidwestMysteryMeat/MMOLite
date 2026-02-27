@@ -168,8 +168,8 @@ describe('Regression: dungeon boss kill world quest tracking added', () => {
 // ---------------------------------------------------------------------------
 
 describe('Regression: skill_milestone quest tracking in accounts.js', () => {
-  test('accounts.js checks skill_milestone quests after level up', () => {
-    const src = readSrc('accounts.js');
+  test('account-skills.js checks skill_milestone quests after level up', () => {
+    const src = readSrc('account-skills.js');
     expect(src).toMatch(/skill_milestone/);
     expect(src).toMatch(/_smTmpl\.target\.skill/);
   });
