@@ -841,6 +841,24 @@ function isAccountExpired(account) {
   return (Date.now() - lastActive) > ACCOUNT_EXPIRY_MS;
 }
 
+// Lazy migration: wrap existing top-level character data into characters[0]
+function _migrateToMultiCharacter(account) {
+  if (!account.hallOfHeroes) account.hallOfHeroes = [];
+  if (account.characters) return;
+  var charData = {};
+  for (var i = 0; i < CHARACTER_FIELDS.length; i++) {
+    var field = CHARACTER_FIELDS[i];
+    charData[field] = account[field] !== undefined ? account[field] : _getDefaultForField(field);
+  }
+  charData.name = account.username || 'Character';
+  charData.createdAt = account.createdAt || Date.now();
+  account.characters = [charData];
+  account.activeCharacterIndex = 0;
+  account.maxCharacters = MAX_CHARACTERS_PER_ACCOUNT;
+  account._characterName = charData.name;
+  account._characterCreatedAt = charData.createdAt;
+}
+
 function loadAccount(key) {
   if (!key || typeof key !== 'string') return null;
   // Check in-memory temp accounts first
