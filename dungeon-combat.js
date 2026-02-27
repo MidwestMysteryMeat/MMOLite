@@ -1022,7 +1022,7 @@ function calculateDamage(attacker, target) {
         damage = Math.floor(damage * (1 + (huntersInstinctPassive.damageVsDebuffed || 0.15)));
       }
       if (hasMarked) {
-        critChance += (huntersInstinctPassive.critVsMarked || 0.10);
+        stats._huntersInstinctCritBonus = (huntersInstinctPassive.critVsMarked || 0.10);
       }
     }
 
@@ -1178,6 +1178,10 @@ function calculateDamage(attacker, target) {
     if (stats._visionCritBonus) {
       critChance += stats._visionCritBonus;
       delete stats._visionCritBonus;
+    }
+    if (stats._huntersInstinctCritBonus) {
+      critChance += stats._huntersInstinctCritBonus;
+      delete stats._huntersInstinctCritBonus;
     }
     // Animal form crit bonus (cat form +30%)
     if (attacker.statusEffects) {
@@ -7280,11 +7284,11 @@ function executeAbility(combat, unitId, abilityCardId, targetX, targetY) {
         var leapFromX = unit.x;
         var leapFromY = unit.y;
         // Find an adjacent walkable tile to the target
-        var adjTiles = getAdjacentTiles(combat, leapTarget.x, leapTarget.y);
+        var adjTiles = getAdjacentTiles(leapTarget.x, leapTarget.y, combat.floor.width, combat.floor.height);
         var leaped = false;
         for (var lti = 0; lti < adjTiles.length; lti++) {
           var lt = adjTiles[lti];
-          if (isWalkableCombat(combat, lt.x, lt.y) && !getUnitAtPosition(combat, lt.x, lt.y)) {
+          if (isWalkableCombat(combat.floor.grid, lt.x, lt.y, combat.floor.width, combat.floor.height, combat.units) && !getUnitAtPosition(combat, lt.x, lt.y)) {
             unit.x = lt.x;
             unit.y = lt.y;
             leaped = true;
@@ -7467,6 +7471,11 @@ function executeAbility(combat, unitId, abilityCardId, targetX, targetY) {
           }
         }
 
+        // --- Shatter Passive: +30% crit damage vs frozen/stunned (applied below in crit) ---
+
+        // Apply elemental multiplier (Fix 2)
+        var abilityElement = combatCard.element || template.element || null;
+
         // --- Soul Shards Empowered: +75% damage for dark abilities ---
         if (unit.statusEffects && (abilityElement === 'dark' || abilityElement === 'shadow')) {
           for (var ssBI = 0; ssBI < unit.statusEffects.length; ssBI++) {
@@ -7477,11 +7486,6 @@ function executeAbility(combat, unitId, abilityCardId, targetX, targetY) {
             }
           }
         }
-
-        // --- Shatter Passive: +30% crit damage vs frozen/stunned (applied below in crit) ---
-
-        // Apply elemental multiplier (Fix 2)
-        var abilityElement = combatCard.element || template.element || null;
         var defenderElement = (target.combat && target.combat.element) ? target.combat.element : null;
         if (abilityElement && defenderElement) {
           var elemMult = rpgData.getElementalMultiplier(abilityElement, defenderElement);
@@ -7648,7 +7652,7 @@ function executeAbility(combat, unitId, abilityCardId, targetX, targetY) {
           for (var kbStepI = 0; kbStepI < kbDist; kbStepI++) {
             var kbNextX = kbFinalX + kbNx;
             var kbNextY = kbFinalY + kbNy;
-            if (isWalkableCombat(combat, kbNextX, kbNextY) && !getUnitAtPosition(combat, kbNextX, kbNextY)) {
+            if (isWalkableCombat(combat.floor.grid, kbNextX, kbNextY, combat.floor.width, combat.floor.height, combat.units) && !getUnitAtPosition(combat, kbNextX, kbNextY)) {
               kbFinalX = kbNextX;
               kbFinalY = kbNextY;
             } else {
@@ -7683,7 +7687,7 @@ function executeAbility(combat, unitId, abilityCardId, targetX, targetY) {
           for (var throwI = 0; throwI < throwDist; throwI++) {
             var throwNextX = throwFinalX + throwNx;
             var throwNextY = throwFinalY + throwNy;
-            if (isWalkableCombat(combat, throwNextX, throwNextY) && !getUnitAtPosition(combat, throwNextX, throwNextY)) {
+            if (isWalkableCombat(combat.floor.grid, throwNextX, throwNextY, combat.floor.width, combat.floor.height, combat.units) && !getUnitAtPosition(combat, throwNextX, throwNextY)) {
               throwFinalX = throwNextX;
               throwFinalY = throwNextY;
             } else {
@@ -7742,10 +7746,10 @@ function executeAbility(combat, unitId, abilityCardId, targetX, targetY) {
           var pullDistVal = combatCard.pullDistance || 1;
           if (pullDistVal <= 1) {
             // Original behavior: pull to adjacent tile of caster
-            var pullAdjTiles = getAdjacentTiles(combat, unit.x, unit.y);
+            var pullAdjTiles = getAdjacentTiles(unit.x, unit.y, combat.floor.width, combat.floor.height);
             for (var plI = 0; plI < pullAdjTiles.length; plI++) {
               var plt = pullAdjTiles[plI];
-              if (isWalkableCombat(combat, plt.x, plt.y) && !getUnitAtPosition(combat, plt.x, plt.y)) {
+              if (isWalkableCombat(combat.floor.grid, plt.x, plt.y, combat.floor.width, combat.floor.height, combat.units) && !getUnitAtPosition(combat, plt.x, plt.y)) {
                 var pullFromX = target.x;
                 var pullFromY = target.y;
                 target.x = plt.x;
@@ -7769,7 +7773,7 @@ function executeAbility(combat, unitId, abilityCardId, targetX, targetY) {
               var pullNextY = pullCurY + pullNy;
               // Stop if we'd land on the caster
               if (pullNextX === unit.x && pullNextY === unit.y) break;
-              if (isWalkableCombat(combat, pullNextX, pullNextY) && !getUnitAtPosition(combat, pullNextX, pullNextY)) {
+              if (isWalkableCombat(combat.floor.grid, pullNextX, pullNextY, combat.floor.width, combat.floor.height, combat.units) && !getUnitAtPosition(combat, pullNextX, pullNextY)) {
                 pullCurX = pullNextX;
                 pullCurY = pullNextY;
               } else {
@@ -9463,11 +9467,11 @@ function executeAbility(combat, unitId, abilityCardId, targetX, targetY) {
         }
 
         var skelSpeed = 7;
-        var adjSkelTiles = getAdjacentTiles(combat, unit.x, unit.y);
+        var adjSkelTiles = getAdjacentTiles(unit.x, unit.y, combat.floor.width, combat.floor.height);
         var skelSpawned = 0;
         for (var ski = 0; ski < adjSkelTiles.length && skelSpawned < 1; ski++) {
           var skelTile = adjSkelTiles[ski];
-          if (!isWalkableCombat(combat, skelTile.x, skelTile.y) || getUnitAtPosition(combat, skelTile.x, skelTile.y)) continue;
+          if (!isWalkableCombat(combat.floor.grid, skelTile.x, skelTile.y, combat.floor.width, combat.floor.height, combat.units) || getUnitAtPosition(combat, skelTile.x, skelTile.y)) continue;
           var skelId = unitId + '_skeleton_' + Date.now();
           var skelCombat = { atk: skelDmg, def: combatCard.summonArmor || 5, range: _skelRange, magicResist: 0, speed: skelSpeed };
           if (_skelElement) skelCombat.element = _skelElement;
@@ -9528,11 +9532,11 @@ function executeAbility(combat, unitId, abilityCardId, targetX, targetY) {
         var summonDmg = combatCard.summonDamage || 5;
         var summonDur = combatCard.summonDuration || 4;
         var cloneList = _playerClones.get(unitId) || [];
-        var adjSummonTiles = getAdjacentTiles(combat, unit.x, unit.y);
+        var adjSummonTiles = getAdjacentTiles(unit.x, unit.y, combat.floor.width, combat.floor.height);
         var summonedCount = 0;
         for (var smi = 0; smi < adjSummonTiles.length && summonedCount < summonCount; smi++) {
           var smTile = adjSummonTiles[smi];
-          if (!isWalkableCombat(combat, smTile.x, smTile.y) || getUnitAtPosition(combat, smTile.x, smTile.y)) continue;
+          if (!isWalkableCombat(combat.floor.grid, smTile.x, smTile.y, combat.floor.width, combat.floor.height, combat.units) || getUnitAtPosition(combat, smTile.x, smTile.y)) continue;
           var cloneId = unitId + '_clone_' + Date.now() + '_' + summonedCount;
           var cloneUnit = {
             id: cloneId,
@@ -9601,7 +9605,7 @@ function executeAbility(combat, unitId, abilityCardId, targetX, targetY) {
           for (var dashI = 1; dashI <= Math.min(dashLen, moveDist); dashI++) {
             var dashCheckX = blinkFromX + Math.round(dashStepX * dashI);
             var dashCheckY = blinkFromY + Math.round(dashStepY * dashI);
-            if (!isWalkableCombat(combat, dashCheckX, dashCheckY)) {
+            if (!isWalkableCombat(combat.floor.grid, dashCheckX, dashCheckY, combat.floor.width, combat.floor.height, combat.units)) {
               break; // Hit a wall; stop at last valid tile
             }
             // passThroughEnemies: enemy-occupied tiles are traversable, but we can't LAND on them
@@ -9616,7 +9620,7 @@ function executeAbility(combat, unitId, abilityCardId, targetX, targetY) {
         }
       } else {
         // Standard teleport/blink: land directly at target if valid
-        if (!isWalkableCombat(combat, targetX, targetY) || getUnitAtPosition(combat, targetX, targetY)) {
+        if (!isWalkableCombat(combat.floor.grid, targetX, targetY, combat.floor.width, combat.floor.height, combat.units) || getUnitAtPosition(combat, targetX, targetY)) {
           movementBlocked = true;
         }
       }
@@ -10046,11 +10050,14 @@ function spawnCombatAdd(combat, addTemplate, count) {
       name: addTemplate.name || 'Summoned Undead',
       hp: addTemplate.hp || 50,
       maxHp: addTemplate.hp || 50,
-      x: addTemplate.x || Math.floor(Math.random() * (combat.floor ? combat.floor.width : 20)),
-      y: addTemplate.y || Math.floor(Math.random() * (combat.floor ? combat.floor.height : 20)),
+      x: 0,
+      y: 0,
       ct: 0,
       speed: addTemplate.speed || 8,
       alive: true,
+      statusEffects: [],
+      equippedCards: [],
+      abilityCooldowns: new Map(),
       combat: {
         atk: addTemplate.atk || 15,
         def: addTemplate.def || 5,
@@ -10062,6 +10069,25 @@ function spawnCombatAdd(combat, addTemplate, count) {
       isPhylactery: addTemplate.isPhylactery || false,
       isAdd: true,
     };
+    // Find a walkable, unoccupied spawn position
+    var spawnX = (addTemplate.x != null) ? addTemplate.x : Math.floor(Math.random() * (combat.floor ? combat.floor.width : 20));
+    var spawnY = (addTemplate.y != null) ? addTemplate.y : Math.floor(Math.random() * (combat.floor ? combat.floor.height : 20));
+    if (combat.floor && combat.floor.grid) {
+      if (!isWalkableCombat(combat.floor.grid, spawnX, spawnY, combat.floor.width, combat.floor.height, null) || getUnitAtPosition(combat, spawnX, spawnY)) {
+        var _spawnFound = false;
+        for (var _sr = 1; _sr <= 5 && !_spawnFound; _sr++) {
+          var _adj = getAdjacentTiles(spawnX, spawnY, combat.floor.width, combat.floor.height);
+          for (var _ai = 0; _ai < _adj.length; _ai++) {
+            if (isWalkableCombat(combat.floor.grid, _adj[_ai].x, _adj[_ai].y, combat.floor.width, combat.floor.height, null) && !getUnitAtPosition(combat, _adj[_ai].x, _adj[_ai].y)) {
+              spawnX = _adj[_ai].x; spawnY = _adj[_ai].y; _spawnFound = true; break;
+            }
+          }
+          if (!_spawnFound) { spawnX += _sr; spawnY += _sr; }
+        }
+      }
+    }
+    add.x = spawnX;
+    add.y = spawnY;
     combat.units.set(addId, add);
     spawned.push(add);
   }
@@ -10346,8 +10372,10 @@ function executeLichRaidBossTurn(combat) {
     while (!apE.done) {
       if (apE.value.type === 'player' && apE.value.alive) {
         apE.value.hp = Math.max(0, apE.value.hp - soulHarvestDmg);
-        if (apE.value.hp <= 0) apE.value.alive = false;
+        var shKilled = apE.value.hp <= 0;
+        if (shKilled) { apE.value.alive = false; apE.value.hp = 0; }
         soulHarvestTargets.push({ id: apE.value.id, damage: soulHarvestDmg, hp: apE.value.hp });
+        if (shKilled) handleUnitDeath(combat, apE.value.id, bossUnit.id);
       }
       apE = allPlayerIter.next();
     }
@@ -10396,10 +10424,14 @@ function executeLichRaidBossTurn(combat) {
       finalDmg = Math.max(1, finalDmg - Math.floor(targetDef * 0.3));
 
       targetUnit.hp = Math.max(0, targetUnit.hp - finalDmg);
-      if (targetUnit.hp <= 0) targetUnit.alive = false;
+      if (targetUnit.hp <= 0) {
+        targetUnit.alive = false;
+        targetUnit.hp = 0;
+        handleUnitDeath(combat, targetUnit.id, bossUnit.id);
+      }
 
       // Update threat (boss attacking increases target's threat slightly)
-      updateThreat(combat, targetUnit.id, finalDmg * 0.1, 'damage');
+      if (targetUnit.alive) updateThreat(combat, targetUnit.id, finalDmg * 0.1, 'damage');
     }
 
     // Broadcast boss attack

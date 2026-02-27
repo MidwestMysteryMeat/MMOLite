@@ -153,7 +153,7 @@ var QUALITY_TIERS = {
 };
 
 // Rarity order for comparisons
-var RARITY_ORDER = { common: 0, uncommon: 1, rare: 2, ultra_rare: 3, epic: 3, mythic_rare: 4, legendary: 5, godly: 6, relic: 7 };
+var RARITY_ORDER = { common: 0, uncommon: 1, rare: 2, ultra_rare: 3, epic: 4, mythic_rare: 5, legendary: 6, godly: 7, relic: 8 };
 
 // Affix chances by rarity
 var AFFIX_CHANCES = {

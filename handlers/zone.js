@@ -299,6 +299,22 @@ module.exports = {
         return;
       }
 
+      // Jail check — jailed players can only enter their assigned jail zone
+      var _accKeyJail = socketAccountMap.get(socket.id);
+      if (_accKeyJail) {
+        try {
+          var _prison = require('../handlers/prison');
+          var _jailAcc = accounts.loadAccount(_accKeyJail);
+          if (_jailAcc && _prison.isJailed(_jailAcc)) {
+            var _jailZone = _jailAcc.jailState && _jailAcc.jailState.jailZoneId;
+            if (!_jailZone || data.zoneId !== _jailZone) {
+              socket.emit('zone_error', { message: 'You are in jail and cannot leave.' });
+              return;
+            }
+          }
+        } catch (_pe) { /* prison handler optional */ }
+      }
+
       var zoneId = data.zoneId;
       var zone = state.zones.get(zoneId);
       if (!zone) {
@@ -526,18 +542,35 @@ module.exports = {
         var mdy = ry - oldPos.y;
         var distSq = mdx * mdx + mdy * mdy;
 
-        // Apply mount speed multiplier (cached per player, refreshed every 5s)
+        // Load account once for mount/pet/encumbrance checks (cached per 5s)
         var mountMult = 1.0;
+        var petSpeedMult = 1.0;
         var _mc = playerMountCache.get(socket.id);
         if (!_mc || now - _mc.ts > 5000) {
           var _mcKey = socketAccountMap.get(socket.id);
-          if (_mcKey) {
-            var _mcAcc = accounts.loadAccount(_mcKey);
-            // Race is permanent — use cached value on user object
-            _mc = { mount: _mcAcc ? _mcAcc.mount : null, race: user.race || null, ts: now };
-          } else {
-            _mc = { mount: null, race: user.race || null, ts: now };
+          var _moveAcc = _mcKey ? accounts.loadAccount(_mcKey) : null;
+          _mc = {
+            mount: _moveAcc ? _moveAcc.mount : null,
+            race: user.race || null,
+            ts: now,
+            _petChecked: false,
+            _petSpeed: 1.0,
+            _encLevel: _moveAcc ? accounts.getEncumbranceLevel(_moveAcc) : 'normal'
+          };
+          // Pet speed bonus
+          if (_moveAcc && _moveAcc.activePet && _moveAcc.petData) {
+            for (var _pi = 0; _pi < _moveAcc.petData.length; _pi++) {
+              if (_moveAcc.petData[_pi].id === _moveAcc.activePet) {
+                _mc._petSpeed = petsHandler.calculatePetSpeed(_moveAcc.petData[_pi]);
+                break;
+              }
+            }
           }
+          // Ascension speed bonus
+          if (_moveAcc && _moveAcc.ascensionTree && _moveAcc.ascensionTree['seasoned_traveler']) {
+            _mc._petSpeed *= (1 + _moveAcc.ascensionTree['seasoned_traveler'] * 0.03);
+          }
+          _mc._petChecked = true;
           playerMountCache.set(socket.id, _mc);
         }
         if (_mc.mount && state.worldgen && state.worldgen.MOUNT_SPEEDS) {
@@ -547,31 +580,7 @@ module.exports = {
             mountMult *= 1.10;
           }
         }
-
-        // Apply pet speed bonus (from active pet)
-        var petSpeedMult = 1.0;
-        if (_mc && !_mc._petChecked) {
-          var _petKey = socketAccountMap.get(socket.id);
-          if (_petKey) {
-            var _petAcc = accounts.loadAccount(_petKey);
-            if (_petAcc && _petAcc.activePet && _petAcc.petData) {
-              for (var _pi = 0; _pi < _petAcc.petData.length; _pi++) {
-                if (_petAcc.petData[_pi].id === _petAcc.activePet) {
-                  petSpeedMult = petsHandler.calculatePetSpeed(_petAcc.petData[_pi]);
-                  break;
-                }
-              }
-            }
-            // Ascension speed bonus
-            if (_petAcc && _petAcc.ascensionTree && _petAcc.ascensionTree['seasoned_traveler']) {
-              petSpeedMult *= (1 + _petAcc.ascensionTree['seasoned_traveler'] * 0.03);
-            }
-          }
-          _mc._petChecked = true;
-          _mc._petSpeed = petSpeedMult;
-        } else if (_mc && _mc._petSpeed) {
-          petSpeedMult = _mc._petSpeed;
-        }
+        petSpeedMult = _mc._petSpeed || 1.0;
 
         var maxDist = MAX_SPEED_PX_PER_S * mountMult * petSpeedMult * (elapsed / 1000);
         var maxDistSq = maxDist * maxDist;
@@ -600,17 +609,11 @@ module.exports = {
         playerLastMoveTime.set(socket.id, Date.now());
       }
 
-      // --- Encumbrance check ---
-      var _encKey = socketAccountMap.get(socket.id);
-      if (_encKey) {
-        var _encAcc = accounts.loadAccount(_encKey);
-        if (_encAcc) {
-          var _encLevel = accounts.getEncumbranceLevel(_encAcc);
-          if (_encLevel === 'overloaded') {
-            socket.emit('zone_error', { message: 'You are too encumbered to move.' });
-            return;
-          }
-        }
+      // --- Encumbrance check (uses cached value from mount/pet load) ---
+      var _mc2 = playerMountCache.get(socket.id);
+      if (_mc2 && _mc2._encLevel === 'overloaded') {
+        socket.emit('zone_error', { message: 'You are too encumbered to move.' });
+        return;
       }
 
       // Jitter filter: check if position actually changed meaningfully
@@ -1536,11 +1539,11 @@ module.exports = {
 
       // Check player has purification crystal
       var inv = accounts.getMMOInventory ? accounts.getMMOInventory(accKey) : null;
-      if (!inv || !inv.resources) {
+      if (!inv) {
         socket.emit('corruption_cleanse_result', { success: false, reason: 'No purification crystal.' });
         return;
       }
-      var crystalCount = inv.resources.purification_crystal || 0;
+      var crystalCount = inv.purification_crystal || 0;
       if (crystalCount <= 0) {
         socket.emit('corruption_cleanse_result', { success: false, reason: 'No purification crystal.' });
         return;

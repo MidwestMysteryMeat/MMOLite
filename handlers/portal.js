@@ -69,7 +69,7 @@ var homeTelepCooldowns = new Map(); // accKey -> timestamp for home teleport
 var _activeRaidAlerts = new Set();  // accKeys with active raid alerts (bypass cooldown)
 
 // Clean up stale teleport cooldown entries every 60 seconds
-setInterval(function() {
+var _portalCleanupTimer = setInterval(function() {
   var now = Date.now();
   for (var entry of accountTeleportTimes) {
     if (now - entry[1] > 120000) { // 2 minutes (well past any cooldown)
@@ -77,6 +77,7 @@ setInterval(function() {
     }
   }
 }, 60000);
+_portalCleanupTimer.unref();
 
 // ---------------------------------------------------------------------------
 // Helpers

@@ -174,11 +174,12 @@ module.exports = {
         sendDialogueNode(npc, dialogueTree.start, dialogueTree, account);
       } else {
         // Fallback: legacy single-line dialog
-        socket.emit('npc_dialog', {
+        socket.emit('npc_dialogue', {
           npcId: npc.id,
           npcName: npc.name,
           type: npc.type || 'talk',
-          dialog: npc.dialog || npc.dialogue ? [npc.dialog || npc.dialogue] : ['...'],
+          text: npc.dialog || npc.dialogue || '...',
+          choices: [],
         });
       }
     });

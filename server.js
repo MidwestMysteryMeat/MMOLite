@@ -234,7 +234,6 @@ setInterval(function() {
 // Companion wage tick (every 24 hours -- deduct wages for online players)
 setInterval(function() {
   try {
-    var { socketAccountMap } = require('./socket');
     var keys = new Set(socketAccountMap.values());
     keys.forEach(function(key) {
       var acc = accounts.loadAccount(key);
@@ -251,7 +250,6 @@ setInterval(function() {
 // Pet decay tick (every hour -- hunger/happiness decay for online players' pets)
 setInterval(function() {
   try {
-    var { socketAccountMap } = require('./socket');
     var keys = new Set(socketAccountMap.values());
     keys.forEach(function(key) {
       var acc = accounts.loadAccount(key);
@@ -576,6 +574,10 @@ function scheduleNextWipe() {
 
   setTimeout(() => {
     io.emit('server_wipe', { message: 'Daily wipe complete.' });
+
+    // Flush all pending account writes before disconnecting — prevents data loss
+    // for players who are mid-action when the wipe fires.
+    accounts.flushAll();
 
     // Wipe ephemeral state (zones keep definitions, clear players/chat)
     state.wipeEphemeral();

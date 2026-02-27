@@ -120,10 +120,11 @@ describe('Event Contracts: Server emits ↔ Client listeners', () => {
     if (missing.length > 0) {
       console.log('[contracts] Sample missing:', missing.sort().slice(0, 20).join(', '));
     }
-    // Sanity: at least 60% of server emits should have handlers
+    // Coverage ratchet: tighten this as client handlers are wired up.
+    // Current baseline: 53.6% (187/349). Was 30% — raised to catch regression.
     const covered = serverEmits.size - missing.length;
     const coveragePct = covered / serverEmits.size;
-    expect(coveragePct).toBeGreaterThan(0.3); // fail only if less than 30% covered
+    expect(coveragePct).toBeGreaterThan(0.50);
   });
 
   test('client listeners with no server emit: report orphaned (informational)', () => {
@@ -138,7 +139,7 @@ describe('Event Contracts: Server emits ↔ Client listeners', () => {
     if (orphaned.length > 0) {
       console.log('[contracts] Orphaned:', orphaned.sort().join(', '));
     }
-    // Some orphaned listeners are fine (future hooks, external emits)
-    expect(orphaned.length).toBeLessThanOrEqual(50);
+    // Ratchet: tighten as orphans are resolved. Was 50 — reduced to catch new drift.
+    expect(orphaned.length).toBeLessThanOrEqual(35);
   });
 });

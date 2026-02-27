@@ -7,6 +7,93 @@ local combatAnim = require("scenes.combat-anim")
 
 local game = {}
 
+-- Single source of truth for all client:on() event names registered by this scene.
+-- Both setupListeners() and unload() reference this list to prevent cleanup drift.
+local SCENE_EVENTS = {
+    "zone_state", "player_entered_zone", "player_left_zone", "player_moved",
+    "zone_move_corrected",
+    "zone_message", "zone_positions", "world_time", "server_stats",
+    "account_created", "chips_updated", "harvest_result", "harvest_error",
+    "resource_depleted", "resource_destroyed", "inventory_updated",
+    "craft_result", "craft_error", "recipes_list", "object_placed",
+    "object_removed", "place_result", "chunk_data",
+    "plot_claimed", "plot_unclaimed", "claim_plot_result", "unclaim_plot_result",
+    "disconnect", "rpg_stats", "stat_updated", "stat_error",
+    "card_collection", "card_pack_opened", "card_equipped", "card_unequipped",
+    "card_fuse_result", "card_error", "mount_changed",
+    "portal_list", "portal_traveled", "portal_error",
+    "dungeon_floor_state", "dungeon_player_moved",
+    "dungeon_chest_result", "dungeon_trap_triggered", "dungeon_npc_result",
+    "dungeon_corpse_examined", "dungeon_corpse_result",
+    "dungeon_camp_placed", "dungeon_camp_result", "dungeon_camp_ambush",
+    "dungeon_guild_result", "dungeon_quest_list_result", "dungeon_quest_complete_result",
+    "dungeon_quest_completed",
+    "dungeon_leaderboard_result", "dungeon_enemy_updated", "dungeon_player_died",
+    "dungeon_combat_state", "dungeon_error", "cave_is_dungeon",
+    "dungeon_enemies_update", "dungeon_enemy_attack", "dungeon_enemy_attack_visual",
+    "dungeon_enemy_heal", "dungeon_boss_phase",
+    "dungeon_visibility_update", "dungeon_torch_active", "dungeon_lantern_active",
+    "dungeon_torch_placed", "dungeon_chat_message", "dungeon_vision_changed",
+    "dungeon_harvest_result", "dungeon_trap_detected", "dungeon_shortcut_found",
+    "loot_dropped",
+    "player_downed", "player_downed_notification", "player_revived",
+    "permadeath_triggered", "hall_of_heroes_result",
+    "tc_combat_start", "tc_combat_turn",
+    "tc_combat_end", "tc_combat_initiative", "tc_combat_reaction",
+    "tc_combat_reaction_result", "tc_combat_error", "tc_combat_join_offer",
+    "equipment_updated", "equip_error", "durability_info",
+    "food_consumed", "food_error", "repair_result", "repair_error",
+    "connection_added", "connection_removed", "zone_kicked",
+    "zone_error",
+    "world_event", "zone_director_update",
+    "raid_state_update", "raid_boss_ready", "raid_boss_hp",
+    "raid_boss_wipe", "raid_boss_mechanic",
+    "party_created", "party_updated", "party_disbanded",
+    "party_invite_received", "party_message", "party_error",
+    "party_left", "party_invite_sent", "party_kicked",
+    "server_rules_updated", "server_shutdown", "admin_kicked", "admin_result",
+    "leviathan_positions", "leviathan_warning", "leviathan_aggro",
+    "leviathan_combat_start", "leviathan_part_destroyed",
+    "leviathan_phase_change", "leviathan_enrage",
+    "leviathan_flee_success", "leviathan_flee_failed",
+    "leviathan_info_result",
+    "npc_dialogue", "npc_dialogue_end",
+    "npc_shop_list", "npc_shop_prices_result", "npc_shop_bought",
+    "npc_shop_sold", "npc_shop_error",
+    "trade_request_received", "trade_request_sent", "trade_started",
+    "trade_offer_updated", "trade_partner_confirmed", "trade_completed",
+    "trade_cancelled", "trade_expired", "trade_error",
+    "quest_accepted", "quest_progress", "quest_turnin_result", "quest_list_result",
+    "quest_error",
+    "monster_capture_result", "monster_evolve_result",
+    "zone_monsters", "zone_monster_spawned", "zone_monster_died",
+    "zone_monster_hit", "zone_monster_attack", "zone_monster_killed", "zone_monster_positions",
+    "zone_attack_error",
+    "batch_move",
+    "knowledge_data", "knowledge_book_content",
+    "knowledge_book_discovered", "knowledge_term_unlocked",
+    "corruption_update", "corruption_damage", "town_under_attack",
+    "raid_gathering_update", "raid_joined", "raid_activated", "raid_cancelled",
+    "raid_warning", "raid_boss_phase", "raid_boss_engage", "raid_complete",
+    "corruption_cleanse_result", "corruption_card_cleanse_result",
+    "tc_boss_phase_change", "tc_units_spawned", "tc_corruption_zones",
+    "tc_boss_soul_harvest", "tc_boss_attack",
+    "seed_planted", "crop_watered", "crop_harvested", "crop_cleared",
+    "crop_status", "farm_update", "farm_error",
+    "animal_bought", "animal_placed", "animals_fed", "products_collected", "animal_named",
+    "furniture_effect",
+    "base_raid_alert", "raid_wave", "raid_ended",
+    "unclaim_plot_confirm",
+    "mmo_auction_listings", "mmo_auction_listed", "mmo_auction_bought",
+    "mmo_auction_cancelled", "mmo_auction_my_results", "mmo_auction_error",
+    "mmo_auction_update",
+    "cure_success", "cure_error",
+    "rift_spawned", "rift_destroyed", "rift_sealed_rewards",
+    "card_vendor_bought", "card_vendor_sold", "card_vendor_catalog",
+    "card_loadout_saved", "card_loadouts",
+    "dungeon_quest_update",
+}
+
 -- Debug logger: writes to file so we can diagnose issues in fused exe (no console)
 local _debugLines = {}
 local function debugLog(msg)
@@ -902,105 +989,7 @@ function game.setupListeners()
     if not client then return end
 
     -- Clear stale listeners from previous scene loads to prevent accumulation
-    local eventsToClean = {
-        "zone_state", "player_entered_zone", "player_left_zone", "player_moved",
-        "zone_move_corrected",
-        "zone_message", "zone_positions", "world_time", "server_stats",
-        "account_created", "chips_updated", "harvest_result", "harvest_error",
-        "resource_depleted", "resource_destroyed", "inventory_updated",
-        "craft_result", "craft_error", "recipes_list", "object_placed",
-        "object_removed", "place_error", "place_result", "chunk_data",
-        "plot_claimed", "plot_unclaimed", "claim_plot_result", "unclaim_plot_result",
-        "disconnect", "rpg_stats", "stat_updated", "stat_error",
-        "card_collection", "card_pack_opened", "card_equipped", "card_unequipped",
-        "card_fuse_result", "card_error", "mount_changed",
-        "guild_joined", "guild_left", "guild_message", "guild_error",
-        "portal_list", "portal_traveled", "portal_error",
-        "dungeon_floor_state", "dungeon_player_moved", "dungeon_combat_result",
-        "dungeon_chest_result", "dungeon_trap_triggered", "dungeon_npc_result",
-        "dungeon_corpse_examined", "dungeon_corpse_result",
-        "dungeon_camp_placed", "dungeon_camp_result", "dungeon_camp_ambush",
-        "dungeon_guild_result", "dungeon_quest_list_result", "dungeon_quest_complete_result",
-        "dungeon_leaderboard_result", "dungeon_enemy_updated", "dungeon_player_died",
-        "dungeon_combat_state", "dungeon_error", "cave_is_dungeon",
-        "dungeon_enemies_update", "dungeon_enemy_attack", "dungeon_enemy_attack_visual",
-        "dungeon_enemy_heal", "dungeon_boss_phase",
-        "dungeon_visibility_update", "dungeon_torch_active", "dungeon_lantern_active",
-        "dungeon_torch_placed", "dungeon_chat_message", "dungeon_vision_changed",
-        "dungeon_harvest_result", "dungeon_trap_detected", "dungeon_shortcut_found",
-        -- Permadeath events
-        "player_downed", "player_downed_notification", "player_revived",
-        "permadeath_triggered", "hall_of_heroes_result",
-        -- Tactical combat events
-        "tc_combat_start", "tc_combat_turn", "tc_combat_result",
-        "tc_combat_end", "tc_combat_initiative", "tc_combat_reaction",
-        "tc_combat_reaction_result", "tc_combat_error", "tc_combat_join_offer",
-        "equipment_updated", "equip_error", "durability_info",
-        "food_consumed", "food_error", "repair_result", "repair_error",
-        "connection_added", "connection_removed", "zone_kicked",
-        "zone_error",
-        -- Director events
-        "world_event", "zone_director_update",
-        "raid_state_update", "raid_boss_ready", "raid_boss_hp",
-        "raid_boss_wipe", "raid_boss_mechanic",
-        -- Party events
-        "party_created", "party_updated", "party_disbanded",
-        "party_invite_received", "party_message", "party_error",
-        "party_left", "party_invite_sent",
-        -- Admin events
-        "server_rules_updated", "server_shutdown", "admin_kicked", "admin_result",
-        -- Leviathan events
-        "leviathan_positions", "leviathan_warning", "leviathan_aggro",
-        "leviathan_combat_start", "leviathan_part_destroyed",
-        "leviathan_phase_change", "leviathan_enrage",
-        "leviathan_flee_success", "leviathan_flee_failed",
-        "leviathan_info_result",
-        -- NPC Dialogue events
-        "npc_dialogue", "npc_dialogue_end",
-        -- NPC Shop events
-        "npc_shop_list", "npc_shop_prices_result", "npc_shop_bought",
-        "npc_shop_sold", "npc_shop_error",
-        -- P2P Trade events
-        "trade_request_received", "trade_request_sent", "trade_started",
-        "trade_offer_updated", "trade_partner_confirmed", "trade_completed",
-        "trade_cancelled", "trade_expired", "trade_error",
-        -- Quest events
-        "quest_accepted", "quest_progress", "quest_turnin_result", "quest_list_result",
-        -- Monster capture/evolve events
-        "monster_capture_result", "monster_evolve_result",
-        -- Overworld Monster events
-        "zone_monsters", "zone_monster_spawned", "zone_monster_died",
-        "zone_monster_hit", "zone_monster_attack", "zone_monster_killed", "zone_monster_positions",
-        "zone_attack_error",
-        -- Batched move events
-        "batch_move",
-        -- Knowledge events
-        "knowledge_data", "knowledge_book_content",
-        "knowledge_book_discovered", "knowledge_term_unlocked",
-        -- Lich Corruption events
-        "corruption_update", "corruption_damage", "town_under_attack",
-        -- Lich Raid events
-        "raid_gathering_update", "raid_joined", "raid_activated", "raid_cancelled",
-        "raid_warning", "raid_boss_phase", "raid_boss_engage", "raid_complete",
-        "corruption_cleanse_result", "corruption_card_cleanse_result",
-        "tc_boss_phase_change", "tc_units_spawned", "tc_corruption_zones",
-        "tc_boss_soul_harvest", "tc_boss_attack",
-        -- Farming events
-        "seed_planted", "crop_watered", "crop_harvested", "crop_cleared",
-        "crop_status", "farm_update", "farm_error",
-        "animal_bought", "animal_placed", "animals_fed", "products_collected", "animal_named",
-        "furniture_effect",
-        -- Base raid events
-        "base_raid_alert", "raid_wave", "raid_ended",
-        -- Events registered in setupListeners but previously missing from this cleanup list
-        "party_kicked", "quest_error", "dungeon_quest_update", "unclaim_plot_confirm",
-        "mmo_auction_listings", "mmo_auction_listed", "mmo_auction_bought",
-        "mmo_auction_cancelled", "mmo_auction_my_results", "mmo_auction_error",
-        "mmo_auction_update",
-        -- Affliction cure events
-        "cure_success", "cure_error",
-    }
-    for _, evt in ipairs(eventsToClean) do
+    for _, evt in ipairs(SCENE_EVENTS) do
         client:off(evt)
     end
 
@@ -1520,19 +1509,24 @@ function game.setupListeners()
         end
     end)
 
-    -- Craft result
+    -- Craft result (also handles minigame output which includes item + quality)
     client:on("craft_result", function(data)
         if data and data.inventory then
             mmoInventory = data.inventory
         end
         if data and data.success then
-            -- Floating text at player position
+            local label = "Crafted!"
+            -- Minigame crafts return a specific item with a quality tier
+            if data.item and data.quality then
+                local itemName = (data.item.name or data.item.type or "item")
+                label = itemName .. " (" .. data.quality .. ")"
+            end
             if myId and players[myId] then
                 addFloatingText({
-                    text = "Crafted!",
+                    text = label,
                     x = players[myId].x, y = players[myId].y - 40,
                     color = { 0.4, 1, 0.6 },
-                    timer = 2.0,
+                    timer = 2.5,
                 })
             end
         end
@@ -1571,17 +1565,6 @@ function game.setupListeners()
                     break
                 end
             end
-        end
-    end)
-
-    client:on("place_error", function(data)
-        if data and data.message and myId and players[myId] then
-            addFloatingText({
-                text = data.message,
-                x = players[myId].x, y = players[myId].y - 40,
-                color = { 1, 0.3, 0.3 },
-                timer = 2.0,
-            })
         end
     end)
 
@@ -2315,115 +2298,6 @@ function game.setupListeners()
     end)
 
     -- Dungeon: combat result
-    client:on("dungeon_combat_result", function(data)
-        if not data then return end
-        local me = players[myId]
-        if not me then return end
-
-        -- Update server-side HP tracking
-        if data.playerHp ~= nil then dungeon.playerHp = data.playerHp end
-        if data.playerMaxHp ~= nil then dungeon.playerMaxHp = data.playerMaxHp end
-        if data.playerMana ~= nil then dungeon.playerMana = data.playerMana end
-        if data.playerMaxMana ~= nil then dungeon.playerMaxMana = data.playerMaxMana end
-
-        -- Floating damage text on enemy
-        if data.damageDealt then
-            local ex = (data.enemyX or 0) * 32 + 16
-            local ey = (data.enemyY or 0) * 32
-            local color = data.isCrit and {1, 1, 0.2} or {1, 0.3, 0.3}
-            addFloatingText({
-                text = "-" .. data.damageDealt .. (data.isCrit and " CRIT!" or ""),
-                x = ex, y = ey - 10,
-                color = color,
-                timer = 1.5,
-            })
-        end
-
-        -- Floating damage taken / dodged / blocked
-        if data.dodged then
-            addFloatingText({
-                text = "DODGE!",
-                x = me.x, y = me.y - 30,
-                color = {0.4, 0.9, 1},
-                timer = 1.2,
-            })
-        elseif data.blocked then
-            addFloatingText({
-                text = "BLOCKED! -" .. (data.damageTaken or 0),
-                x = me.x, y = me.y - 30,
-                color = {0.6, 0.8, 1},
-                timer = 1.2,
-            })
-        elseif data.damageTaken and data.damageTaken > 0 then
-            addFloatingText({
-                text = "-" .. data.damageTaken,
-                x = me.x, y = me.y - 30,
-                color = {1, 0.2, 0.2},
-                timer = 1.5,
-            })
-        end
-
-        -- Enemy killed
-        if data.enemyKilled then
-            addFloatingText({
-                text = "+" .. (data.xpGained or 0) .. " XP",
-                x = me.x, y = me.y - 50,
-                color = {0.5, 0.8, 1},
-                timer = 2,
-            })
-            if data.goldGained then
-                addFloatingText({
-                    text = "+" .. data.goldGained .. " gold",
-                    x = me.x, y = me.y - 66,
-                    color = {1, 0.85, 0.2},
-                    timer = 2,
-                })
-            end
-            if data.cardPackAwarded then
-                addFloatingText({
-                    text = "Card Pack earned!",
-                    x = me.x, y = me.y - 82,
-                    color = {1, 0.5, 1},
-                    timer = 2.5,
-                })
-            end
-            -- Update local enemy state
-            if data.enemyIndex ~= nil and dungeon.enemies[data.enemyIndex + 1] then
-                dungeon.enemies[data.enemyIndex + 1].alive = false
-            end
-        end
-
-        -- Update skills if provided
-        if data.skill and skills then
-            skills[data.skill] = {
-                level = data.skillLevel or 1,
-                xp = data.skillXp or 0,
-                xpNeeded = data.xpNeeded or 100,
-            }
-        end
-        -- Update overall level/XP from combat
-        if data.overallLevel then
-            rpg.level = data.overallLevel
-        end
-        if data.overallXp then
-            rpg.xp = data.overallXp
-        end
-        if data.overallLeveledUp then
-            addFloatingText({
-                text = "LEVEL UP! Lv." .. (data.overallLevel or rpg.level),
-                x = (players[myId] and players[myId].x) or 0,
-                y = ((players[myId] and players[myId].y) or 0) - 98,
-                color = {1, 1, 0.3},
-                timer = 3,
-            })
-            -- Trigger level-up celebration effect
-            levelUpEffect = { timer = 3.0, level = data.overallLevel or rpg.level, alpha = 1.0, ringRadius = 0 }
-        end
-        if data.inventory then
-            mmoInventory = data.inventory
-        end
-    end)
-
     -- Dungeon: chest opened
     client:on("dungeon_chest_result", function(data)
         if not data then return end
@@ -3042,28 +2916,6 @@ function game.setupListeners()
     end)
 
     -- Action result from server (damage, movement, etc)
-    client:on("tc_combat_result", function(data)
-        if not data then return end
-
-        -- Queue animations based on result
-        if data.animations then
-            for _, anim in ipairs(data.animations) do
-                combatAnim.queue(anim)
-            end
-        end
-
-        -- Update combat state
-        if data.units then
-            combatUI.updateState(data)
-        end
-
-        -- If it was our turn and actions are done, clear turn flag
-        if data.turnEnded and data.unitId == tcState.combatMyUnitId then
-            tcState.combatMyTurn = false
-            combatUI.setMyTurn(false, nil)
-        end
-    end)
-
     -- Updated initiative order
     client:on("tc_combat_initiative", function(data)
         if not data then return end
@@ -8384,13 +8236,12 @@ local function executeContextMenuAction(action, targetId, targetName)
             timer = 2.5,
         })
     elseif action == "duel" then
-        client:emit("duel_request", { targetId = targetId })
         addFloatingText({
-            text = "Duel challenge sent to " .. targetName,
+            text = "Dueling not yet available",
             x = players[myId] and players[myId].x or 0,
             y = players[myId] and (players[myId].y - 40) or 0,
-            color = { 1, 0.3, 0.3 },
-            timer = 2.5,
+            color = { 0.6, 0.6, 0.6 },
+            timer = 2.0,
         })
     elseif action == "profile" then
         client:emit("profile_request", { targetId = targetId })
@@ -16984,91 +16835,7 @@ end
 function game.unload()
     if not client then return end
     -- Remove all event listeners registered by this scene
-    local eventsToClean = {
-        "zone_state", "player_entered_zone", "player_left_zone", "player_moved",
-        "zone_move_corrected",
-        "zone_message", "zone_positions", "world_time", "server_stats",
-        "account_created", "chips_updated", "harvest_result", "harvest_error",
-        "resource_depleted", "resource_destroyed", "inventory_updated",
-        "craft_result", "craft_error", "recipes_list", "object_placed",
-        "object_removed", "place_error", "place_result", "chunk_data",
-        "plot_claimed", "plot_unclaimed", "claim_plot_result", "unclaim_plot_result",
-        "disconnect", "rpg_stats", "stat_updated", "stat_error",
-        "card_collection", "card_pack_opened", "card_equipped", "card_unequipped",
-        "card_fuse_result", "card_error", "mount_changed",
-        "guild_joined", "guild_left", "guild_message", "guild_error",
-        "portal_list", "portal_traveled", "portal_error",
-        "dungeon_floor_state", "dungeon_player_moved", "dungeon_combat_result",
-        "dungeon_chest_result", "dungeon_trap_triggered", "dungeon_npc_result",
-        "dungeon_corpse_examined", "dungeon_corpse_result",
-        "dungeon_camp_placed", "dungeon_camp_result", "dungeon_camp_ambush",
-        "dungeon_guild_result", "dungeon_quest_list_result", "dungeon_quest_complete_result",
-        "dungeon_leaderboard_result", "dungeon_enemy_updated", "dungeon_player_died",
-        "dungeon_combat_state", "dungeon_error", "cave_is_dungeon",
-        "dungeon_enemies_update", "dungeon_enemy_attack", "dungeon_enemy_attack_visual",
-        "dungeon_enemy_heal", "dungeon_boss_phase",
-        "dungeon_visibility_update", "dungeon_torch_active", "dungeon_lantern_active",
-        "dungeon_torch_placed", "dungeon_chat_message", "dungeon_vision_changed",
-        "dungeon_harvest_result", "dungeon_trap_detected", "dungeon_shortcut_found",
-        "dungeon_wall_shift", "dungeon_party_reward", "dungeon_loot_drop", "loot_dropped",
-        -- Permadeath events
-        "player_downed", "player_downed_notification", "player_revived",
-        "permadeath_triggered", "hall_of_heroes_result",
-        -- Tactical combat events
-        "tc_combat_start", "tc_combat_turn", "tc_combat_result",
-        "tc_combat_end", "tc_combat_initiative", "tc_combat_reaction",
-        "tc_combat_reaction_result", "tc_combat_error", "tc_combat_join_offer",
-        "equipment_updated", "equip_error", "durability_info",
-        "food_consumed", "food_error", "repair_result", "repair_error",
-        "connection_added", "connection_removed", "zone_kicked",
-        "zone_error",
-        -- Director events
-        "world_event", "zone_director_update",
-        "raid_state_update", "raid_boss_ready", "raid_boss_hp",
-        "raid_boss_wipe", "raid_boss_mechanic",
-        -- Party events
-        "party_created", "party_updated", "party_disbanded",
-        "party_invite_received", "party_message", "party_error",
-        "party_left", "party_invite_sent",
-        -- NPC Dialogue events
-        "npc_dialogue", "npc_dialogue_end",
-        -- NPC Shop events
-        "npc_shop_list", "npc_shop_prices_result", "npc_shop_bought",
-        "npc_shop_sold", "npc_shop_error",
-        -- P2P Trade events
-        "trade_request_received", "trade_request_sent", "trade_started",
-        "trade_offer_updated", "trade_partner_confirmed", "trade_completed",
-        "trade_cancelled", "trade_expired", "trade_error",
-        -- Quest events
-        "quest_accepted", "quest_progress", "quest_turnin_result", "quest_list_result",
-        -- Monster capture/evolve events
-        "monster_capture_result", "monster_evolve_result",
-        -- Admin events
-        "server_rules_updated", "server_shutdown", "admin_kicked", "admin_result",
-        -- Leviathan events
-        "leviathan_positions", "leviathan_warning", "leviathan_aggro",
-        "leviathan_combat_start", "leviathan_part_destroyed",
-        "leviathan_phase_change", "leviathan_enrage",
-        "leviathan_flee_success", "leviathan_flee_failed",
-        "leviathan_info_result",
-        -- Overworld Monster events
-        "zone_monsters", "zone_monster_spawned", "zone_monster_died",
-        "zone_monster_hit", "zone_monster_attack", "zone_monster_killed", "zone_monster_positions",
-        "zone_attack_error",
-        -- Batched move events
-        "batch_move",
-        -- Lich Corruption events
-        "corruption_update", "corruption_damage", "town_under_attack",
-        -- Lich Raid events
-        "raid_gathering_update", "raid_joined", "raid_activated", "raid_cancelled",
-        "raid_warning", "raid_boss_phase", "raid_boss_engage", "raid_complete",
-        "corruption_cleanse_result", "corruption_card_cleanse_result",
-        "tc_boss_phase_change", "tc_units_spawned", "tc_corruption_zones",
-        "tc_boss_soul_harvest", "tc_boss_attack",
-        -- Affliction cure events
-        "cure_success", "cure_error",
-    }
-    for _, evt in ipairs(eventsToClean) do
+    for _, evt in ipairs(SCENE_EVENTS) do
         client:off(evt)
     end
 

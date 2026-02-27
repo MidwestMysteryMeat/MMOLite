@@ -1121,18 +1121,18 @@ var RECIPES = {
   },
 
   // ===== PROCESSING RECIPES (require station proximity) =====
-  ale: {
+  ale_batch: {
     station: 'brewery',
     cost: { wheat: 5 },
-    output: { type: 'ale', name: 'Ale', quantity: 2 },
+    output: { type: 'ale', name: 'Ale (Batch)', quantity: 2 },
     resource: 'ale',
     skillReq: { cooking: 5 },
     processingTime: 30000,
   },
-  wine: {
+  wine_batch: {
     station: 'brewery',
     cost: { vegetables: 8 },
-    output: { type: 'wine', name: 'Wine', quantity: 2 },
+    output: { type: 'wine', name: 'Wine (Batch)', quantity: 2 },
     resource: 'wine',
     skillReq: { cooking: 8 },
     processingTime: 60000,
@@ -1153,10 +1153,10 @@ var RECIPES = {
     skillReq: { cooking: 6 },
     processingTime: 30000,
   },
-  berry_jam: {
+  berry_jam_batch: {
     station: 'jam_maker',
     cost: { vegetables: 6 },
-    output: { type: 'berry_jam', name: 'Berry Jam', quantity: 3 },
+    output: { type: 'berry_jam', name: 'Berry Jam (Batch)', quantity: 3 },
     resource: 'berry_jam',
     skillReq: { cooking: 2 },
     processingTime: 15000,
@@ -2749,7 +2749,13 @@ module.exports = {
         inv.items.push(output);
         account.mmoInventory = inv;
         accounts.saveAccount(account);
-        socket.emit('craft_complete', { item: output, quality: quality });
+        socket.emit('craft_result', {
+          success: true,
+          recipeId: pending.recipeId,
+          item: output,
+          quality: quality,
+          inventory: account.mmoInventory,
+        });
       } catch (err) {
         console.error('[craft_minigame_result] Error:', err.message);
         socket.emit('craft_error', { message: 'Internal server error' });

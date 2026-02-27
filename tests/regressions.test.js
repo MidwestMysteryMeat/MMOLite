@@ -182,8 +182,8 @@ describe('Regression: skill_milestone quest tracking in accounts.js', () => {
 describe('Exploit prevention: negative quantity guards', () => {
   test('npc-shop buy rejects qty <= 0', () => {
     const src = readSrc('handlers/npc-shop.js');
-    // Must have a qty/quantity guard before deducting chips
-    expect(src).toMatch(/qty\s*<=\s*0|quantity\s*<=\s*0|qty\s*<\s*1|qty\s*>\s*\d+.*return/);
+    // Must have a qty/quantity/amount guard before deducting chips
+    expect(src).toMatch(/amount\s*<\s*1|qty\s*<=\s*0|quantity\s*<=\s*0|qty\s*<\s*1/);
   });
 
   test('mmo-auction list rejects price <= 0', () => {
@@ -221,8 +221,9 @@ describe('Exploit prevention: dungeon action gating', () => {
 
   test('dungeon.js checks player is alive before attack', () => {
     const src = readSrc('handlers/dungeon.js');
-    const attack = src.slice(src.indexOf("'dungeon_attack'"), src.indexOf("'dungeon_attack'") + 2000);
-    expect(attack).toMatch(/hp\s*<=\s*0|isDowned|downed|not.*alive/i);
+    // Expand window to 5000 chars — hp <= 0 check is ~70 lines into the handler
+    const attack = src.slice(src.indexOf("'dungeon_attack'"), src.indexOf("'dungeon_attack'") + 5000);
+    expect(attack).toMatch(/combat\.hp\s*<=\s*0|isDowned|downedPlayers/i);
   });
 });
 

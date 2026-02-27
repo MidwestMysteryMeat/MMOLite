@@ -210,7 +210,8 @@ module.exports = {
           if (socketAccountMap && accounts) {
             socketAccountMap.forEach(function(accKey) {
               try {
-                accounts.saveAccount(accKey);
+                var acc = accounts.loadAccount(accKey);
+                if (acc) accounts.saveAccount(acc);
               } catch (e) {
                 console.warn('[admin_shutdown] Failed to save account ' + accKey + ':', e.message);
               }

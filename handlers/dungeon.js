@@ -1679,7 +1679,7 @@ function lichRaidStartBossCombat() {
     if (result === 'victory') {
       lichRaidComplete();
     } else if (result === 'defeat') {
-      lichRaidCancelRaid('All parties have been defeated by the Archlich.');
+      lichRaidCancelGathering('All parties have been defeated by the Archlich.');
     }
   };
 
@@ -3215,11 +3215,11 @@ function buildCombatCallbacks(io, state, accounts, socketAccountMap, dungeonId, 
               var mrRewards = dungeonData.getMiniRiftBossRewards(mrKillRift.tier);
 
               // Award rewards
-              accounts.addChips(accKey, mrRewards.gold);
+              accounts.updateChips(accKey, mrRewards.gold);
               accounts.addResource(accKey, 'dark_crystal', mrRewards.darkCrystal);
               accounts.addResource(accKey, 'purification_crystal', mrRewards.purificationCrystal);
               accounts.addPendingPack(accKey, mrRewards.cardPacks);
-              accounts.addXp(accKey, mrRewards.xpBonus);
+              accounts.addSkillXp(accKey, 'dungeon_delving', mrRewards.xpBonus);
 
               // Broadcast world event
               io.emit('world_event', {

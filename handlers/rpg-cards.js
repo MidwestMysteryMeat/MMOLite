@@ -602,11 +602,11 @@ module.exports = {
 
       // Check if player has a purification scroll in inventory
       // (purification_crystal is the cleansing resource)
-      if (!account.mmoInventory || !account.mmoInventory.resources) {
+      if (!account.mmoInventory) {
         socket.emit('card_error', { message: 'No purification crystal' });
         return;
       }
-      var crystalCount = account.mmoInventory.resources['purification_crystal'] || 0;
+      var crystalCount = account.mmoInventory['purification_crystal'] || 0;
       if (crystalCount < 1) {
         socket.emit('card_error', { message: 'Requires 1 Purification Crystal' });
         return;
@@ -619,7 +619,7 @@ module.exports = {
       }
 
       // Consume the crystal
-      account.mmoInventory.resources['purification_crystal'] = crystalCount - 1;
+      account.mmoInventory['purification_crystal'] = crystalCount - 1;
       accounts.saveAccount(account);
       accounts.invalidateCardEffectsCache(key);
       socket.emit('card_curse_cleansed', { card: targetCard, curseId: data.curseId });
