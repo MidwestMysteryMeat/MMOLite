@@ -7,8 +7,8 @@ var CRIME_KARMA_COSTS = {
   node_theft: -5,        // stealing from a resource node someone else is working
   player_theft: -15,     // stealing from a player via trade exploit
   trespassing: -2,       // entering private plot without permission
-  assault: -20,          // attacking a player in non-PvP zone
-  murder: -30,           // killing a player
+  assault: -20,          // attacking another player
+  murder: -30,           // killing another player
   vandalism: -8,         // destroying someone's placed object
 };
 

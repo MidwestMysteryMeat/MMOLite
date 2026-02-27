@@ -337,16 +337,6 @@ module.exports = {
       }
     });
 
-    // --- duel_request: PvP duel request (placeholder for future) ---
-    socket.on('duel_request', function(data) {
-      try {
-        if (!data || typeof data.targetId !== 'string') return;
-
-        socket.emit('duel_error', { message: 'PvP duels are coming soon!' });
-      } catch (err) {
-        console.error('[duel_request] Error:', err.message);
-      }
-    });
 
     socket.on('friend_invite_game', (data) => {
       try {
