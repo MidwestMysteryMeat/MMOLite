@@ -7,11 +7,18 @@
 var combatPassives = require('./combat-passive-helpers');
 var getUnitCombatPassive = combatPassives.getUnitCombatPassive;
 var getUnitCombatPassiveTotal = combatPassives.getUnitCombatPassiveTotal;
+var hasImmunity = combatPassives.hasImmunity;
+
+var combatGrid = require('./combat-grid');
+var get8Neighbors = combatGrid.get8Neighbors;
+var manhattanDist = combatGrid.manhattanDist;
+var calculateMoveRange = combatGrid.calculateMoveRange;
 
 var combatQueries = require('./combat-queries');
 var buildInitiativeOrder = combatQueries.buildInitiativeOrder;
 var getUnitsInRadius = combatQueries.getUnitsInRadius;
 var getUnitAtPosition = combatQueries.getUnitAtPosition;
+var getValidAttackTargets = combatQueries.getValidAttackTargets;
 var serializeUnits = combatQueries.serializeUnits;
 
 var _maps = require('./combat-state-maps');

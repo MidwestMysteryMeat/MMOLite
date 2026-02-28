@@ -388,7 +388,13 @@ module.exports = {
 
         // Deduct coins and add resources
         var newBalance = accounts.updateChips(key, -totalCost);
-        accounts.addResource(key, data.resource, amount);
+        var addResult = accounts.addResource(key, data.resource, amount);
+        if (addResult && addResult.error) {
+          // Refund coins — resource add failed (weight race)
+          accounts.updateChips(key, totalCost);
+          socket.emit('npc_shop_error', { message: addResult.error });
+          return;
+        }
 
         // Add buying pressure (price goes up)
         pricePressure[data.resource] = (pricePressure[data.resource] || 0) + (amount * 0.1);

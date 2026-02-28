@@ -551,12 +551,12 @@ function gridInventory.drawTooltip(item, tx, ty)
     end
     local tipH = #lines * lineH + 10
 
-    -- Clamp to screen
-    local W, H = love.graphics.getDimensions()
-    if tx + tipW + 10 > W then tx = tx - tipW - 10 end
-    if ty + tipH + 10 > H then ty = ty - tipH - 10 end
+    -- Offset first, then clamp to screen (prevents tooltip overlapping cursor)
     tx = tx + 12
     ty = ty + 12
+    local W, H = love.graphics.getDimensions()
+    if tx + tipW + 10 > W then tx = W - tipW - 10 end
+    if ty + tipH + 10 > H then ty = H - tipH - 10 end
 
     love.graphics.setColor(0.05, 0.05, 0.10, 0.95)
     love.graphics.rectangle("fill", tx, ty, tipW, tipH, 4, 4)

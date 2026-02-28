@@ -123,23 +123,26 @@ function init(io, socket, deps) {
       return;
     }
 
-    // Use existing skill/slot validation from account-equipment for non-container slots
+    // Non-container slot equip: validate, equip, remove from grid — single save
     if (data.slot !== 'backpack' && data.slot !== 'rig') {
-      var equipResult = accounts.equipMMOItem(_getKey(), data.slot, data.itemId);
-      if (!equipResult || equipResult.error) {
-        _sendResync(account, (equipResult && equipResult.error) || 'Cannot equip item');
+      // Validate equip using account-equipment (returns error string or null)
+      var equipErr = accountEquipment.validateEquipSlot(account, data.slot, data.itemId);
+      if (equipErr) {
+        _sendResync(account, equipErr);
         return;
       }
-      // Now remove the item from its grid position
-      var freshAccount = accounts.loadAccount(_getKey());
-      gridInv.initGrid(freshAccount);
-      _removeFromAnyGrid(freshAccount, data.itemId);
-      freshAccount.grid.rev++;
-      accounts.saveAccount(freshAccount);
-      socket.emit('grid_update', {
-        mutation: { type: 'equip', itemId: data.itemId, slot: data.slot },
-        rev: freshAccount.grid.rev,
-      });
+      // Apply equip: set slot, handle 2h off_hand clearing
+      if (!account.equipment) account.equipment = {};
+      if (data.slot === 'main_hand') {
+        var wpnDef = equipData.WEAPON_TYPES[_findItemInAccount(account, data.itemId).type];
+        if (wpnDef && wpnDef.handedness === '2h') account.equipment.off_hand = null;
+      }
+      account.equipment[data.slot] = data.itemId;
+      // Remove from grid + save atomically
+      gridInv.initGrid(account);
+      _removeFromAnyGrid(account, data.itemId);
+      account.grid.rev++;
+      _commitUpdate(account, { type: 'equip', itemId: data.itemId, slot: data.slot });
       return;
     }
 
@@ -240,6 +243,9 @@ function init(io, socket, deps) {
 
     account.grid.rev++;
 
+    // Save BEFORE broadcasting so a crash can't duplicate the item
+    _commitUpdate(account, { type: 'drop', itemId: data.itemId });
+
     // Emit loot_dropped to zone for pickup by other players
     var user = state.users.get(socket.id);
     var zoneId = state.playerZones.get(socket.id);
@@ -252,15 +258,13 @@ function init(io, socket, deps) {
         zoneId: zoneId,
       });
     }
-
-    _commitUpdate(account, { type: 'drop', itemId: data.itemId });
   });
 
   // ------------------------------------------------------------------
   // grid_split_stack — split a stackable into two stacks
   // ------------------------------------------------------------------
   socket.on('grid_split_stack', function(data) {
-    if (!data || typeof data.itemId !== 'string' || typeof data.count !== 'number') return;
+    if (!data || typeof data.itemId !== 'string' || !Number.isInteger(data.count)) return;
     var account = _getAccount();
     if (!account) return;
 

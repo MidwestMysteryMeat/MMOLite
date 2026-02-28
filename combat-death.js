@@ -8,8 +8,14 @@ var combatPassives = require('./combat-passive-helpers');
 var getUnitCombatPassive = combatPassives.getUnitCombatPassive;
 var getUnitCombatPassiveTotal = combatPassives.getUnitCombatPassiveTotal;
 
+var combatGrid = require('./combat-grid');
+var manhattanDist = combatGrid.manhattanDist;
+
 var combatQueries = require('./combat-queries');
 var getUnitsInRadius = combatQueries.getUnitsInRadius;
+
+var combatRaidBoss = require('./combat-raid-boss');
+var checkPhylacteries = combatRaidBoss.checkPhylacteries;
 
 var _maps = require('./combat-state-maps');
 var _deathShrouds = _maps.deathShrouds;

@@ -91,6 +91,9 @@ function raceSelect.load()
     end
 
     if client then
+        -- Clean up any stale listeners from a previous load before re-registering
+        pcall(function() client:off("race_selected") end)
+        pcall(function() client:off("race_select_error") end)
         client:on("race_selected", function(data)
             -- Race chosen successfully -- update local identity and transition
             if identity and identity.account then

@@ -375,6 +375,19 @@ function init(_io, socket, deps) {
     }
     if (!corpse) return;
 
+    // Proximity check — must be within 128px
+    var _tcPos = state.playerPositions.get(socket.id);
+    if (_tcPos) {
+      var _tcDx = _tcPos.x - corpse.x;
+      var _tcDy = _tcPos.y - corpse.y;
+      if (_tcDx * _tcDx + _tcDy * _tcDy > 128 * 128) {
+        socket.emit('loot_corpse_result', { error: 'Too far away' });
+        return;
+      }
+    } else {
+      return; // No known position — reject
+    }
+
     // Take gold
     if (data.takeGold && corpse.loot.gold > 0) {
       accounts.updateChips(key, corpse.loot.gold);
@@ -442,6 +455,19 @@ function init(_io, socket, deps) {
       if (corpses[i].id === data.corpseId) { corpse = corpses[i]; corpseIdx = i; break; }
     }
     if (!corpse) return;
+
+    // Proximity check — must be within 128px
+    var _taPos = state.playerPositions.get(socket.id);
+    if (_taPos) {
+      var _taDx = _taPos.x - corpse.x;
+      var _taDy = _taPos.y - corpse.y;
+      if (_taDx * _taDx + _taDy * _taDy > 128 * 128) {
+        socket.emit('loot_corpse_result', { error: 'Too far away' });
+        return;
+      }
+    } else {
+      return; // No known position — reject
+    }
 
     // Take gold
     if (corpse.loot.gold > 0) {

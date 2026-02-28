@@ -176,7 +176,7 @@ setInterval(function() {
   } catch (err) {
     console.error('[server] Overworld structures tick error:', err.message);
   }
-}, 5 * 60 * 1000);
+}, 5 * 60 * 1000).unref();
 // Run first tick after 30s to let server warm up
 setTimeout(function() {
   try {
@@ -184,7 +184,7 @@ setTimeout(function() {
   } catch (err) {
     console.error('[server] Overworld structures initial tick error:', err.message);
   }
-}, 30000);
+}, 30000).unref();
 
 // Farming tick (every 60s — crop growth, animal production, watering)
 setInterval(function() {
@@ -193,7 +193,7 @@ setInterval(function() {
   } catch (err) {
     console.error('[server] Farming tick error:', err.message);
   }
-}, 60000);
+}, 60000).unref();
 
 // Corpse despawn tick (every 30s — remove expired corpses)
 var _corpseDespawnTimer = setInterval(function() {
@@ -216,7 +216,7 @@ setInterval(function() {
   } catch (err) {
     console.error('[server] Biome weather tick error:', err.message);
   }
-}, 5 * 60 * 1000);
+}, 5 * 60 * 1000).unref();
 
 // Rumor refresh tick (every 30 minutes)
 rumorSystem.refreshAllTownRumors({});
@@ -226,7 +226,7 @@ setInterval(function() {
   } catch (err) {
     console.error('[server] Rumor refresh tick error:', err.message);
   }
-}, 30 * 60 * 1000);
+}, 30 * 60 * 1000).unref();
 
 // Calendar advancement tick (check every 60s, advance when interval elapsed)
 var _lastCalendarSeason = state.world.calendar.season;
@@ -254,7 +254,7 @@ setInterval(function() {
   } catch (err) {
     console.error('[calendar] Tick error:', err.message);
   }
-}, 60000);
+}, 60000).unref();
 
 // Companion wage tick (every 24 hours -- deduct wages for online players)
 setInterval(function() {
@@ -270,7 +270,7 @@ setInterval(function() {
   } catch (err) {
     console.error('[server] Companion wage tick error:', err.message);
   }
-}, 24 * 60 * 60 * 1000);
+}, 24 * 60 * 60 * 1000).unref();
 
 // Pet decay tick (every hour -- hunger/happiness decay for online players' pets)
 setInterval(function() {
@@ -286,7 +286,7 @@ setInterval(function() {
   } catch (err) {
     console.error('[server] Pet decay tick error:', err.message);
   }
-}, 3600000); // 1 hour
+}, 3600000).unref(); // 1 hour
 
 // CORS for REST API — use same origin policy as Socket.IO
 app.use('/api', function(req, res, next) {
@@ -539,7 +539,7 @@ setInterval(function() {
       }
     }
   }
-}, 10000); // Recovery-only sync every 10s (real-time updates via zone_move deltas)
+}, 10000).unref(); // Recovery-only sync every 10s (real-time updates via zone_move deltas)
 
 // Event loop lag monitoring
 try {
@@ -553,7 +553,7 @@ try {
       console.warn('[perf] Event loop lag — mean=' + mean.toFixed(1) + 'ms p99=' + p99.toFixed(1) + 'ms');
     }
     eld.reset();
-  }, 30000);
+  }, 30000).unref();
 } catch (_perfErr) {
   // perf_hooks not available on older Node versions
 }
@@ -571,7 +571,7 @@ setInterval(function() {
     _lastWeather = state.world.weather;
     io.emit('world_time', { timeOfDay: state.world.timeOfDay, weather: state.world.weather });
   }
-}, 60000);
+}, 60000).unref();
 
 // ---------------------------------------------------------------------------
 // Daily wipe — ephemeral state resets at midnight UTC (accounts persist)
@@ -680,7 +680,7 @@ server.listen(PORT, () => {
   if (process.env.OFFLINE_MODE === '1') {
     console.log('  ** Server running in OFFLINE MODE **');
   } else {
-    console.log('  KVM2: <shard1-ip>');
+    console.log('  Shard: ' + (shardBridge.config.shardName || 'Unknown') + ' (' + (shardBridge.config.host || 'localhost') + ')');
   }
   console.log('  Pokemon-style MMO game server');
   console.log('  Love2D client connects via Socket.IO');

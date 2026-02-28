@@ -9,8 +9,6 @@ function love.conf(t)
     t.window.minheight = 600
     t.window.vsync = 1
 
-    t.console = true  -- TEMP: debug zone loading hang
-
     t.modules.joystick = false
     t.modules.physics = false
     t.modules.video = false
