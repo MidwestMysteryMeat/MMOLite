@@ -87,6 +87,8 @@ function doAscend(account) {
   account.skills = rpgData.getDefaultSkills();
   account.rpgStats = rpgData.getDefaultStats();
   account.pendingPacks = 0;
+  // Reset mastery points (skills reset to 1), preserve invested nodes
+  account.skillMasteryPoints = {};
   // Set ascension fields (persist)
   account.ascensionCount = currentCount + 1;
   account.ascensionPoints = prevAp + ap;

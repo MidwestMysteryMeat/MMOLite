@@ -6,6 +6,7 @@ var worldgen = require('../worldgen');
 var dungeonCombat = require('../dungeon-combat');
 var dungeonData = require('../dungeon-data');
 var rpgData = require('../rpg-data');
+var masteryCore = require('../mastery/mastery-core');
 
 // Biome ID to element mapping for overworld monster element assignment (Fix 2)
 var BIOME_ELEMENT_MAP = {
@@ -709,6 +710,7 @@ function _engageMonsterCombat(io, monster, playerSocketId, zoneId) {
   var armorTotal = armorStats.totalDefense + offHandDefense;
 
   var combatSkillBonuses = rpgData.getCombatSkillBonuses(acc.skills, weaponCategory);
+  var combatMastery = masteryCore.getSkillMasteryBonuses(acc, weaponCategory);
 
   var armorType = 'none';
   if (acc.equipment && acc.equipment.chest && acc.mmoInventory && acc.mmoInventory.items) {
@@ -727,10 +729,10 @@ function _engageMonsterCombat(io, monster, playerSocketId, zoneId) {
     maxHp: maxHp,
     mana: 50 + ((acc.rpgStats || {}).acumen || 5) * 5,
     maxMana: 50 + ((acc.rpgStats || {}).acumen || 5) * 5,
-    critChance: computed.critChance + bonusCrit + (combatSkillBonuses.critBonus || 0) + armorStats.totalCritBonus,
+    critChance: computed.critChance + bonusCrit + (combatSkillBonuses.critBonus || 0) + armorStats.totalCritBonus + (combatMastery.crit_chance_pct || 0),
     dodgeChance: computed.dodgeChance + bonusDodge,
-    meleeDmgMult: computed.meleeDamageMultiplier + bonusMeleeDmg + (combatSkillBonuses.damageBonus || 0),
-    magicDmgMult: computed.magicPowerMultiplier + bonusMagicDmg,
+    meleeDmgMult: computed.meleeDamageMultiplier + bonusMeleeDmg + (combatSkillBonuses.damageBonus || 0) + (combatMastery.damage_pct || 0),
+    magicDmgMult: computed.magicPowerMultiplier + bonusMagicDmg + (combatMastery.spell_damage_pct || 0),
     dungeonDmgBonus: bonusDungeonDmg,
     bossDmgBonus: bonusBossDmg,
     dungeonDefBonus: bonusDungeonDef,
@@ -1155,7 +1157,7 @@ function runPatrolCycle() {
               var engageTarget = m.chaseTargetSid;
               m.patrolMode = 'idle';
               m.chaseTargetSid = null;
-              _engageMonsterCombat(io, m, engageTarget, zoneId);
+              _engageMonsterCombat(_io, m, engageTarget, zoneId);
             } else if (chdist > 5) {
               var cnx = chdx / chdist;
               var cny = chdy / chdist;
@@ -1673,6 +1675,7 @@ module.exports = {
 
       // Compute combat skill bonuses from weapon proficiency (Fix 4)
       var combatSkillBonuses = rpgData.getCombatSkillBonuses(acc.skills, weaponCategory);
+      var combatMastery = masteryCore.getSkillMasteryBonuses(acc, weaponCategory);
 
       // Infer armor type from equipped chest armor (Fix 3)
       var armorType = 'none';
@@ -1692,10 +1695,10 @@ module.exports = {
         maxHp: maxHp,
         mana: 50 + ((acc.rpgStats || {}).acumen || 5) * 5,
         maxMana: 50 + ((acc.rpgStats || {}).acumen || 5) * 5,
-        critChance: computed.critChance + bonusCrit + (combatSkillBonuses.critBonus || 0) + armorStats.totalCritBonus,
+        critChance: computed.critChance + bonusCrit + (combatSkillBonuses.critBonus || 0) + armorStats.totalCritBonus + (combatMastery.crit_chance_pct || 0),
         dodgeChance: computed.dodgeChance + bonusDodge,
-        meleeDmgMult: computed.meleeDamageMultiplier + bonusMeleeDmg + (combatSkillBonuses.damageBonus || 0),
-        magicDmgMult: computed.magicPowerMultiplier + bonusMagicDmg,
+        meleeDmgMult: computed.meleeDamageMultiplier + bonusMeleeDmg + (combatSkillBonuses.damageBonus || 0) + (combatMastery.damage_pct || 0),
+        magicDmgMult: computed.magicPowerMultiplier + bonusMagicDmg + (combatMastery.spell_damage_pct || 0),
         dungeonDmgBonus: bonusDungeonDmg,
         bossDmgBonus: bonusBossDmg,
         dungeonDefBonus: bonusDungeonDef,

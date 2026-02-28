@@ -18,6 +18,7 @@ var overworldRifts = require('../overworld-rifts');
 var challengesHandler = require('./challenges');
 var knowledgeHandler = require('./knowledge');
 var loreBooks = require('../lore-books');
+var masteryCore = require('../mastery/mastery-core');
 var lootGen = require('../loot-generator');
 var karma = require('./karma');
 var prison = require('./prison');
@@ -2579,6 +2580,9 @@ function initPlayerCombatState(socketId, accounts, accKey) {
   // Compute combat skill bonuses from weapon proficiency (Fix 4)
   var combatSkillBonuses = rpgData.getCombatSkillBonuses(acc.skills, weaponCategory);
 
+  // Mastery tree bonuses for weapon skill
+  var combatMastery = masteryCore.getSkillMasteryBonuses(acc, weaponCategory);
+
   // Infer armor type from equipped body armor (Fix 3)
   var armorType = getArmorTypeFromEquipment(acc, accounts);
 
@@ -2591,10 +2595,10 @@ function initPlayerCombatState(socketId, accounts, accKey) {
     maxMana: baseMana,
     stamina: 100,
     maxStamina: 100,
-    critChance: computed.critChance + bonusCrit + weaponCritBonus + (combatSkillBonuses.critBonus || 0) + armorStats.totalCritBonus,
+    critChance: computed.critChance + bonusCrit + weaponCritBonus + (combatSkillBonuses.critBonus || 0) + armorStats.totalCritBonus + (combatMastery.crit_chance_pct || 0),
     dodgeChance: computed.dodgeChance + bonusDodge,
-    meleeDmgMult: computed.meleeDamageMultiplier + bonusMeleeDmg + (combatSkillBonuses.damageBonus || 0) + (companions.getTotalCompanionDamage(acc) * 0.01),
-    magicDmgMult: computed.magicPowerMultiplier + bonusMagicDmg,
+    meleeDmgMult: computed.meleeDamageMultiplier + bonusMeleeDmg + (combatSkillBonuses.damageBonus || 0) + (companions.getTotalCompanionDamage(acc) * 0.01) + (combatMastery.damage_pct || 0),
+    magicDmgMult: computed.magicPowerMultiplier + bonusMagicDmg + (combatMastery.spell_damage_pct || 0),
     dungeonDmgBonus: bonusDungeonDmg,
     bossDmgBonus: bonusBossDmg,
     dungeonDefBonus: bonusDungeonDef,
@@ -2614,10 +2618,10 @@ function initPlayerCombatState(socketId, accounts, accKey) {
     // Dungeon skill bonuses (stored on combat state so handlers can access)
     skillBonuses: skillBonuses,
     // Card combat passives (stored for use in combat resolution)
-    spellDmgBonus: spellDmgBonus,
+    spellDmgBonus: spellDmgBonus + (combatMastery.spell_damage_pct || 0),
     poisonDmgBonus: poisonDmgBonus,
     counterChanceBonus: counterChanceBonus,
-    manaEfficiency: manaEfficiency,
+    manaEfficiency: manaEfficiency + (combatMastery.cooldown_reduction_pct || 0),
     elementalResistAll: elementalResistAll,
     lowHpDmgReduction: lowHpDmgReduction,
     dungeonXpBonus: dungeonXpBonus,

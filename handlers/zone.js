@@ -10,6 +10,7 @@ var overworldStructures = require('../overworld-structures');
 var overworldRifts = require('../overworld-rifts');
 var petsHandler = require('./pets');
 var moderation = require('./mmo-moderation');
+var masteryCore = require('../mastery/mastery-core');
 
 // Module-level move batching — shared across all socket connections
 var _moveBatch = new Map();
@@ -994,7 +995,14 @@ module.exports = {
         if (ce.type === 'rare_seed_chance') rareSeedChance += (ce.value || 0);
         if (ce.type === 'xp_bonus_all_gathering') xpBonusAllGathering += (ce.value || 0);
       }
+      // Apply mastery tree bonuses for this gathering skill
+      var masteryBonuses = masteryCore.getSkillMasteryBonuses(account, resource.skill);
+      gatherBonus += (masteryBonuses.yield_pct || 0);
+      doubleGatherChance += (masteryBonuses.double_drop_pct || 0);
+      rareResourceChance += (masteryBonuses.rare_find_pct || 0);
+
       if (gatherBonus > 0) harvestAmount = Math.round(harvestAmount * (1 + gatherBonus));
+      if (masteryBonuses.yield_flat) harvestAmount += Math.round(masteryBonuses.yield_flat);
 
       // Card: crop_yield_bonus — bonus yield for farming nodes
       if (cropYieldBonus > 0 && resource.skill === 'farming') {

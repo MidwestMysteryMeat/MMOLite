@@ -1,6 +1,8 @@
 // account-skills.js — Skill XP, leveling, and overall level spillover
 // Needs loadAccount, saveAccount, getEquippedCardEffects, rpgData via init(deps).
 
+var masteryCore = require('./mastery/mastery-core');
+
 var loadAccount;
 var saveAccount;
 var getEquippedCardEffects;
@@ -63,6 +65,10 @@ function addSkillXp(key, skillName, amount, xpRate, existingAccount) {
     }
   }
 
+  // Apply mastery tree XP bonus
+  var masteryXpBonus = masteryCore.getSkillMasteryBonuses(account, skillName).skill_xp_pct || 0;
+  xpMultiplier += masteryXpBonus;
+
   var adjustedAmount = Math.round(amount * xpMultiplier);
   var skill = account.skills[skillName];
   skill.xp += adjustedAmount;
@@ -72,6 +78,9 @@ function addSkillXp(key, skillName, amount, xpRate, existingAccount) {
     skill.xp -= xpForLevel(skill.level);
     skill.level++;
     leveledUp = true;
+    // Grant 1 mastery point per skill level-up
+    if (!account.skillMasteryPoints) account.skillMasteryPoints = {};
+    account.skillMasteryPoints[skillName] = (account.skillMasteryPoints[skillName] || 0) + 1;
   }
 
   // 10% XP spillover to overall level
@@ -118,6 +127,7 @@ function addSkillXp(key, skillName, amount, xpRate, existingAccount) {
     overallLevel: account.level, overallXp: account.xp, overallLeveledUp: overallLeveledUp,
     pendingPacks: account.pendingPacks || 0,
     freeStatPoints: account.rpgStats ? account.rpgStats.freePoints : 0,
+    masteryPoints: (account.skillMasteryPoints || {})[skillName] || 0,
   };
 }
 

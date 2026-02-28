@@ -1251,6 +1251,39 @@ function getBiomeAtPixel(worldX, worldY) {
   return getBiome(cx, cy);
 }
 
+// Feature cache for getFeatureAtPixel (avoids regenerating chunk features per call)
+var _featureCache = new Map(); // "cx,cy" -> Int8Array|null
+var _featureCacheOrder = [];   // LRU eviction list
+var FEATURE_CACHE_MAX = 200;
+var FEATURE_CACHE_SEED = 'mmolite_world_v1';
+
+// Get terrain feature at a world pixel position (cached)
+function getFeatureAtPixel(worldX, worldY) {
+  var cx = Math.floor(worldX / CHUNK_SIZE);
+  var cy = Math.floor(worldY / CHUNK_SIZE);
+  var cacheKey = cx + ',' + cy;
+  var features = _featureCache.get(cacheKey);
+  if (features === undefined) {
+    var data = generateChunkFeatures(cx, cy, FEATURE_CACHE_SEED);
+    features = data.features; // Int8Array or null
+    // Evict oldest if at capacity
+    if (_featureCacheOrder.length >= FEATURE_CACHE_MAX) {
+      var evict = _featureCacheOrder.shift();
+      _featureCache.delete(evict);
+    }
+    _featureCache.set(cacheKey, features);
+    _featureCacheOrder.push(cacheKey);
+  }
+  if (!features) return FEATURE_NONE;
+  var localX = worldX - cx * CHUNK_SIZE;
+  var localY = worldY - cy * CHUNK_SIZE;
+  var tx = Math.floor(localX / TILE_SIZE);
+  var ty = Math.floor(localY / TILE_SIZE);
+  tx = Math.max(0, Math.min(TILES_PER_CHUNK - 1, tx));
+  ty = Math.max(0, Math.min(TILES_PER_CHUNK - 1, ty));
+  return features[ty * TILES_PER_CHUNK + tx] || FEATURE_NONE;
+}
+
 // Check if a pixel position is walkable (optional race for aquatic races, optional animalForm)
 // animalForm: string|null — active animal form name (e.g. 'fish', 'eagle', 'bat')
 function isWalkable(worldX, worldY, race, animalForm) {
@@ -1289,6 +1322,15 @@ function isWalkable(worldX, worldY, race, animalForm) {
     return false;
   }
   // Mountain tiles: flying forms bypass mountain slowdown (walkable anyway, just relevant for speed)
+  // Check terrain features — rivers and lakes are impassable within walkable biomes
+  var feat = getFeatureAtPixel(worldX, worldY);
+  if (feat === FEATURE_RIVER || feat === FEATURE_LAKE) {
+    // Aquatic races/forms can cross water features
+    if (race === 'lizardfolk') return true;
+    if (animalForm === 'fish' || animalForm === 'turtle' || animalForm === 'bat' || animalForm === 'eagle' || animalForm === 'owl') return true;
+    if ((animalForm === 'bear' || animalForm === 'serpent') && feat === FEATURE_RIVER) return true;
+    return false;
+  }
   return true;
 }
 
@@ -2260,6 +2302,7 @@ module.exports = {
   getBiome,
   getBiomeAtPixel,
   isWalkable,
+  getFeatureAtPixel,
   getSpeedMultiplier,
   generateChunkResources,
   generateChunkFeatures,

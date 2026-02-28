@@ -45,6 +45,7 @@ const petsHandler = require('./handlers/pets');
 const ascensionHandler = require('./handlers/ascension');
 const prisonHandler = require('./handlers/prison');
 const afflictionsHandler = require('./handlers/afflictions');
+const masteryHandler = require('./handlers/mastery');
 
 // Shared handlers (kept from BossCord era but still used)
 const inventoryHandler = require('./handlers/inventory');
@@ -596,6 +597,7 @@ function setupSocket(io) {
     ascensionHandler.init(io, socket, deps);
     prisonHandler.init(io, socket, deps);
     afflictionsHandler.init(io, socket, deps);
+    masteryHandler.init(io, socket, deps);
 
     // Shared handlers
     inventoryHandler.init(io, socket, deps);

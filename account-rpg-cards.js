@@ -419,11 +419,30 @@ function getPlayerLuck(key) {
   // Racial base luck
   var race = account.race && rpgData.RACES && rpgData.RACES[account.race];
   if (race && race.baseLuck) luck += race.baseLuck;
+  // Presence stat — each point adds 0.5% luck
+  var presence = (account.rpgStats && account.rpgStats.presence) || 0;
+  if (presence > 0) luck += presence * 0.005;
   // Equipped card luck effects
   var effects = getEquippedCardEffects(key, account);
   for (var i = 0; i < effects.length; i++) {
     if (effects[i].type === 'luck_bonus' || effects[i].type === 'card_luck_bonus') {
       luck += (effects[i].value || 0);
+    }
+  }
+  // Equipped item luck (from item mutations like fortune_charm, lucky_ward)
+  var eq = account.equipment || {};
+  var inv = (account.mmoInventory && account.mmoInventory.items) ? account.mmoInventory.items : [];
+  var gearSlots = ['head', 'chest', 'undershirt', 'arms', 'hands', 'legs', 'feet',
+    'ring1', 'ring2', 'ring3', 'ring4', 'ring5', 'ring6', 'necklace',
+    'mainHand', 'offHand'];
+  for (var s = 0; s < gearSlots.length; s++) {
+    var itemId = eq[gearSlots[s]];
+    if (!itemId) continue;
+    for (var j = 0; j < inv.length; j++) {
+      if (inv[j].id === itemId && inv[j].stats && inv[j].stats.luck) {
+        luck += inv[j].stats.luck;
+        break;
+      }
     }
   }
   // Ascension: Lucky Star node (+1% rarity bump per rank)

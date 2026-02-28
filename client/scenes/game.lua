@@ -92,6 +92,7 @@ local SCENE_EVENTS = {
     "card_vendor_bought", "card_vendor_sold", "card_vendor_catalog",
     "card_loadout_saved", "card_loadouts",
     "dungeon_quest_update",
+    "mastery_tree_status", "mastery_invest_result", "mastery_reset_result",
 }
 
 -- Debug logger: writes to file so we can diagnose issues in fused exe (no console)
@@ -207,6 +208,8 @@ local ui = {
     inventoryItemFilter = "all",   -- "all", "equipment", "consumable", "material"
     -- Right-click context menu state
     contextMenu = nil,            -- nil when hidden; table { x, y, targetId, targetName, items, hoverIndex }
+    -- Mastery tree panel
+    showMastery = false,
 }
 
 -- Knowledge panel state (cached data from server)
@@ -225,6 +228,18 @@ local knowledge = {
     codex = nil,
     notifications = {},      -- recent book/term discoveries
     notificationTimer = 0,
+}
+
+-- Mastery tree panel state (cached data from server)
+local mastery = {
+    skillName = nil,    -- currently viewed skill
+    tree = nil,         -- array of node objects from server
+    invested = {},      -- { nodeId = rank }
+    points = 0,         -- unspent points for this skill
+    skillLevel = 1,
+    hoverNode = nil,    -- node currently hovered
+    message = nil,      -- feedback message
+    messageTimer = 0,
 }
 
 -- Context menu item definitions (label + action key)
@@ -980,6 +995,7 @@ function game.closeAllPanels()
     cardVendor.scroll = 0
     fusionMode.active = false
     fusionMode.card1 = nil
+    ui.showMastery = false
     -- Close trade panel (but don't cancel server-side — let server handle timeout)
     if trade.show and trade.tradeId and client then
         client:emit("trade_cancel", { tradeId = trade.tradeId })
@@ -4752,6 +4768,46 @@ function game.setupListeners()
             addChatMessage("[RAID] " .. (data.message or "Defeat"), {1.0, 0.3, 0.3})
         end
     end)
+
+    -- Mastery tree events
+    client:on("mastery_tree_status", function(data)
+        if not data then return end
+        if data.error then
+            mastery.message = data.error
+            mastery.messageTimer = 3
+            return
+        end
+        mastery.skillName = data.skillName
+        mastery.tree = data.tree
+        mastery.invested = data.invested or {}
+        mastery.points = data.points or 0
+        mastery.skillLevel = data.skillLevel or 1
+        mastery.hoverNode = nil
+    end)
+
+    client:on("mastery_invest_result", function(data)
+        if not data then return end
+        if data.ok then
+            mastery.invested[data.nodeId] = data.rank
+            mastery.points = data.pointsLeft
+            mastery.message = "Invested!"
+        else
+            mastery.message = data.error or "Failed"
+        end
+        mastery.messageTimer = 2
+    end)
+
+    client:on("mastery_reset_result", function(data)
+        if not data then return end
+        if data.ok then
+            mastery.message = "Reset! Refunded " .. data.refundedPoints .. " pts (cost: " .. data.goldCost .. "g)"
+            mastery.points = mastery.points + data.refundedPoints
+            mastery.invested = {}
+        else
+            mastery.message = data.error or "Failed"
+        end
+        mastery.messageTimer = 3
+    end)
 end
 
 -- Helper: get feature type at world pixel coords
@@ -4840,6 +4896,11 @@ function game.update(dt)
     end
 
     overworld.riverAnimTimer = overworld.riverAnimTimer + dt
+
+    -- Mastery message fade
+    if mastery.messageTimer > 0 then
+        mastery.messageTimer = mastery.messageTimer - dt
+    end
 
     -- Loot notification fade timers
     for i = #game._itemUI.lootNotifications, 1, -1 do
@@ -6224,6 +6285,11 @@ function game.draw()
     -- Character sheet overlay
     if ui.showCharSheet then
         game.drawCharSheet(W, H)
+    end
+
+    -- Mastery tree overlay
+    if ui.showMastery then
+        game.drawMasteryPanel(W, H)
     end
 
     -- Card collection overlay
@@ -10179,6 +10245,13 @@ function game.keypressed(key)
         return
     end
 
+    if ui.showMastery then
+        if key == "escape" then
+            ui.showMastery = false
+        end
+        return
+    end
+
     if ui.showCharSheet then
         if key == "c" or key == "escape" then
             ui.showCharSheet = false
@@ -11227,6 +11300,50 @@ function game.mousepressed(x, y, button)
         end
     end
 
+    -- Mastery [M] buttons in character sheet
+    if ui.showCharSheet and button == 1 and ui._masteryButtons then
+        for _, btn in ipairs(ui._masteryButtons) do
+            if x >= btn.x and x < btn.x + btn.w and y >= btn.y and y < btn.y + btn.h then
+                game.closeAllPanels()
+                ui.showMastery = true
+                mastery.skillName = btn.skill
+                mastery.tree = nil
+                mastery.invested = {}
+                mastery.points = 0
+                mastery.hoverNode = nil
+                if client then
+                    client:emit("mastery_tree_status", { skillName = btn.skill })
+                end
+                return
+            end
+        end
+    end
+
+    -- Mastery tree panel clicks
+    if ui.showMastery and button == 1 then
+        -- Reset button
+        if ui._masteryResetBtn then
+            local btn = ui._masteryResetBtn
+            if x >= btn.x and x < btn.x + btn.w and y >= btn.y and y < btn.y + btn.h then
+                if client and mastery.skillName then
+                    client:emit("mastery_reset_tree", { skillName = mastery.skillName })
+                end
+                return
+            end
+        end
+        -- Node clicks
+        if ui._masteryNodeHitboxes then
+            for _, hit in ipairs(ui._masteryNodeHitboxes) do
+                if (x - hit.x)^2 + (y - hit.y)^2 < hit.r^2 then
+                    if client and mastery.skillName then
+                        client:emit("mastery_invest_point", { skillName = mastery.skillName, nodeId = hit.node.id })
+                    end
+                    return
+                end
+            end
+        end
+    end
+
     -- Auction house click handling
     if auction.show and button == 1 then
         -- Close button
@@ -11766,6 +11883,9 @@ local cardGridCards = {}
 local cardCollectionRect = {}  -- { px, py, pw, ph }
 
 function game.drawCharSheet(W, H)
+    -- Clear mastery button hitboxes (rebuilt each frame)
+    ui._masteryButtons = {}
+
     -- Full character sheet overlay
     local pw = math.min(650, W - 40)
     local ph = math.min(550, H - 60)
@@ -11817,17 +11937,18 @@ function game.drawCharSheet(W, H)
     statY = statY + 25
 
     local STAT_LABELS = {
-        { key = "vigor",     name = "Vigor",     abbr = "VIG", color = {0.9, 0.4, 0.4} },
-        { key = "might",     name = "Might",     abbr = "MGT", color = {0.9, 0.6, 0.3} },
-        { key = "finesse",   name = "Finesse",   abbr = "FIN", color = {0.3, 0.9, 0.5} },
-        { key = "acumen",    name = "Acumen",    abbr = "ACU", color = {0.4, 0.6, 1.0} },
-        { key = "resolve",   name = "Resolve",   abbr = "RES", color = {0.8, 0.5, 0.9} },
-        { key = "presence",  name = "Presence",  abbr = "PRE", color = {1.0, 0.85, 0.3} },
-        { key = "ingenuity", name = "Ingenuity", abbr = "ING", color = {0.5, 0.9, 0.9} },
+        { key = "vigor",     name = "Vigor",     abbr = "VIG", color = {0.9, 0.4, 0.4}, desc = "Increases HP pool, base armor, and HP regeneration" },
+        { key = "might",     name = "Might",     abbr = "MGT", color = {0.9, 0.6, 0.3}, desc = "Increases melee and physical damage" },
+        { key = "finesse",   name = "Finesse",   abbr = "FIN", color = {0.3, 0.9, 0.5}, desc = "Increases critical hit chance and dodge chance" },
+        { key = "acumen",    name = "Acumen",    abbr = "ACU", color = {0.4, 0.6, 1.0}, desc = "Increases magic power and mana pool" },
+        { key = "resolve",   name = "Resolve",   abbr = "RES", color = {0.8, 0.5, 0.9}, desc = "Increases magic resistance and HP regeneration" },
+        { key = "presence",  name = "Presence",  abbr = "PRE", color = {1.0, 0.85, 0.3}, desc = "Improves trade prices, NPC favor, and luck" },
+        { key = "ingenuity", name = "Ingenuity", abbr = "ING", color = {0.5, 0.9, 0.9}, desc = "Improves crafting quality and trap detection" },
     }
 
     love.graphics.setFont(fonts.main)
     statAllocButtons = {}  -- clear each frame
+    local hoveredStatDesc = nil
     if rpg.stats then
         local fp = rpg.stats.freePoints or 0
         local btnSize = 20
@@ -11835,6 +11956,14 @@ function game.drawCharSheet(W, H)
 
         for _, stat in ipairs(STAT_LABELS) do
             local val = rpg.stats[stat.key] or 5
+            local labelW = 110
+            local rowH = 18
+
+            -- Hover detection over stat label area
+            if mx >= statX and mx < statX + labelW and my >= statY and my < statY + rowH then
+                hoveredStatDesc = stat.desc
+            end
+
             love.graphics.setColor(stat.color[1], stat.color[2], stat.color[3], 0.9)
             love.graphics.print(stat.name, statX, statY)
             love.graphics.setColor(1, 1, 1, 1)
@@ -11884,6 +12013,27 @@ function game.drawCharSheet(W, H)
             love.graphics.print("Free Points: " .. fp, statX, statY)
             statY = statY + 20
         end
+    end
+
+    -- Stat tooltip (drawn after all stats so it renders on top)
+    if hoveredStatDesc then
+        local mx, my = love.mouse.getPosition()
+        love.graphics.setFont(fonts.main)
+        local ttW = fonts.main:getWidth(hoveredStatDesc) + 16
+        local ttH = 24
+        local ttX = mx + 12
+        local ttY = my - ttH - 4
+        -- Keep tooltip on screen
+        local sw = love.graphics.getWidth()
+        if ttX + ttW > sw then ttX = sw - ttW - 4 end
+        if ttY < 0 then ttY = my + 16 end
+        love.graphics.setColor(0.08, 0.08, 0.12, 0.92)
+        love.graphics.rectangle("fill", ttX, ttY, ttW, ttH, 4, 4)
+        love.graphics.setColor(0.5, 0.6, 0.8, 0.7)
+        love.graphics.setLineWidth(1)
+        love.graphics.rectangle("line", ttX, ttY, ttW, ttH, 4, 4)
+        love.graphics.setColor(1, 1, 1, 1)
+        love.graphics.print(hoveredStatDesc, ttX + 8, ttY + 5)
     end
 
     -- Computed stats (if available)
@@ -11960,6 +12110,21 @@ function game.drawCharSheet(W, H)
                 love.graphics.rectangle("fill", skillX + 200, skillY + 3, 80, 10, 2, 2)
                 love.graphics.setColor(col[1], col[2], col[3], 0.7)
                 love.graphics.rectangle("fill", skillX + 200, skillY + 3, 80 * fill, 10, 2, 2)
+
+                -- [M] mastery button
+                local mbx = skillX + 290
+                local mby = skillY
+                local mbw, mbh = 20, 16
+                local mx, my = love.mouse.getPosition()
+                local mHover = mx >= mbx and mx < mbx + mbw and my >= mby and my < mby + mbh
+                love.graphics.setColor(0.3, 0.5, 0.7, mHover and 1.0 or 0.6)
+                love.graphics.rectangle("fill", mbx, mby, mbw, mbh, 3, 3)
+                love.graphics.setColor(1, 1, 1, mHover and 1.0 or 0.8)
+                love.graphics.print("M", mbx + 5, mby + 1)
+
+                -- Store button hitbox for click detection
+                if not ui._masteryButtons then ui._masteryButtons = {} end
+                table.insert(ui._masteryButtons, { x = mbx, y = mby, w = mbw, h = mbh, skill = s.name })
 
                 skillY = skillY + 18
                 if skillY > py + ph - 30 then break end
@@ -12205,6 +12370,188 @@ function game.drawCardTooltip(card, W, H)
         love.graphics.setColor(c[1], c[2], c[3], c[4])
         love.graphics.printf(line, tx + 6, ty + 4 + (i - 1) * lineH, tooltipW - 12, "left")
     end
+end
+
+-- Mastery tree panel
+function game.drawMasteryPanel(W, H)
+    local pw = math.min(520, W - 40)
+    local ph = math.min(480, H - 60)
+    local px = (W - pw) / 2
+    local py = (H - ph) / 2
+
+    -- Dim background
+    love.graphics.setColor(0, 0, 0, 0.7)
+    love.graphics.rectangle("fill", 0, 0, W, H)
+
+    -- Panel background
+    love.graphics.setColor(0.08, 0.08, 0.12, 0.95)
+    love.graphics.rectangle("fill", px, py, pw, ph, 8, 8)
+    love.graphics.setColor(0.3, 0.4, 0.6, 0.8)
+    love.graphics.rectangle("line", px, py, pw, ph, 8, 8)
+
+    -- Title
+    love.graphics.setFont(fonts.ui)
+    local skillLabel = mastery.skillName or "?"
+    skillLabel = skillLabel:gsub("_", " ")
+    skillLabel = skillLabel:sub(1,1):upper() .. skillLabel:sub(2)
+    love.graphics.setColor(0.8, 0.9, 1, 1)
+    love.graphics.printf(skillLabel .. " Mastery", px, py + 8, pw, "center")
+
+    -- Points + skill level
+    love.graphics.setFont(fonts.main)
+    love.graphics.setColor(0.6, 0.8, 1, 0.9)
+    love.graphics.print("Skill Lv." .. mastery.skillLevel .. "  |  Points: " .. mastery.points, px + 15, py + 32)
+
+    -- Reset button
+    local rbx, rby, rbw, rbh = px + pw - 80, py + 30, 65, 20
+    local mx, my = love.mouse.getPosition()
+    local rbHover = mx >= rbx and mx < rbx + rbw and my >= rby and my < rby + rbh
+    love.graphics.setColor(0.6, 0.2, 0.2, rbHover and 0.9 or 0.5)
+    love.graphics.rectangle("fill", rbx, rby, rbw, rbh, 4, 4)
+    love.graphics.setColor(1, 1, 1, rbHover and 1 or 0.7)
+    love.graphics.print("Reset", rbx + 12, rby + 2)
+    ui._masteryResetBtn = { x = rbx, y = rby, w = rbw, h = rbh }
+
+    -- Feedback message
+    if mastery.message and mastery.messageTimer > 0 then
+        love.graphics.setColor(1, 0.85, 0.2, math.min(1, mastery.messageTimer))
+        love.graphics.printf(mastery.message, px + 10, py + ph - 22, pw - 20, "center")
+    end
+
+    if not mastery.tree then
+        love.graphics.setColor(0.6, 0.6, 0.6, 0.8)
+        love.graphics.printf("Loading...", px, py + ph / 2, pw, "center")
+        return
+    end
+
+    -- Draw node grid (5 cols x 7 rows)
+    local gridX = px + 30
+    local gridY = py + 60
+    local cellW = (pw - 60) / 5
+    local cellH = (ph - 110) / 7
+    local nodeR = math.min(cellW, cellH) * 0.3
+
+    -- Branch colors
+    local BRANCH_COLORS = {
+        [-1] = {0.5, 0.6, 0.7},  -- root/foundation: gray
+        [0]  = {0.9, 0.3, 0.3},  -- branch 0: red
+        [1]  = {0.3, 0.5, 0.9},  -- branch 1: blue
+        [2]  = {0.3, 0.8, 0.4},  -- branch 2: green
+        [3]  = {1.0, 0.8, 0.2},  -- branch 3: gold
+    }
+
+    -- Build lookup for prerequisite lines
+    local nodeById = {}
+    for _, node in ipairs(mastery.tree) do
+        nodeById[node.id] = node
+    end
+
+    -- Draw prerequisite lines first
+    love.graphics.setLineWidth(2)
+    for _, node in ipairs(mastery.tree) do
+        local nx = gridX + node.x * cellW + cellW / 2
+        local ny = gridY + node.y * cellH + cellH / 2
+        if node.requires then
+            for _, reqId in ipairs(node.requires) do
+                local reqNode = nodeById[reqId]
+                if reqNode then
+                    local rx = gridX + reqNode.x * cellW + cellW / 2
+                    local ry = gridY + reqNode.y * cellH + cellH / 2
+                    local invested = (mastery.invested[reqId] or 0) >= 1
+                    love.graphics.setColor(0.3, 0.4, 0.5, invested and 0.7 or 0.3)
+                    love.graphics.line(rx, ry, nx, ny)
+                end
+            end
+        end
+    end
+    love.graphics.setLineWidth(1)
+
+    -- Draw nodes
+    ui._masteryNodeHitboxes = {}
+    mastery.hoverNode = nil
+    for _, node in ipairs(mastery.tree) do
+        local nx = gridX + node.x * cellW + cellW / 2
+        local ny = gridY + node.y * cellH + cellH / 2
+        local rank = mastery.invested[node.id] or 0
+        local maxed = rank >= node.maxRank
+        local available = rank < node.maxRank and mastery.points >= 1
+        -- Check prereqs met
+        if available and node.requires then
+            for _, reqId in ipairs(node.requires) do
+                if (mastery.invested[reqId] or 0) < 1 then
+                    available = false
+                    break
+                end
+            end
+        end
+
+        local col = BRANCH_COLORS[node.branch] or BRANCH_COLORS[-1]
+        local hovered = (mx - nx)^2 + (my - ny)^2 < nodeR^2
+
+        if hovered then mastery.hoverNode = node end
+
+        -- Node circle
+        if maxed then
+            love.graphics.setColor(1, 0.85, 0.2, 0.95)
+        elseif rank > 0 then
+            love.graphics.setColor(col[1], col[2], col[3], 0.9)
+        elseif available then
+            love.graphics.setColor(col[1] * 0.6, col[2] * 0.6, col[3] * 0.6, 0.7)
+        else
+            love.graphics.setColor(0.25, 0.25, 0.3, 0.5)
+        end
+        love.graphics.circle("fill", nx, ny, nodeR)
+
+        -- Border
+        if hovered then
+            love.graphics.setColor(1, 1, 1, 0.9)
+        elseif maxed then
+            love.graphics.setColor(1, 0.85, 0.2, 0.7)
+        else
+            love.graphics.setColor(0.4, 0.5, 0.6, 0.5)
+        end
+        love.graphics.circle("line", nx, ny, nodeR)
+
+        -- Rank text inside node
+        love.graphics.setFont(fonts.small)
+        if rank > 0 or maxed then
+            love.graphics.setColor(1, 1, 1, 1)
+        else
+            love.graphics.setColor(0.6, 0.6, 0.6, 0.6)
+        end
+        local rankText = rank .. "/" .. node.maxRank
+        local tw = fonts.small:getWidth(rankText)
+        love.graphics.print(rankText, nx - tw / 2, ny - 5)
+
+        table.insert(ui._masteryNodeHitboxes, { x = nx, y = ny, r = nodeR, node = node })
+    end
+
+    -- Tooltip for hovered node
+    if mastery.hoverNode then
+        local node = mastery.hoverNode
+        local rank = mastery.invested[node.id] or 0
+        love.graphics.setFont(fonts.main)
+        local ttW = 220
+        local ttH = 70
+        local ttX = math.min(mx + 15, W - ttW - 5)
+        local ttY = math.min(my + 15, H - ttH - 5)
+        love.graphics.setColor(0.05, 0.05, 0.1, 0.95)
+        love.graphics.rectangle("fill", ttX, ttY, ttW, ttH, 4, 4)
+        love.graphics.setColor(0.4, 0.5, 0.7, 0.8)
+        love.graphics.rectangle("line", ttX, ttY, ttW, ttH, 4, 4)
+        love.graphics.setColor(1, 0.9, 0.7, 1)
+        love.graphics.print(node.name, ttX + 6, ttY + 4)
+        love.graphics.setColor(0.7, 0.8, 0.9, 0.9)
+        love.graphics.setFont(fonts.small)
+        love.graphics.printf(node.desc, ttX + 6, ttY + 22, ttW - 12, "left")
+        love.graphics.setColor(0.5, 0.7, 1, 0.8)
+        love.graphics.print("Rank: " .. rank .. "/" .. node.maxRank, ttX + 6, ttY + 50)
+    end
+
+    -- ESC hint
+    love.graphics.setFont(fonts.small)
+    love.graphics.setColor(0.5, 0.5, 0.6, 0.6)
+    love.graphics.print("[ESC] Close  |  Click node to invest", px + 10, py + ph - 18)
 end
 
 function game.drawCardCollection(W, H)
@@ -16894,6 +17241,15 @@ function game.unload()
     raid.partyInvitePending = nil
     raid.partyInviteInput = ""
     raid.partyInviteActive = false
+
+    -- Clear mastery state
+    mastery.skillName = nil
+    mastery.tree = nil
+    mastery.invested = {}
+    mastery.points = 0
+    mastery.hoverNode = nil
+    mastery.message = nil
+    mastery.messageTimer = 0
 end
 
 -- Resize: recreate fonts at new scale without resetting game state.

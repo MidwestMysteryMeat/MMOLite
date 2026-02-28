@@ -4599,6 +4599,8 @@ var AFFIX_POOL = [
   { id: 'aff_apply_regen_1',   tier: 2, cat: 'utility', weight: 7,  label: 'Nurturing',     effect: { type: 'apply_regen_on_cast', value: 2, duration: 3 } },
   { id: 'aff_threat_reduce',   tier: 1, cat: 'utility', weight: 10, label: 'Subtle',        effect: { type: 'threat_reduction', value: 0.20 } },
   { id: 'aff_reveal_1',        tier: 1, cat: 'utility', weight: 8,  label: 'Revealing',     effect: { type: 'reveal_hidden_on_cast', radius: 3 } },
+  { id: 'aff_luck_1',          tier: 1, cat: 'utility', weight: 8,  label: 'Lucky',         effect: { type: 'luck_bonus', value: 0.03 } },
+  { id: 'aff_luck_2',          tier: 2, cat: 'utility', weight: 5,  label: 'Fortunate',     effect: { type: 'luck_bonus', value: 0.06 } },
 
   // ── EVO-LINKED (5) ── rare+ only
   { id: 'aff_evo_xp_1',        tier: 2, cat: 'evo_linked', weight: 8,  label: 'Awakening',       effect: { type: 'evo_xp_bonus', value: 0.25 } },

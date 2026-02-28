@@ -401,6 +401,8 @@ const CHARACTER_FIELDS = [
   'townReputation',
   'pendingCrafts',
   'jailState',
+  'skillMasteryPoints',
+  'skillMasteryNodes',
 ];
 
 // Returns default value for a character field (mirrors createAccount defaults)
@@ -468,6 +470,8 @@ function _getDefaultForField(field) {
     case 'pendingCrafts': return [];
     case 'jailState':
       return { inJail: false, crime: null, releasedAt: 0, bail: 0, jailZoneId: null, arrestedAt: 0 };
+    case 'skillMasteryPoints': return {};
+    case 'skillMasteryNodes': return {};
     default: return null;
   }
 }

@@ -7,6 +7,7 @@ var rpgData = require('../rpg-data');
 var challengesHandler = require('./challenges');
 var knowledgeHandler = require('./knowledge');
 var lootGen = require('../loot-generator');
+var masteryCore = require('../mastery/mastery-core');
 
 // Per-account craft lock: prevents concurrent craft_item double-spend
 var craftLocks = new Set();
@@ -1608,8 +1609,16 @@ module.exports = {
             if (cEff.type === 'gem_yield_bonus') cardGemYieldBonus += (cEff.value || 0);
           }
 
+          // Apply mastery tree bonuses for the primary crafting skill
+          var _craftSkillReqs = recipe.skillReq ? Object.keys(recipe.skillReq) : [];
+          var _craftMasterySkill = _craftSkillReqs.length > 0 ? _craftSkillReqs[0] : null;
+          var _craftMastery = _craftMasterySkill ? masteryCore.getSkillMasteryBonuses(craftAccount, _craftMasterySkill) : {};
+          cardCraftQualityBonus += (_craftMastery.craft_quality_pct || 0);
+          cardCraftBonus += (_craftMastery.double_craft_pct || 0);
+          var masteryIngredientSave = (_craftMastery.ingredient_save_pct || 0);
+
           // --- Preflight: verify all ingredients are available before deducting any ---
-          var totalIngredientSave = (craftBonuses ? (craftBonuses.ingredientSaveChance || 0) : 0) + cardIngredientSave;
+          var totalIngredientSave = (craftBonuses ? (craftBonuses.ingredientSaveChance || 0) : 0) + cardIngredientSave + masteryIngredientSave;
           // Pre-roll the ingredient saves so we use consistent values in both preflight and deduct
           var _prerolledAmounts = {};
           for (var pf = 0; pf < costTypes.length; pf++) {
