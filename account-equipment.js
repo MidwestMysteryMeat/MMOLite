@@ -278,6 +278,47 @@ function equipMMOItem(key, slot, itemId) {
   return account.equipment;
 }
 
+// Validate whether an item can be equipped to a slot (no load/save — operates on account object)
+// Returns error string on failure, null on success.
+function validateEquipSlot(account, slot, itemId) {
+  if (!account) return 'Account not found';
+  if (!account.equipment) account.equipment = getDefaultEquipment();
+  migrateHandSlots(account);
+  if (EQUIPMENT_SLOTS.indexOf(slot) === -1) return 'Invalid equipment slot';
+  if (!account.mmoInventory || !account.mmoInventory.items) return 'Inventory not found';
+  var item = account.mmoInventory.items.find(function(i) { return i.id === itemId; });
+  if (!item) return 'Item not found';
+  if (slot === 'axe' && !VALID_AXES[item.type]) return 'Cannot equip this as an axe';
+  if (slot === 'pickaxe' && !VALID_PICKAXES[item.type]) return 'Cannot equip this as a pickaxe';
+  if (slot !== 'axe' && slot !== 'pickaxe') {
+    var weaponDef = WEAPON_TYPES[item.type];
+    if (!weaponDef) return 'Item cannot be equipped';
+    if (slot === 'main_hand' || slot === 'off_hand') {
+      if (weaponDef.slot !== 'weapon' && weaponDef.slot !== 'shield') return 'Wrong slot for this item';
+      var otherSlot = (slot === 'main_hand') ? 'off_hand' : 'main_hand';
+      if (account.equipment[otherSlot] === itemId) return 'Item already equipped in other hand';
+    } else if (slot === 'ring2' || slot === 'ring3' || slot === 'ring4' || slot === 'ring5' || slot === 'ring6') {
+      if (weaponDef.slot !== 'ring1') return 'Wrong slot for this ring';
+    } else {
+      if (weaponDef.slot !== slot) return 'Wrong slot for this item';
+    }
+    if (weaponDef.category && weaponDef.rarity) {
+      var requiredSkill = COMBAT_SKILL_FOR_CATEGORY[weaponDef.category];
+      var requiredLevel = RARITY_COMBAT_LEVEL[weaponDef.rarity] || 0;
+      if (requiredSkill && requiredLevel > 0) {
+        var skills = account.skills || {};
+        var playerSkill = skills[requiredSkill];
+        var playerLevel = (playerSkill && playerSkill.level) ? playerSkill.level : 0;
+        if (playerLevel < requiredLevel) {
+          return 'Requires ' + requiredSkill.charAt(0).toUpperCase() + requiredSkill.slice(1) + ' Lv.' + requiredLevel;
+        }
+      }
+    }
+  }
+  ensureItemDurability(item);
+  return null;
+}
+
 function unequipMMOItem(key, slot) {
   var account = loadAccount(key);
   if (!account) return null;
@@ -446,6 +487,7 @@ module.exports = {
   getDefaultEquipment: getDefaultEquipment,
   getEquipment: getEquipment,
   equipMMOItem: equipMMOItem,
+  validateEquipSlot: validateEquipSlot,
   unequipMMOItem: unequipMMOItem,
   resolveItemStats: resolveItemStats,
   getEquippedHandStats: getEquippedHandStats,

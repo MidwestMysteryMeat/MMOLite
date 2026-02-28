@@ -35,6 +35,7 @@ var _macroInterval = null;
 var _oceanInterval = null;
 var _lichInterval = null;
 var _baseRaidsInterval = null;
+var _baseRaidsAttackInterval = null;
 var _vampireInterval = null;
 var _werewolfInterval = null;
 var _riftsInterval = null;
@@ -112,13 +113,14 @@ function init(io, state, accounts, socketAccountMap) {
   }, 5 * 60 * 1000);
   if (_baseRaidsInterval && _baseRaidsInterval.unref) _baseRaidsInterval.unref();
 
-  setInterval(function() {
+  _baseRaidsAttackInterval = setInterval(function() {
     try {
       directorBaseRaids.attackTick(_io, _state, _accounts, _socketAccountMap);
     } catch (err) {
       console.error('[director] Raids attack tick error:', err.message);
     }
-  }, 30000).unref();
+  }, 30000);
+  if (_baseRaidsAttackInterval && _baseRaidsAttackInterval.unref) _baseRaidsAttackInterval.unref();
 
   // Initialize vampire infiltration director (10min interval)
   directorVampire.init();

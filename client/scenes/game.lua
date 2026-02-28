@@ -133,6 +133,7 @@ local function debugLog(msg)
     local line = os.date("%H:%M:%S") .. " " .. tostring(msg)
     print("[dbg] " .. line)
     table.insert(_debugLines, line)
+    if #_debugLines > 100 then table.remove(_debugLines, 1) end
     -- Append to log file via love.filesystem (works in fused exe)
     pcall(function()
         love.filesystem.append("debug.log", line .. "\n")
@@ -1544,8 +1545,8 @@ function game.setupListeners()
             corruption.lastDamageMsg = data.message or "The corruption burns..."
             addFloatingText({
                 text = "-" .. (data.damage or 5) .. " (Corruption)",
-                x = myPlayer and myPlayer.x or 0,
-                y = myPlayer and (myPlayer.y - 30) or 0,
+                x = players[myId] and players[myId].x or 0,
+                y = players[myId] and (players[myId].y - 30) or 0,
                 color = {0.5, 0.1, 0.6, 1},
                 timer = 2.0,
             })
@@ -2318,16 +2319,9 @@ function game.setupListeners()
             game._reconnectOverlay = true
             game._reconnectTimers = { 2, 5, 10 }
             game._reconnectTimer = game._reconnectTimers[1]
-        else
-            -- Already in reconnect flow, bump attempt
-            game._reconnectAttempt = (game._reconnectAttempt or 0) + 1
-            if game._reconnectAttempt >= #(game._reconnectTimers or {}) then
-                -- All retries exhausted
-                game._reconnecting = false
-                game._reconnectOverlay = false
-                _G.switchScene("shards")
-            end
         end
+        -- If already reconnecting, ignore subsequent disconnect events — the
+        -- update loop timer manages attempt counting and retry scheduling.
     end)
 
     -- RPG stat events
@@ -5789,10 +5783,8 @@ function game.update(dt)
         doom.eventTimer = doom.eventTimer - dt
         if doom.eventTimer <= 0 then
             doom.showEvent = false
-            -- Return to login screen after doom cinematic
-            if _G.sceneManager then
-                _G.sceneManager.switch("login")
-            end
+            -- Return to shard select after doom cinematic
+            _G.switchScene("shards")
         end
     end
 
@@ -7124,9 +7116,9 @@ function game.draw()
     end
 
     -- Lich Corruption zone warning (when standing in corrupted area)
-    if overworld.chunkBased and myPlayer then
-        local pcx = math.floor(myPlayer.x / overworld.chunkSize)
-        local pcy = math.floor(myPlayer.y / overworld.chunkSize)
+    if overworld.chunkBased and players[myId] then
+        local pcx = math.floor(players[myId].x / overworld.chunkSize)
+        local pcy = math.floor(players[myId].y / overworld.chunkSize)
         local pkey = pcx .. "," .. pcy
         local pLevel = corruption.chunks[pkey]
         if pLevel and pLevel > 0 then
@@ -16418,6 +16410,7 @@ function game.drawDungeonHUD(W, H)
 
         -- Rebuild minimap canvas if dirty (set by dungeon_visibility_update handler)
         if dungeon._minimapDirty or not dungeon._minimapCanvas then
+            if dungeon._minimapCanvas then dungeon._minimapCanvas:release() end
             local mmCanvas = love.graphics.newCanvas(mapW, mapH)
             love.graphics.setCanvas(mmCanvas)
             love.graphics.clear(0, 0, 0, 0)

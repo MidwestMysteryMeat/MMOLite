@@ -48,6 +48,7 @@ module.exports = {
 
     socket.on('friend_request_send', (data) => {
       try {
+        if (checkEventRate && !checkEventRate(socket, 'friend_request_send', 2)) return;
         if (!data) return;
         var key = socketAccountMap.get(socket.id);
         if (!key || accounts.isTempAccount(key)) {

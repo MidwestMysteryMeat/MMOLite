@@ -200,6 +200,7 @@ function _trySubGrid(account, containerSlot, item) {
 // Move item between grids (main ↔ container ↔ pocket)
 // -------------------------------------------------------------------------
 function gridTransfer(account, itemId, fromGrid, toGrid, x, y, rotated) {
+  initGrid(account);
   var item = _findItem(account, itemId);
   if (!item) return { ok: false, reason: 'Item not found' };
 
@@ -220,7 +221,9 @@ function gridTransfer(account, itemId, fromGrid, toGrid, x, y, rotated) {
 
   grid.place(dstGrid, item, x, y, rotated);
   srcGrid.rev++;
-  dstGrid.rev++;
+  if (srcGrid !== dstGrid) dstGrid.rev++;
+  // Always bump main grid rev so the client's optimistic lock stays in sync
+  if (srcGrid !== account.grid && dstGrid !== account.grid) account.grid.rev++;
   return { ok: true, rev: account.grid.rev };
 }
 

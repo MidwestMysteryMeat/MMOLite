@@ -1544,13 +1544,19 @@ module.exports = {
           }
         }
         if (maxSkillReqVal >= QUALITY_CRAFT_SKILL_THRESHOLD && !data.skipMinigame) {
+          // Acquire craft lock BEFORE resource deduction to prevent double-spend
+          if (craftLocks.has(key)) {
+            socket.emit('craft_error', { message: 'Crafting in progress' });
+            return;
+          }
+          craftLocks.add(key);
           // Check resources first before starting minigame
           var _preInv = accounts.getMMOInventory(key);
           if (_preInv) {
             var _canAfford = true;
             var _costKeys = Object.keys(recipe.cost);
             for (var _ci = 0; _ci < _costKeys.length; _ci++) {
-              if ((_preInv[_costKeys[_ci]] || 0) < recipe.cost[_costKeys[_ci]]) { _canAfford = false; break; }
+              if ((_preInv[_costKeys[_ci]] || 0) < recipe.cost[_costKeys[_ci]]) { _canAfford = false; craftLocks.delete(key); break; }
             }
             if (_canAfford) {
               // Deduct resources before minigame (consumed regardless of quality)
@@ -1587,6 +1593,8 @@ module.exports = {
               });
               return; // Don't complete craft yet -- wait for minigame result
             }
+          } else {
+            craftLocks.delete(key);
           }
         }
 
@@ -2775,7 +2783,9 @@ module.exports = {
           return;
         }
         pendingMinigames.delete(socket.id);
+        var _mgKey = pending.account_key;
         if (Date.now() > pending.expiresAt) {
+          craftLocks.delete(_mgKey);
           socket.emit('craft_error', { message: 'Minigame expired.' });
           return;
         }
@@ -2794,9 +2804,11 @@ module.exports = {
         }
         // Complete craft with quality
         var recipe = RECIPES[pending.recipeId];
-        if (!recipe) return;
+        if (!recipe) { craftLocks.delete(_mgKey); return; }
         var qualityTier = QUALITY_TIERS[quality] || QUALITY_TIERS.normal;
+        var key = pending.account_key;
         var output = {
+          id: generateItemId(),
           type: recipe.output.type,
           name: qualityTier.name + ' ' + recipe.output.name,
           quality: quality,
@@ -2804,13 +2816,13 @@ module.exports = {
         };
         if (recipe.output.quantity) output.quantity = recipe.output.quantity;
         // Add to inventory (weight-checked)
-        var key = pending.account_key;
         var account = accounts.loadAccount(key);
-        if (!account) return;
+        if (!account) { craftLocks.delete(key); return; }
         var accountWeight = require('../account-weight');
         var itemW = accountWeight.getItemWeight(output);
         if (!accountWeight.canCarryWeight(account, itemW)) {
           socket.emit('craft_error', { message: 'Too heavy to carry' });
+          craftLocks.delete(key);
           return;
         }
         var inv = account.mmoInventory || {};
@@ -2818,6 +2830,7 @@ module.exports = {
         inv.items.push(output);
         account.mmoInventory = inv;
         accounts.saveAccount(account);
+        craftLocks.delete(key);
         socket.emit('craft_result', {
           success: true,
           recipeId: pending.recipeId,
@@ -2826,8 +2839,20 @@ module.exports = {
           inventory: account.mmoInventory,
         });
       } catch (err) {
+        if (_mgKey) craftLocks.delete(_mgKey);
         console.error('[craft_minigame_result] Error:', err.message);
         socket.emit('craft_error', { message: 'Internal server error' });
+      }
+    });
+
+    // ------------------------------------------------------------------
+    // Disconnect cleanup: release pending minigame state + craft lock
+    // ------------------------------------------------------------------
+    socket.on('disconnect', function() {
+      var pending = pendingMinigames.get(socket.id);
+      if (pending) {
+        pendingMinigames.delete(socket.id);
+        craftLocks.delete(pending.account_key);
       }
     });
   },

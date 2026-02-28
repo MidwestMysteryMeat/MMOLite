@@ -167,7 +167,7 @@ function _updateAdaptiveThreshold(metrics) {
     bat.frequency = BAT_F_MIN + (BAT_F_MAX - BAT_F_MIN) * Math.random();
 
     // Update velocity and position
-    bat.velocity += (bat.threshold - adaptiveBestThreshold) * bat.frequency;
+    bat.velocity += (adaptiveBestThreshold - bat.threshold) * bat.frequency;
     var newThreshold = bat.threshold + bat.velocity;
 
     // Local search: if random > pulse rate, perturb around best

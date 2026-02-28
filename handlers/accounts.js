@@ -291,6 +291,7 @@ module.exports = {
     // ------------------------------------------------------------------
     socket.on('get_user_profile', (data) => {
       try {
+        if (checkEventRate && !checkEventRate(socket, 'get_user_profile', 2)) return;
         if (!data || typeof data.tag !== 'string') return;
 
         var fullTag = data.tag;

@@ -1844,7 +1844,7 @@ function spreadItemViralMutation(sourceItem, otherEquippedItems, luckBonus) {
     var tSlot = null;
     if (target.slot === 'weapon' || target.slot === 'shield') tSlot = 'weapon';
     else if (['head','chest','undershirt','arms','hands','legs','feet'].indexOf(target.slot) !== -1) tSlot = 'armor';
-    else if (['ring1','ring2','necklace'].indexOf(target.slot) !== -1) tSlot = 'jewelry';
+    else if (['ring1','ring2','ring3','ring4','ring5','ring6','necklace'].indexOf(target.slot) !== -1) tSlot = 'jewelry';
     var spreadMut = rollItemMutation(1.0, 0, tSlot); // always rolls if we reach here
     if (!spreadMut || spreadMut.tier > 2) continue; // viral spreads max tier 2
     var spreadMutCopy = JSON.parse(JSON.stringify({ id: spreadMut.id, name: spreadMut.name, tier: spreadMut.tier }));
