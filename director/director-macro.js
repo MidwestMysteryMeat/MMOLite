@@ -10,7 +10,7 @@
 // ---------------------------------------------------------------------------
 
 var EVENT_COOLDOWN_MS = 15 * 60 * 1000;  // 15 minutes between world events
-var TENSION_THRESHOLD = 60;               // Tension score to trigger events (0-100)
+var BASE_TENSION_THRESHOLD = 60;          // Default tension threshold (0-100)
 
 // World event pool
 var directorLich = null;
@@ -94,6 +94,109 @@ var lastEventAt = 0;
 var activeWorldEvents = [];
 
 // ---------------------------------------------------------------------------
+// Bat Algorithm — adaptive tension threshold
+// ---------------------------------------------------------------------------
+// Each "bat" is a candidate tension threshold. Bats with thresholds that
+// produce better engagement are "brighter" — others fly toward them.
+// Loudness starts high (exploratory), pulse rate increases over time
+// (narrowing toward best threshold).
+
+var BAT_COUNT = 8;
+var BAT_F_MIN = 0;
+var BAT_F_MAX = 1.5;
+var BAT_ALPHA = 0.95;       // loudness decay per evaluation
+var BAT_GAMMA = 0.5;        // pulse rate growth rate
+
+var adaptiveBats = null;     // initialized on first tick
+var adaptiveBestThreshold = BASE_TENSION_THRESHOLD;
+var adaptiveBestFitness = -Infinity;
+var adaptiveEvalCount = 0;
+var lastEventEngagement = 0; // engagement score from last event
+
+function _initBats() {
+  adaptiveBats = [];
+  for (var i = 0; i < BAT_COUNT; i++) {
+    adaptiveBats.push({
+      threshold: 30 + Math.random() * 50,  // 30-80 range
+      velocity: 0,
+      frequency: BAT_F_MIN + Math.random() * (BAT_F_MAX - BAT_F_MIN),
+      loudness: 0.9,
+      pulseRate: 0.1,
+      fitness: 0,
+    });
+  }
+}
+
+// Evaluate engagement after a world event fires
+// Called from the next macro tick after an event ends
+function _evaluateEventEngagement(metrics) {
+  var global = metrics.getGlobalAggregates();
+  // Engagement = inverse idle rate * dungeon participation * player count factor
+  var engagement = (1 - global.idleRate) * 0.4 +
+                   global.dungeonParticipation * 0.3 +
+                   Math.min(1, global.totalPlayers / 20) * 0.3;
+  return Math.max(0, Math.min(1, engagement));
+}
+
+function _updateAdaptiveThreshold(metrics) {
+  if (!adaptiveBats) _initBats();
+
+  var engagement = _evaluateEventEngagement(metrics);
+  adaptiveEvalCount++;
+
+  // Update the bat that was closest to the threshold that just fired
+  var closestIdx = 0;
+  var closestDist = Infinity;
+  for (var ci = 0; ci < adaptiveBats.length; ci++) {
+    var d = Math.abs(adaptiveBats[ci].threshold - adaptiveBestThreshold);
+    if (d < closestDist) { closestDist = d; closestIdx = ci; }
+  }
+  adaptiveBats[closestIdx].fitness = engagement;
+
+  // Update global best
+  if (engagement > adaptiveBestFitness) {
+    adaptiveBestFitness = engagement;
+    adaptiveBestThreshold = adaptiveBats[closestIdx].threshold;
+  }
+
+  // Bat algorithm step: move all bats toward best
+  for (var bi = 0; bi < adaptiveBats.length; bi++) {
+    var bat = adaptiveBats[bi];
+
+    // Update frequency
+    bat.frequency = BAT_F_MIN + (BAT_F_MAX - BAT_F_MIN) * Math.random();
+
+    // Update velocity and position
+    bat.velocity += (bat.threshold - adaptiveBestThreshold) * bat.frequency;
+    var newThreshold = bat.threshold + bat.velocity;
+
+    // Local search: if random > pulse rate, perturb around best
+    if (Math.random() > bat.pulseRate) {
+      var avgLoud = 0;
+      for (var al = 0; al < adaptiveBats.length; al++) avgLoud += adaptiveBats[al].loudness;
+      avgLoud /= adaptiveBats.length;
+      newThreshold = adaptiveBestThreshold + (Math.random() * 2 - 1) * avgLoud * 20;
+    }
+
+    // Clamp to valid range
+    newThreshold = Math.max(20, Math.min(90, newThreshold));
+
+    // Accept if random < loudness
+    if (Math.random() < bat.loudness) {
+      bat.threshold = newThreshold;
+      bat.loudness *= BAT_ALPHA;
+      bat.pulseRate = 0.1 * (1 - Math.exp(-BAT_GAMMA * adaptiveEvalCount));
+    }
+  }
+
+  return adaptiveBestThreshold;
+}
+
+function getAdaptiveThreshold() {
+  return Math.round(adaptiveBestThreshold);
+}
+
+// ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
@@ -161,8 +264,15 @@ function tick(io, state, metrics, zoneDirector) {
   });
   ds.activeWorldEvents = activeWorldEvents;
 
+  // Update adaptive threshold via bat algorithm after events expire
+  if (activeWorldEvents.length === 0 && lastEventAt > 0 && adaptiveEvalCount < 500) {
+    _updateAdaptiveThreshold(metrics);
+  }
+
+  var effectiveThreshold = getAdaptiveThreshold();
+
   // Check if we should fire a world event
-  if (tension > TENSION_THRESHOLD && (now - lastEventAt) > EVENT_COOLDOWN_MS && activeWorldEvents.length === 0) {
+  if (tension > effectiveThreshold && (now - lastEventAt) > EVENT_COOLDOWN_MS && activeWorldEvents.length === 0) {
     fireWorldEvent(io, state, zoneDirector, ds);
   }
 }
@@ -228,6 +338,10 @@ function getActiveEvents() {
 function reset() {
   lastEventAt = 0;
   activeWorldEvents = [];
+  adaptiveBats = null;
+  adaptiveBestThreshold = BASE_TENSION_THRESHOLD;
+  adaptiveBestFitness = -Infinity;
+  adaptiveEvalCount = 0;
 }
 
 // ---------------------------------------------------------------------------
@@ -238,5 +352,6 @@ module.exports = {
   tick: tick,
   getGlobalTension: getGlobalTension,
   getActiveEvents: getActiveEvents,
+  getAdaptiveThreshold: getAdaptiveThreshold,
   reset: reset,
 };

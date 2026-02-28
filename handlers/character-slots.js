@@ -35,6 +35,9 @@ module.exports = {
         return;
       }
 
+      // Restore pocket contents from previous permadeath/doom character
+      accounts.restorePocketFromLegacy(accounts.loadAccount(key));
+
       var list = accounts.getCharacterList(key);
       console.log('[char-slots] character_create success: index=' + result.characterIndex + ', total=' + list.characters.length);
       socket.emit('character_created', {

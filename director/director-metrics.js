@@ -56,6 +56,14 @@ function initPlayer(socketId, accountData) {
     overallLevel: overallLevel,
     cardPowerScore: cardPowerScore,
     lastActivityAt: Date.now(),
+    // Skill metrics
+    totalTurns: 0,
+    effectiveTurns: 0,       // turns where player dealt damage or healed
+    totalDamageDealt: 0,
+    totalApSpent: 0,
+    turnEfficiency: 0,       // effectiveTurns / totalTurns (0-1)
+    damagePerAp: 0,          // totalDamageDealt / totalApSpent
+    combatRating: 0,         // composite skill score (0-1)
   });
 }
 
@@ -116,6 +124,23 @@ function recordActivity(socketId) {
 }
 
 /**
+ * Record that a player completed a combat turn.
+ * @param {string} socketId
+ * @param {number} damageDealt - total damage the player dealt this turn
+ * @param {number} apSpent - action points spent this turn (usually 1)
+ * @param {boolean} wasEffective - true if the turn dealt damage or healed an ally
+ */
+function recordTurn(socketId, damageDealt, apSpent, wasEffective) {
+  var m = playerMetrics.get(socketId);
+  if (!m) return;
+  m.totalTurns++;
+  if (wasEffective) m.effectiveTurns++;
+  m.totalDamageDealt += (damageDealt || 0);
+  m.totalApSpent += (apSpent || 1);
+  m.lastActivityAt = Date.now();
+}
+
+/**
  * Compute stress for a single player. Called each AI tick.
  * Decays damage, updates idle time, classifies tier.
  */
@@ -144,6 +169,20 @@ function computeStress(socketId) {
                   (damageFactor * DAMAGE_FACTOR_WEIGHT) +
                   (deathFactor * DEATH_FACTOR_WEIGHT);
   m.stressLevel = Math.max(0, Math.min(1, m.stressLevel));
+
+  // Compute skill metrics
+  if (m.totalTurns > 0) {
+    m.turnEfficiency = m.effectiveTurns / m.totalTurns;
+  }
+  if (m.totalApSpent > 0) {
+    m.damagePerAp = m.totalDamageDealt / m.totalApSpent;
+  }
+  // Combat rating: weighted composite of turn efficiency (40%), normalized
+  // damage-per-AP (30%), and survival factor (30%)
+  var normDpa = Math.min(1, m.damagePerAp / 50); // 50 dmg/ap = perfect
+  var survivalFactor = m.currentHpPercent * (1 - Math.min(1, m.sessionDeaths / 5));
+  m.combatRating = m.turnEfficiency * 0.40 + normDpa * 0.30 + survivalFactor * 0.30;
+  m.combatRating = Math.max(0, Math.min(1, m.combatRating));
 
   // Classify tier
   if (m.stressLevel >= STRUGGLING_STRESS || m.sessionDeaths >= STRUGGLING_DEATHS) {
@@ -274,6 +313,7 @@ module.exports = {
   recordDeath: recordDeath,
   setFloor: setFloor,
   recordActivity: recordActivity,
+  recordTurn: recordTurn,
   computeStress: computeStress,
   getPlayerMetrics: getPlayerMetrics,
   getPartyStress75th: getPartyStress75th,

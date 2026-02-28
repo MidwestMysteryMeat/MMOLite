@@ -403,6 +403,9 @@ const CHARACTER_FIELDS = [
   'jailState',
   'skillMasteryPoints',
   'skillMasteryNodes',
+  'bankVault',
+  'grid',
+  'pocket',
 ];
 
 // Returns default value for a character field (mirrors createAccount defaults)
@@ -472,6 +475,9 @@ function _getDefaultForField(field) {
       return { inJail: false, crime: null, releasedAt: 0, bail: 0, jailZoneId: null, arrestedAt: 0 };
     case 'skillMasteryPoints': return {};
     case 'skillMasteryNodes': return {};
+    case 'bankVault': return { gold: 0, resources: {}, items: [], maxSlots: 50, expansionsPurchased: 0 };
+    case 'grid': return null;
+    case 'pocket': return null;
     default: return null;
   }
 }
@@ -1567,6 +1573,11 @@ function addResource(key, resourceType, amount) {
     const account = loadAccount(key);
     if (!account) return null;
     if (!account.mmoInventory) account.mmoInventory = { wood: 0, stone: 0, iron_ore: 0, iron_bar: 0, items: [] };
+    // Weight check: reject if adding these resources would exceed capacity
+    var perUnit = ITEM_WEIGHTS[resourceType] || ITEM_WEIGHTS.default;
+    if (!canCarryWeight(account, perUnit * amount)) {
+      return { error: 'Too heavy to carry', overweight: true };
+    }
     account.mmoInventory[resourceType] = (account.mmoInventory[resourceType] || 0) + amount;
     saveAccount(account);
     return account.mmoInventory;
@@ -1753,6 +1764,8 @@ var incrementLeviathanKill = _accountCharacters.incrementLeviathanKill;
 // ---------------------------------------------------------------------------
 var _accountWeight = require('./account-weight');
 var ITEM_WEIGHTS = _accountWeight.ITEM_WEIGHTS;
+var getItemWeight = _accountWeight.getItemWeight;
+var canCarryWeight = _accountWeight.canCarryWeight;
 var getCarryCapacity = _accountWeight.getCarryCapacity;
 var getCurrentWeight = _accountWeight.getCurrentWeight;
 var getEncumbranceLevel = _accountWeight.getEncumbranceLevel;
@@ -1769,6 +1782,16 @@ var applyEvolutionPath = _accountRpgEvolution.applyEvolutionPath;
 
 // Deferred init: account-rpg-cards needs _spreadMutation from evolution (circular dep)
 _accountRpgCards.init({ loadAccount: loadAccount, saveAccount: saveAccount, _spreadMutation: _accountRpgEvolution._spreadMutation });
+
+// ---------------------------------------------------------------------------
+// Grid inventory — extracted to account-grid-inventory.js
+// ---------------------------------------------------------------------------
+var _accountGridInventory = require('./account-grid-inventory');
+_accountGridInventory.init({ loadAccount: loadAccount, saveAccount: saveAccount });
+var gridAutoAdd = _accountGridInventory.gridAutoAdd;
+var getFullInventoryState = _accountGridInventory.getFullInventoryState;
+var preservePocketOnPermadeath = _accountGridInventory.preservePocketOnPermadeath;
+var restorePocketFromLegacy = _accountGridInventory.restorePocketFromLegacy;
 
 module.exports = {
   createAccount,
@@ -1927,12 +1950,19 @@ module.exports = {
   preloadKeyIndex,
   // Weight / Encumbrance
   ITEM_WEIGHTS,
+  getItemWeight,
+  canCarryWeight,
   getCarryCapacity,
   getCurrentWeight,
   getEncumbranceLevel,
   getSpeedMultiplier,
   // Doom ascension: iterate all accounts through encrypted pipeline
   iterateAllAccounts,
+  // Grid inventory
+  gridAutoAdd,
+  getFullInventoryState,
+  preservePocketOnPermadeath,
+  restorePocketFromLegacy,
 };
 
 // Import an account object from the master server into the local cache.

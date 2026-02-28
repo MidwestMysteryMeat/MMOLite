@@ -377,6 +377,14 @@ module.exports = {
       }
       purchaseLocks.add(key);
       try {
+        // Weight check before purchase — don't take coins if player can't carry
+        var accountWeight = require('../account-weight');
+        var perUnit = accountWeight.ITEM_WEIGHTS[data.resource] || accountWeight.ITEM_WEIGHTS.default;
+        if (!accountWeight.canCarryWeight(acc, perUnit * amount)) {
+          socket.emit('npc_shop_error', { message: 'You are too encumbered to carry that.' });
+          return;
+        }
+
         // Deduct coins and add resources
         var newBalance = accounts.updateChips(key, -totalCost);
         accounts.addResource(key, data.resource, amount);

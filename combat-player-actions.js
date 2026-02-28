@@ -9,6 +9,7 @@ var combatSync = require('./combat-sync');
 var combatTiles = require('./combat-tiles');
 var combatPassives = require('./combat-passive-helpers');
 var combatGrid = require('./combat-grid');
+var directorMetrics = require('./director/director-metrics');
 
 var getUnitCombatPassiveTotal = combatPassives.getUnitCombatPassiveTotal;
 var hasImmunity = combatPassives.hasImmunity;
@@ -117,6 +118,13 @@ function handlePlayerAction(combatId, socketId, action) {
 
   if (!result) {
     return { success: false, error: 'Action processing failed' };
+  }
+
+  // Record player skill metrics for the director
+  if (result.success && (action.type === 'attack' || action.type === 'ability')) {
+    var _dmg = result.damage || 0;
+    var _effective = _dmg > 0 || (result.healed && result.healed > 0);
+    directorMetrics.recordTurn(socketId, _dmg, 1, _effective);
   }
 
   if (result.success && unit.ap <= 0 && unit.mp <= 0) {

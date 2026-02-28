@@ -45,6 +45,12 @@ const guilds = new Map();
 /** @type {Map<string, Array>} zoneId -> array of overworld monster objects */
 const zoneMonsters = new Map();
 
+/** @type {Map<string, Array>} zoneId -> array of lootable corpse objects */
+const zoneCorpses = new Map();
+
+/** @type {Map<string, Array>} zoneId -> array of lootable world containers (crates, barrels) */
+const zoneWorldContainers = new Map();
+
 /** @type {Map<string, object>} battleId -> battle object (legacy PvP stubs) */
 const activeBattles = new Map();
 
@@ -767,6 +773,7 @@ function initDefaultZones() {
       { id: 'wandering_merchant_starter_town', type: 'wandering_merchant', name: 'Peddler Vance', x: 700, y: 450, sleepPhases: ['night'], dialogue: 'wandering_merchant', stock: ['herbs', 'potions', 'misc'] },
       { id: 'farmer_starter_town', type: 'farmer', name: 'Farmer Aldric', x: 350, y: 550, sleepPhases: ['night'], dialogue: 'farmer' },
       { id: 'civilian_starter_town', type: 'civilian', name: 'Marta the Weaver', x: 600, y: 800, sleepPhases: ['night'], dialogue: 'civilian' },
+      { id: 'banker_starter_town', type: 'banker', name: 'Banker Aldwin', x: 450, y: 700, sleepPhases: [], dialogue: 'banker' },
     ],
     connections: [
       { targetZone: 'overworld', x: 800, y: 50, direction: 'north' },
@@ -815,6 +822,7 @@ function initDefaultZones() {
       { id: 'wandering_merchant_solara', type: 'wandering_merchant', name: 'Silk Road Trader', x: 800, y: 500, sleepPhases: ['night'], dialogue: 'wandering_merchant', stock: ['herbs', 'potions', 'misc'] },
       { id: 'farmer_solara', type: 'farmer', name: 'Grove Tender Ilya', x: 500, y: 1000, sleepPhases: ['night'], dialogue: 'farmer' },
       { id: 'civilian_solara', type: 'civilian', name: 'Scholar Orin', x: 1200, y: 1100, sleepPhases: ['night'], dialogue: 'civilian' },
+      { id: 'banker_solara', type: 'banker', name: 'Imperial Treasurer', x: 1000, y: 1100, sleepPhases: [], dialogue: 'banker' },
     ],
     connections: [
       { targetZone: 'overworld', x: 1000, y: 50, direction: 'north' },
@@ -852,6 +860,7 @@ function initDefaultZones() {
       { id: 'wandering_merchant_sylvaris', type: 'wandering_merchant', name: 'Moon Market Vendor', x: 700, y: 500, sleepPhases: ['night'], dialogue: 'wandering_merchant', stock: ['herbs', 'potions', 'misc'] },
       { id: 'farmer_sylvaris', type: 'farmer', name: 'Treefarm Elder', x: 1100, y: 900, sleepPhases: ['night'], dialogue: 'farmer' },
       { id: 'civilian_sylvaris', type: 'civilian', name: 'Leaf-Keeper Aria', x: 500, y: 1000, sleepPhases: ['night'], dialogue: 'civilian' },
+      { id: 'banker_sylvaris', type: 'banker', name: 'Vault Keeper Elindra', x: 900, y: 900, sleepPhases: [], dialogue: 'banker' },
     ],
     connections: [
       { targetZone: 'overworld', x: 900, y: 50, direction: 'north' },
@@ -892,6 +901,7 @@ function initDefaultZones() {
       { id: 'wandering_merchant_ironhold', type: 'wandering_merchant', name: 'Deep Trader Brund', x: 600, y: 500, sleepPhases: ['night'], dialogue: 'wandering_merchant', stock: ['herbs', 'potions', 'misc'] },
       { id: 'farmer_ironhold', type: 'farmer', name: 'Mushroom Farmer Gert', x: 1000, y: 900, sleepPhases: ['night'], dialogue: 'farmer' },
       { id: 'civilian_ironhold', type: 'civilian', name: 'Stonewife Hilda', x: 500, y: 1000, sleepPhases: ['night'], dialogue: 'civilian' },
+      { id: 'banker_ironhold', type: 'banker', name: 'Vault Warden Durak', x: 800, y: 900, sleepPhases: [], dialogue: 'banker' },
     ],
     connections: [
       { targetZone: 'overworld', x: 800, y: 50, direction: 'north' },
@@ -932,6 +942,7 @@ function initDefaultZones() {
       { id: 'wandering_merchant_kragmor', type: 'wandering_merchant', name: 'Warbazaar Vendor', x: 600, y: 450, sleepPhases: ['night'], dialogue: 'wandering_merchant', stock: ['herbs', 'potions', 'misc'] },
       { id: 'farmer_kragmor', type: 'farmer', name: 'Steppe Herder Grak', x: 1000, y: 800, sleepPhases: ['night'], dialogue: 'farmer' },
       { id: 'civilian_kragmor', type: 'civilian', name: 'Orcish Lookout Uth', x: 500, y: 750, sleepPhases: ['night'], dialogue: 'civilian' },
+      { id: 'banker_kragmor', type: 'banker', name: 'Hoard-Keeper Grosh', x: 800, y: 750, sleepPhases: [], dialogue: 'banker' },
     ],
     connections: [
       { targetZone: 'overworld', x: 800, y: 50, direction: 'north' },
@@ -970,6 +981,7 @@ function initDefaultZones() {
       { id: 'wandering_merchant_bonetrap', type: 'wandering_merchant', name: 'Shadow Peddler', x: 450, y: 400, sleepPhases: ['night'], dialogue: 'wandering_merchant', stock: ['herbs', 'potions', 'misc'] },
       { id: 'farmer_bonetrap', type: 'farmer', name: 'Bog Farmer Skrix', x: 750, y: 700, sleepPhases: ['night'], dialogue: 'farmer' },
       { id: 'civilian_bonetrap', type: 'civilian', name: 'Sly Watcher Niv', x: 400, y: 850, sleepPhases: ['night'], dialogue: 'civilian' },
+      { id: 'banker_bonetrap', type: 'banker', name: 'Stash-Keeper Krix', x: 600, y: 700, sleepPhases: [], dialogue: 'banker' },
     ],
     connections: [
       { targetZone: 'overworld', x: 600, y: 50, direction: 'north' },
@@ -1008,6 +1020,7 @@ function initDefaultZones() {
       { id: 'wandering_merchant_murkmire', type: 'wandering_merchant', name: 'Tidemarket Trader', x: 550, y: 450, sleepPhases: ['night'], dialogue: 'wandering_merchant', stock: ['herbs', 'potions', 'misc'] },
       { id: 'farmer_murkmire', type: 'farmer', name: 'Swamp Fisher Sseth', x: 850, y: 800, sleepPhases: ['night'], dialogue: 'farmer' },
       { id: 'civilian_murkmire', type: 'civilian', name: 'River-Watcher Kessa', x: 500, y: 1000, sleepPhases: ['night'], dialogue: 'civilian' },
+      { id: 'banker_murkmire', type: 'banker', name: 'Tide Vault Keeper', x: 700, y: 900, sleepPhases: [], dialogue: 'banker' },
     ],
     connections: [
       { targetZone: 'overworld', x: 700, y: 50, direction: 'north' },
@@ -1047,6 +1060,7 @@ function initDefaultZones() {
       { id: 'wandering_merchant_mechspire', type: 'wandering_merchant', name: 'Cog Merchant Wren', x: 800, y: 500, sleepPhases: ['night'], dialogue: 'wandering_merchant', stock: ['herbs', 'potions', 'misc'] },
       { id: 'farmer_mechspire', type: 'farmer', name: 'Gear Farm Operator', x: 1200, y: 1000, sleepPhases: ['night'], dialogue: 'farmer' },
       { id: 'civilian_mechspire', type: 'civilian', name: 'Apprentice Tinker', x: 600, y: 1100, sleepPhases: ['night'], dialogue: 'civilian' },
+      { id: 'banker_mechspire', type: 'banker', name: 'Vault Automaton 7', x: 1000, y: 1100, sleepPhases: [], dialogue: 'banker' },
     ],
     connections: [
       { targetZone: 'overworld', x: 1000, y: 50, direction: 'north' },
@@ -1086,6 +1100,7 @@ function initDefaultZones() {
       { id: 'wandering_merchant_clockwork_harbor_town', type: 'wandering_merchant', name: 'Harbor Trader', x: 550, y: 450, sleepPhases: ['night'], dialogue: 'wandering_merchant', stock: ['herbs', 'potions', 'misc'] },
       { id: 'farmer_clockwork_harbor_town', type: 'farmer', name: 'Dockside Fishwife', x: 850, y: 800, sleepPhases: ['night'], dialogue: 'farmer' },
       { id: 'civilian_clockwork_harbor_town', type: 'civilian', name: 'Sailor Fen', x: 500, y: 750, sleepPhases: ['night'], dialogue: 'civilian' },
+      { id: 'banker_clockwork_harbor', type: 'banker', name: 'Harbor Vault Officer', x: 700, y: 750, sleepPhases: [], dialogue: 'banker' },
     ],
     connections: [
       { targetZone: 'overworld', x: 700, y: 50, direction: 'north' },
@@ -1124,6 +1139,7 @@ function initDefaultZones() {
       { id: 'wandering_merchant_fortunes_rest', type: 'wandering_merchant', name: 'Desert Caravan Trader', x: 650, y: 450, sleepPhases: ['night'], dialogue: 'wandering_merchant', stock: ['herbs', 'potions', 'misc'] },
       { id: 'farmer_fortunes_rest', type: 'farmer', name: 'Oasis Gardener', x: 1000, y: 800, sleepPhases: ['night'], dialogue: 'farmer' },
       { id: 'civilian_fortunes_rest', type: 'civilian', name: 'Fortune Seeker', x: 400, y: 750, sleepPhases: ['night'], dialogue: 'civilian' },
+      { id: 'banker_fortunes_rest', type: 'banker', name: 'Oasis Goldkeeper', x: 800, y: 750, sleepPhases: [], dialogue: 'banker' },
     ],
     connections: [
       { targetZone: 'overworld', x: 800, y: 50, direction: 'north' },
@@ -1610,6 +1626,8 @@ function wipeEphemeral() {
   parties.clear();
   playerPartyMap.clear();
   zoneMonsters.clear();
+  zoneCorpses.clear();
+  zoneWorldContainers.clear();
 
   // Clear zone chat and members but keep zone definitions
   for (const [, zone] of zones) {
@@ -1658,6 +1676,8 @@ module.exports = {
   playerPartyMap,
   guilds,
   zoneMonsters,
+  zoneCorpses,
+  zoneWorldContainers,
   world,
 
   // Name lists (for rename UI)

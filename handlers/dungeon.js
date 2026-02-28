@@ -94,6 +94,10 @@ var worldDungeonDate = null;       // daily rotation tracking
 
 var campFloors = new Map();         // 'structureId_floor_N' -> floor object
 
+// Per-visit spawn entropy: tracks how many times each floor key has been generated
+// so enemy/entity placement varies on each regeneration. Resets on daily rotation.
+var _floorVisitCounts = new Map(); // floorKey -> count
+
 var playerDungeons = new Map();   // socketId -> { dungeonId, floorNum }
 
 var _LEADERBOARD_FILE = path.join(__dirname, '..', 'data', 'leaderboard.json');
@@ -1005,12 +1009,15 @@ function getRiftFloor(floorNum) {
   if (riftDate !== today) {
     riftFloors.clear();
     floorAccessOrder.clear(); // Clear LRU on daily wipe (BUG-4)
+    _floorVisitCounts.clear();
     riftSeed = 'rift_' + today;
     riftDate = today;
   }
   var riftZoneId = 'rift_floor_' + floorNum;
   if (!riftFloors.has(floorNum)) {
-    var floor = dungeonData.generateFloor(floorNum, riftSeed, { type: 'rift', isRift: true });
+    var _vc = (_floorVisitCounts.get(riftZoneId) || 0);
+    _floorVisitCounts.set(riftZoneId, _vc + 1);
+    var floor = dungeonData.generateFloor(floorNum, riftSeed, { type: 'rift', isRift: true, visitCount: _vc });
     floor.camps = [];
     // Tag pitch black rift floors (15% of floors above 5, deterministic)
     floor._isPitchBlack = dungeonVision.isPitchBlackRiftFloor(floorNum);
@@ -1035,6 +1042,8 @@ function getCaveFloor(caveKey, floorNum, biome) {
   var caveZoneId = 'cave_' + key;
   if (!caveFloors.has(key)) {
     var totalFloors = dungeonData.getCaveDepth(biome, caveKey);
+    var _cvc = (_floorVisitCounts.get(caveZoneId) || 0);
+    _floorVisitCounts.set(caveZoneId, _cvc + 1);
     // Main seed rotates daily; themeSeed is permanent so biome theme stays stable
     var floor = dungeonData.generateFloor(floorNum, 'cave_' + caveKey + '_' + today, {
       type: 'cave',
@@ -1042,6 +1051,7 @@ function getCaveFloor(caveKey, floorNum, biome) {
       biome: biome,
       totalFloors: totalFloors,
       themeSeed: 'cave_' + caveKey,
+      visitCount: _cvc,
     });
     floor.camps = [];
     caveFloors.set(key, floor);
@@ -1083,6 +1093,8 @@ function getWorldDungeonFloor(dungeonId, floorNum) {
   var key = dungeonId + '_floor_' + floorNum;
   var zoneId = 'world_' + key;
   if (!worldDungeonFloors.has(key)) {
+    var _wvc = (_floorVisitCounts.get(zoneId) || 0);
+    _floorVisitCounts.set(zoneId, _wvc + 1);
     // Main seed rotates daily; themeSeed is permanent (redundant here since
     // world dungeons force opts.theme, but keeps the pattern consistent)
     var floor = dungeonData.generateFloor(floorNum, 'world_' + dungeonId + '_' + today, {
@@ -1093,6 +1105,7 @@ function getWorldDungeonFloor(dungeonId, floorNum) {
       theme: def.theme,       // Force specific theme
       enemyPool: def.enemyPool, // Force specific enemy pool
       themeSeed: 'world_' + dungeonId,
+      visitCount: _wvc,
     });
     floor.camps = [];
     worldDungeonFloors.set(key, floor);
@@ -1242,6 +1255,7 @@ function getFloorLootPool(floorNum) {
   for (var wt in weaponTypes) {
     var def = weaponTypes[wt];
     if (!def.slot) continue; // skip non-equippable
+    if (def.slot === 'backpack' || def.slot === 'rig') continue; // containers drop via separate roll
     var defRarityVal = rarityOrder[def.rarity] || 0;
     // Include items at or below the floor's max appropriate rarity
     if (defRarityVal <= maxRarityVal + 1) {
@@ -3149,10 +3163,15 @@ function buildCombatCallbacks(io, state, accounts, socketAccountMap, dungeonId, 
                 if (mlItem) {
                   mlItem.maxDurability = accounts.getMaxDurability(mlBaseType);
                   mlItem.durability = mlItem.maxDurability;
-                  accounts.addMMOItem(accKey, mlItem);
+                  var mlAddResult = accounts.addMMOItem(accKey, mlItem);
                   var mobLootSock = io.sockets.sockets.get(socketId);
                   if (mobLootSock) {
-                    mobLootSock.emit('loot_dropped', { item: mlItem, source: 'mob', floorNum: floorNum });
+                    if (mlAddResult && mlAddResult.error) {
+                      mobLootSock.emit('loot_dropped', { item: mlItem, source: 'mob', floorNum: floorNum, lost: true, reason: mlAddResult.error });
+                    } else {
+                      mobLootSock.emit('loot_dropped', { item: mlItem, source: 'mob', floorNum: floorNum });
+                      mobLootSock.emit('grid_item_added', { item: mlItem, rev: (mlAddResult && mlAddResult._gridRev) || 0 });
+                    }
                   }
                 }
               }
@@ -3275,6 +3294,22 @@ function buildCombatCallbacks(io, state, accounts, socketAccountMap, dungeonId, 
               var bossLootTypes = getFloorLootPool(floorNum);
               for (var bli = 0; bli < bossLootSpecs.length; bli++) {
                 var blSpec = bossLootSpecs[bli];
+
+                // Container drop
+                if (blSpec.container) {
+                  var containerItem = lootGen.generateContainerItem({ depth: floorNum, source: 'boss' });
+                  if (containerItem) {
+                    var cAddRes = accounts.addMMOItem(accKey, containerItem);
+                    var cSock = io.sockets.sockets.get(socketId);
+                    if (cSock) {
+                      var cLost = !!(cAddRes && cAddRes.error);
+                      cSock.emit('loot_dropped', { item: containerItem, source: 'boss', floorNum: floorNum, lost: cLost });
+                      if (!cLost) cSock.emit('grid_item_added', { item: containerItem, rev: (cAddRes && cAddRes._gridRev) || 0 });
+                    }
+                  }
+                  continue;
+                }
+
                 var blBaseType = bossLootTypes[Math.floor(Math.random() * bossLootTypes.length)];
                 var blBaseDef = accounts.WEAPON_TYPES[blBaseType];
                 if (!blBaseDef) continue;
@@ -3285,17 +3320,14 @@ function buildCombatCallbacks(io, state, accounts, socketAccountMap, dungeonId, 
                   luckBonus: accounts.getPlayerLuck(accKey),
                 });
                 if (blItem) {
-                  // Set durability
                   blItem.maxDurability = accounts.getMaxDurability(blBaseType);
                   blItem.durability = blItem.maxDurability;
-                  accounts.addMMOItem(accKey, blItem);
+                  var blAddRes = accounts.addMMOItem(accKey, blItem);
                   var bossLootSock = io.sockets.sockets.get(socketId);
                   if (bossLootSock) {
-                    bossLootSock.emit('loot_dropped', {
-                      item: blItem,
-                      source: 'boss',
-                      floorNum: floorNum,
-                    });
+                    var blLost = !!(blAddRes && blAddRes.error);
+                    bossLootSock.emit('loot_dropped', { item: blItem, source: 'boss', floorNum: floorNum, lost: blLost });
+                    if (!blLost) bossLootSock.emit('grid_item_added', { item: blItem, rev: (blAddRes && blAddRes._gridRev) || 0 });
                   }
                 }
               }
@@ -3903,6 +3935,10 @@ function triggerPermadeath(socketId, io, state, accounts, accKey, info, causeOfD
     playtimeSeconds: 0, // placeholder — would need separate tracking
     chips: acc.chips || 0,
   };
+
+  // Preserve pocket contents before character deletion
+  accounts.preservePocketOnPermadeath(acc);
+  accounts.saveAccount(acc);
 
   // Archive to Hall of Heroes
   accounts.archiveToHallOfHeroes(accKey, heroSnapshot);
@@ -6022,6 +6058,20 @@ module.exports = {
             var chestLootPool = getFloorLootPool(info.floorNum);
             for (var cli = 0; cli < chestLootSpecs.length; cli++) {
               var clSpec = chestLootSpecs[cli];
+
+              // Container drop
+              if (clSpec.container) {
+                var chestContainerItem = lootGen.generateContainerItem({ depth: info.floorNum, source: 'chest' });
+                if (chestContainerItem) {
+                  var ccAddRes = accounts.addMMOItem(accKey, chestContainerItem);
+                  if (!ccAddRes || !ccAddRes.error) {
+                    chestLootItems.push(chestContainerItem);
+                    socket.emit('grid_item_added', { item: chestContainerItem, rev: (ccAddRes && ccAddRes._gridRev) || 0 });
+                  }
+                }
+                continue;
+              }
+
               // Higher tier chests guarantee better rarity
               if (effectiveTier === 'epic' || effectiveTier === 'legendary') {
                 var minRarityOrder = lootGen.RARITY_ORDER[clSpec.rarity] || 0;
@@ -6039,8 +6089,11 @@ module.exports = {
               if (clItem) {
                 clItem.maxDurability = accounts.getMaxDurability(clBaseType);
                 clItem.durability = clItem.maxDurability;
-                accounts.addMMOItem(accKey, clItem);
-                chestLootItems.push(clItem);
+                var clAddRes = accounts.addMMOItem(accKey, clItem);
+                if (!clAddRes || !clAddRes.error) {
+                  chestLootItems.push(clItem);
+                  socket.emit('grid_item_added', { item: clItem, rev: (clAddRes && clAddRes._gridRev) || 0 });
+                }
               }
             }
           }

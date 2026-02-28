@@ -64,6 +64,44 @@ var influenceGrids = {};
 // Used by weighted graph diffusion model for lich corruption
 var corruptionPressure = {};
 
+// Fear map: danger reputation per chunk. Fed by player deaths, monster attacks,
+// corruption events. Decays fast (10%/tick), spreads to neighbors. Consumers:
+// NPC behavior (flee/hide), rumor system, monster spawn bias.
+var fearGrid = {};
+var FEAR_DECAY_RATE = 0.10;
+var FEAR_SPREAD_RATE = 0.10;
+var MAX_FEAR = 100;
+
+// Fear terrain modifiers — forests and swamps amplify fear, open plains dampen it
+var FEAR_TERRAIN_MULT = {};
+FEAR_TERRAIN_MULT[worldgen.BIOME.FOREST] = 1.3;
+FEAR_TERRAIN_MULT[worldgen.BIOME.SWAMP] = 1.4;
+FEAR_TERRAIN_MULT[worldgen.BIOME.MOUNTAIN] = 0.5;
+FEAR_TERRAIN_MULT[worldgen.BIOME.PLAINS] = 0.7;
+FEAR_TERRAIN_MULT[worldgen.BIOME.DESERT] = 0.8;
+FEAR_TERRAIN_MULT[worldgen.BIOME.HOLY_DOMINION] = 0.4;  // holy lands dampen fear
+FEAR_TERRAIN_MULT[worldgen.BIOME.WATER] = 0.0;
+FEAR_TERRAIN_MULT[worldgen.BIOME.FROSTBOUND] = 1.1;
+
+// Trade map: economic activity per chunk. Fed by player purchases, crafting,
+// resource gathering. Decays moderately (7%/tick), spreads along roads.
+// Consumers: NPC merchant attraction, price modifiers, resource respawn.
+var tradeGrid = {};
+var TRADE_DECAY_RATE = 0.07;
+var TRADE_SPREAD_RATE = 0.08;
+var MAX_TRADE = 100;
+
+// Trade terrain modifiers — roads amplify, wilderness dampens
+var TRADE_TERRAIN_MULT = {};
+TRADE_TERRAIN_MULT[worldgen.BIOME.PLAINS] = 1.2;         // open trade routes
+TRADE_TERRAIN_MULT[worldgen.BIOME.HOLY_DOMINION] = 1.3;  // established markets
+TRADE_TERRAIN_MULT[worldgen.BIOME.FOREST] = 0.6;
+TRADE_TERRAIN_MULT[worldgen.BIOME.SWAMP] = 0.3;
+TRADE_TERRAIN_MULT[worldgen.BIOME.MOUNTAIN] = 0.2;
+TRADE_TERRAIN_MULT[worldgen.BIOME.DESERT] = 0.5;
+TRADE_TERRAIN_MULT[worldgen.BIOME.WATER] = 0.0;
+TRADE_TERRAIN_MULT[worldgen.BIOME.FROSTBOUND] = 0.3;
+
 // Faction control map: { 'cx,cy': factionId } (which faction dominates each chunk)
 var controlMap = {};
 
@@ -290,6 +328,134 @@ function getCorruptionSpreadWeight(cx, cy) {
 }
 
 // ---------------------------------------------------------------------------
+// Fear layer — decay + spread
+// ---------------------------------------------------------------------------
+
+function _tickFear() {
+  var newFear = {};
+  var keys = Object.keys(fearGrid);
+
+  // Decay
+  for (var i = 0; i < keys.length; i++) {
+    var val = fearGrid[keys[i]] * (1 - FEAR_DECAY_RATE);
+    if (val >= 1) newFear[keys[i]] = val;
+  }
+
+  // Spread
+  var additions = {};
+  for (var si = 0; si < keys.length; si++) {
+    var sval = fearGrid[keys[si]];
+    if (sval < 5) continue;
+    var coords = ca.parseKey(keys[si]);
+    var neighbors = ca.getNeighbors4(coords[0], coords[1]);
+    for (var n = 0; n < neighbors.length; n++) {
+      var nkey = neighbors[n];
+      var nc = ca.parseKey(nkey);
+      var biome = worldgen.getBiome(nc[0], nc[1]);
+      var mult = FEAR_TERRAIN_MULT[biome];
+      if (mult === undefined) mult = 1.0;
+      if (mult === 0) continue;
+      var spread = sval * FEAR_SPREAD_RATE * mult;
+      if (spread < 0.5) continue;
+      if (!additions[nkey]) additions[nkey] = 0;
+      additions[nkey] += spread;
+    }
+  }
+  for (var ak in additions) {
+    var cur = newFear[ak] || 0;
+    newFear[ak] = Math.min(MAX_FEAR, cur + additions[ak]);
+  }
+
+  fearGrid = newFear;
+}
+
+function addFear(cx, cy, amount) {
+  var key = cx + ',' + cy;
+  var cur = fearGrid[key] || 0;
+  fearGrid[key] = Math.min(MAX_FEAR, cur + amount);
+}
+
+function getFear(cx, cy) {
+  return fearGrid[cx + ',' + cy] || 0;
+}
+
+function getFearForArea(centerCX, centerCY, radius) {
+  var result = {};
+  for (var dx = -radius; dx <= radius; dx++) {
+    for (var dy = -radius; dy <= radius; dy++) {
+      var key = (centerCX + dx) + ',' + (centerCY + dy);
+      var val = fearGrid[key];
+      if (val && val > 0) result[key] = val;
+    }
+  }
+  return result;
+}
+
+// ---------------------------------------------------------------------------
+// Trade layer — decay + spread
+// ---------------------------------------------------------------------------
+
+function _tickTrade() {
+  var newTrade = {};
+  var keys = Object.keys(tradeGrid);
+
+  // Decay
+  for (var i = 0; i < keys.length; i++) {
+    var val = tradeGrid[keys[i]] * (1 - TRADE_DECAY_RATE);
+    if (val >= 1) newTrade[keys[i]] = val;
+  }
+
+  // Spread
+  var additions = {};
+  for (var si = 0; si < keys.length; si++) {
+    var sval = tradeGrid[keys[si]];
+    if (sval < 5) continue;
+    var coords = ca.parseKey(keys[si]);
+    var neighbors = ca.getNeighbors4(coords[0], coords[1]);
+    for (var n = 0; n < neighbors.length; n++) {
+      var nkey = neighbors[n];
+      var nc = ca.parseKey(nkey);
+      var biome = worldgen.getBiome(nc[0], nc[1]);
+      var mult = TRADE_TERRAIN_MULT[biome];
+      if (mult === undefined) mult = 1.0;
+      if (mult === 0) continue;
+      var spread = sval * TRADE_SPREAD_RATE * mult;
+      if (spread < 0.5) continue;
+      if (!additions[nkey]) additions[nkey] = 0;
+      additions[nkey] += spread;
+    }
+  }
+  for (var ak in additions) {
+    var cur = newTrade[ak] || 0;
+    newTrade[ak] = Math.min(MAX_TRADE, cur + additions[ak]);
+  }
+
+  tradeGrid = newTrade;
+}
+
+function addTradeActivity(cx, cy, amount) {
+  var key = cx + ',' + cy;
+  var cur = tradeGrid[key] || 0;
+  tradeGrid[key] = Math.min(MAX_TRADE, cur + amount);
+}
+
+function getTradeActivity(cx, cy) {
+  return tradeGrid[cx + ',' + cy] || 0;
+}
+
+function getTradeForArea(centerCX, centerCY, radius) {
+  var result = {};
+  for (var dx = -radius; dx <= radius; dx++) {
+    for (var dy = -radius; dy <= radius; dy++) {
+      var key = (centerCX + dx) + ',' + (centerCY + dy);
+      var val = tradeGrid[key];
+      if (val && val > 0) result[key] = val;
+    }
+  }
+  return result;
+}
+
+// ---------------------------------------------------------------------------
 // Control map
 // ---------------------------------------------------------------------------
 
@@ -368,6 +534,8 @@ function tick(io, state) {
   lastInfluenceTick = now;
 
   _tickInfluence();
+  _tickFear();
+  _tickTrade();
 }
 
 // ---------------------------------------------------------------------------
@@ -378,6 +546,8 @@ function getState() {
   return {
     influenceGrids: influenceGrids,
     controlMap: controlMap,
+    fearGrid: fearGrid,
+    tradeGrid: tradeGrid,
     lastInfluenceTick: lastInfluenceTick,
   };
 }
@@ -386,9 +556,12 @@ function loadState(saved) {
   if (!saved) return;
   if (saved.influenceGrids) influenceGrids = saved.influenceGrids;
   if (saved.controlMap) controlMap = saved.controlMap;
+  if (saved.fearGrid) fearGrid = saved.fearGrid;
+  if (saved.tradeGrid) tradeGrid = saved.tradeGrid;
   if (saved.lastInfluenceTick) lastInfluenceTick = saved.lastInfluenceTick;
   var totalCells = 0;
   for (var fid in influenceGrids) totalCells += Object.keys(influenceGrids[fid]).length;
+  totalCells += Object.keys(fearGrid).length + Object.keys(tradeGrid).length;
   console.log('[influence] Loaded state: ' + totalCells + ' influence cells');
 }
 
@@ -396,6 +569,8 @@ function reset() {
   influenceGrids = {};
   controlMap = {};
   corruptionPressure = {};
+  fearGrid = {};
+  tradeGrid = {};
   lastInfluenceTick = 0;
   for (var fid in FACTION_HOMES) {
     influenceGrids[fid] = {};
@@ -424,6 +599,16 @@ module.exports = {
   // Corruption pressure (for lich director)
   updateCorruptionPressure: updateCorruptionPressure,
   getCorruptionSpreadWeight: getCorruptionSpreadWeight,
+
+  // Fear layer
+  addFear: addFear,
+  getFear: getFear,
+  getFearForArea: getFearForArea,
+
+  // Trade layer
+  addTradeActivity: addTradeActivity,
+  getTradeActivity: getTradeActivity,
+  getTradeForArea: getTradeForArea,
 
   // Constants
   CONTROL_THRESHOLD: CONTROL_THRESHOLD,

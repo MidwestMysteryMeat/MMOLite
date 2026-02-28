@@ -23,6 +23,8 @@ function getUnitCombatPassive(unit, passiveType) {
 /**
  * Sum the values of ALL combatPassives of a given type from a unit's equipped cards.
  * Use for stackable passives (e.g. multiple lifesteal cards).
+ * Applies diminishing-returns caps for specific passive types to prevent
+ * runaway stacking (lifesteal, damage_reflect).
  * Returns 0 if none found.
  */
 function getUnitCombatPassiveTotal(unit, passiveType) {
@@ -34,8 +36,20 @@ function getUnitCombatPassiveTotal(unit, passiveType) {
       total += (card.combatPassive.value || 0);
     }
   }
+  // Apply diminishing-returns caps for stackable combat passives
+  var cap = PASSIVE_CAPS[passiveType];
+  if (cap !== undefined && total > 0) {
+    total = cap.max * total / (total + cap.half);
+  }
   return total;
 }
+
+// Passive stacking caps: sigmoid curve max / (1 + half/x)
+// 'max' = asymptotic maximum, 'half' = input value at which output reaches max/2
+var PASSIVE_CAPS = {
+  lifesteal: { max: 0.35, half: 0.20 },       // 10%→0.14, 20%→0.175, 40%→0.23, 80%→0.28
+  damage_reflect: { max: 0.40, half: 0.25 },   // 10%→0.11, 25%→0.20, 50%→0.27
+};
 
 /**
  * Check if a unit has a specific immunity via combatPassive.

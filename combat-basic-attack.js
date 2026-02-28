@@ -1156,9 +1156,10 @@ function executeBasicAttack(combat, attackerId, targetId) {
           weaponEffects.push({ type: 'status_applied', status: 'stunned', targetId: targetId, source: 'affix', affixId: ohAff.id });
         }
       }
-      // --- lifesteal: heal attacker for percentage of damage dealt ---
+      // --- lifesteal: heal attacker for percentage of damage dealt (capped at 8% per affix) ---
       else if (effType === 'lifesteal') {
-        var lsAmt = Math.floor(damageToHp * (eff.value || 0.06));
+        var lsVal = Math.min(eff.value || 0.06, 0.08);
+        var lsAmt = Math.floor(damageToHp * lsVal);
         if (lsAmt > 0) {
           attacker.hp = Math.min(attacker.maxHp, attacker.hp + lsAmt);
           weaponEffects.push({ type: 'lifesteal', amount: lsAmt, attackerId: attackerId, source: 'affix', affixId: ohAff.id });

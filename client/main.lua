@@ -225,6 +225,12 @@ function love.mousepressed(x, y, button)
     end
 end
 
+function love.mousereleased(x, y, button)
+    if currentScene and currentScene.mousereleased then
+        currentScene.mousereleased(x, y, button)
+    end
+end
+
 function love.mousemoved(x, y)
     if currentScene and currentScene.mousemoved then
         currentScene.mousemoved(x, y)
