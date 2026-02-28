@@ -510,4 +510,12 @@ module.exports = {
   getTownInfiltrators: getTownInfiltrators,
   getActiveCrypts: getActiveCrypts,
   cureVampireExposure: cureVampireExposure,
+  reset: function() {
+    townInfiltrators = {};
+    activeCrypts = [];
+    epidemicRumorsFired = {};
+    cryptsSpawned = {};
+    lastTick = 0;
+    console.log('[vampire] State fully reset');
+  },
 };

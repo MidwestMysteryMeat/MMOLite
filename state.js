@@ -77,6 +77,9 @@ const world = {
     narrativeDay: 0,
     activeWorldEvents: [],
   },
+  // Doom ascension tracking
+  doomAscensionCount: 0,
+  doomCountdown: null,  // persisted by director-lich via getState/loadState
   // Seasonal calendar
   calendar: {
     year: 500,

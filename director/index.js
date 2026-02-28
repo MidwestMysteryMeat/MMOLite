@@ -6,6 +6,8 @@
 
 'use strict';
 
+var fs = require('fs');
+var path = require('path');
 var directorMetrics = require('./director-metrics');
 var directorMicro   = require('./director-micro');
 var directorZone    = require('./director-zone');
@@ -17,6 +19,7 @@ var directorBaseRaids = require('./director-raids');
 var directorVampire  = require('./director-vampire');
 var directorWerewolf = require('./director-werewolf');
 var directorRifts    = require('./director-rifts');
+var doomAscension    = require('../doom-ascension');
 
 var _io = null;
 var _state = null;
@@ -74,6 +77,9 @@ function init(io, state, accounts, socketAccountMap) {
     }
   }, 60000);
   if (_oceanInterval && _oceanInterval.unref) _oceanInterval.unref();
+
+  // Load persisted director state before starting tick intervals
+  loadState();
 
   // Initialize lich corruption director (60s interval, daily spread + debuff ticks)
   directorLich.init();
@@ -137,7 +143,20 @@ function init(io, state, accounts, socketAccountMap) {
   }, 3 * 60 * 1000);
   if (_riftsInterval && _riftsInterval.unref) _riftsInterval.unref();
 
-  console.log('[director] AI Event Director initialized (micro=per-tick, zone=30s, macro=5min, ocean=60s, lich=60s, raids=5min, vampire=10min, werewolf=15min, rifts=3min)');
+  // Initialize doom ascension module — wire director refs for world reset
+  var overworldStructures = null;
+  try { overworldStructures = require('../overworld-structures'); } catch (e) { /* not loaded yet */ }
+  doomAscension.init(_io, _state, _accounts, {
+    lich: directorLich,
+    vampire: directorVampire,
+    werewolf: directorWerewolf,
+    raids: directorBaseRaids,
+    rifts: directorRifts,
+    structures: overworldStructures,
+    saveState: saveState,
+  });
+
+  console.log('[director] AI Event Director initialized (micro=per-tick, zone=30s, macro=5min, ocean=60s, lich=60s, raids=5min, vampire=10min, werewolf=15min, rifts=3min, doom=wired)');
 }
 
 /**
@@ -188,11 +207,46 @@ function getRiftsDirector() {
 }
 
 // ---------------------------------------------------------------------------
+// State persistence — save/load director state across server restarts
+// ---------------------------------------------------------------------------
+
+var STATE_FILE = path.join(__dirname, '..', 'data', 'director-state.json');
+
+function saveState() {
+  try {
+    var state = {
+      lich: directorLich.getState(),
+      rifts: directorRifts.getState(),
+    };
+    var dir = path.dirname(STATE_FILE);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(STATE_FILE, JSON.stringify(state), 'utf8');
+    console.log('[director] State saved (' + Object.keys(state.lich.corruptedChunks || {}).length + ' corrupted chunks)');
+  } catch (err) {
+    console.error('[director] Failed to save state:', err.message);
+  }
+}
+
+function loadState() {
+  try {
+    if (fs.existsSync(STATE_FILE)) {
+      var saved = JSON.parse(fs.readFileSync(STATE_FILE, 'utf8'));
+      if (saved.lich) directorLich.loadState(saved.lich);
+      if (saved.rifts) directorRifts.loadState(saved.rifts);
+      console.log('[director] State loaded from disk');
+    }
+  } catch (err) {
+    console.error('[director] Failed to load state:', err.message);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Exports
 // ---------------------------------------------------------------------------
 
 module.exports = {
   init: init,
+  saveState: saveState,
   getMetrics: getMetrics,
   getMicroDirector: getMicroDirector,
   getZoneDirector: getZoneDirector,

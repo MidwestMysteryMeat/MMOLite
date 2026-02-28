@@ -1496,6 +1496,49 @@ function reencryptAccounts() {
   });
 }
 
+// ---------------------------------------------------------------------------
+// Iterate all accounts — decrypt, apply callback, re-encrypt, write.
+// Synchronous: used by doom ascension (server is paused, all players kicked).
+// Also updates accountCache for any in-memory copies.
+// ---------------------------------------------------------------------------
+
+function iterateAllAccounts(callback) {
+  var files;
+  try { files = fs.readdirSync(ACCOUNTS_DIR); } catch (e) { return 0; }
+  files = files.filter(function(f) { return f.endsWith('.json'); });
+
+  var processed = 0;
+  for (var i = 0; i < files.length; i++) {
+    var fp = path.join(ACCOUNTS_DIR, files[i]);
+    try {
+      var buf = fs.readFileSync(fp);
+      var plaintext = _decryptData(buf);
+      if (!plaintext) continue; // corrupt or undecryptable — skip
+
+      var account = JSON.parse(plaintext);
+      if (!account) continue;
+
+      // Apply the callback (e.g. doomWipeAccount)
+      callback(account);
+
+      // Re-serialize and write (account on disk uses scrubbed format with keyHash)
+      var jsonStr = JSON.stringify(account);
+      var encrypted = _encryptData(jsonStr);
+      fs.writeFileSync(fp, encrypted);
+      processed++;
+    } catch (err) {
+      console.error('[accounts] iterateAllAccounts error for ' + files[i] + ':', err.message);
+    }
+  }
+
+  // Also wipe any cached accounts still in memory
+  accountCache.forEach(function(acc) {
+    if (acc && !acc.temp) callback(acc);
+  });
+
+  return processed;
+}
+
 // ─── MMO Resource Inventory ───
 
 // Per-account resource lock to prevent TOCTOU races (same pattern as _chipLocks)
@@ -1888,6 +1931,8 @@ module.exports = {
   getCurrentWeight,
   getEncumbranceLevel,
   getSpeedMultiplier,
+  // Doom ascension: iterate all accounts through encrypted pipeline
+  iterateAllAccounts,
 };
 
 // Import an account object from the master server into the local cache.

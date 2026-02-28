@@ -471,4 +471,10 @@ module.exports = {
   getActiveRaids: getActiveRaids,
   triggerCorruptionRaid: triggerCorruptionRaid,
   STRUCTURE_HP: STRUCTURE_HP,
+  reset: function() {
+    activeRaids = [];
+    raidedToday.clear();
+    lastGameDay = 0;
+    console.log('[raids] State fully reset');
+  },
 };

@@ -1766,6 +1766,11 @@ function lichRaidComplete() {
   // Massive corruption cleanse — if directorLich available, cleanse 50% of all corruption
   if (_directorLich) {
     _directorLich.cleanseCorruption(LICH_TOWER_DUNGEON_ID);
+    // Mark lich as defeated this calendar month — corruption sources go dormant until next month
+    var calMonth = _state && _state.world && _state.world.calendar ? _state.world.calendar.month : null;
+    if (calMonth !== null) {
+      _directorLich.setLichDefeated(calMonth);
+    }
   }
 
   // Teleport all players out after a short delay

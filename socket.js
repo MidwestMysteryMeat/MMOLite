@@ -55,6 +55,7 @@ const dmsHandler = require('./handlers/dms');
 const updateWarningHandler = require('./handlers/update-warning');
 const disconnectHandler = require('./handlers/disconnect');
 const challengesHandler = require('./handlers/challenges');
+const doomHandler = require('./handlers/doom');
 
 // Moderator account keys — loaded from MODERATOR_KEYS env var (comma-separated)
 const MODERATORS = new Set(
@@ -606,6 +607,7 @@ function setupSocket(io) {
     friendsHandler.init(io, socket, deps);
     dmsHandler.init(io, socket, deps);
     challengesHandler.init(io, socket, deps);
+    doomHandler.init(io, socket, deps);
     disconnectHandler.init(io, socket, deps);
 
     // TOS acceptance

@@ -93,6 +93,8 @@ local SCENE_EVENTS = {
     "card_loadout_saved", "card_loadouts",
     "dungeon_quest_update",
     "mastery_tree_status", "mastery_invest_result", "mastery_reset_result",
+    "doom_status", "doom_countdown_started", "doom_countdown_paused",
+    "doom_countdown_resumed", "doom_ascension_event",
 }
 
 -- Debug logger: writes to file so we can diagnose issues in fused exe (no console)
@@ -435,6 +437,20 @@ local corruption = {
     damageFlash = 0,         -- screen flash when taking corruption damage
     lastDamageMsg = nil,     -- last corruption damage message
     globalInfo = nil,        -- { totalChunks, hordes } from server_stats
+}
+
+-- Doom ascension state
+local doom = {
+    active = false,
+    remainingMs = 0,
+    pushbackCount = 0,
+    doomAscensionCount = 0,
+    capitalCorrupted = false,
+    lastUpdate = 0,          -- love.timer.getTime() of last server update
+    showEvent = false,        -- true when doom ascension cinematic is playing
+    eventTimer = 0,           -- seconds remaining for cinematic
+    eventMessage = nil,
+    flashTimer = 0,           -- for capital corruption warning flash
 }
 
 -- Turn-based combat state (grouped to reduce upvalue count)
@@ -1305,6 +1321,72 @@ function game.setupListeners()
                 timer = 15,
             })
         end
+    end)
+
+    -- Doom ascension events
+    client:on("doom_status", function(data)
+        if data then
+            doom.active = data.active or false
+            doom.remainingMs = data.remainingMs or 0
+            doom.pushbackCount = data.pushbackCount or 0
+            doom.doomAscensionCount = data.doomAscensionCount or 0
+            doom.capitalCorrupted = data.capitalCorrupted or false
+            doom.lastUpdate = love.timer.getTime()
+        end
+    end)
+
+    client:on("doom_countdown_started", function(data)
+        if data then
+            doom.active = true
+            doom.remainingMs = 48 * 3600000
+            doom.lastUpdate = love.timer.getTime()
+            doom.capitalCorrupted = true
+            doom.flashTimer = 3.0  -- 3s capital breach warning flash
+            table.insert(directorEvents, {
+                title = "DOOM APPROACHES",
+                description = data.message or "The corruption has breached Solara.",
+                type = "doom_started",
+                timer = 10,
+            })
+        end
+    end)
+
+    client:on("doom_countdown_paused", function(data)
+        if data then
+            doom.active = false
+            doom.remainingMs = data.remainingMs or 0
+            doom.pushbackCount = data.pushbackCount or 0
+            doom.capitalCorrupted = false
+            doom.lastUpdate = love.timer.getTime()
+            table.insert(directorEvents, {
+                title = "Doom Paused",
+                description = data.message or "The corruption recedes from Solara.",
+                type = "doom_paused",
+                timer = 8,
+            })
+        end
+    end)
+
+    client:on("doom_countdown_resumed", function(data)
+        if data then
+            doom.active = true
+            doom.remainingMs = data.remainingMs or 0
+            doom.capitalCorrupted = true
+            doom.lastUpdate = love.timer.getTime()
+            table.insert(directorEvents, {
+                title = "DOOM RESUMES",
+                description = data.message or "The corruption reclaims Solara.",
+                type = "doom_resumed",
+                timer = 8,
+            })
+        end
+    end)
+
+    client:on("doom_ascension_event", function(data)
+        doom.showEvent = true
+        doom.eventTimer = 8.0
+        doom.eventMessage = data and data.message or "The world resets."
+        doom.doomAscensionCount = data and data.doomAscensionCount or 0
     end)
 
     client:on("account_created", function(data)
@@ -4920,6 +5002,24 @@ function game.update(dt)
         corruption.damageFlash = math.max(0, corruption.damageFlash - dt * 1.5)
     end
 
+    -- Doom countdown timer (client-side interpolation between server updates)
+    if doom.active and doom.remainingMs > 0 then
+        doom.remainingMs = math.max(0, doom.remainingMs - dt * 1000)
+    end
+    if doom.flashTimer > 0 then
+        doom.flashTimer = math.max(0, doom.flashTimer - dt)
+    end
+    if doom.showEvent then
+        doom.eventTimer = doom.eventTimer - dt
+        if doom.eventTimer <= 0 then
+            doom.showEvent = false
+            -- Return to login screen after doom cinematic
+            if _G.sceneManager then
+                _G.sceneManager.switch("login")
+            end
+        end
+    end
+
     -- Purification VFX update
     if raid.purificationVfx then
         raid.purificationVfx.timer = raid.purificationVfx.timer - dt
@@ -6272,6 +6372,9 @@ function game.draw()
 
     -- HUD
     game.drawHUD(W, H)
+
+    -- Doom countdown HUD (above other overlays)
+    game.drawDoomHUD(W, H)
 
     -- Level-up celebration (after HUD, before panels)
     game.drawLevelUpEffect(W, H)
@@ -8710,6 +8813,102 @@ function game.drawHUD(W, H)
     love.graphics.setColor(0.5, 0.5, 0.6, fadeIn * 0.4)
     local sprintHint = overworld.chunkBased and "" or " | Shift:Sprint"
     love.graphics.printf("WASD:Move" .. sprintHint .. " | Enter:Chat | E:Interact | I:Inv | C:Char | K:Cards | M:Map | F:Farm | H:Home", 0, H - 18, W - 10, "right")
+end
+
+function game.drawDoomHUD(W, H)
+    -- Doom ascension cinematic overlay (full screen, highest priority)
+    if doom.showEvent then
+        local progress = 1 - (doom.eventTimer / 8.0)
+        if progress < 0.3 then
+            -- Fade to white
+            local a = progress / 0.3
+            love.graphics.setColor(1, 1, 1, a)
+            love.graphics.rectangle("fill", 0, 0, W, H)
+        elseif progress < 0.5 then
+            -- White to black
+            local a = (progress - 0.3) / 0.2
+            love.graphics.setColor(1 - a, 1 - a, 1 - a, 1)
+            love.graphics.rectangle("fill", 0, 0, W, H)
+        else
+            -- Black with narrative text
+            love.graphics.setColor(0, 0, 0, 1)
+            love.graphics.rectangle("fill", 0, 0, W, H)
+            local textAlpha = math.min(1, (progress - 0.5) * 4)
+            love.graphics.setColor(0.8, 0.2, 0.2, textAlpha)
+            love.graphics.setFont(fonts.header or _G.getFont(22))
+            love.graphics.printf(doom.eventMessage or "The world resets.", 40, H / 2 - 30, W - 80, "center")
+            love.graphics.setColor(0.5, 0.5, 0.5, textAlpha * 0.6)
+            love.graphics.setFont(fonts.ui or _G.getFont(14))
+            love.graphics.printf("Doom Ascension #" .. (doom.doomAscensionCount or 1), 40, H / 2 + 20, W - 80, "center")
+        end
+        return
+    end
+
+    -- Capital corruption warning flash
+    if doom.flashTimer > 0 then
+        local fa = doom.flashTimer / 3.0
+        love.graphics.setColor(0.8, 0.1, 0.05, fa * 0.3)
+        love.graphics.rectangle("fill", 0, 0, W, H)
+        love.graphics.setColor(1, 0.3, 0.2, fa)
+        love.graphics.setFont(fonts.header or _G.getFont(22))
+        love.graphics.printf("The corruption has breached Solara.", 40, H / 2 - 40, W - 80, "center")
+        love.graphics.setColor(0.7, 0.2, 0.15, fa * 0.8)
+        love.graphics.setFont(fonts.ui or _G.getFont(14))
+        love.graphics.printf("Beneath the Cathedral, Helios stirs in agony.", 40, H / 2, W - 80, "center")
+    end
+
+    -- Doom countdown timer (top-center, red pulsing)
+    if doom.active and doom.remainingMs > 0 then
+        local totalSec = math.floor(doom.remainingMs / 1000)
+        local hours = math.floor(totalSec / 3600)
+        local minutes = math.floor((totalSec % 3600) / 60)
+        local seconds = totalSec % 60
+        local timerStr = string.format("DOOM: %02d:%02d:%02d", hours, minutes, seconds)
+
+        -- Pulse speed increases as time decreases (faster when < 1 hour)
+        local pulseSpeed = doom.remainingMs < 3600000 and 6.0 or 2.0
+        local pulse = 0.7 + 0.3 * math.abs(math.sin(love.timer.getTime() * pulseSpeed))
+
+        -- Color: bright red when < 1 hour, normal red otherwise
+        local r, g, b
+        if doom.remainingMs < 3600000 then
+            r, g, b = 1.0, 0.1, 0.05
+        else
+            r, g, b = 0.85, 0.15, 0.1
+        end
+
+        -- Background bar
+        local tw = 260
+        local th = 44
+        local tx = (W - tw) / 2
+        local ty = 8
+        love.graphics.setColor(0, 0, 0, 0.7)
+        love.graphics.rectangle("fill", tx, ty, tw, th, 6, 6)
+        love.graphics.setColor(r * 0.3, 0, 0, 0.5 * pulse)
+        love.graphics.rectangle("fill", tx, ty, tw, th, 6, 6)
+        love.graphics.setColor(r, g, b, pulse)
+        love.graphics.rectangle("line", tx, ty, tw, th, 6, 6)
+
+        -- Timer text
+        love.graphics.setFont(fonts.header or _G.getFont(20))
+        love.graphics.setColor(r, g, b, pulse)
+        love.graphics.printf(timerStr, tx, ty + 3, tw, "center")
+
+        -- Subtitle
+        love.graphics.setFont(fonts.npc or _G.getFont(10))
+        love.graphics.setColor(0.6, 0.15, 0.1, pulse * 0.8)
+        love.graphics.printf("Helios trembles.", tx, ty + 26, tw, "center")
+
+        -- Red vignette when < 1 hour
+        if doom.remainingMs < 3600000 then
+            local vigAlpha = 0.08 * pulse
+            love.graphics.setColor(0.6, 0, 0, vigAlpha)
+            love.graphics.rectangle("fill", 0, 0, W, 40)
+            love.graphics.rectangle("fill", 0, H - 40, W, 40)
+            love.graphics.rectangle("fill", 0, 0, 40, H)
+            love.graphics.rectangle("fill", W - 40, 0, 40, H)
+        end
+    end
 end
 
 function game.drawChat(W, H)
@@ -17192,6 +17391,12 @@ function game.unload()
     corruption.chunks = {}
     corruption.damageFlash = 0
     corruption.globalInfo = nil
+
+    -- Clear doom state
+    doom.active = false
+    doom.remainingMs = 0
+    doom.showEvent = false
+    doom.flashTimer = 0
 
     -- Clear portal state
     portal.show = false
