@@ -35,11 +35,13 @@ var _soulstones = _maps.soulstones;
 
 var handleUnitDeath;
 var FOCUS_CONSECUTIVE_GAIN, FOCUS_BASE_RETAIN;
+var BLOODLUST_ON_TAKE_DAMAGE;
 
 function init(deps) {
   handleUnitDeath = deps.handleUnitDeath;
   FOCUS_CONSECUTIVE_GAIN = deps.FOCUS_CONSECUTIVE_GAIN;
   FOCUS_BASE_RETAIN = deps.FOCUS_BASE_RETAIN;
+  BLOODLUST_ON_TAKE_DAMAGE = deps.BLOODLUST_ON_TAKE_DAMAGE;
 }
 
 function executeAbility(combat, unitId, abilityCardId, targetX, targetY) {
@@ -409,10 +411,10 @@ function executeAbility(combat, unitId, abilityCardId, targetX, targetY) {
         }
       } else if (aoeRadius > 0) {
         damageTargets = getUnitsInRadius(combat, targetX, targetY, aoeRadius);
-        // Exclude the caster from AoE self-damage
+        // Exclude the caster and same-type allies from AoE damage
         var filteredTargets = [];
         for (var di = 0; di < damageTargets.length; di++) {
-          if (damageTargets[di].id !== unitId) {
+          if (damageTargets[di].id !== unitId && damageTargets[di].type !== unit.type) {
             filteredTargets.push(damageTargets[di]);
           }
         }

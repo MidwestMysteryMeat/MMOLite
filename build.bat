@@ -29,7 +29,7 @@ if exist "build" rmdir /s /q "build"
 echo [2/8] Creating MMOLite.love...
 :: Remove stale .love file if present
 if exist "MMOLite.love" del "MMOLite.love"
-powershell -NoProfile -Command "Compress-Archive -Path 'client\*' -DestinationPath 'MMOLite.zip' -Force"
+powershell -NoProfile -Command "Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::CreateFromDirectory((Join-Path $PWD 'client'), (Join-Path $PWD 'MMOLite.zip'), [System.IO.Compression.CompressionLevel]::Fastest, $false)"
 :: Rename .zip to .love
 rename "MMOLite.zip" "MMOLite.love"
 if not exist "MMOLite.love" (

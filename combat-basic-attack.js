@@ -219,6 +219,9 @@ function executeBasicAttack(combat, attackerId, targetId) {
       if (protector.hp <= 0) {
         protector.hp = 0;
         protector.alive = false;
+        if (handleUnitDeath) {
+          handleUnitDeath(interceptData.combat, interceptData.protectorId, attackerId);
+        }
       }
       // Zero out damage to original target
       damage = 0;
