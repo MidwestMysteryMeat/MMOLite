@@ -65,6 +65,13 @@ const ALL_RESOURCE_TYPES = [
   'tea_leaf_seed', 'pumpkin_seed', 'corn_seed', 'rare_flower_seed', 'ancient_seed',
   // New crops
   'berries', 'tea_leaves', 'pumpkin', 'corn', 'rare_flower', 'ancient_fruit',
+  // Seasonal exotic crops
+  'frost_lily', 'void_root', 'sun_wheat', 'shadow_moss', 'blood_vine',
+  'crystal_berry', 'storm_grain', 'ember_pepper', 'moon_petal', 'deep_mushroom',
+  // Seasonal exotic seeds
+  'frost_lily_seed', 'void_root_seed', 'sun_wheat_seed', 'shadow_moss_seed',
+  'blood_vine_seed', 'crystal_berry_seed', 'storm_grain_seed', 'ember_pepper_seed',
+  'moon_petal_seed', 'deep_mushroom_seed',
   // Animal products
   'egg', 'milk', 'raw_wool', 'raw_meat', 'feather', 'honey', 'cheese', 'butter',
   // Animal feed

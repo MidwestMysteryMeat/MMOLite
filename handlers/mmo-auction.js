@@ -119,6 +119,213 @@ function removeListing(listingId) {
   return listing;
 }
 
+// ---------------------------------------------------------------------------
+// Dynamic pricing — EMA-based supply/demand tracking
+// ---------------------------------------------------------------------------
+
+var EMA_ALPHA = 0.15;  // smoothing factor for exponential moving average
+var PRICE_HISTORY_MAX = 100; // max sale records per item type
+
+// saleHistory[itemKey] = { sales: [{price, amount, timestamp}], demandEMA, supplyEMA, avgPrice }
+var saleHistory = {};
+
+function _getItemKey(listing) {
+  if (listing.listingType === 'card') return 'card:' + (listing.cardType || listing.rarity || 'unknown');
+  if (listing.listingType === 'resource') return 'resource:' + listing.resourceType;
+  return 'other:' + listing.name;
+}
+
+function _recordSale(listing) {
+  var key = _getItemKey(listing);
+  if (!saleHistory[key]) {
+    saleHistory[key] = { sales: [], demandEMA: 0, supplyEMA: 0, avgPrice: listing.price };
+  }
+  var hist = saleHistory[key];
+  hist.sales.push({ price: listing.price, amount: listing.amount || 1, timestamp: Date.now() });
+  if (hist.sales.length > PRICE_HISTORY_MAX) hist.sales.shift();
+
+  // Update EMA
+  hist.demandEMA = hist.demandEMA * (1 - EMA_ALPHA) + 1 * EMA_ALPHA; // demand = sale event
+  hist.avgPrice = hist.avgPrice * (1 - EMA_ALPHA) + listing.price * EMA_ALPHA;
+}
+
+function _recordListing(listing) {
+  var key = _getItemKey(listing);
+  if (!saleHistory[key]) {
+    saleHistory[key] = { sales: [], demandEMA: 0, supplyEMA: 0, avgPrice: listing.price };
+  }
+  var hist = saleHistory[key];
+  hist.supplyEMA = hist.supplyEMA * (1 - EMA_ALPHA) + 1 * EMA_ALPHA; // supply = listing event
+}
+
+function getMarketPrice(itemKey) {
+  var hist = saleHistory[itemKey];
+  if (!hist || hist.sales.length === 0) return null;
+  return {
+    avgPrice: Math.round(hist.avgPrice),
+    demandEMA: Math.round(hist.demandEMA * 100) / 100,
+    supplyEMA: Math.round(hist.supplyEMA * 100) / 100,
+    recentSales: hist.sales.length,
+    trend: hist.demandEMA > hist.supplyEMA ? 'rising' : (hist.demandEMA < hist.supplyEMA ? 'falling' : 'stable'),
+  };
+}
+
+function getSuggestedPrice(listing) {
+  var key = _getItemKey(listing);
+  var hist = saleHistory[key];
+  if (!hist || hist.sales.length < 3) return null;
+
+  // price = avgPrice * (1 + k * (demandEMA - supplyEMA))
+  var k = 0.15;
+  var demandSupplyDiff = hist.demandEMA - hist.supplyEMA;
+  var suggested = Math.round(hist.avgPrice * (1 + k * demandSupplyDiff));
+  return Math.max(1, suggested);
+}
+
+// ---------------------------------------------------------------------------
+// Anti-monopoly detection — Gini coefficient + dynamic fee scaling
+// ---------------------------------------------------------------------------
+
+var MONOPOLY_GINI_THRESHOLD = 0.65;    // Gini > 0.65 = monopolistic market
+var MONOPOLY_SHARE_THRESHOLD = 0.40;   // One seller > 40% of a category = monopolist
+var MONOPOLY_FEE_MAX = 25;             // Max listing fee % for monopolists (vs 5% base)
+var MONOPOLY_CHECK_INTERVAL = 5 * 60 * 1000; // Recalculate every 5 minutes
+var _lastMonopolyCheck = 0;
+
+// marketConcentration[itemCategory] = { gini, topSeller, topShare, dynamicFee, sellers }
+var marketConcentration = {};
+
+// Compute Gini coefficient from an array of values
+function _computeGini(values) {
+  if (values.length <= 1) return 0;
+  values.sort(function(a, b) { return a - b; });
+  var n = values.length;
+  var sumOfDifferences = 0;
+  var total = 0;
+  for (var i = 0; i < n; i++) {
+    total += values[i];
+    for (var j = 0; j < n; j++) {
+      sumOfDifferences += Math.abs(values[i] - values[j]);
+    }
+  }
+  if (total === 0) return 0;
+  return sumOfDifferences / (2 * n * total);
+}
+
+// Get item category for concentration analysis (broader than _getItemKey)
+function _getItemCategory(listing) {
+  if (listing.listingType === 'card') return 'cards';
+  if (listing.listingType === 'resource') return 'resource:' + listing.resourceType;
+  return 'other';
+}
+
+// Recalculate market concentration across all categories
+function _recalculateConcentration() {
+  var now = Date.now();
+  if (now - _lastMonopolyCheck < MONOPOLY_CHECK_INTERVAL) return;
+  _lastMonopolyCheck = now;
+
+  // Group listings by category -> seller -> count
+  var categoryData = {}; // category -> { sellerKey: listingCount }
+
+  for (var entry of listings) {
+    var listing = entry[1];
+    var cat = _getItemCategory(listing);
+    if (!categoryData[cat]) categoryData[cat] = {};
+    if (!categoryData[cat][listing.sellerKey]) categoryData[cat][listing.sellerKey] = 0;
+    categoryData[cat][listing.sellerKey]++;
+  }
+
+  marketConcentration = {};
+
+  for (var cat in categoryData) {
+    var sellers = categoryData[cat];
+    var sellerKeys = Object.keys(sellers);
+    var counts = sellerKeys.map(function(k) { return sellers[k]; });
+    var totalListings = 0;
+    for (var i = 0; i < counts.length; i++) totalListings += counts[i];
+
+    // Find top seller
+    var topSeller = null;
+    var topCount = 0;
+    for (var j = 0; j < sellerKeys.length; j++) {
+      if (counts[j] > topCount) {
+        topCount = counts[j];
+        topSeller = sellerKeys[j];
+      }
+    }
+
+    var topShare = totalListings > 0 ? topCount / totalListings : 0;
+    var gini = _computeGini(counts);
+
+    // Dynamic fee: scales from base (5%) to max (25%) based on market share
+    var dynamicFee = LISTING_FEE_PERCENT;
+    if (topShare > MONOPOLY_SHARE_THRESHOLD || gini > MONOPOLY_GINI_THRESHOLD) {
+      // Linear interpolation from base fee to max fee based on share
+      var shareFactor = Math.min(1, (topShare - MONOPOLY_SHARE_THRESHOLD) / (1 - MONOPOLY_SHARE_THRESHOLD));
+      dynamicFee = LISTING_FEE_PERCENT + (MONOPOLY_FEE_MAX - LISTING_FEE_PERCENT) * shareFactor;
+    }
+
+    marketConcentration[cat] = {
+      gini: Math.round(gini * 100) / 100,
+      topSeller: topSeller,
+      topShare: Math.round(topShare * 100) / 100,
+      dynamicFee: Math.round(dynamicFee * 10) / 10,
+      sellerCount: sellerKeys.length,
+      totalListings: totalListings,
+    };
+  }
+}
+
+// Get dynamic listing fee for a specific seller in a category
+function getDynamicFee(sellerKey, listing) {
+  _recalculateConcentration();
+
+  var cat = _getItemCategory(listing);
+  var conc = marketConcentration[cat];
+  if (!conc) return LISTING_FEE_PERCENT;
+
+  // Only the dominant seller pays higher fees
+  if (conc.topSeller === sellerKey && conc.topShare > MONOPOLY_SHARE_THRESHOLD) {
+    return conc.dynamicFee;
+  }
+
+  return LISTING_FEE_PERCENT;
+}
+
+// Get market health summary for a category
+function getMarketHealth(category) {
+  _recalculateConcentration();
+  var conc = marketConcentration[category];
+  if (!conc) return { healthy: true, gini: 0, monopolist: null };
+  return {
+    healthy: conc.gini < MONOPOLY_GINI_THRESHOLD && conc.topShare < MONOPOLY_SHARE_THRESHOLD,
+    gini: conc.gini,
+    topShare: conc.topShare,
+    monopolist: conc.topShare > MONOPOLY_SHARE_THRESHOLD ? conc.topSeller : null,
+    dynamicFee: conc.dynamicFee,
+    sellerCount: conc.sellerCount,
+  };
+}
+
+// Price deviation detection — flag listings significantly above market average
+function _checkPriceDeviation(listing) {
+  var key = _getItemKey(listing);
+  var hist = saleHistory[key];
+  if (!hist || hist.sales.length < 5) return null; // not enough data
+
+  var deviation = listing.price / hist.avgPrice;
+  if (deviation > 3.0) {
+    return {
+      flag: 'price_gouging',
+      listingPrice: listing.price,
+      marketAvg: Math.round(hist.avgPrice),
+      deviation: Math.round(deviation * 100) / 100,
+    };
+  }
+  return null;
+}
+
 // Accounts reference, set on first handler init
 var _accounts = null;
 
@@ -154,6 +361,10 @@ function countSellerListings(sellerKey) {
 
 module.exports = {
   loadAuctionListings: loadAuctionListings,
+  getMarketPrice: getMarketPrice,
+  getSuggestedPrice: getSuggestedPrice,
+  getMarketHealth: getMarketHealth,
+  getDynamicFee: getDynamicFee,
 
   init(io, socket, deps) {
     var { user, socketAccountMap, accounts, applyRateGrace } = deps;
@@ -314,8 +525,13 @@ module.exports = {
         };
 
         addListing(listing);
+        _recordListing(listing);
 
-        socket.emit('mmo_auction_listed', { listingId: listingId, name: card.name, price: price });
+        var listResult = { listingId: listingId, name: card.name, price: price };
+        var priceWarning = _checkPriceDeviation(listing);
+        if (priceWarning) listResult.priceWarning = priceWarning;
+
+        socket.emit('mmo_auction_listed', listResult);
         debouncedAuctionUpdate(io);
 
         // --- Track daily challenge progress for auction listing ---
@@ -387,8 +603,13 @@ module.exports = {
         };
 
         addListing(listing);
+        _recordListing(listing);
 
-        socket.emit('mmo_auction_listed', { listingId: listingId, name: listing.name, price: price });
+        var resListResult = { listingId: listingId, name: listing.name, price: price };
+        var resPriceWarning = _checkPriceDeviation(listing);
+        if (resPriceWarning) resListResult.priceWarning = resPriceWarning;
+
+        socket.emit('mmo_auction_listed', resListResult);
         debouncedAuctionUpdate(io);
 
         // --- Track daily challenge progress for auction listing ---
@@ -462,10 +683,12 @@ module.exports = {
           }
         }
 
-        // Execute purchase
+        // Execute purchase — record sale for dynamic pricing
+        _recordSale(listing);
         removeListing(data.listingId);
 
-        var fee = Math.ceil(listing.price * LISTING_FEE_PERCENT / 100);
+        var effectiveFee = getDynamicFee(listing.sellerKey, listing);
+        var fee = Math.ceil(listing.price * effectiveFee / 100);
         var sellerProceeds = listing.price - fee;
 
         // Deduct buyer (re-verify balance atomically to prevent race condition BUG-3)
@@ -571,6 +794,26 @@ module.exports = {
 
       socket.emit('mmo_auction_cancelled', { listingId: data.listingId });
       debouncedAuctionUpdate(io);
+    });
+
+    // --- mmo_auction_market_price: get dynamic pricing info ---
+    socket.on('mmo_auction_market_price', function(data) {
+      if (!data || typeof data.itemKey !== 'string') return;
+      var price = getMarketPrice(data.itemKey);
+      socket.emit('mmo_auction_market_price', {
+        itemKey: data.itemKey,
+        market: price,
+      });
+    });
+
+    // --- mmo_auction_market_health: get anti-monopoly market health ---
+    socket.on('mmo_auction_market_health', function(data) {
+      if (!data || typeof data.category !== 'string') return;
+      var health = getMarketHealth(data.category);
+      socket.emit('mmo_auction_market_health', {
+        category: data.category,
+        health: health,
+      });
     });
 
     // --- mmo_auction_my_listings: get your own listings (uses seller index) ---

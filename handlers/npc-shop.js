@@ -51,6 +51,28 @@ var BASE_PRICES = {
   corn_seed: 30,
   rare_flower_seed: 100,
   ancient_seed: 500,
+  // Seasonal exotic seeds
+  frost_lily_seed: 45,
+  void_root_seed: 120,
+  sun_wheat_seed: 20,
+  shadow_moss_seed: 18,
+  blood_vine_seed: 60,
+  crystal_berry_seed: 80,
+  storm_grain_seed: 35,
+  ember_pepper_seed: 30,
+  moon_petal_seed: 90,
+  deep_mushroom_seed: 22,
+  // Seasonal exotic crops
+  frost_lily: 35,
+  void_root: 100,
+  sun_wheat: 10,
+  shadow_moss: 12,
+  blood_vine: 50,
+  crystal_berry: 65,
+  storm_grain: 18,
+  ember_pepper: 16,
+  moon_petal: 75,
+  deep_mushroom: 15,
   // Animal products
   egg: 8,
   milk: 12,
@@ -222,6 +244,18 @@ priceTickTimer = setInterval(tickPrices, TICK_INTERVAL_MS);
 module.exports = {
   SHOPS: SHOPS,
   BASE_PRICES: BASE_PRICES,
+
+  applySeasonalOverrides: function(overrides) {
+    if (overrides.SHOPS) { SHOPS = overrides.SHOPS; module.exports.SHOPS = SHOPS; }
+    if (overrides.BASE_PRICES) {
+      BASE_PRICES = overrides.BASE_PRICES;
+      module.exports.BASE_PRICES = BASE_PRICES;
+      // Re-init price multipliers for new resources
+      for (var res in BASE_PRICES) {
+        if (!(res in priceMultipliers)) { priceMultipliers[res] = 1.0; pricePressure[res] = 0; }
+      }
+    }
+  },
 
   init(io, socket, deps) {
     var { user, socketAccountMap, accounts, checkEventRate } = deps;

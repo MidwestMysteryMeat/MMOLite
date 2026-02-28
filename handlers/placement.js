@@ -919,4 +919,94 @@ function getWallColliders(zone) {
   return colliders;
 }
 
-module.exports = { init: init, savePlacements: savePlacements, loadPlacements: loadPlacements, getWallColliders: getWallColliders };
+// ---------------------------------------------------------------------------
+// Enclosed zone detection via flood fill
+// ---------------------------------------------------------------------------
+
+var ca = require('../cellular-automata');
+
+// Detect enclosed areas within a plot zone.
+// Flood fills from zone edges; tiles NOT reached are "enclosed."
+// Returns: { enclosedTiles: Set<'x,y'>, enclosedCount, totalTiles }
+function detectEnclosedAreas(zone) {
+  if (!zone || !zone.placedObjects) return { enclosedTiles: new Set(), enclosedCount: 0, totalTiles: 0 };
+
+  var ZONE_PX = 4096;
+  var TILE = 32;
+  var gridW = Math.floor(ZONE_PX / TILE);
+  var gridH = Math.floor(ZONE_PX / TILE);
+  var totalTiles = gridW * gridH;
+
+  // Build blocked set from walls/fences/doors
+  var blocked = new Set();
+  for (var i = 0; i < zone.placedObjects.length; i++) {
+    var obj = zone.placedObjects[i];
+    if (!obj) continue;
+    var isBarrier = obj.type === 'wall' || obj.type === 'stone_wall' ||
+                    obj.type === 'fence' || obj.type === 'stone_fence' ||
+                    obj.type === 'iron_fence' || (obj.type === 'door' && !obj.open);
+    if (isBarrier) {
+      var tx = Math.floor(obj.x / TILE);
+      var ty = Math.floor(obj.y / TILE);
+      blocked.add(tx + ',' + ty);
+    }
+  }
+
+  // Flood fill from all edge tiles
+  var reachable = ca.floodFillTileGrid(
+    null, gridW, gridH, 0, 0,
+    function(x, y) { return !blocked.has(x + ',' + y); }
+  );
+
+  // Also flood from other edges in case top-left is blocked
+  var edgeStarts = [[gridW - 1, 0], [0, gridH - 1], [gridW - 1, gridH - 1]];
+  for (var ei = 0; ei < edgeStarts.length; ei++) {
+    var es = edgeStarts[ei];
+    if (!reachable.has(es[0] + ',' + es[1])) {
+      var extra = ca.floodFillTileGrid(
+        null, gridW, gridH, es[0], es[1],
+        function(x, y) { return !blocked.has(x + ',' + y); }
+      );
+      extra.forEach(function(k) { reachable.add(k); });
+    }
+  }
+
+  // Enclosed = all non-blocked tiles not reached by flood fill
+  var enclosedTiles = new Set();
+  for (var tx = 0; tx < gridW; tx++) {
+    for (var ty = 0; ty < gridH; ty++) {
+      var key = tx + ',' + ty;
+      if (!blocked.has(key) && !reachable.has(key)) {
+        enclosedTiles.add(key);
+      }
+    }
+  }
+
+  return {
+    enclosedTiles: enclosedTiles,
+    enclosedCount: enclosedTiles.size,
+    totalTiles: totalTiles,
+  };
+}
+
+// Get bonuses for enclosed areas (raid protection, crop growth, animal pen)
+function getEnclosedBonuses(zone) {
+  var result = detectEnclosedAreas(zone);
+  var ratio = result.enclosedCount / Math.max(1, result.totalTiles);
+  return {
+    enclosedRatio: ratio,
+    raidDamageReduction: Math.min(0.50, ratio * 2),   // up to 50% raid damage reduction
+    cropGrowthBonus: Math.min(0.30, ratio * 1.5),      // up to 30% faster crop growth
+    animalHappinessBonus: Math.min(0.20, ratio),        // up to 20% animal happiness
+    enclosedCount: result.enclosedCount,
+  };
+}
+
+module.exports = {
+  init: init,
+  savePlacements: savePlacements,
+  loadPlacements: loadPlacements,
+  getWallColliders: getWallColliders,
+  detectEnclosedAreas: detectEnclosedAreas,
+  getEnclosedBonuses: getEnclosedBonuses,
+};

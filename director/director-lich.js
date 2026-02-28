@@ -39,6 +39,21 @@
 'use strict';
 
 var worldgen = require('../worldgen');
+var ca = require('../cellular-automata');
+var influenceMaps = null; // lazy-loaded to avoid circular require
+function _getInfluenceMaps() {
+  if (!influenceMaps) {
+    try { influenceMaps = require('../influence-maps'); } catch (e) { /* not loaded yet */ }
+  }
+  return influenceMaps;
+}
+var diseaseSystem = null;
+function _getDiseaseSystem() {
+  if (!diseaseSystem) {
+    try { diseaseSystem = require('../disease-system'); } catch (e) { /* not loaded yet */ }
+  }
+  return diseaseSystem;
+}
 var doomAscension = null; // lazy-loaded to avoid circular require
 function _getDoomAscension() {
   if (!doomAscension) {
@@ -251,9 +266,15 @@ function _dailySpread() {
         var scaledSpreadChance = SPREAD_CHANCE * _getScalingFactor();
         var chance = scaledSpreadChance * (1.0 - (dist - 1) / SPREAD_RADIUS);
 
-        // Water slows spread instead of blocking
+        // Weighted graph diffusion: use terrain resistance from influence maps
         var biome = worldgen.getBiome(ncx, ncy);
-        if (biome === 0) chance *= WATER_SPREAD_CHANCE;
+        var infMaps = _getInfluenceMaps();
+        if (infMaps) {
+          var spreadWeight = infMaps.getCorruptionSpreadWeight(ncx, ncy);
+          chance *= spreadWeight.resistance;
+        } else if (biome === 0) {
+          chance *= WATER_SPREAD_CHANCE; // fallback
+        }
 
         if (Math.random() > chance) continue;
 
@@ -281,32 +302,63 @@ function _dailySpread() {
     corruptedChunks[newKeys[ni]] = newChunks[newKeys[ni]];
   }
 
-  // 3. Natural decay for chunks far from sources
+  // 3. Natural decay — disconnected corruption regions decay 3x faster
+  // Build source key set for connected component check
+  var sourceKeys = new Set();
+  for (var sci = 0; sci < corruptionSources.length; sci++) {
+    sourceKeys.add(corruptionSources[sci].cx + ',' + corruptionSources[sci].cy);
+  }
+  if (riftMod) {
+    var allRiftsForDecay = riftMod.getAllRifts();
+    for (var rdi = 0; rdi < allRiftsForDecay.length; rdi++) {
+      if (!allRiftsForDecay[rdi].destroyed && !allRiftsForDecay[rdi].cleared) {
+        sourceKeys.add(allRiftsForDecay[rdi].chunkX + ',' + allRiftsForDecay[rdi].chunkY);
+      }
+    }
+  }
+
+  // Find connected components of corrupted chunks
+  var caGrid = {};
+  for (var cgi = 0; cgi < keys.length; cgi++) {
+    caGrid[keys[cgi]] = { state: 1 };
+  }
+  var components = ca.findConnectedComponents(caGrid, function(cell) { return cell.state > 0; });
+
+  // Check which components contain a source
+  var disconnectedKeys = new Set();
+  for (var ci = 0; ci < components.length; ci++) {
+    var comp = components[ci];
+    var hasSource = false;
+    comp.forEach(function(k) {
+      if (sourceKeys.has(k)) hasSource = true;
+    });
+    if (!hasSource) {
+      comp.forEach(function(k) { disconnectedKeys.add(k); });
+    }
+  }
+
   for (var di = 0; di < keys.length; di++) {
     var dkey = keys[di];
     var dchunk = corruptedChunks[dkey];
-    // Check if adjacent to a source
+    if (sourceKeys.has(dkey)) continue; // source chunks don't decay
+
+    // Check if near source (within 2 chunks)
     var nearSource = false;
-    for (var sci = 0; sci < corruptionSources.length; sci++) {
-      var s = corruptionSources[sci];
-      var dparts = dkey.split(',');
-      var ddist = Math.abs(parseInt(dparts[0], 10) - s.cx) + Math.abs(parseInt(dparts[1], 10) - s.cy);
-      if (ddist <= 2) { nearSource = true; break; }
-    }
-    // Also check proximity to active mini-rifts
-    if (!nearSource && riftMod) {
-      var dRifts = riftMod.getAllRifts();
-      var dparts2 = dkey.split(',');
-      var dpx = parseInt(dparts2[0], 10);
-      var dpy = parseInt(dparts2[1], 10);
-      for (var dri = 0; dri < dRifts.length; dri++) {
-        if (dRifts[dri].destroyed || dRifts[dri].cleared) continue;
-        var drd = Math.abs(dpx - dRifts[dri].chunkX) + Math.abs(dpy - dRifts[dri].chunkY);
-        if (drd <= (dRifts[dri].corruptionRadius || 3)) { nearSource = true; break; }
+    var dparts = dkey.split(',');
+    var dpx = parseInt(dparts[0], 10);
+    var dpy = parseInt(dparts[1], 10);
+    sourceKeys.forEach(function(sk) {
+      if (nearSource) return;
+      var sp = sk.split(',');
+      if (Math.abs(dpx - parseInt(sp[0], 10)) + Math.abs(dpy - parseInt(sp[1], 10)) <= 2) {
+        nearSource = true;
       }
-    }
+    });
+
     if (!nearSource) {
-      dchunk.level = Math.max(0, dchunk.level - NATURAL_DECAY_RATE);
+      // Disconnected chunks decay 3x faster (containment mechanic)
+      var decayRate = disconnectedKeys.has(dkey) ? NATURAL_DECAY_RATE * 3 : NATURAL_DECAY_RATE;
+      dchunk.level = Math.max(0, dchunk.level - decayRate);
       if (dchunk.level <= 0) {
         delete corruptedChunks[dkey];
       }
@@ -315,6 +367,32 @@ function _dailySpread() {
 
   var totalCorrupted = Object.keys(corruptedChunks).length;
   console.log('[lich] Corruption spread complete: ' + totalCorrupted + ' corrupted chunks, ' + newKeys.length + ' new');
+
+  // Update corruption pressure map for influence system
+  var infMaps = _getInfluenceMaps();
+  if (infMaps) infMaps.updateCorruptionPressure(corruptedChunks);
+
+  // Seed diseases from high-corruption zones
+  var diseaseMod = _getDiseaseSystem();
+  if (diseaseMod) {
+    var allKeys = Object.keys(corruptedChunks);
+    for (var dsi = 0; dsi < allKeys.length; dsi++) {
+      var dsChunk = corruptedChunks[allKeys[dsi]];
+      if (!dsChunk) continue;
+      var dsParts = allKeys[dsi].split(',');
+      var dsCx = parseInt(dsParts[0], 10);
+      var dsCy = parseInt(dsParts[1], 10);
+      // Shadow fever at 60+ corruption (3% chance per day)
+      if (dsChunk.level >= 60 && Math.random() < 0.03) {
+        diseaseMod.seedDisease('shadow_fever', dsCx, dsCy, 'corruption');
+      }
+      // Lich rot at 80+ corruption (2% chance per day)
+      if (dsChunk.level >= 80 && Math.random() < 0.02) {
+        diseaseMod.seedDisease('lich_rot', dsCx, dsCy, 'corruption');
+      }
+    }
+  }
+
   return true;
 }
 

@@ -218,6 +218,7 @@ setInterval(function() {
 }, 30 * 60 * 1000);
 
 // Calendar advancement tick (check every 60s, advance when interval elapsed)
+var _lastCalendarSeason = state.world.calendar.season;
 setInterval(function() {
   try {
     var advanced = state.advanceCalendar();
@@ -225,6 +226,19 @@ setInterval(function() {
       var cal = state.getCalendar();
       io.emit('calendar_update', cal);
       console.log('[calendar] Advanced to day ' + cal.day + ' of ' + cal.monthName + ', year ' + cal.year + ' (' + cal.season + ')');
+
+      // Detect calendar season change — regenerate seasonal data
+      if (cal.season !== _lastCalendarSeason) {
+        _lastCalendarSeason = cal.season;
+        try {
+          var _seasonal = require('./seasonal');
+          _seasonal.onSeasonChange(state.world.seasonSeed, cal.season);
+          io.emit('season_visual_update', _seasonal.getVisual());
+          console.log('[seasonal] Season changed to ' + cal.season + ' — regenerated and broadcast visuals');
+        } catch (sErr) {
+          console.error('[seasonal] Season change error:', sErr.message);
+        }
+      }
     }
   } catch (err) {
     console.error('[calendar] Tick error:', err.message);
@@ -670,6 +684,14 @@ server.listen(PORT, () => {
 
   // Create default zones on startup
   state.initDefaultZones();
+
+  // Seasonal world system — generate definitions from doom-cycle seed
+  var seasonal = require('./seasonal');
+  var worldgen = require('./worldgen');
+  var seasonSeed = state.world.seasonSeed || worldgen.chunkSeed(state.world.doomAscensionCount || 0, 0, 'mmolite_season');
+  state.world.seasonSeed = seasonSeed;
+  seasonal.generate(seasonSeed, state.world.calendar.season);
+  seasonal.apply();
 
   // Async account preload (non-blocking — replaces synchronous IIFE at module load)
   accounts.preloadKeyIndex().catch(function(err) {

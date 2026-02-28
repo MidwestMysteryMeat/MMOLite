@@ -20,6 +20,10 @@ var directorVampire  = require('./director-vampire');
 var directorWerewolf = require('./director-werewolf');
 var directorRifts    = require('./director-rifts');
 var doomAscension    = require('../doom-ascension');
+var diseaseSystem    = require('../disease-system');
+var weatherProp      = require('../weather-propagation');
+var influenceMaps    = require('../influence-maps');
+var biomeSuccession  = require('../biome-succession');
 
 var _io = null;
 var _state = null;
@@ -33,6 +37,10 @@ var _baseRaidsInterval = null;
 var _vampireInterval = null;
 var _werewolfInterval = null;
 var _riftsInterval = null;
+var _diseaseInterval = null;
+var _weatherInterval = null;
+var _influenceInterval = null;
+var _ecologyInterval = null;
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -143,6 +151,51 @@ function init(io, state, accounts, socketAccountMap) {
   }, 3 * 60 * 1000);
   if (_riftsInterval && _riftsInterval.unref) _riftsInterval.unref();
 
+  // Initialize disease system (60s interval, hourly chunk ticks internally)
+  diseaseSystem.init(_io, _state, _accounts);
+  _diseaseInterval = setInterval(function() {
+    try {
+      diseaseSystem.tick(_io, _state, _accounts, _socketAccountMap);
+    } catch (err) {
+      console.error('[director] Disease tick error:', err.message);
+    }
+  }, 60000);
+  if (_diseaseInterval && _diseaseInterval.unref) _diseaseInterval.unref();
+
+  // Initialize weather propagation (5min interval, CA-based)
+  weatherProp.init(_io, _state);
+  _weatherInterval = setInterval(function() {
+    try {
+      weatherProp.tick(_io, _state);
+    } catch (err) {
+      console.error('[director] Weather tick error:', err.message);
+    }
+  }, 5 * 60 * 1000);
+  if (_weatherInterval && _weatherInterval.unref) _weatherInterval.unref();
+
+  // Initialize influence maps (10min interval)
+  influenceMaps.init(_io, _state);
+  _influenceInterval = setInterval(function() {
+    try {
+      influenceMaps.tick(_io, _state);
+    } catch (err) {
+      console.error('[director] Influence tick error:', err.message);
+    }
+  }, 10 * 60 * 1000);
+  if (_influenceInterval && _influenceInterval.unref) _influenceInterval.unref();
+
+  // Initialize biome succession (60s interval, hourly CA ticks internally)
+  biomeSuccession.init(_state);
+  _ecologyInterval = setInterval(function() {
+    try {
+      var lichState = directorLich.getState();
+      biomeSuccession.tick(_state, lichState ? lichState.corruptedChunks : null);
+    } catch (err) {
+      console.error('[director] Ecology tick error:', err.message);
+    }
+  }, 60000);
+  if (_ecologyInterval && _ecologyInterval.unref) _ecologyInterval.unref();
+
   // Initialize doom ascension module — wire director refs for world reset
   var overworldStructures = null;
   try { overworldStructures = require('../overworld-structures'); } catch (e) { /* not loaded yet */ }
@@ -153,10 +206,14 @@ function init(io, state, accounts, socketAccountMap) {
     raids: directorBaseRaids,
     rifts: directorRifts,
     structures: overworldStructures,
+    disease: diseaseSystem,
+    weather: weatherProp,
+    influence: influenceMaps,
+    ecology: biomeSuccession,
     saveState: saveState,
   });
 
-  console.log('[director] AI Event Director initialized (micro=per-tick, zone=30s, macro=5min, ocean=60s, lich=60s, raids=5min, vampire=10min, werewolf=15min, rifts=3min, doom=wired)');
+  console.log('[director] AI Event Director initialized (micro=per-tick, zone=30s, macro=5min, ocean=60s, lich=60s, raids=5min, vampire=10min, werewolf=15min, rifts=3min, disease=60s, weather=5min, influence=10min, ecology=60s, doom=wired)');
 }
 
 /**
@@ -206,6 +263,22 @@ function getRiftsDirector() {
   return directorRifts;
 }
 
+function getDiseaseSystem() {
+  return diseaseSystem;
+}
+
+function getWeatherPropagation() {
+  return weatherProp;
+}
+
+function getInfluenceMaps() {
+  return influenceMaps;
+}
+
+function getBiomeSuccession() {
+  return biomeSuccession;
+}
+
 // ---------------------------------------------------------------------------
 // State persistence — save/load director state across server restarts
 // ---------------------------------------------------------------------------
@@ -217,6 +290,10 @@ function saveState() {
     var state = {
       lich: directorLich.getState(),
       rifts: directorRifts.getState(),
+      disease: diseaseSystem.getState(),
+      weather: weatherProp.getState(),
+      influence: influenceMaps.getState(),
+      ecology: biomeSuccession.getState(),
     };
     var dir = path.dirname(STATE_FILE);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
@@ -233,6 +310,10 @@ function loadState() {
       var saved = JSON.parse(fs.readFileSync(STATE_FILE, 'utf8'));
       if (saved.lich) directorLich.loadState(saved.lich);
       if (saved.rifts) directorRifts.loadState(saved.rifts);
+      if (saved.disease) diseaseSystem.loadState(saved.disease);
+      if (saved.weather) weatherProp.loadState(saved.weather);
+      if (saved.influence) influenceMaps.loadState(saved.influence);
+      if (saved.ecology) biomeSuccession.loadState(saved.ecology);
       console.log('[director] State loaded from disk');
     }
   } catch (err) {
@@ -258,4 +339,8 @@ module.exports = {
   getVampireDirector: getVampireDirector,
   getWerewolfDirector: getWerewolfDirector,
   getRiftsDirector: getRiftsDirector,
+  getDiseaseSystem: getDiseaseSystem,
+  getWeatherPropagation: getWeatherPropagation,
+  getInfluenceMaps: getInfluenceMaps,
+  getBiomeSuccession: getBiomeSuccession,
 };

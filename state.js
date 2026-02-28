@@ -80,6 +80,7 @@ const world = {
   // Doom ascension tracking
   doomAscensionCount: 0,
   doomCountdown: null,  // persisted by director-lich via getState/loadState
+  seasonSeed: null,      // set at startup from chunkSeed(doomAscensionCount, 0, 'mmolite_season')
   // Seasonal calendar
   calendar: {
     year: 500,

@@ -184,4 +184,10 @@ module.exports = {
   getCompanionDamage: getCompanionDamage,
   getTotalCompanionDamage: getTotalCompanionDamage,
   deductCompanionWages: deductCompanionWages,
+  applySeasonalOverrides: function(overrides) {
+    if (overrides.COMPANION_CLASSES) {
+      COMPANION_CLASSES = overrides.COMPANION_CLASSES;
+      module.exports.COMPANION_CLASSES = COMPANION_CLASSES;
+    }
+  },
 };
