@@ -1184,6 +1184,50 @@ var RECIPES = {
     output: { type: 'pack_mule_tack', name: 'Pack Mule Tack' },
     skillReq: { crafting: 3 },
   },
+
+  // ===== CONTAINER EQUIPMENT (backpacks & rigs) =====
+  leather_satchel: {
+    station: 'none',
+    cost: { wood: 5 },
+    output: { type: 'leather_satchel', name: 'Leather Satchel' },
+    skillReq: { crafting: 2 },
+  },
+  belt_pouch: {
+    station: 'none',
+    cost: { wood: 3 },
+    output: { type: 'belt_pouch', name: 'Belt Pouch' },
+    skillReq: { crafting: 1 },
+  },
+  adventurer_pack: {
+    station: 'anvil',
+    cost: { iron_bar: 6, wood: 10 },
+    output: { type: 'adventurer_pack', name: "Adventurer's Pack" },
+    skillReq: { crafting: 8 },
+  },
+  utility_vest: {
+    station: 'anvil',
+    cost: { iron_bar: 4, wood: 6 },
+    output: { type: 'utility_vest', name: 'Utility Vest' },
+    skillReq: { crafting: 6 },
+  },
+  explorer_backpack: {
+    station: 'anvil',
+    cost: { steel_bar: 8, wood: 12 },
+    output: { type: 'explorer_backpack', name: 'Explorer Backpack' },
+    skillReq: { crafting: 15 },
+  },
+  tactical_rig: {
+    station: 'anvil',
+    cost: { steel_bar: 5, iron_bar: 5 },
+    output: { type: 'tactical_rig', name: 'Tactical Rig' },
+    skillReq: { crafting: 12 },
+  },
+  mithril_frame: {
+    station: 'anvil',
+    cost: { mithril_bar: 10, steel_bar: 5, wood: 8 },
+    output: { type: 'mithril_frame', name: 'Mithril Frame Pack' },
+    skillReq: { crafting: 25 },
+  },
 };
 
 // Merge RPG recipes from rpg-data.js
@@ -1781,8 +1825,16 @@ module.exports = {
           if (recipe.placeable || !recipe.resource) {
             var newItem;
             var isEquipment = accounts.WEAPON_TYPES && accounts.WEAPON_TYPES[recipe.output.type];
+            var isContainer = isEquipment && (accounts.WEAPON_TYPES[recipe.output.type].slot === 'backpack' || accounts.WEAPON_TYPES[recipe.output.type].slot === 'rig');
 
-            if (isEquipment) {
+            if (isContainer) {
+              // Container items (backpacks, rigs) — use dedicated generator
+              var containerItem = lootGen.generateContainerItem({ forcedType: recipe.output.type, source: 'craft' });
+              if (containerItem) {
+                if (craftAccount && craftAccount.username) containerItem.craftedBy = craftAccount.username;
+                newItem = containerItem;
+              }
+            } else if (isEquipment) {
               // --- PROCEDURAL EQUIPMENT GENERATION via loot-generator ---
               var baseDef = accounts.WEAPON_TYPES[recipe.output.type];
               var _eqSkillLevel = 1;
@@ -1869,12 +1921,12 @@ module.exports = {
               socket.emit('craft_error', { message: addResult.error });
               return;
             }
+            socket.emit('grid_item_added', { item: newItem, rev: (addResult && addResult._gridRev) || 0 });
 
             // Card: craft_bonus — % chance for a second output item (double craft)
             if (cardCraftBonus > 0 && Math.random() < (cardCraftBonus / 100)) {
               var bonusItem;
               if (isEquipment) {
-                // Generate a second procedural item
                 bonusItem = lootGen.generateItem(recipe.output.type, accounts.WEAPON_TYPES[recipe.output.type], { source: 'craft', craftSkillLevel: _eqSkillLevel, luckBonus: _eqLuck });
                 if (newItem.maxDurability) { bonusItem.maxDurability = newItem.maxDurability; bonusItem.durability = newItem.maxDurability; }
               } else {
@@ -1882,7 +1934,10 @@ module.exports = {
                 if (newItem.maxDurability) { bonusItem.maxDurability = newItem.maxDurability; bonusItem.durability = newItem.maxDurability; }
               }
               if (craftAccount && craftAccount.username) bonusItem.craftedBy = craftAccount.username;
-              accounts.addMMOItem(key, bonusItem);
+              var bonusAddRes = accounts.addMMOItem(key, bonusItem);
+              if (bonusAddRes && !bonusAddRes.error) {
+                socket.emit('grid_item_added', { item: bonusItem, rev: (bonusAddRes && bonusAddRes._gridRev) || 0 });
+              }
             }
           }
 
@@ -2382,9 +2437,8 @@ module.exports = {
         // Suffix effects
         var suffixEffects = foodItem.suffixEffects || {};
 
-        // Remove item from inventory
-        mmoInv.items.splice(itemIdx, 1);
-        accounts.saveAccount(accounts.loadAccount(key));
+        // Remove item from inventory (also removes from grid)
+        accounts.removeMMOItem(key, data.itemId);
 
         // Dungeon healing
         var dungeonCombat = null;
@@ -2749,10 +2803,16 @@ module.exports = {
           qualityMultiplier: qualityTier.multiplier,
         };
         if (recipe.output.quantity) output.quantity = recipe.output.quantity;
-        // Add to inventory
+        // Add to inventory (weight-checked)
         var key = pending.account_key;
         var account = accounts.loadAccount(key);
         if (!account) return;
+        var accountWeight = require('../account-weight');
+        var itemW = accountWeight.getItemWeight(output);
+        if (!accountWeight.canCarryWeight(account, itemW)) {
+          socket.emit('craft_error', { message: 'Too heavy to carry' });
+          return;
+        }
         var inv = account.mmoInventory || {};
         if (!inv.items) inv.items = [];
         inv.items.push(output);

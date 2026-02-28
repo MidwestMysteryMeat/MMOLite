@@ -220,6 +220,7 @@ module.exports = {
           case 'open_card_shop':
           case 'open_ritual_trainer':
           case 'open_portal':
+          case 'open_bank':
             socket.emit('npc_action', { action: choice.action, npcId: npcDialogueState.npcId });
             break;
           case 'heal':

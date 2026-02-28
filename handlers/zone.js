@@ -1089,8 +1089,12 @@ module.exports = {
         }
       }
 
-      // Add to player's resource inventory
+      // Add to player's resource inventory (weight-checked)
       var updatedInventory = accounts.addResource(accKey, resourceType, harvestAmount);
+      if (updatedInventory && updatedInventory.overweight) {
+        socket.emit('harvest_error', { message: 'You are too encumbered to carry more.' });
+        return;
+      }
 
       // Card: rare_resource_chance — roll for bonus rare resource on any harvest
       if (rareResourceChance > 0 && Math.random() < rareResourceChance) {
@@ -1142,6 +1146,9 @@ module.exports = {
         xpNeeded: xpResult.xpNeeded,
         leveledUp: xpResult.leveledUp,
         inventory: updatedInventory,
+        weight: accounts.getCurrentWeight(account),
+        maxWeight: accounts.getCarryCapacity(account),
+        encumbrance: accounts.getEncumbranceLevel(account),
         hp: resource.hp,
         maxHp: resource.maxHp,
         destroyed: destroyed,
@@ -1205,7 +1212,22 @@ module.exports = {
       if (!accKey) return;
       var inventory = accounts.getMMOInventory(accKey);
       var equipment = accounts.getEquipment ? accounts.getEquipment(accKey) : { axe: null, pickaxe: null };
-      socket.emit('inventory_updated', { inventory: inventory, equipment: equipment });
+      // Include grid state for spatial inventory clients
+      var gridState = null;
+      var gridInv = require('../account-grid-inventory');
+      var acc = accounts.loadAccount(accKey);
+      if (acc) {
+        gridInv.initGrid(acc);
+        if (!acc.grid.placements || Object.keys(acc.grid.placements).length === 0) {
+          var items = (acc.mmoInventory && acc.mmoInventory.items) || [];
+          if (items.length > 0) {
+            gridInv.migrateFromFlatInventory(acc);
+            accounts.saveAccount(acc);
+          }
+        }
+        gridState = gridInv.getFullInventoryState(acc);
+      }
+      socket.emit('inventory_updated', { inventory: inventory, equipment: equipment, gridState: gridState });
     });
 
     // --- request_chunks: client explicitly requests chunk data for given coords ---

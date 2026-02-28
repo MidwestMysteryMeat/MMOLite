@@ -121,10 +121,10 @@ describe('Event Contracts: Server emits ↔ Client listeners', () => {
       console.log('[contracts] Sample missing:', missing.sort().slice(0, 20).join(', '));
     }
     // Coverage ratchet: tighten this as client handlers are wired up.
-    // Current baseline: 53.6% (187/349). Was 30% — raised to catch regression.
+    // Current baseline: 56.4% (215/381). Was 50% — raised after grid inventory + corpse loot events.
     const covered = serverEmits.size - missing.length;
     const coveragePct = covered / serverEmits.size;
-    expect(coveragePct).toBeGreaterThan(0.50);
+    expect(coveragePct).toBeGreaterThan(0.55);
   });
 
   test('client listeners with no server emit: report orphaned (informational)', () => {
@@ -139,7 +139,7 @@ describe('Event Contracts: Server emits ↔ Client listeners', () => {
     if (orphaned.length > 0) {
       console.log('[contracts] Orphaned:', orphaned.sort().join(', '));
     }
-    // Ratchet: tighten as orphans are resolved. Was 50 — reduced to catch new drift.
-    expect(orphaned.length).toBeLessThanOrEqual(35);
+    // Ratchet: tighten as orphans are resolved. Was 35 — reduced after grid inventory + corpse loot cleanup.
+    expect(orphaned.length).toBeLessThanOrEqual(34);
   });
 });

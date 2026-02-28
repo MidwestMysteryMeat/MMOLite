@@ -6,6 +6,9 @@
 // =============================================================================
 
 var crypto = require('crypto');
+var accountWeight = require('./account-weight');
+var _gridSizes = require('./inventory-grid-sizes');
+var _equipData = require('./equipment-data');
 
 // ---------------------------------------------------------------------------
 // Section 1: WEAPON & ARMOR AFFIXES
@@ -1053,6 +1056,95 @@ function generateItem(baseType, baseDef, options) {
   var _itemCurse = rollItemCurse(_curseBase, luckBonus, _mutSlotHint);
   if (_itemCurse) applyItemCurse(item, _itemCurse);
 
+  // Stamp physical weight for encumbrance system
+  item.weight = accountWeight.getItemWeight(item);
+
+  // Stamp grid dimensions for Tarkov-style inventory
+  var _gSize = _gridSizes.getGridSize(item);
+  item.gridW = _gSize.w;
+  item.gridH = _gSize.h;
+
+  return item;
+}
+
+// ---------------------------------------------------------------------------
+// CONTAINER ITEM GENERATION (backpacks & rigs)
+// ---------------------------------------------------------------------------
+
+// Tier-sorted container pools for loot drops
+var CONTAINER_POOL = [
+  { type: 'leather_satchel', tier: 1, slot: 'backpack', rarity: 'common' },
+  { type: 'belt_pouch',      tier: 1, slot: 'rig',      rarity: 'common' },
+  { type: 'adventurer_pack', tier: 2, slot: 'backpack', rarity: 'uncommon' },
+  { type: 'utility_vest',    tier: 2, slot: 'rig',      rarity: 'uncommon' },
+  { type: 'explorer_backpack', tier: 3, slot: 'backpack', rarity: 'rare' },
+  { type: 'tactical_rig',    tier: 3, slot: 'rig',      rarity: 'rare' },
+  { type: 'mithril_frame',   tier: 4, slot: 'backpack', rarity: 'ultra_rare' },
+];
+
+function generateContainerItem(options) {
+  options = options || {};
+  var depth = options.depth || 1;
+  var source = options.source || 'drop';
+  var forcedType = options.forcedType || null;
+
+  var entry;
+  if (forcedType) {
+    for (var fi = 0; fi < CONTAINER_POOL.length; fi++) {
+      if (CONTAINER_POOL[fi].type === forcedType) { entry = CONTAINER_POOL[fi]; break; }
+    }
+    if (!entry) return null;
+  } else {
+    // Pick tier based on depth — deeper floors = higher tier containers
+    var maxTier = 1;
+    if (depth >= 40) maxTier = 4;
+    else if (depth >= 25) maxTier = 3;
+    else if (depth >= 10) maxTier = 2;
+
+    var candidates = [];
+    for (var ci = 0; ci < CONTAINER_POOL.length; ci++) {
+      if (CONTAINER_POOL[ci].tier <= maxTier) candidates.push(CONTAINER_POOL[ci]);
+    }
+    // Weight higher tiers less — inverse tier weighting
+    var weights = [];
+    var totalW = 0;
+    for (var wi = 0; wi < candidates.length; wi++) {
+      var w = 1.0 / candidates[wi].tier;
+      weights.push(w);
+      totalW += w;
+    }
+    var roll = Math.random() * totalW;
+    var cum = 0;
+    entry = candidates[0];
+    for (var ri = 0; ri < candidates.length; ri++) {
+      cum += weights[ri];
+      if (roll <= cum) { entry = candidates[ri]; break; }
+    }
+  }
+
+  var baseDef = _equipData.WEAPON_TYPES[entry.type];
+  if (!baseDef) return null;
+
+  var gSize = _gridSizes.getGridSize({ slot: entry.slot });
+  var containerSize = _gridSizes.getContainerGridSize({ type: entry.type });
+
+  var item = {
+    id: generateItemId(),
+    type: entry.type,
+    name: baseDef.name,
+    baseName: baseDef.name,
+    rarity: entry.rarity,
+    slot: entry.slot,
+    stats: {},
+    source: source,
+    generatedAt: Date.now(),
+    gridW: gSize.w,
+    gridH: gSize.h,
+    containerGridW: containerSize ? containerSize.w : 0,
+    containerGridH: containerSize ? containerSize.h : 0,
+    weight: accountWeight.getItemWeight({ type: entry.type, slot: entry.slot }),
+  };
+
   return item;
 }
 
@@ -1283,6 +1375,13 @@ function rollDungeonLoot(depth, isBoss, isChest) {
     }
     items.push({ rarity: rarity, depth: depth, source: isBoss ? 'boss' : isChest ? 'chest' : 'drop' });
   }
+
+  // Container drop chance — bosses and chests can yield backpacks/rigs
+  var containerChance = isBoss ? 0.06 : isChest ? 0.04 : 0;
+  if (containerChance > 0 && Math.random() < containerChance) {
+    items.push({ container: true, depth: depth, source: isBoss ? 'boss' : 'chest' });
+  }
+
   return items;
 }
 
@@ -1503,6 +1602,14 @@ function generateConsumable(resourceType, displayName, options) {
   if (options.biome && BIOME_CURSE_CHANCE[options.biome]) _cCurseBase = BIOME_CURSE_CHANCE[options.biome];
   var _cCurse = rollItemCurse(_cCurseBase, luckBonus, _cMutHint);
   if (_cCurse) applyItemCurse(item, _cCurse);
+
+  // Stamp physical weight for encumbrance system
+  item.weight = accountWeight.getItemWeight(item);
+
+  // Stamp grid dimensions for Tarkov-style inventory
+  var _gSize = _gridSizes.getGridSize(item);
+  item.gridW = _gSize.w;
+  item.gridH = _gSize.h;
 
   return item;
 }
@@ -1985,4 +2092,7 @@ module.exports = {
   rollItemCurse: rollItemCurse,
   applyItemCurse: applyItemCurse,
   cleanseItemCurse: cleanseItemCurse,
+  // Container generation
+  CONTAINER_POOL: CONTAINER_POOL,
+  generateContainerItem: generateContainerItem,
 };

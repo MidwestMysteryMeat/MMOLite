@@ -828,6 +828,38 @@ const NPC_DIALOGUES = {
       ],
     },
   },
+
+  banker: {
+    start: {
+      text: "Welcome to the vault. Your deposits are secured across every branch in Fortuna. How may I assist you today?",
+      choices: [
+        { text: 'I\'d like to access my vault.', nextNode: 'open_vault', action: 'open_bank' },
+        { text: 'How does the bank work?', nextNode: 'explain' },
+        { text: 'Never mind.', nextNode: null },
+      ],
+    },
+    explain: {
+      text: "We offer secure storage for gold, resources, and equipment. Your vault is accessible from any town banker. Items stored here are protected — even through world calamities.",
+      choices: [
+        { text: 'Open my vault.', nextNode: 'open_vault', action: 'open_bank' },
+        { text: 'Can I expand my vault?', nextNode: 'expansion' },
+        { text: 'Good to know.', nextNode: null },
+      ],
+    },
+    expansion: {
+      text: "Certainly. Additional vault space can be purchased with gold. Each expansion adds ten slots. Speak to me when you are ready.",
+      choices: [
+        { text: 'Open my vault.', nextNode: 'open_vault', action: 'open_bank' },
+        { text: 'Thanks.', nextNode: null },
+      ],
+    },
+    open_vault: {
+      text: "Here are your vault contents. Take your time.",
+      choices: [
+        { text: 'Done.', nextNode: null },
+      ],
+    },
+  },
 };
 
 module.exports = { NPC_DIALOGUES };

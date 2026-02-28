@@ -2,7 +2,7 @@
 // Extracted from accounts.js to reduce file size.  No dependencies on accounts.js.
 
 // Valid equipment slots: tools (axe, pickaxe) + combat gear (main_hand, off_hand, head, chest, undershirt, arms, hands, legs, feet, ring1-6, necklace)
-var EQUIPMENT_SLOTS = ['axe', 'pickaxe', 'main_hand', 'off_hand', 'head', 'chest', 'undershirt', 'arms', 'hands', 'legs', 'feet', 'ring1', 'ring2', 'ring3', 'ring4', 'ring5', 'ring6', 'necklace'];
+var EQUIPMENT_SLOTS = ['axe', 'pickaxe', 'main_hand', 'off_hand', 'head', 'chest', 'undershirt', 'arms', 'hands', 'legs', 'feet', 'ring1', 'ring2', 'ring3', 'ring4', 'ring5', 'ring6', 'necklace', 'backpack', 'rig'];
 
 // Valid tool types for axe/pickaxe equipment slots (all tiers)
 var VALID_AXES = { iron_axe:1, copper_axe:1, bronze_axe:1, steel_axe:1, mithril_axe:1 };
@@ -273,6 +273,15 @@ var WEAPON_TYPES = {
   ring_of_the_void_walker: { slot: 'ring6', effects: [{ type: 'stat_boost', stat: 'finesse', value: 3 }], name: 'Ring of the Void Walker', rarity: 'legendary', icon: 'resourcesandfood/RingViking.PNG' },
   ring_of_the_phoenix:   { slot: 'ring6', effects: [{ type: 'stat_boost', stat: 'vigor', value: 3 }],   name: 'Ring of the Phoenix',   rarity: 'legendary', icon: 'resourcesandfood/RingViking.PNG' },
   ring_of_the_leviathan: { slot: 'ring6', effects: [{ type: 'stat_boost', stat: 'vigor', value: 3 }, { type: 'stat_boost', stat: 'acumen', value: 3 }], name: 'Ring of the Leviathan', rarity: 'legendary', icon: 'resourcesandfood/RingViking.PNG' },
+
+  // ===== CONTAINER EQUIPMENT (backpacks & rigs) =====
+  leather_satchel:   { slot: 'backpack', name: 'Leather Satchel',     rarity: 'common',    containerGridW: 2, containerGridH: 2 },
+  adventurer_pack:   { slot: 'backpack', name: "Adventurer's Pack",    rarity: 'uncommon',  containerGridW: 3, containerGridH: 2 },
+  explorer_backpack: { slot: 'backpack', name: 'Explorer Backpack',    rarity: 'rare',      containerGridW: 3, containerGridH: 3 },
+  mithril_frame:     { slot: 'backpack', name: 'Mithril Frame Pack',   rarity: 'ultra_rare', containerGridW: 4, containerGridH: 3 },
+  belt_pouch:        { slot: 'rig',      name: 'Belt Pouch',           rarity: 'common',    containerGridW: 2, containerGridH: 1 },
+  utility_vest:      { slot: 'rig',      name: 'Utility Vest',         rarity: 'uncommon',  containerGridW: 2, containerGridH: 2 },
+  tactical_rig:      { slot: 'rig',      name: 'Tactical Rig',         rarity: 'rare',      containerGridW: 3, containerGridH: 2 },
 };
 
 // ---------------------------------------------------------------------------
@@ -503,6 +512,20 @@ function categorizeHandItem(weaponDef) {
   return null;
 }
 
+// Container equipment — backpacks and rigs provide extra grid inventory space
+var BACKPACKS = {
+  leather_satchel:   { tier: 1, def: 0, gridW: 2, gridH: 2, name: 'Leather Satchel',     slot: 'backpack', rarity: 'common' },
+  adventurer_pack:   { tier: 2, def: 0, gridW: 3, gridH: 2, name: "Adventurer's Pack",    slot: 'backpack', rarity: 'uncommon' },
+  explorer_backpack: { tier: 3, def: 0, gridW: 3, gridH: 3, name: 'Explorer Backpack',    slot: 'backpack', rarity: 'rare' },
+  mithril_frame:     { tier: 4, def: 0, gridW: 4, gridH: 3, name: 'Mithril Frame Pack',   slot: 'backpack', rarity: 'ultra_rare' },
+};
+
+var RIGS = {
+  belt_pouch:        { tier: 1, def: 0, gridW: 2, gridH: 1, name: 'Belt Pouch',           slot: 'rig', rarity: 'common' },
+  utility_vest:      { tier: 2, def: 0, gridW: 2, gridH: 2, name: 'Utility Vest',         slot: 'rig', rarity: 'uncommon' },
+  tactical_rig:      { tier: 3, def: 0, gridW: 3, gridH: 2, name: 'Tactical Rig',         slot: 'rig', rarity: 'rare' },
+};
+
 module.exports = {
   EQUIPMENT_SLOTS,
   VALID_AXES,
@@ -521,4 +544,6 @@ module.exports = {
   ensureItemDurability,
   DUAL_WIELD_COMBOS,
   categorizeHandItem,
+  BACKPACKS,
+  RIGS,
 };

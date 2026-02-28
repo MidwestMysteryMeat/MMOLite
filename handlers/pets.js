@@ -3,6 +3,7 @@
 // Events: pet_tame, pet_list, pet_feed, pet_set_active
 
 var crypto = require('crypto');
+var na = require('../nature-algorithms');
 
 var TAMEABLE_CREATURES = {
   // biome -> [{ type, name, tamingLevel, tamingItem, baseSpeed, evolutions }]
@@ -43,8 +44,10 @@ var PET_CARE = {
 function calculatePetSpeed(pet) {
   var baseSpeed = pet.baseSpeed || 1.0;
   var evoBonus = 0;
-  // Check evolution stage
-  if (pet.evolutionLevel >= 2 && pet.evolutions && pet.evolutions[1]) {
+  // Use GA-evolved stats if available, else fall back to template
+  if (pet.evoStats && pet.evoStats.speedBonus) {
+    evoBonus = pet.evoStats.speedBonus;
+  } else if (pet.evolutionLevel >= 2 && pet.evolutions && pet.evolutions[1]) {
     evoBonus = pet.evolutions[1].speedBonus;
   } else if (pet.evolutionLevel >= 1 && pet.evolutions && pet.evolutions[0]) {
     evoBonus = pet.evolutions[0].speedBonus;
@@ -212,6 +215,12 @@ function tickPetDecay(account) {
  * Call from dungeon kill rewards.
  * @returns evolution result or null
  */
+// Evolution stat templates per stage (crossover targets for GA)
+var EVO_STAT_TEMPLATES = {
+  1: { speedBonus: 1.0, stamina: 1.1, loyalty: 1.0, carryCapacity: 1.05 },
+  2: { speedBonus: 1.0, stamina: 1.25, loyalty: 1.15, carryCapacity: 1.15 },
+};
+
 function awardPetEvoXp(account, xpAmount) {
   if (!account.activePet || !account.petData) return null;
   var pet = null;
@@ -227,7 +236,39 @@ function awardPetEvoXp(account, xpAmount) {
   if (pet.evolutionXp >= threshold) {
     pet.evolutionXp -= threshold;
     pet.evolutionLevel++;
-    return { evolved: true, newLevel: pet.evolutionLevel, newName: pet.evolutions[pet.evolutionLevel - 1].name };
+    var evoInfo = pet.evolutions[pet.evolutionLevel - 1];
+
+    // GA-inspired stat variance: crossover pet's current stats with template,
+    // then mutate. Happiness biases mutations positive, hunger affects stamina.
+    var template = EVO_STAT_TEMPLATES[pet.evolutionLevel] || EVO_STAT_TEMPLATES[1];
+    var parentStats = {
+      speedBonus: evoInfo.speedBonus || 0.05,
+      stamina: pet.evoStats ? pet.evoStats.stamina : 1.0,
+      loyalty: pet.evoStats ? pet.evoStats.loyalty : 1.0,
+      carryCapacity: pet.evoStats ? pet.evoStats.carryCapacity : 1.0,
+    };
+
+    // Crossover: 60% template, 40% parent
+    var crossed = na.petStatCrossover(parentStats, template);
+
+    // Mutate: happiness (0-100) maps to 0-1 bias, ±10% perturbation
+    var happinessBias = (pet.happiness || 50) / 100;
+    var mutated = na.petStatMutate(crossed, 0.10, happinessBias);
+
+    // Store evolved stats on pet
+    pet.evoStats = {
+      speedBonus: Math.round(mutated.speedBonus * 1000) / 1000,
+      stamina: Math.round(mutated.stamina * 1000) / 1000,
+      loyalty: Math.round(mutated.loyalty * 1000) / 1000,
+      carryCapacity: Math.round(mutated.carryCapacity * 1000) / 1000,
+    };
+
+    return {
+      evolved: true,
+      newLevel: pet.evolutionLevel,
+      newName: evoInfo.name,
+      evoStats: pet.evoStats,
+    };
   }
   return null;
 }

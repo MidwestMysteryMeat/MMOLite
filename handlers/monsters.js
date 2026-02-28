@@ -7,6 +7,8 @@ var dungeonCombat = require('../dungeon-combat');
 var dungeonData = require('../dungeon-data');
 var rpgData = require('../rpg-data');
 var masteryCore = require('../mastery/mastery-core');
+var directorZone = require('../director/director-zone');
+var corpseLoot = require('./corpse-loot');
 
 // Biome ID to element mapping for overworld monster element assignment (Fix 2)
 var BIOME_ELEMENT_MAP = {
@@ -501,8 +503,10 @@ function runSpawnCycle() {
 
       // Spawn up to target, but throttle to 2 per tick per player to avoid lag spikes
       // Time-of-day: increase effective target at night/dusk
+      // Director zone spawn multiplier adjusts density based on zone stress
       var timeMults = getTimeMultipliers();
-      var effectiveTarget = Math.round(MONSTERS_PER_PLAYER * timeMults.spawnRate);
+      var zoneSpawnMult = directorZone.getSpawnMultiplier(zoneId);
+      var effectiveTarget = Math.round(MONSTERS_PER_PLAYER * timeMults.spawnRate * zoneSpawnMult);
       var toSpawn = Math.min(2, effectiveTarget - nearbyCount);
       if (toSpawn <= 0) continue;
       if (aliveCount >= MAX_MONSTERS_PER_ZONE) break;
@@ -549,6 +553,23 @@ function runSpawnCycle() {
         _io.to('zone:' + zoneId).emit('zone_monster_spawned', monsterToClient(mob));
 
         if (aliveCount >= MAX_MONSTERS_PER_ZONE) break;
+      }
+    }
+
+    // Spawn world containers near players (rare chance each cycle)
+    var existingContainers = _state.zoneWorldContainers.get(zoneId);
+    var containerCount = existingContainers ? existingContainers.length : 0;
+    if (containerCount < 10 && Math.random() < 0.08) {
+      // Pick a random player position and spawn near it
+      var playerKeys = Array.from(zone.members);
+      if (playerKeys.length > 0) {
+        var randPid = playerKeys[Math.floor(Math.random() * playerKeys.length)];
+        var pPos = _state.playerPositions.get(randPid);
+        if (pPos) {
+          var cx = pPos.x + (Math.random() - 0.5) * 400;
+          var cy = pPos.y + (Math.random() - 0.5) * 400;
+          corpseLoot.spawnWorldContainer(zoneId, cx, cy, 1);
+        }
       }
     }
   }
@@ -1828,28 +1849,7 @@ module.exports = {
               // Phantom Skill XP: Anatomy on all overworld kills
               accounts.addSkillXp(capturedAccKey, 'anatomy', 3, xpRate);
 
-              // Award gold
-              var goldAmount = capturedMonster.goldDrop;
-              if (goldAmount > 0) {
-                accounts.updateChips(capturedAccKey, goldAmount);
-              }
-
-              // Roll loot drops
-              var lootDropped = [];
-              if (capturedMonster.possibleLoot && capturedMonster.possibleLoot.length > 0) {
-                for (var li = 0; li < capturedMonster.possibleLoot.length; li++) {
-                  var loot = capturedMonster.possibleLoot[li];
-                  if (Math.random() < loot.chance) {
-                    var addResult = accounts.addResource(capturedAccKey, loot.type, loot.amount);
-                    if (addResult) {
-                      var itemName = loot.type.replace(/_/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); });
-                      lootDropped.push({ type: loot.type, name: itemName, amount: loot.amount });
-                    }
-                  }
-                }
-              }
-
-              // Remove monster from zone
+              // Remove monster from zone and spawn lootable corpse
               capturedMonster.alive = false;
               capturedMonster.hp = 0;
               capturedMonster.inCombat = false;
@@ -1866,14 +1866,18 @@ module.exports = {
               // Broadcast death to zone
               io.to('zone:' + capturedZoneId).emit('zone_monster_died', { id: capturedMonsterId });
 
-              // Send kill rewards to player
+              // Spawn lootable corpse with procedural loot at death position
+              var _corpse = corpseLoot.spawnCorpse(capturedZoneId, capturedMonster);
+
+              // Send kill rewards to player (XP/skill only — gold/loot in corpse)
               if (targetSock) {
                 targetSock.emit('zone_monster_killed', {
                   id: capturedMonsterId,
                   name: capturedMonster.name,
                   xp: capturedMonster.xp,
-                  gold: goldAmount,
-                  loot: lootDropped,
+                  gold: 0,
+                  loot: [],
+                  corpseId: _corpse ? _corpse.id : null,
                   skillLevel: xpResult ? xpResult.level : 1,
                   skillXp: xpResult ? xpResult.xp : 0,
                   xpNeeded: xpResult ? xpResult.xpNeeded : 100,

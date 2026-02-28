@@ -4,6 +4,7 @@
 local net = require("lib.net")
 local combatUI = require("scenes.combat-ui")
 local combatAnim = require("scenes.combat-anim")
+local gridInv = require("scenes.grid-inventory")
 
 local game = {}
 
@@ -99,6 +100,14 @@ local SCENE_EVENTS = {
     "disease_status", "disease_contracted", "disease_symptom",
     "weather_info", "influence_info", "ecology_info",
     "mmo_auction_market_price",
+    "mmo_auction_market_health",
+    "patrol_spawned", "patrol_moved", "patrol_despawned", "patrol_arrived",
+    "bank_contents", "bank_result", "bank_error", "npc_action",
+    "grid_state", "grid_update", "grid_reject", "grid_item_added",
+    "zone_corpse_spawned", "zone_corpse_removed",
+    "loot_corpse_result",
+    "zone_container_spawned", "zone_container_looted",
+    "loot_container_result",
 }
 
 -- Debug logger: writes to file so we can diagnose issues in fused exe (no console)
@@ -216,6 +225,7 @@ local ui = {
     contextMenu = nil,            -- nil when hidden; table { x, y, targetId, targetName, items, hoverIndex }
     -- Mastery tree panel
     showMastery = false,
+    showGridInventory = false,
 }
 
 -- Knowledge panel state (cached data from server)
@@ -457,6 +467,9 @@ local doom = {
     flashTimer = 0,           -- for capital corruption warning flash
 }
 
+-- Active NPC patrols (ACO-driven faction armies visible on overworld)
+local activePatrols = {}  -- id -> { factionId, cx, cy, strength, description, hostile, color }
+
 -- Disease state
 local diseaseState = {
     playerDiseases = {},      -- { diseaseId = { state, name } }
@@ -537,6 +550,18 @@ local npcShop = {
     shopList = nil,          -- array of { id, name, description, itemCount }
     message = nil,          -- { text, color, timer } feedback message
     transactionLock = false, -- prevent double-click spam
+}
+
+-- Bank vault state
+local bank = {
+    show = false,
+    tab = "gold",              -- "gold", "resources", "items"
+    scroll = 0,
+    selected = nil,
+    amount = 1,
+    data = nil,                -- server bank data { gold, resources, items, maxSlots, expansionsPurchased, nextExpansionCost }
+    message = nil,             -- { text, color, timer }
+    transactionLock = false,
 }
 
 -- Auction House state
@@ -762,6 +787,14 @@ local zoneMonsters = {}           -- array of { id, type, name, x, y, hp, maxHp,
 local monsterAttackCooldown = 0   -- prevent spam-clicking attack
 
 -- ================================================================
+-- Feature: Lootable Corpses & World Containers
+-- ================================================================
+local zoneCorpses = {}            -- array of { id, name, x, y, level, hasItems, hasGold }
+local zoneWorldContainers = {}    -- array of { id, type, name, x, y, hasItems }
+local corpseLootPanel = nil       -- { corpseId, name, gold, resources, items } when open
+local containerLootPanel = nil    -- { containerId, name, gold, resources, items } when open
+
+-- ================================================================
 -- Feature: Level-Up Celebration
 -- ================================================================
 local levelUpEffect = nil         -- { timer, level, alpha, ringRadius }
@@ -922,6 +955,10 @@ function game.load()
     -- Reset new feature state
     zoneMonsters = {}
     monsterAttackCooldown = 0
+    zoneCorpses = {}
+    zoneWorldContainers = {}
+    corpseLootPanel = nil
+    containerLootPanel = nil
     levelUpEffect = nil
     packReveal = nil
     onboarding = { tips = {}, currentTip = nil, dismissed = false }
@@ -1013,6 +1050,7 @@ end
 -- Close all UI panels (mutual exclusion)
 function game.closeAllPanels()
     ui.showInventory = false
+    ui.showGridInventory = false
     ui.showCharSheet = false
     ui.showCardCollection = false
     ui.showWorldMap = false
@@ -1035,6 +1073,10 @@ function game.closeAllPanels()
     npcShop.selected = nil
     npcShop.amount = 1
     npcShop.scroll = 0
+    bank.show = false
+    bank.selected = nil
+    bank.amount = 1
+    bank.scroll = 0
     auction.show = false
     auction.selected = nil
     auction.scroll = 0
@@ -1053,6 +1095,13 @@ function game.closeAllPanels()
     resetTradeState()
 end
 
+function game.enterPlacementMode(itemType, itemId)
+    ui.placementMode = true
+    ui.placementType = itemType
+    ui.placementItemId = itemId
+    ui.showGridInventory = false
+end
+
 function game.setupListeners()
     if not client then return end
 
@@ -1060,6 +1109,11 @@ function game.setupListeners()
     for _, evt in ipairs(SCENE_EVENTS) do
         client:off(evt)
     end
+
+    -- Initialize grid inventory module
+    gridInv.init(client, fonts, game)
+    -- Request grid state on connect
+    client:emit("grid_sync", {})
 
     -- Handle zone errors (e.g. expired dungeon floor) — fallback to starter_town
     client:on("zone_error", function(data)
@@ -1125,6 +1179,10 @@ function game.setupListeners()
 
         -- Clear overworld monsters and request fresh list for this zone
         zoneMonsters = {}
+        zoneCorpses = {}
+        zoneWorldContainers = {}
+        corpseLootPanel = nil
+        containerLootPanel = nil
         if client then
             client:emit("zone_monsters_request", {})
         end
@@ -1427,6 +1485,112 @@ function game.setupListeners()
         doom.eventTimer = 8.0
         doom.eventMessage = data and data.message or "The world resets."
         doom.doomAscensionCount = data and data.doomAscensionCount or 0
+    end)
+
+    -- ACO patrol system: visible NPC faction armies on overworld
+    client:on("patrol_spawned", function(data)
+        if data and data.id then
+            activePatrols[data.id] = {
+                factionId = data.factionId,
+                cx = data.cx, cy = data.cy,
+                strength = data.strength or 1,
+                description = data.description or "Patrol",
+                hostile = data.hostile or false,
+                color = data.color or "#ffffff",
+            }
+        end
+    end)
+
+    client:on("patrol_moved", function(data)
+        if data and data.id and activePatrols[data.id] then
+            activePatrols[data.id].cx = data.cx
+            activePatrols[data.id].cy = data.cy
+            activePatrols[data.id].strength = data.strength or activePatrols[data.id].strength
+        end
+    end)
+
+    client:on("patrol_despawned", function(data)
+        if data and data.id then
+            activePatrols[data.id] = nil
+        end
+    end)
+
+    client:on("patrol_arrived", function(data)
+        if data and data.id then
+            activePatrols[data.id] = nil
+            if data.hostile then
+                table.insert(directorEvents, {
+                    title = (data.description or "Hostile Force") .. " Arrives!",
+                    description = "A hostile force has reached its target.",
+                    type = "patrol_arrived",
+                    timer = 8,
+                })
+            end
+        end
+    end)
+
+    -- Bank vault events
+    client:on("bank_contents", function(data)
+        if data then
+            bank.data = data
+            bank.transactionLock = false
+        end
+    end)
+
+    client:on("bank_result", function(data)
+        if not data then return end
+        bank.transactionLock = false
+        if data.success then
+            if data.bank then bank.data = data.bank end
+            if data.chips ~= nil then
+                if identity and identity.account then identity.account.chips = data.chips end
+            end
+            if data.inventory then
+                mmoInventory = data.inventory
+                if identity and identity.account then identity.account.mmoInventory = data.inventory end
+            end
+            if data.message then
+                bank.message = { text = data.message, color = {1, 0.85, 0.2}, timer = 3 }
+            end
+        end
+    end)
+
+    client:on("bank_error", function(data)
+        bank.transactionLock = false
+        if data and data.message then
+            bank.message = { text = data.message, color = {1, 0.3, 0.3}, timer = 3 }
+        end
+    end)
+
+    -- NPC action dispatch (server sends after dialogue choice with an action)
+    client:on("npc_action", function(data)
+        if not data or not data.action then return end
+        if data.action == "open_bank" then
+            game.closeAllPanels()
+            bank.show = true
+            bank.tab = "gold"
+            bank.selected = nil
+            bank.amount = 1
+            bank.scroll = 0
+            bank.data = nil
+            bank.transactionLock = false
+            if client then client:emit("bank_open", {}) end
+        elseif data.action == "healed" then
+            local me = players[myId]
+            if me then
+                addFloatingText({ text = "Healed!", x = me.x, y = me.y - 40, color = {0.3, 1, 0.5}, timer = 2.5 })
+            end
+        elseif data.action == "reveal_rumors" then
+            if data.rumors then
+                for _, rumor in ipairs(data.rumors) do
+                    table.insert(chat.messages, { text = "[Rumor] " .. (rumor.text or rumor), color = "#CCAA66" })
+                end
+            end
+        elseif data.action == "faction_rep_gained" then
+            table.insert(chat.messages, { text = "[Faction] Reputation gained with " .. (data.factionId or "unknown"), color = "#88CCFF" })
+        elseif data.action == "karma_changed" then
+            table.insert(chat.messages, { text = "[Karma] Your karma is now " .. tostring(data.karma or 0), color = "#AAFFAA" })
+        end
     end)
 
     -- Disease system events
@@ -1769,6 +1933,8 @@ function game.setupListeners()
         ui.placementMode = false
         ui.placementType = nil
         ui.placementItemId = nil
+        -- Resync grid inventory (item was placed)
+        client:emit("grid_sync", {})
     end)
 
     -- Chunk data from server (overworld lazy loading)
@@ -3257,6 +3423,8 @@ function game.setupListeners()
         end
         -- Restore sprint stamina from food
         sprint.stamina = math.min(sprint.MAX, sprint.stamina + sprint.FOOD_RESTORE)
+        -- Resync grid inventory (item was consumed)
+        if ui.showGridInventory then client:emit("grid_sync", {}) end
     end)
 
     -- B4: Food error response
@@ -4643,6 +4811,64 @@ function game.setupListeners()
         end
     end)
 
+    -- ---- Corpse & World Container Events ----
+    client:on("zone_corpse_spawned", function(data)
+        if not data or not data.id then return end
+        table.insert(zoneCorpses, data)
+    end)
+
+    client:on("zone_corpse_removed", function(data)
+        if not data or not data.id then return end
+        for i = #zoneCorpses, 1, -1 do
+            if zoneCorpses[i].id == data.id then
+                table.remove(zoneCorpses, i)
+                break
+            end
+        end
+        -- Close loot panel if viewing this corpse
+        if corpseLootPanel and corpseLootPanel.corpseId == data.id then
+            corpseLootPanel = nil
+        end
+    end)
+
+    client:on("loot_corpse_result", function(data)
+        if not data then return end
+        if data.error then
+            game._statusMsg = data.error
+            game._statusTimer = 3
+            return
+        end
+        corpseLootPanel = data
+    end)
+
+    client:on("zone_container_spawned", function(data)
+        if not data or not data.id then return end
+        table.insert(zoneWorldContainers, data)
+    end)
+
+    client:on("zone_container_looted", function(data)
+        if not data or not data.id then return end
+        for i = #zoneWorldContainers, 1, -1 do
+            if zoneWorldContainers[i].id == data.id then
+                table.remove(zoneWorldContainers, i)
+                break
+            end
+        end
+        if containerLootPanel and containerLootPanel.containerId == data.id then
+            containerLootPanel = nil
+        end
+    end)
+
+    client:on("loot_container_result", function(data)
+        if not data then return end
+        if data.error then
+            game._statusMsg = data.error
+            game._statusTimer = 3
+            return
+        end
+        containerLootPanel = data
+    end)
+
     client:on("zone_monster_hit", function(data)
         if not data or not data.id then return end
         for _, m in ipairs(zoneMonsters) do
@@ -5032,6 +5258,11 @@ end
 function game.update(dt)
     fadeIn = math.min(1, fadeIn + dt * 3)
 
+    -- Update grid inventory (resets hover state each frame)
+    if ui.showGridInventory then
+        gridInv.update(dt)
+    end
+
     -- Auto-retry zone_enter if no zone_state received after 3s
     if not zone and game._zoneRetryTimer and not game._loadError then
         game._zoneRetryTimer = game._zoneRetryTimer - dt
@@ -5230,6 +5461,14 @@ function game.update(dt)
         npcShop.message.timer = npcShop.message.timer - dt
         if npcShop.message.timer <= 0 then
             npcShop.message = nil
+        end
+    end
+
+    -- Update bank message timer
+    if bank.message and bank.message.timer then
+        bank.message.timer = bank.message.timer - dt
+        if bank.message.timer <= 0 then
+            bank.message = nil
         end
     end
 
@@ -6342,6 +6581,7 @@ function game.draw()
     -- Draw overworld monsters (world space, after players)
     if not dungeon.inDungeon and not tcState.overworldCombat then
         game.drawZoneMonsters()
+        game.drawCorpsesAndContainers()
     end
 
     -- Draw leviathans on overworld (world space)
@@ -6486,6 +6726,9 @@ function game.draw()
     -- Level-up celebration (after HUD, before panels)
     game.drawLevelUpEffect(W, H)
 
+    -- Loot panel (corpse/container)
+    game.drawLootPanel(W, H)
+
     -- Onboarding tip banner (top-center, before panels)
     game.drawOnboardingTip(W, H)
 
@@ -6533,6 +6776,12 @@ function game.draw()
 
     -- Inventory UI
     game.drawInventory(W, H)
+
+    -- Grid inventory UI (Tarkov-style)
+    if ui.showGridInventory and gridInv.hasGrid() then
+        gridInv.setResources(mmoInventory)
+        gridInv.draw(W, H)
+    end
 
     -- Equipment panel (B1)
     game.drawEquipmentPanel(W, H)
@@ -6718,6 +6967,9 @@ function game.draw()
         elseif hoverNpc.type == "portal_nexus" then
             love.graphics.setColor(0.5, 0.4, 1, fadeIn * (0.7 + math.sin(love.timer.getTime() * 4) * 0.3))
             love.graphics.printf("Press E to open Portal Nexus", 0, H / 2 - 80, W, "center")
+        elseif hoverNpc.type == "banker" then
+            love.graphics.setColor(1, 0.85, 0.3, fadeIn * (0.7 + math.sin(love.timer.getTime() * 4) * 0.3))
+            love.graphics.printf("Press E to open Bank Vault", 0, H / 2 - 80, W, "center")
         end
     end
 
@@ -6858,6 +7110,11 @@ function game.draw()
     -- NPC Shop panel
     if npcShop.show then
         game.drawNpcShop(W, H)
+    end
+
+    -- Bank vault panel
+    if bank.show then
+        game.drawBank(W, H)
     end
 
     -- P2P Trade panel
@@ -7080,6 +7337,167 @@ function game.drawZoneMonsters()
             end
         end
     end
+end
+
+-- ================================================================
+-- Draw: Corpses & World Containers (world space)
+-- ================================================================
+function game.drawCorpsesAndContainers()
+    local me = players[myId]
+    local t = love.timer.getTime()
+
+    -- Draw corpses as bone-white skull shapes
+    for _, c in ipairs(zoneCorpses) do
+        local cx, cy = c.x or 0, c.y or 0
+        -- Bone white body
+        love.graphics.setColor(0.85, 0.82, 0.7, 0.8)
+        love.graphics.circle("fill", cx, cy, 8)
+        -- X eyes
+        love.graphics.setColor(0.4, 0.1, 0.1, 0.9)
+        love.graphics.setLineWidth(1.5)
+        love.graphics.line(cx - 4, cy - 3, cx - 1, cy)
+        love.graphics.line(cx - 1, cy - 3, cx - 4, cy)
+        love.graphics.line(cx + 1, cy - 3, cx + 4, cy)
+        love.graphics.line(cx + 4, cy - 3, cx + 1, cy)
+        -- Glow if has loot
+        if c.hasItems or c.hasGold then
+            local glow = 0.3 + 0.15 * math.sin(t * 3)
+            love.graphics.setColor(1, 0.85, 0.3, glow)
+            love.graphics.circle("line", cx, cy, 12)
+        end
+        -- Label
+        love.graphics.setFont(fonts.small)
+        love.graphics.setColor(0.9, 0.85, 0.7, 0.7)
+        love.graphics.printf(c.name or "Remains", cx - 50, cy + 12, 100, "center")
+        -- Interact prompt
+        if me then
+            local dx = me.x - cx
+            local dy = me.y - cy
+            if dx * dx + dy * dy < 128 * 128 then
+                love.graphics.setColor(1, 0.9, 0.5, 0.6 + 0.3 * math.sin(t * 4))
+                love.graphics.printf("E to loot", cx - 40, cy + 24, 80, "center")
+            end
+        end
+    end
+
+    -- Draw world containers as small brown boxes
+    for _, wc in ipairs(zoneWorldContainers) do
+        local wx, wy = wc.x or 0, wc.y or 0
+        -- Box body
+        love.graphics.setColor(0.55, 0.35, 0.15, 0.9)
+        love.graphics.rectangle("fill", wx - 8, wy - 6, 16, 12, 2, 2)
+        -- Lid
+        love.graphics.setColor(0.65, 0.42, 0.18, 0.9)
+        love.graphics.rectangle("fill", wx - 9, wy - 8, 18, 4, 1, 1)
+        -- Latch
+        love.graphics.setColor(0.8, 0.7, 0.3, 0.8)
+        love.graphics.rectangle("fill", wx - 2, wy - 4, 4, 3)
+        -- Glow if has items
+        if wc.hasItems then
+            local glow = 0.25 + 0.15 * math.sin(t * 2.5)
+            love.graphics.setColor(1, 0.9, 0.4, glow)
+            love.graphics.circle("line", wx, wy, 14)
+        end
+        -- Label
+        love.graphics.setFont(fonts.small)
+        love.graphics.setColor(0.8, 0.7, 0.5, 0.7)
+        love.graphics.printf(wc.name or "Container", wx - 50, wy + 10, 100, "center")
+        -- Interact prompt
+        if me then
+            local dx = me.x - wx
+            local dy = me.y - wy
+            if dx * dx + dy * dy < 128 * 128 then
+                love.graphics.setColor(1, 0.9, 0.5, 0.6 + 0.3 * math.sin(t * 4))
+                love.graphics.printf("E to loot", wx - 40, wy + 22, 80, "center")
+            end
+        end
+    end
+end
+
+-- ================================================================
+-- Draw: Loot Panel (screen-space overlay for corpse/container looting)
+-- ================================================================
+function game.drawLootPanel(W, H)
+    local panel = corpseLootPanel or containerLootPanel
+    if not panel then return end
+
+    local panelW = 280
+    local panelH = 300
+    local px = W / 2 - panelW / 2
+    local py = H / 2 - panelH / 2
+
+    -- Background
+    love.graphics.setColor(0.08, 0.08, 0.12, 0.92)
+    love.graphics.rectangle("fill", px, py, panelW, panelH, 6, 6)
+    love.graphics.setColor(0.5, 0.4, 0.25, 0.8)
+    love.graphics.setLineWidth(2)
+    love.graphics.rectangle("line", px, py, panelW, panelH, 6, 6)
+
+    -- Title
+    love.graphics.setFont(fonts.medium or _G.getFont(14))
+    love.graphics.setColor(0.95, 0.9, 0.7)
+    love.graphics.printf(panel.name or "Loot", px, py + 8, panelW, "center")
+
+    local yOff = py + 32
+    love.graphics.setFont(fonts.small or _G.getFont(11))
+
+    -- Gold
+    if panel.gold and panel.gold > 0 then
+        love.graphics.setColor(1, 0.85, 0.2)
+        love.graphics.print("Gold: " .. panel.gold, px + 10, yOff)
+        yOff = yOff + 18
+    end
+
+    -- Resources
+    if panel.resources then
+        for resType, amount in pairs(panel.resources) do
+            if amount > 0 then
+                love.graphics.setColor(0.7, 0.9, 0.7)
+                local resName = resType:gsub("_", " ")
+                love.graphics.print(resName .. " x" .. amount, px + 10, yOff)
+                yOff = yOff + 16
+            end
+        end
+    end
+
+    -- Items
+    if panel.items and #panel.items > 0 then
+        yOff = yOff + 4
+        love.graphics.setColor(0.8, 0.8, 0.9, 0.6)
+        love.graphics.line(px + 10, yOff, px + panelW - 10, yOff)
+        yOff = yOff + 6
+
+        for idx, item in ipairs(panel.items) do
+            local rarity = item.rarity or "common"
+            local rc = {0.7, 0.7, 0.7}
+            if rarity == "uncommon" then rc = {0.3, 0.8, 0.3}
+            elseif rarity == "rare" then rc = {0.3, 0.5, 1}
+            elseif rarity == "ultra_rare" then rc = {0.7, 0.3, 0.9}
+            elseif rarity == "legendary" then rc = {1, 0.7, 0.2}
+            elseif rarity == "relic" then rc = {1, 0.3, 0.3} end
+
+            love.graphics.setColor(rc[1], rc[2], rc[3], 0.9)
+            love.graphics.print((item.name or "Item") .. " [" .. idx .. "]", px + 10, yOff)
+            yOff = yOff + 16
+            if yOff > py + panelH - 50 then break end
+        end
+    end
+
+    -- Buttons
+    local btnY = py + panelH - 36
+    -- Take All
+    love.graphics.setColor(0.2, 0.5, 0.2, 0.85)
+    love.graphics.rectangle("fill", px + 10, btnY, 100, 26, 4, 4)
+    love.graphics.setColor(0.9, 0.95, 0.9)
+    love.graphics.printf("Take All", px + 10, btnY + 5, 100, "center")
+    -- Close
+    love.graphics.setColor(0.5, 0.2, 0.2, 0.85)
+    love.graphics.rectangle("fill", px + panelW - 110, btnY, 100, 26, 4, 4)
+    love.graphics.setColor(0.95, 0.85, 0.85)
+    love.graphics.printf("Close", px + panelW - 110, btnY + 5, 100, "center")
+
+    -- Store layout for click detection
+    game._lootPanelRect = { x = px, y = py, w = panelW, h = panelH, btnY = btnY }
 end
 
 -- ================================================================
@@ -10564,6 +10982,13 @@ function game.keypressed(key)
         return
     end
 
+    -- Close loot panel on Escape
+    if (corpseLootPanel or containerLootPanel) and key == "escape" then
+        corpseLootPanel = nil
+        containerLootPanel = nil
+        return
+    end
+
     -- Pack reveal: block input (click advances/closes, Escape also closes)
     if packReveal then
         if key == "escape" then
@@ -10662,6 +11087,17 @@ function game.keypressed(key)
         return  -- block all other input while shop is open
     end
 
+    -- Bank vault panel: Escape closes it
+    if bank.show then
+        if key == "escape" then
+            bank.show = false
+            bank.selected = nil
+            bank.amount = 1
+            bank.scroll = 0
+        end
+        return
+    end
+
     if ui.showWorldMap then
         if key == "m" or key == "escape" then
             ui.showWorldMap = false
@@ -10683,6 +11119,15 @@ function game.keypressed(key)
     if ui.showEquipment then
         if key == "g" or key == "escape" then
             ui.showEquipment = false
+        end
+        return
+    end
+
+    if ui.showGridInventory then
+        if key == "i" or key == "escape" then
+            ui.showGridInventory = false
+        elseif gridInv.keypressed(key) then
+            -- handled by grid inventory
         end
         return
     end
@@ -11010,6 +11455,31 @@ function game.keypressed(key)
             return  -- handled dungeon interaction
         end
 
+        -- Interact with lootable corpse or world container (overworld)
+        if not dungeon.inDungeon then
+            local me = players[myId]
+            if me then
+                -- Check nearby corpses
+                for _, c in ipairs(zoneCorpses) do
+                    local dx = me.x - (c.x or 0)
+                    local dy = me.y - (c.y or 0)
+                    if dx * dx + dy * dy < 128 * 128 then
+                        client:emit("loot_corpse", { corpseId = c.id })
+                        return
+                    end
+                end
+                -- Check nearby world containers
+                for _, wc in ipairs(zoneWorldContainers) do
+                    local dx = me.x - (wc.x or 0)
+                    local dy = me.y - (wc.y or 0)
+                    if dx * dx + dy * dy < 128 * 128 then
+                        client:emit("loot_container", { containerId = wc.id })
+                        return
+                    end
+                end
+            end
+        end
+
         -- Interact with zone connection or resource
         if hoverConnection then
             client:emit("zone_enter", {
@@ -11161,6 +11631,18 @@ function game.keypressed(key)
                     client:emit("npc_shop_browse", {})
                     client:emit("npc_shop_prices", { shopId = "general" })
                 end
+            elseif hoverNpc.type == "banker" then
+                game.closeAllPanels()
+                bank.show = true
+                bank.tab = "gold"
+                bank.selected = nil
+                bank.amount = 1
+                bank.scroll = 0
+                bank.data = nil
+                bank.transactionLock = false
+                if client then
+                    client:emit("bank_open", {})
+                end
             end
         end
     elseif key == "m" then
@@ -11172,12 +11654,14 @@ function game.keypressed(key)
             ui.showZoneList = not wasOpen
         end
     elseif key == "i" then
-        local wasOpen = ui.showInventory
+        if ui.showGridInventory then
+            ui.showGridInventory = false
+            return
+        end
         game.closeAllPanels()
-        ui.showInventory = not wasOpen
-        if ui.showInventory and client then
-            client:emit("get_inventory", {})
-            client:emit("get_recipes", {})
+        ui.showGridInventory = true
+        if client then
+            client:emit("grid_sync", {})
         end
     elseif key == "g" then
         -- B1: Equipment panel toggle
@@ -11353,6 +11837,59 @@ function game.textinput(text)
 end
 
 function game.mousepressed(x, y, button)
+    -- Grid inventory intercept
+    if ui.showGridInventory then
+        if gridInv.mousepressed(x, y, button) then return end
+    end
+
+    -- Loot panel click handling (corpse/container)
+    if (corpseLootPanel or containerLootPanel) and button == 1 and game._lootPanelRect then
+        local r = game._lootPanelRect
+        if x >= r.x and x <= r.x + r.w and y >= r.y and y <= r.y + r.h then
+            -- Take All button
+            if y >= r.btnY and y <= r.btnY + 26 and x >= r.x + 10 and x <= r.x + 110 then
+                if corpseLootPanel then
+                    client:emit("take_all_corpse", { corpseId = corpseLootPanel.corpseId })
+                elseif containerLootPanel then
+                    client:emit("take_all_container", { containerId = containerLootPanel.containerId })
+                end
+                return
+            end
+            -- Close button
+            if y >= r.btnY and y <= r.btnY + 26 and x >= r.x + r.w - 110 and x <= r.x + r.w - 10 then
+                corpseLootPanel = nil
+                containerLootPanel = nil
+                return
+            end
+            -- Click on individual item (take it)
+            local itemStartY = r.y + 32
+            if corpseLootPanel and corpseLootPanel.gold and corpseLootPanel.gold > 0 then
+                itemStartY = itemStartY + 18
+            end
+            local panel = corpseLootPanel or containerLootPanel
+            if panel and panel.resources then
+                for _ in pairs(panel.resources) do
+                    itemStartY = itemStartY + 16
+                end
+            end
+            itemStartY = itemStartY + 10 -- separator
+            if panel and panel.items then
+                for idx, _ in ipairs(panel.items) do
+                    if y >= itemStartY and y <= itemStartY + 16 then
+                        if corpseLootPanel then
+                            client:emit("take_corpse_item", { corpseId = corpseLootPanel.corpseId, itemIndex = idx - 1 })
+                        elseif containerLootPanel then
+                            client:emit("take_container_item", { containerId = containerLootPanel.containerId, itemIndex = idx - 1 })
+                        end
+                        return
+                    end
+                    itemStartY = itemStartY + 16
+                end
+            end
+            return
+        end
+    end
+
     -- NPC Dialogue click handling
     if npcDialogue.show and button == 1 then
         local W = love.graphics.getWidth()
@@ -11420,6 +11957,13 @@ function game.mousepressed(x, y, button)
     -- NPC Shop click handling (highest priority when shop is open)
     if npcShop.show and button == 1 then
         if game.handleNpcShopClick(x, y) then
+            return
+        end
+    end
+
+    -- Bank vault click handling
+    if bank.show and button == 1 then
+        if game.handleBankClick(x, y) then
             return
         end
     end
@@ -12161,12 +12705,9 @@ function game.mousepressed(x, y, button)
                         local slot = game.getEquipSlotForItem(btn.item)
                         client:emit("equip_item", { slot = slot, itemId = btn.item.id })
                     elseif btn.action == "use" and client then
-                        client:emit("consume_food", { resourceType = btn.item.type })
+                        client:emit("consume_food_item", { itemId = btn.item.id })
                     elseif btn.action == "place" then
-                        ui.placementMode = true
-                        ui.placementType = btn.item.type
-                        ui.placementItemId = btn.item.id
-                        ui.showInventory = false
+                        game.enterPlacementMode(btn.item.type, btn.item.id)
                     end
                     return
                 end
@@ -12209,6 +12750,9 @@ function game.mousemoved(x, y)
 end
 
 function game.wheelmoved(x, y)
+    if ui.showGridInventory then
+        if gridInv.wheelmoved(x, y) then return end
+    end
     if ui.showEquipment then
         ui.equipmentScroll = math.max(0, ui.equipmentScroll - y * 30)
         return
@@ -12224,6 +12768,10 @@ function game.wheelmoved(x, y)
     end
     if npcShop.show then
         npcShop.scroll = math.max(0, npcShop.scroll - y * 30)
+        return
+    end
+    if bank.show then
+        bank.scroll = math.max(0, bank.scroll - y * 30)
         return
     end
     if auction.show then
@@ -16797,6 +17345,554 @@ local RARITY_COLORS = {
     relic =       {1.0, 0.3, 0.3},
 }
 
+-- ---------------------------------------------------------------------------
+-- Bank Vault UI
+-- ---------------------------------------------------------------------------
+local BANK_W = 540
+local BANK_H = 480
+local BANK_ITEM_H = 30
+
+function game.drawBank(W, H)
+    if not bank.data then
+        -- Still loading
+        love.graphics.setColor(0, 0, 0, 0.6)
+        love.graphics.rectangle("fill", 0, 0, W, H)
+        love.graphics.setFont(fonts.title)
+        love.graphics.setColor(1, 0.85, 0.3, 1)
+        love.graphics.printf("Loading vault...", 0, H / 2 - 20, W, "center")
+        return
+    end
+
+    local pw = math.min(BANK_W, W - 40)
+    local ph = math.min(BANK_H, H - 60)
+    local px = math.floor((W - pw) / 2)
+    local py = math.floor((H - ph) / 2)
+
+    bank._panelX = px
+    bank._panelY = py
+    bank._panelW = pw
+    bank._panelH = ph
+
+    -- Dim background
+    love.graphics.setColor(0, 0, 0, 0.6)
+    love.graphics.rectangle("fill", 0, 0, W, H)
+
+    -- Panel background
+    love.graphics.setColor(0.06, 0.06, 0.1, 0.96)
+    love.graphics.rectangle("fill", px, py, pw, ph, 8, 8)
+    love.graphics.setColor(0.7, 0.6, 0.2, 0.8)
+    love.graphics.rectangle("line", px, py, pw, ph, 8, 8)
+
+    -- Title bar
+    love.graphics.setColor(0.15, 0.12, 0.05, 0.9)
+    love.graphics.rectangle("fill", px, py, pw, 30, 8, 8)
+    love.graphics.rectangle("fill", px, py + 20, pw, 10)
+    love.graphics.setFont(fonts.title)
+    love.graphics.setColor(1, 0.85, 0.3, 1)
+    love.graphics.printf("Bank Vault", px + 10, py + 4, pw - 50, "left")
+
+    -- Close button
+    local closeX = px + pw - 30
+    local closeY = py + 4
+    love.graphics.setColor(0.5, 0.15, 0.15, 0.8)
+    love.graphics.rectangle("fill", closeX, closeY, 24, 22, 4, 4)
+    love.graphics.setColor(1, 0.5, 0.5, 1)
+    love.graphics.rectangle("line", closeX, closeY, 24, 22, 4, 4)
+    love.graphics.setFont(fonts.hud)
+    love.graphics.setColor(1, 1, 1, 0.9)
+    love.graphics.printf("X", closeX, closeY + 2, 24, "center")
+    bank._closeBtn = { x = closeX, y = closeY, w = 24, h = 22 }
+
+    -- Tab row
+    local tabs = { "gold", "resources", "items" }
+    local tabLabels = { gold = "Gold", resources = "Resources", items = "Items" }
+    local tabW = math.floor((pw - 20) / #tabs)
+    local tabY = py + 34
+    bank._tabBtns = {}
+    love.graphics.setFont(fonts.hud)
+    for i, tabId in ipairs(tabs) do
+        local tx = px + 10 + (i - 1) * tabW
+        local active = (bank.tab == tabId)
+        if active then
+            love.graphics.setColor(0.2, 0.18, 0.08, 0.95)
+        else
+            love.graphics.setColor(0.1, 0.1, 0.14, 0.7)
+        end
+        love.graphics.rectangle("fill", tx, tabY, tabW - 2, 22, 4, 4)
+        if active then
+            love.graphics.setColor(1, 0.85, 0.3, 1)
+        else
+            love.graphics.setColor(0.6, 0.55, 0.4, 0.8)
+        end
+        love.graphics.printf(tabLabels[tabId], tx, tabY + 3, tabW - 2, "center")
+        bank._tabBtns[i] = { x = tx, y = tabY, w = tabW - 2, h = 22, tab = tabId }
+    end
+
+    -- Slot info
+    love.graphics.setFont(fonts.small)
+    love.graphics.setColor(0.6, 0.55, 0.4, 0.7)
+    local slotText = "Vault: " .. #bank.data.items .. "/" .. bank.data.maxSlots .. " items"
+    love.graphics.printf(slotText, px + 10, tabY + 26, pw - 20, "right")
+
+    -- Wallet display
+    local walletGold = 0
+    if identity and identity.account then walletGold = identity.account.chips or 0 end
+    love.graphics.setColor(1, 0.85, 0.3, 0.8)
+    love.graphics.printf("Wallet: " .. walletGold .. "g", px + 10, tabY + 26, pw - 20, "left")
+
+    -- Content area
+    local contentY = tabY + 44
+    local contentH = ph - (contentY - py) - 40
+
+    -- Feedback message
+    if bank.message and bank.message.timer and bank.message.timer > 0 then
+        love.graphics.setFont(fonts.chat)
+        love.graphics.setColor(bank.message.color[1], bank.message.color[2], bank.message.color[3], math.min(1, bank.message.timer))
+        love.graphics.printf(bank.message.text, px + 10, py + ph - 36, pw - 20, "center")
+    end
+
+    if bank.tab == "gold" then
+        game.drawBankGoldTab(px, py, pw, ph, contentY, contentH)
+    elseif bank.tab == "resources" then
+        game.drawBankResourcesTab(px, py, pw, ph, contentY, contentH)
+    elseif bank.tab == "items" then
+        game.drawBankItemsTab(px, py, pw, ph, contentY, contentH)
+    end
+end
+
+function game.drawBankGoldTab(px, py, pw, ph, contentY, contentH)
+    local midX = px + pw / 2
+    local bankGold = bank.data.gold or 0
+    local walletGold = 0
+    if identity and identity.account then walletGold = identity.account.chips or 0 end
+
+    love.graphics.setFont(fonts.title)
+    love.graphics.setColor(1, 0.85, 0.3, 1)
+    love.graphics.printf("Bank: " .. bankGold .. " gold", px + 10, contentY + 10, pw - 20, "center")
+
+    love.graphics.setFont(fonts.hud)
+    love.graphics.setColor(0.8, 0.75, 0.5, 0.8)
+    love.graphics.printf("Wallet: " .. walletGold .. " gold", px + 10, contentY + 40, pw - 20, "center")
+
+    -- Amount selector
+    local amountY = contentY + 75
+    love.graphics.setFont(fonts.hud)
+    love.graphics.setColor(0.7, 0.65, 0.4, 0.9)
+    love.graphics.printf("Amount:", px + 30, amountY + 3, 70, "left")
+
+    -- Minus button
+    local minBtnX = px + 110
+    love.graphics.setColor(0.2, 0.15, 0.08, 0.9)
+    love.graphics.rectangle("fill", minBtnX, amountY, 30, 24, 4, 4)
+    love.graphics.setColor(0.8, 0.7, 0.3, 1)
+    love.graphics.rectangle("line", minBtnX, amountY, 30, 24, 4, 4)
+    love.graphics.printf("-", minBtnX, amountY + 3, 30, "center")
+    bank._goldMinusBtn = { x = minBtnX, y = amountY, w = 30, h = 24 }
+
+    -- Amount display
+    love.graphics.setColor(1, 1, 1, 1)
+    love.graphics.printf(tostring(bank.amount), minBtnX + 34, amountY + 3, 80, "center")
+
+    -- Plus button
+    local plusBtnX = minBtnX + 118
+    love.graphics.setColor(0.2, 0.15, 0.08, 0.9)
+    love.graphics.rectangle("fill", plusBtnX, amountY, 30, 24, 4, 4)
+    love.graphics.setColor(0.8, 0.7, 0.3, 1)
+    love.graphics.rectangle("line", plusBtnX, amountY, 30, 24, 4, 4)
+    love.graphics.printf("+", plusBtnX, amountY + 3, 30, "center")
+    bank._goldPlusBtn = { x = plusBtnX, y = amountY, w = 30, h = 24 }
+
+    -- Max button
+    local maxBtnX = plusBtnX + 36
+    love.graphics.setColor(0.2, 0.15, 0.08, 0.9)
+    love.graphics.rectangle("fill", maxBtnX, amountY, 40, 24, 4, 4)
+    love.graphics.setColor(0.8, 0.7, 0.3, 1)
+    love.graphics.rectangle("line", maxBtnX, amountY, 40, 24, 4, 4)
+    love.graphics.printf("Max", maxBtnX, amountY + 3, 40, "center")
+    bank._goldMaxBtn = { x = maxBtnX, y = amountY, w = 40, h = 24 }
+
+    -- Deposit / Withdraw buttons
+    local btnY = amountY + 40
+    local btnW = math.floor((pw - 60) / 2)
+    local canAct = not bank.transactionLock
+
+    -- Deposit
+    local depX = px + 20
+    if canAct then
+        love.graphics.setColor(0.12, 0.25, 0.12, 0.9)
+    else
+        love.graphics.setColor(0.15, 0.15, 0.15, 0.7)
+    end
+    love.graphics.rectangle("fill", depX, btnY, btnW, 30, 4, 4)
+    love.graphics.setColor(0.3, 0.8, 0.4, canAct and 1 or 0.4)
+    love.graphics.rectangle("line", depX, btnY, btnW, 30, 4, 4)
+    love.graphics.printf("Deposit", depX, btnY + 6, btnW, "center")
+    bank._depositGoldBtn = { x = depX, y = btnY, w = btnW, h = 30 }
+
+    -- Withdraw
+    local witX = px + 40 + btnW
+    if canAct then
+        love.graphics.setColor(0.25, 0.12, 0.08, 0.9)
+    else
+        love.graphics.setColor(0.15, 0.15, 0.15, 0.7)
+    end
+    love.graphics.rectangle("fill", witX, btnY, btnW, 30, 4, 4)
+    love.graphics.setColor(0.8, 0.5, 0.3, canAct and 1 or 0.4)
+    love.graphics.rectangle("line", witX, btnY, btnW, 30, 4, 4)
+    love.graphics.printf("Withdraw", witX, btnY + 6, btnW, "center")
+    bank._withdrawGoldBtn = { x = witX, y = btnY, w = btnW, h = 30 }
+
+    -- Expand vault button
+    if bank.data.nextExpansionCost then
+        local expY = btnY + 50
+        local expW = pw - 40
+        love.graphics.setColor(0.08, 0.08, 0.18, 0.9)
+        love.graphics.rectangle("fill", px + 20, expY, expW, 30, 4, 4)
+        love.graphics.setColor(0.4, 0.35, 0.7, 0.8)
+        love.graphics.rectangle("line", px + 20, expY, expW, 30, 4, 4)
+        love.graphics.setFont(fonts.hud)
+        love.graphics.setColor(0.7, 0.65, 1, canAct and 1 or 0.4)
+        love.graphics.printf("Expand Vault (+10 slots) — " .. bank.data.nextExpansionCost .. "g", px + 20, expY + 6, expW, "center")
+        bank._expandBtn = { x = px + 20, y = expY, w = expW, h = 30 }
+    else
+        bank._expandBtn = nil
+    end
+end
+
+function game.drawBankResourcesTab(px, py, pw, ph, contentY, contentH)
+    -- Build combined resource list: bank resources + inventory resources
+    local allResources = {}
+    local seen = {}
+
+    -- Bank resources
+    if bank.data.resources then
+        for res, qty in pairs(bank.data.resources) do
+            if qty > 0 then
+                allResources[#allResources + 1] = { resource = res, bankQty = qty, invQty = 0 }
+                seen[res] = #allResources
+            end
+        end
+    end
+
+    -- Inventory resources
+    if mmoInventory then
+        for key, qty in pairs(mmoInventory) do
+            if type(qty) == "number" and qty > 0 and key ~= "items" then
+                if seen[key] then
+                    allResources[seen[key]].invQty = qty
+                else
+                    allResources[#allResources + 1] = { resource = key, bankQty = 0, invQty = qty }
+                    seen[key] = #allResources
+                end
+            end
+        end
+    end
+
+    table.sort(allResources, function(a, b) return a.resource < b.resource end)
+
+    -- Header
+    love.graphics.setFont(fonts.small)
+    love.graphics.setColor(0.6, 0.55, 0.4, 0.7)
+    love.graphics.printf("Resource", px + 12, contentY, 140, "left")
+    love.graphics.printf("Bank", px + 160, contentY, 60, "center")
+    love.graphics.printf("Inv", px + 225, contentY, 60, "center")
+
+    -- Scrollable list
+    local listY = contentY + 16
+    local listH = contentH - 50
+    love.graphics.setScissor(px + 5, listY, pw - 10, listH)
+    bank._resourceRows = {}
+
+    for i, entry in ipairs(allResources) do
+        local rowY = listY + (i - 1) * BANK_ITEM_H - bank.scroll
+        if rowY + BANK_ITEM_H > listY and rowY < listY + listH then
+            local isSelected = (bank.selected == i)
+            if isSelected then
+                love.graphics.setColor(0.2, 0.18, 0.08, 0.8)
+            elseif i % 2 == 0 then
+                love.graphics.setColor(0.08, 0.08, 0.12, 0.4)
+            else
+                love.graphics.setColor(0.06, 0.06, 0.1, 0.2)
+            end
+            love.graphics.rectangle("fill", px + 6, rowY, pw - 12, BANK_ITEM_H - 2, 3, 3)
+
+            love.graphics.setFont(fonts.chat)
+            love.graphics.setColor(0.9, 0.85, 0.7, 1)
+            love.graphics.printf(formatResourceName(entry.resource), px + 12, rowY + 6, 140, "left")
+            love.graphics.setColor(1, 0.85, 0.3, 0.9)
+            love.graphics.printf(tostring(entry.bankQty), px + 160, rowY + 6, 60, "center")
+            love.graphics.setColor(0.7, 0.8, 0.9, 0.9)
+            love.graphics.printf(tostring(entry.invQty), px + 225, rowY + 6, 60, "center")
+
+            -- Deposit button
+            if entry.invQty > 0 then
+                local depX2 = px + pw - 140
+                love.graphics.setColor(0.1, 0.2, 0.1, 0.9)
+                love.graphics.rectangle("fill", depX2, rowY + 2, 56, BANK_ITEM_H - 6, 3, 3)
+                love.graphics.setColor(0.3, 0.7, 0.4, 1)
+                love.graphics.rectangle("line", depX2, rowY + 2, 56, BANK_ITEM_H - 6, 3, 3)
+                love.graphics.setFont(fonts.small)
+                love.graphics.printf("Dep", depX2, rowY + 6, 56, "center")
+            end
+
+            -- Withdraw button
+            if entry.bankQty > 0 then
+                local witX2 = px + pw - 76
+                love.graphics.setColor(0.2, 0.1, 0.05, 0.9)
+                love.graphics.rectangle("fill", witX2, rowY + 2, 56, BANK_ITEM_H - 6, 3, 3)
+                love.graphics.setColor(0.7, 0.5, 0.3, 1)
+                love.graphics.rectangle("line", witX2, rowY + 2, 56, BANK_ITEM_H - 6, 3, 3)
+                love.graphics.setFont(fonts.small)
+                love.graphics.printf("Wit", witX2, rowY + 6, 56, "center")
+            end
+
+            bank._resourceRows[i] = {
+                y = rowY, resource = entry.resource,
+                bankQty = entry.bankQty, invQty = entry.invQty,
+                depBtn = entry.invQty > 0 and { x = px + pw - 140, y = rowY + 2, w = 56, h = BANK_ITEM_H - 6 } or nil,
+                witBtn = entry.bankQty > 0 and { x = px + pw - 76, y = rowY + 2, w = 56, h = BANK_ITEM_H - 6 } or nil,
+            }
+        end
+    end
+    love.graphics.setScissor()
+
+    -- Amount selector at bottom
+    local amountY = contentY + contentH - 30
+    love.graphics.setFont(fonts.hud)
+    love.graphics.setColor(0.7, 0.65, 0.4, 0.9)
+    love.graphics.printf("Qty: " .. bank.amount, px + 10, amountY + 4, 80, "left")
+
+    local minBtnX = px + 95
+    love.graphics.setColor(0.2, 0.15, 0.08, 0.9)
+    love.graphics.rectangle("fill", minBtnX, amountY, 26, 22, 3, 3)
+    love.graphics.setColor(0.8, 0.7, 0.3, 1)
+    love.graphics.printf("-", minBtnX, amountY + 2, 26, "center")
+    bank._resMinusBtn = { x = minBtnX, y = amountY, w = 26, h = 22 }
+
+    local plusBtnX = minBtnX + 30
+    love.graphics.setColor(0.2, 0.15, 0.08, 0.9)
+    love.graphics.rectangle("fill", plusBtnX, amountY, 26, 22, 3, 3)
+    love.graphics.setColor(0.8, 0.7, 0.3, 1)
+    love.graphics.printf("+", plusBtnX, amountY + 2, 26, "center")
+    bank._resPlusBtn = { x = plusBtnX, y = amountY, w = 26, h = 22 }
+
+    local maxBtnX = plusBtnX + 30
+    love.graphics.setColor(0.2, 0.15, 0.08, 0.9)
+    love.graphics.rectangle("fill", maxBtnX, amountY, 36, 22, 3, 3)
+    love.graphics.setColor(0.8, 0.7, 0.3, 1)
+    love.graphics.printf("Max", maxBtnX, amountY + 2, 36, "center")
+    bank._resMaxBtn = { x = maxBtnX, y = amountY, w = 36, h = 22 }
+end
+
+function game.drawBankItemsTab(px, py, pw, ph, contentY, contentH)
+    local bankItems = bank.data.items or {}
+    local invItems = (mmoInventory and mmoInventory.items) or {}
+
+    -- Column headers
+    love.graphics.setFont(fonts.small)
+    love.graphics.setColor(0.6, 0.55, 0.4, 0.7)
+    love.graphics.printf("Bank Items (" .. #bankItems .. "/" .. bank.data.maxSlots .. ")", px + 12, contentY, (pw / 2) - 20, "left")
+    love.graphics.printf("Inventory (" .. #invItems .. "/100)", px + pw / 2 + 8, contentY, (pw / 2) - 20, "left")
+
+    local listY = contentY + 16
+    local listH = contentH - 16
+    local colW = math.floor((pw - 20) / 2)
+
+    -- Bank items column
+    love.graphics.setScissor(px + 5, listY, colW, listH)
+    bank._bankItemRows = {}
+    for i, item in ipairs(bankItems) do
+        local rowY = listY + (i - 1) * BANK_ITEM_H - bank.scroll
+        if rowY + BANK_ITEM_H > listY and rowY < listY + listH then
+            if i % 2 == 0 then
+                love.graphics.setColor(0.08, 0.08, 0.12, 0.4)
+            else
+                love.graphics.setColor(0.06, 0.06, 0.1, 0.2)
+            end
+            love.graphics.rectangle("fill", px + 6, rowY, colW - 2, BANK_ITEM_H - 2, 2, 2)
+
+            -- Item name
+            love.graphics.setFont(fonts.small)
+            local itemName = item.name or item.type or "Item"
+            love.graphics.setColor(0.9, 0.85, 0.7, 1)
+            love.graphics.printf(itemName, px + 10, rowY + 4, colW - 50, "left")
+
+            -- Withdraw arrow
+            love.graphics.setColor(0.7, 0.5, 0.3, 1)
+            love.graphics.printf(">", px + colW - 20, rowY + 4, 16, "center")
+
+            bank._bankItemRows[i] = { y = rowY, item = item, index = i - 1, btn = { x = px + 6, y = rowY, w = colW - 2, h = BANK_ITEM_H - 2 } }
+        end
+    end
+    love.graphics.setScissor()
+
+    -- Divider
+    love.graphics.setColor(0.7, 0.6, 0.2, 0.4)
+    love.graphics.line(px + colW + 8, listY, px + colW + 8, listY + listH)
+
+    -- Inventory items column
+    local invX = px + colW + 12
+    love.graphics.setScissor(invX, listY, colW, listH)
+    bank._invItemRows = {}
+    for i, item in ipairs(invItems) do
+        local rowY = listY + (i - 1) * BANK_ITEM_H - bank.scroll
+        if rowY + BANK_ITEM_H > listY and rowY < listY + listH then
+            if i % 2 == 0 then
+                love.graphics.setColor(0.08, 0.08, 0.12, 0.4)
+            else
+                love.graphics.setColor(0.06, 0.06, 0.1, 0.2)
+            end
+            love.graphics.rectangle("fill", invX, rowY, colW - 6, BANK_ITEM_H - 2, 2, 2)
+
+            -- Deposit arrow
+            love.graphics.setColor(0.3, 0.7, 0.4, 1)
+            love.graphics.printf("<", invX + 4, rowY + 4, 16, "center")
+
+            -- Item name
+            love.graphics.setFont(fonts.small)
+            local itemName = item.name or item.type or "Item"
+            love.graphics.setColor(0.9, 0.85, 0.7, 1)
+            love.graphics.printf(itemName, invX + 24, rowY + 4, colW - 34, "left")
+
+            bank._invItemRows[i] = { y = rowY, item = item, btn = { x = invX, y = rowY, w = colW - 6, h = BANK_ITEM_H - 2 } }
+        end
+    end
+    love.graphics.setScissor()
+end
+
+-- Bank: hit test helper
+local function _hitTest(btn, mx, my)
+    if not btn then return false end
+    return mx >= btn.x and mx <= btn.x + btn.w and my >= btn.y and my <= btn.y + btn.h
+end
+
+function game.handleBankClick(mx, my)
+    if not bank.show then return false end
+    if not bank._panelX then return false end
+
+    -- Click outside panel closes it
+    if mx < bank._panelX or mx > bank._panelX + bank._panelW
+       or my < bank._panelY or my > bank._panelY + bank._panelH then
+        bank.show = false
+        return true
+    end
+
+    -- Close button
+    if _hitTest(bank._closeBtn, mx, my) then
+        bank.show = false
+        return true
+    end
+
+    -- Tabs
+    if bank._tabBtns then
+        for _, btn in ipairs(bank._tabBtns) do
+            if _hitTest(btn, mx, my) then
+                bank.tab = btn.tab
+                bank.selected = nil
+                bank.scroll = 0
+                bank.amount = 1
+                return true
+            end
+        end
+    end
+
+    if bank.transactionLock then return true end
+
+    -- Gold tab controls
+    if bank.tab == "gold" then
+        if _hitTest(bank._goldMinusBtn, mx, my) then
+            bank.amount = math.max(1, bank.amount - (love.keyboard.isDown("lshift") and 100 or 10))
+            return true
+        end
+        if _hitTest(bank._goldPlusBtn, mx, my) then
+            bank.amount = bank.amount + (love.keyboard.isDown("lshift") and 100 or 10)
+            return true
+        end
+        if _hitTest(bank._goldMaxBtn, mx, my) then
+            -- Set to max available for the likely action
+            local walletGold = identity and identity.account and identity.account.chips or 0
+            local bankGold = bank.data and bank.data.gold or 0
+            bank.amount = math.max(walletGold, bankGold)
+            return true
+        end
+        if _hitTest(bank._depositGoldBtn, mx, my) and client then
+            bank.transactionLock = true
+            client:emit("bank_deposit_gold", { amount = bank.amount })
+            return true
+        end
+        if _hitTest(bank._withdrawGoldBtn, mx, my) and client then
+            bank.transactionLock = true
+            client:emit("bank_withdraw_gold", { amount = bank.amount })
+            return true
+        end
+        if _hitTest(bank._expandBtn, mx, my) and client then
+            bank.transactionLock = true
+            client:emit("bank_buy_slots", {})
+            return true
+        end
+        return true
+    end
+
+    -- Resources tab controls
+    if bank.tab == "resources" then
+        if _hitTest(bank._resMinusBtn, mx, my) then
+            bank.amount = math.max(1, bank.amount - (love.keyboard.isDown("lshift") and 10 or 1))
+            return true
+        end
+        if _hitTest(bank._resPlusBtn, mx, my) then
+            bank.amount = bank.amount + (love.keyboard.isDown("lshift") and 10 or 1)
+            return true
+        end
+        if _hitTest(bank._resMaxBtn, mx, my) then
+            bank.amount = 999
+            return true
+        end
+        -- Resource row deposit/withdraw buttons
+        if bank._resourceRows then
+            for _, row in pairs(bank._resourceRows) do
+                if row.depBtn and _hitTest(row.depBtn, mx, my) and client then
+                    bank.transactionLock = true
+                    client:emit("bank_deposit_resource", { resource = row.resource, amount = math.min(bank.amount, row.invQty) })
+                    return true
+                end
+                if row.witBtn and _hitTest(row.witBtn, mx, my) and client then
+                    bank.transactionLock = true
+                    client:emit("bank_withdraw_resource", { resource = row.resource, amount = math.min(bank.amount, row.bankQty) })
+                    return true
+                end
+            end
+        end
+        return true
+    end
+
+    -- Items tab controls
+    if bank.tab == "items" then
+        -- Bank item rows (click to withdraw)
+        if bank._bankItemRows then
+            for _, row in pairs(bank._bankItemRows) do
+                if _hitTest(row.btn, mx, my) and client then
+                    bank.transactionLock = true
+                    client:emit("bank_withdraw_item", { itemIndex = row.index })
+                    return true
+                end
+            end
+        end
+        -- Inventory item rows (click to deposit)
+        if bank._invItemRows then
+            for _, row in pairs(bank._invItemRows) do
+                if _hitTest(row.btn, mx, my) and client then
+                    bank.transactionLock = true
+                    client:emit("bank_deposit_item", { itemId = row.item.id })
+                    return true
+                end
+            end
+        end
+        return true
+    end
+
+    return true
+end
+
 -- Draw the trade panel
 function game.drawTradePanel(W, H)
     local pw = math.min(TRADE_W, W - 40)
@@ -18868,6 +19964,12 @@ function game.drawHallOfHeroes(W, H)
     love.graphics.setFont(fonts.chat or fonts.main)
     love.graphics.setColor(0.5, 0.5, 0.5, 0.6)
     love.graphics.printf("Press ESC or H to close", dlgX, dlgY + dlgH - 20, dlgW, "center")
+end
+
+function game.mousereleased(x, y, button)
+    if ui.showGridInventory then
+        if gridInv.mousereleased(x, y, button) then return end
+    end
 end
 
 return game

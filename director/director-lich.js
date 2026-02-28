@@ -61,6 +61,13 @@ function _getDoomAscension() {
   }
   return doomAscension;
 }
+var patrolSystem = null; // lazy-loaded to avoid circular require
+function _getPatrolSystem() {
+  if (!patrolSystem) {
+    try { patrolSystem = require('../patrol-system'); } catch (e) { /* not loaded yet */ }
+  }
+  return patrolSystem;
+}
 var overworldRifts = null; // lazy-loaded to avoid circular require
 function _getOverworldRifts() {
   if (!overworldRifts) {
@@ -167,8 +174,10 @@ function isCapitalCorrupted() {
   return !!(chunk && chunk.level >= CAPITAL_CORRUPTION_THRESHOLD);
 }
 
+var MAX_SCALING_FACTOR = 2.5; // cap prevents runaway doom after many pushbacks
+
 function _getScalingFactor() {
-  return 1 + doomCountdown.pushbackCount * 0.15;
+  return Math.min(MAX_SCALING_FACTOR, 1 + doomCountdown.pushbackCount * 0.15);
 }
 
 function _isNearCapital(cx, cy, radius) {
@@ -533,6 +542,10 @@ function _checkHordes(io, state) {
 
     console.log('[lich] Horde spawned: strength=' + strength + ', target=' + horde.targetTownName);
 
+    // Register horde with ACO patrol system for pheromone-driven movement
+    var ps = _getPatrolSystem();
+    if (ps) ps.spawnLichHorde(cx, cy, strength);
+
     // Check for plot raids near high-corruption chunks
     if (chunk.level >= 50) {
       try {
@@ -560,11 +573,15 @@ function getCorruptionLevel(cx, cy) {
   return chunk ? chunk.level : 0;
 }
 
+var MAX_CORRUPTION_DEBUFF = 20; // absolute cap on corruption tick damage (before capital doubling)
+
 function getCorruptionDebuff(cx, cy) {
   var level = getCorruptionLevel(cx, cy);
   if (level <= 0) return null;
   var scale = _getScalingFactor();
-  var baseDamage = Math.floor((CORRUPTION_DEBUFF_DAMAGE + level * CORRUPTION_DEBUFF_SCALING) * scale);
+  // Sigmoid curve: damage rises steeply at low corruption, flattens at high
+  var rawDamage = (CORRUPTION_DEBUFF_DAMAGE + level * CORRUPTION_DEBUFF_SCALING) * scale;
+  var baseDamage = Math.floor(MAX_CORRUPTION_DEBUFF * rawDamage / (rawDamage + MAX_CORRUPTION_DEBUFF * 0.5));
   // Double debuff damage near capital when capital is corrupted
   if (isCapitalCorrupted() && _isNearCapital(cx, cy, CAPITAL_AMPLIFY_RADIUS)) {
     baseDamage *= 2;

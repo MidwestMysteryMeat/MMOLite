@@ -24,6 +24,7 @@ var diseaseSystem    = require('../disease-system');
 var weatherProp      = require('../weather-propagation');
 var influenceMaps    = require('../influence-maps');
 var biomeSuccession  = require('../biome-succession');
+var patrolSystem     = require('../patrol-system');
 
 var _io = null;
 var _state = null;
@@ -41,6 +42,7 @@ var _diseaseInterval = null;
 var _weatherInterval = null;
 var _influenceInterval = null;
 var _ecologyInterval = null;
+var _patrolInterval = null;
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -196,6 +198,17 @@ function init(io, state, accounts, socketAccountMap) {
   }, 60000);
   if (_ecologyInterval && _ecologyInterval.unref) _ecologyInterval.unref();
 
+  // Initialize ACO patrol system (60s interval — patrols move via pheromone trails)
+  patrolSystem.init(_io, _state);
+  _patrolInterval = setInterval(function() {
+    try {
+      patrolSystem.tick();
+    } catch (err) {
+      console.error('[director] Patrol tick error:', err.message);
+    }
+  }, 60000);
+  if (_patrolInterval && _patrolInterval.unref) _patrolInterval.unref();
+
   // Initialize doom ascension module — wire director refs for world reset
   var overworldStructures = null;
   try { overworldStructures = require('../overworld-structures'); } catch (e) { /* not loaded yet */ }
@@ -210,10 +223,11 @@ function init(io, state, accounts, socketAccountMap) {
     weather: weatherProp,
     influence: influenceMaps,
     ecology: biomeSuccession,
+    patrol: patrolSystem,
     saveState: saveState,
   });
 
-  console.log('[director] AI Event Director initialized (micro=per-tick, zone=30s, macro=5min, ocean=60s, lich=60s, raids=5min, vampire=10min, werewolf=15min, rifts=3min, disease=60s, weather=5min, influence=10min, ecology=60s, doom=wired)');
+  console.log('[director] AI Event Director initialized (micro=per-tick, zone=30s, macro=5min, ocean=60s, lich=60s, raids=5min, vampire=10min, werewolf=15min, rifts=3min, disease=60s, weather=5min, influence=10min, ecology=60s, patrol=60s, doom=wired)');
 }
 
 /**
@@ -279,6 +293,10 @@ function getBiomeSuccession() {
   return biomeSuccession;
 }
 
+function getPatrolSystem() {
+  return patrolSystem;
+}
+
 // ---------------------------------------------------------------------------
 // State persistence — save/load director state across server restarts
 // ---------------------------------------------------------------------------
@@ -294,6 +312,7 @@ function saveState() {
       weather: weatherProp.getState(),
       influence: influenceMaps.getState(),
       ecology: biomeSuccession.getState(),
+      patrol: patrolSystem.getState(),
     };
     var dir = path.dirname(STATE_FILE);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
@@ -314,6 +333,7 @@ function loadState() {
       if (saved.weather) weatherProp.loadState(saved.weather);
       if (saved.influence) influenceMaps.loadState(saved.influence);
       if (saved.ecology) biomeSuccession.loadState(saved.ecology);
+      if (saved.patrol) patrolSystem.loadState(saved.patrol);
       console.log('[director] State loaded from disk');
     }
   } catch (err) {
@@ -343,4 +363,5 @@ module.exports = {
   getWeatherPropagation: getWeatherPropagation,
   getInfluenceMaps: getInfluenceMaps,
   getBiomeSuccession: getBiomeSuccession,
+  getPatrolSystem: getPatrolSystem,
 };

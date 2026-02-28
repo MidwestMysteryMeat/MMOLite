@@ -32,12 +32,20 @@ function init(io, state, accounts, directors) {
 function doomWipeAccount(account) {
   if (!account) return;
 
+  // Preserve hidden pocket before wipe (persists across doom-ascension)
+  var savedPocketLegacy = account.hiddenPocketLegacy || null;
+
   // Wipe material goods
   account.equipment = { axe: null, pickaxe: null };
   account.mmoInventory = { wood: 0, stone: 0, iron_ore: 0, iron_bar: 0, items: [] };
   account.chips = 0;
   account.mount = null;
   account.pendingCrafts = [];
+  account.grid = null;
+  account.pocket = null;
+
+  // Restore hidden pocket legacy (survives doom wipe)
+  account.hiddenPocketLegacy = savedPocketLegacy;
 
   // Reset active quests (completed history preserved)
   if (account.questProgress && account.questProgress.active) {
@@ -50,7 +58,9 @@ function doomWipeAccount(account) {
   //   knowledge, plotId, craftingRecipes, skillMasteryPoints, skillMasteryNodes,
   //   ascensionCount, ascensionPoints, ascensionTree, ascensionMark,
   //   dungeonProgress, karma, factionRep, townReputation, npcRelationships,
-  //   race, awakenings, permadeath, petData, activePet, companions
+  //   race, awakenings, permadeath, petData, activePet, companions,
+  //   bankVault (fully preserved — strategic doom banking),
+  //   hiddenPocketLegacy (pocket items survive doom wipe for next character)
 }
 
 // ---------------------------------------------------------------------------
@@ -199,6 +209,7 @@ function _executeWipe(doomCount) {
     if (_directors.weather && _directors.weather.reset) _directors.weather.reset();
     if (_directors.influence && _directors.influence.reset) _directors.influence.reset();
     if (_directors.ecology && _directors.ecology.revertAll) _directors.ecology.revertAll();
+    if (_directors.patrol && _directors.patrol.reset) _directors.patrol.reset();
   }
 
   // 7. Save director state

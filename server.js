@@ -47,6 +47,7 @@ const rpgData = require('./rpg-data');
 const rumorSystem = require('./rumor-system');
 const companionsHandler = require('./handlers/companions');
 const petsHandler = require('./handlers/pets');
+const corpseLootHandler = require('./handlers/corpse-loot');
 
 const redis = require('./redis');
 const db = require('./db');
@@ -193,6 +194,16 @@ setInterval(function() {
     console.error('[server] Farming tick error:', err.message);
   }
 }, 60000);
+
+// Corpse despawn tick (every 30s — remove expired corpses)
+var _corpseDespawnTimer = setInterval(function() {
+  try {
+    corpseLootHandler.tickCorpsesDespawn();
+  } catch (err) {
+    console.error('[server] Corpse despawn tick error:', err.message);
+  }
+}, 30000);
+_corpseDespawnTimer.unref();
 
 // Biome weather tick (every 5 minutes -- update per-biome weather)
 setInterval(function() {

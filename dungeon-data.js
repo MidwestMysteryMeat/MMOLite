@@ -1647,10 +1647,74 @@ function generateOceanArenaLayout(width, height, rng) {
 
 
 // ---------------------------------------------------------------------------
-// generateFloor — layout-aware floor generation with enemies, chests, traps, NPCs
+// Flood-fill connectivity check — verifies start tile can reach target tile
 // ---------------------------------------------------------------------------
 
+var _WALKABLE_FOR_FLOOD = {};
+_WALKABLE_FOR_FLOOD[TILE.FLOOR] = true;
+_WALKABLE_FOR_FLOOD[TILE.CORRIDOR] = true;
+_WALKABLE_FOR_FLOOD[TILE.DOOR] = true;
+_WALKABLE_FOR_FLOOD[TILE.STAIRS_UP] = true;
+_WALKABLE_FOR_FLOOD[TILE.STAIRS_DOWN] = true;
+_WALKABLE_FOR_FLOOD[TILE.ENTRANCE] = true;
+_WALKABLE_FOR_FLOOD[TILE.EXIT] = true;
+_WALKABLE_FOR_FLOOD[TILE.CHEST] = true;
+_WALKABLE_FOR_FLOOD[TILE.TRAP] = true;
+_WALKABLE_FOR_FLOOD[TILE.CAMP_SPOT] = true;
+_WALKABLE_FOR_FLOOD[TILE.SHRINE] = true;
+_WALKABLE_FOR_FLOOD[TILE.BOSS_DOOR] = true;
+_WALKABLE_FOR_FLOOD[TILE.SHORTCUT] = true;
+_WALKABLE_FOR_FLOOD[TILE.CORPSE] = true;
+
+function _floodFillConnected(grid, width, height, sx, sy, tx, ty) {
+  if (sx === tx && sy === ty) return true;
+  var visited = {};
+  var queue = [sx + sy * width];
+  visited[sx + ',' + sy] = true;
+  var dirs = [[-1,0],[1,0],[0,-1],[0,1]];
+  while (queue.length > 0) {
+    var idx = queue.shift();
+    var cx = idx % width;
+    var cy = (idx - cx) / width;
+    for (var d = 0; d < 4; d++) {
+      var nx = cx + dirs[d][0];
+      var ny = cy + dirs[d][1];
+      if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
+      var nk = nx + ',' + ny;
+      if (visited[nk]) continue;
+      if (!_WALKABLE_FOR_FLOOD[grid[ny][nx]]) continue;
+      if (nx === tx && ny === ty) return true;
+      visited[nk] = true;
+      queue.push(nx + ny * width);
+    }
+  }
+  return false;
+}
+
+// ---------------------------------------------------------------------------
+// generateFloor — layout-aware floor generation with enemies, chests, traps, NPCs
+// Wrapped with connectivity retry: regenerates with incremented seed if
+// stairs_up cannot reach stairs_down (max 3 retries).
+// ---------------------------------------------------------------------------
+
+var MAX_FLOOR_RETRIES = 3;
+
 function generateFloor(floorNum, seed, options) {
+  for (var _retry = 0; _retry <= MAX_FLOOR_RETRIES; _retry++) {
+    var _effectiveSeed = _retry === 0 ? seed : seed + _retry;
+    var result = _generateFloorInner(floorNum, _effectiveSeed, options);
+    // Connectivity check: can stairs_up reach stairs_down?
+    var su = result.stairsUp;
+    var sd = result.stairsDown;
+    if (_floodFillConnected(result.grid, result.width, result.height, su.x, su.y, sd.x, sd.y)) {
+      return result;
+    }
+  }
+  // All retries exhausted — return last attempt anyway
+  return _generateFloorInner(floorNum, seed + MAX_FLOOR_RETRIES + 1, options);
+}
+
+function _generateFloorInner(floorNum, seed, options) {
   var opts = options || {};
   var type = opts.type || 'rift';
   var totalFloors = opts.totalFloors || 0;
@@ -1780,6 +1844,15 @@ function generateFloor(floorNum, seed, options) {
         }
       }
     }
+    // Fallback: if no DOOR found, carve one at the room edge
+    if (!bossDoored) {
+      var bdFx = lastRoom.x;
+      var bdFy = lastRoom.centerY;
+      if (bdFx > 0) bdFx = lastRoom.x - 1;
+      if (bdFx >= 0 && bdFx < width && bdFy >= 0 && bdFy < height) {
+        grid[bdFy][bdFx] = TILE.BOSS_DOOR;
+      }
+    }
   }
 
   // Determine enemy tier based on floor depth
@@ -1798,6 +1871,16 @@ function generateFloor(floorNum, seed, options) {
   var effectivePoolTheme = (opts.enemyPool && ENEMY_POOLS[opts.enemyPool]) ? opts.enemyPool : theme;
   var pool = ENEMY_POOLS[effectivePoolTheme] || getEnemyPool(theme);
 
+  // Per-visit spawn entropy: mix visitCount into the RNG stream so that
+  // enemy/entity placement varies each time the floor is regenerated (after
+  // LRU eviction or daily reset) while the layout (grid, rooms, doors) stays
+  // deterministic from the base seed.
+  var visitCount = opts.visitCount || 0;
+  if (visitCount > 0) {
+    var spawnSeed = chunkSeed(floorSeed, visitCount, 'spawn_entropy');
+    rng = seededRandom(spawnSeed);
+  }
+
   // Place enemies, chests, traps, NPCs per room
   var enemies = [];
   var chests = [];
@@ -1814,14 +1897,17 @@ function generateFloor(floorNum, seed, options) {
 
     // Skip enemy placement in the entrance room
     if (isFirstRoom) {
-      // Place a camp spot in the first room (rift only)
+      // Place a camp spot in the first room (rift only) — retry up to 5 times
       if (type === 'rift' && campsPlaced < CAMP_CONFIG.maxCampsPerFloor) {
-        var campX = rm.x + 1 + Math.floor(rng() * (rm.w - 2));
-        var campY = rm.y + 1 + Math.floor(rng() * (rm.h - 2));
-        if (grid[campY][campX] === TILE.FLOOR) {
-          grid[campY][campX] = TILE.CAMP_SPOT;
-          campSpots.push({ x: campX, y: campY, roomIndex: ri2 });
-          campsPlaced++;
+        for (var _campRetry = 0; _campRetry < 5; _campRetry++) {
+          var campX = rm.x + 1 + Math.floor(rng() * (rm.w - 2));
+          var campY = rm.y + 1 + Math.floor(rng() * (rm.h - 2));
+          if (grid[campY][campX] === TILE.FLOOR) {
+            grid[campY][campX] = TILE.CAMP_SPOT;
+            campSpots.push({ x: campX, y: campY, roomIndex: ri2 });
+            campsPlaced++;
+            break;
+          }
         }
       }
       continue;
@@ -1964,16 +2050,19 @@ function generateFloor(floorNum, seed, options) {
       });
     }
 
-    // Camp spots: place in a mid-floor room (rift only)
+    // Camp spots: place in a mid-floor room (rift only) — retry up to 5 times
     if (type === 'rift' && campsPlaced < CAMP_CONFIG.maxCampsPerFloor) {
       var midRoom = Math.floor(rooms.length / 2);
       if (ri2 === midRoom) {
-        var cx2 = rm.x + 1 + Math.floor(rng() * (rm.w - 2));
-        var cy2 = rm.y + 1 + Math.floor(rng() * (rm.h - 2));
-        if (grid[cy2][cx2] === TILE.FLOOR) {
-          grid[cy2][cx2] = TILE.CAMP_SPOT;
-          campSpots.push({ x: cx2, y: cy2, roomIndex: ri2 });
-          campsPlaced++;
+        for (var _campRetry2 = 0; _campRetry2 < 5; _campRetry2++) {
+          var cx2 = rm.x + 1 + Math.floor(rng() * (rm.w - 2));
+          var cy2 = rm.y + 1 + Math.floor(rng() * (rm.h - 2));
+          if (grid[cy2][cx2] === TILE.FLOOR) {
+            grid[cy2][cx2] = TILE.CAMP_SPOT;
+            campSpots.push({ x: cx2, y: cy2, roomIndex: ri2 });
+            campsPlaced++;
+            break;
+          }
         }
       }
     }
@@ -2030,6 +2119,35 @@ function generateFloor(floorNum, seed, options) {
           });
         }
       }
+    }
+  }
+
+  // Deconflict enemy positions — no two enemies on the same tile
+  var _occupiedTiles = {};
+  for (var _dci = 0; _dci < enemies.length; _dci++) {
+    var _ek = enemies[_dci].x + ',' + enemies[_dci].y;
+    if (_occupiedTiles[_ek] || grid[enemies[_dci].y][enemies[_dci].x] !== TILE.FLOOR) {
+      // Nudge to an adjacent FLOOR tile that isn't occupied
+      var _nudged = false;
+      var _dirs = [[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[1,-1],[-1,1],[1,1]];
+      for (var _nd = 0; _nd < _dirs.length && !_nudged; _nd++) {
+        var _nx = enemies[_dci].x + _dirs[_nd][0];
+        var _ny = enemies[_dci].y + _dirs[_nd][1];
+        var _nk = _nx + ',' + _ny;
+        if (_nx >= 0 && _nx < width && _ny >= 0 && _ny < height &&
+            grid[_ny][_nx] === TILE.FLOOR && !_occupiedTiles[_nk]) {
+          enemies[_dci].x = _nx;
+          enemies[_dci].y = _ny;
+          _occupiedTiles[_nk] = true;
+          _nudged = true;
+        }
+      }
+      if (!_nudged) {
+        // Can't place — mark at current position anyway (rare edge case)
+        _occupiedTiles[_ek] = true;
+      }
+    } else {
+      _occupiedTiles[_ek] = true;
     }
   }
 

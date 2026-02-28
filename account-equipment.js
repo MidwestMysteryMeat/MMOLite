@@ -212,7 +212,7 @@ function migrateHandSlots(account) {
 }
 
 function getDefaultEquipment() {
-  return { axe: null, pickaxe: null, main_hand: null, off_hand: null, head: null, chest: null, undershirt: null, arms: null, hands: null, legs: null, feet: null, ring1: null, ring2: null, ring3: null, ring4: null, ring5: null, ring6: null, necklace: null };
+  return { axe: null, pickaxe: null, main_hand: null, off_hand: null, head: null, chest: null, undershirt: null, arms: null, hands: null, legs: null, feet: null, ring1: null, ring2: null, ring3: null, ring4: null, ring5: null, ring6: null, necklace: null, backpack: null, rig: null };
 }
 
 function getEquipment(key) {
