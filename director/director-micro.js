@@ -6,6 +6,7 @@
 'use strict';
 
 var directorMetrics = require('./director-metrics');
+var elasticDifficulty = require('../elastic-difficulty');
 
 // ---------------------------------------------------------------------------
 // Pacing state machine
@@ -131,32 +132,36 @@ function tick(zoneId, floor, playerList, combatStates) {
   // Update detection radius modifier
   ds.detectionRadiusModifier = DETECTION_MOD[ds.pacingState] || 0;
 
-  // Apply detection radius adjustments to enemies
+  // Compute elastic difficulty adjustments
+  var elastic = elasticDifficulty.computeAdjustments(zoneId, ds.partyStress75th, playerList.length);
+
+  // Apply detection radius adjustments to enemies (pacing + elastic combined)
   var detMod = ds.detectionRadiusModifier;
   for (var ei = 0; ei < floor.enemies.length; ei++) {
     var enemy = floor.enemies[ei];
     if (enemy.alive === false) continue;
     var baseRadius = enemy.baseDetectionRadius || enemy.detectionRadius || 4;
-    enemy.detectionRadius = Math.max(2, baseRadius + detMod);
+    enemy.detectionRadius = elasticDifficulty.adjustDetectionRadius(baseRadius + detMod, elastic);
   }
 
-  // Handle reinforcements during SUSTAINED_PEAK
+  // Handle reinforcements during SUSTAINED_PEAK (elastic adjusts cooldown)
   var reinforcements = null;
   if (ds.pacingState === PACING.SUSTAINED_PEAK) {
     ds.reinforcementCooldown--;
     if (ds.reinforcementCooldown <= 0) {
       reinforcements = spawnReinforcements(floor, playerList);
-      ds.reinforcementCooldown = REINFORCEMENT_COOLDOWN_TICKS;
+      ds.reinforcementCooldown = elasticDifficulty.adjustReinforcementCooldown(REINFORCEMENT_COOLDOWN_TICKS, elastic);
     }
   } else {
     // Reset cooldown outside peak
-    ds.reinforcementCooldown = REINFORCEMENT_COOLDOWN_TICKS;
+    ds.reinforcementCooldown = elasticDifficulty.adjustReinforcementCooldown(REINFORCEMENT_COOLDOWN_TICKS, elastic);
   }
 
   return {
     pacingState: ds.pacingState,
     detectionMod: detMod,
     partyStress: ds.partyStress75th,
+    elastic: elastic,
     reinforcements: reinforcements,
   };
 }
@@ -259,6 +264,7 @@ function findOutOfLOSPosition(floor, playerList) {
  */
 function cleanupFloor(zoneId) {
   floorDirectorState.delete(zoneId);
+  elasticDifficulty.cleanupFloor(zoneId);
 }
 
 /**

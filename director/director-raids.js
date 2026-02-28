@@ -8,6 +8,7 @@
 
 var portalHandler = require('../handlers/portal');
 var placement = require('../handlers/placement');
+var ca = require('../cellular-automata');
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -188,6 +189,51 @@ function _startRaid(io, state, accounts, socketAccountMap, zone, zoneId) {
   console.log('[raids] Raid started on plot ' + zoneId + ' (owner: ' + ownerKey + ')');
 }
 
+// Build multi-source BFS cost map from zone edges, respecting wall colliders.
+// Returns distance map: 'tx,ty' -> distance (tile coords, 32px per tile)
+function _buildRaidCostMap(zone) {
+  var ZONE_SIZE = 4096;
+  var TILE = 32;
+  var gridW = Math.floor(ZONE_SIZE / TILE);
+  var gridH = Math.floor(ZONE_SIZE / TILE);
+
+  // Build wall set from placed objects
+  var blocked = {};
+  if (zone.placedObjects) {
+    for (var oi = 0; oi < zone.placedObjects.length; oi++) {
+      var obj = zone.placedObjects[oi];
+      if (!obj) continue;
+      var isWall = obj.type === 'wall' || obj.type === 'stone_wall' ||
+                   obj.type === 'fence' || obj.type === 'stone_fence' || obj.type === 'iron_fence';
+      var isDoor = obj.type === 'door' && !obj.open;
+      if (isWall || isDoor) {
+        var tx = Math.floor(obj.x / TILE);
+        var ty = Math.floor(obj.y / TILE);
+        blocked[tx + ',' + ty] = true;
+      }
+    }
+  }
+
+  // Edge sources (all tiles along zone perimeter)
+  var sources = [];
+  for (var e = 0; e < gridW; e++) {
+    sources.push(e + ',0');
+    sources.push(e + ',' + (gridH - 1));
+  }
+  for (var ey = 1; ey < gridH - 1; ey++) {
+    sources.push('0,' + ey);
+    sources.push((gridW - 1) + ',' + ey);
+  }
+
+  // Multi-source BFS
+  var costMap = ca.multiSourceBFS(sources, function(cx, cy) {
+    if (cx < 0 || cx >= gridW || cy < 0 || cy >= gridH) return false;
+    return !blocked[cx + ',' + cy];
+  }, gridW + gridH);
+
+  return costMap;
+}
+
 function _spawnWave(io, state, raid, waveIndex) {
   var pool = waveIndex === 0 ? RAID_ENEMIES.wave1 : (waveIndex === 1 ? RAID_ENEMIES.wave2 : RAID_ENEMIES.wave3);
   var count = WAVE_SIZES[waveIndex];
@@ -195,9 +241,13 @@ function _spawnWave(io, state, raid, waveIndex) {
   var zone = state.zones.get(raid.plotZoneId);
   if (!zone) return;
 
+  // Build cost map via multi-source BFS from zone edges toward center
+  // Enemies use this to path around walls toward structures
+  var costMap = _buildRaidCostMap(zone);
+
   for (var i = 0; i < count; i++) {
     var template = pool[Math.floor(Math.random() * pool.length)];
-    // Spawn at zone edges
+    // Spawn at zone edges (varied positions)
     var edge = Math.floor(Math.random() * 4);
     var x, y;
     switch (edge) {
@@ -221,6 +271,7 @@ function _spawnWave(io, state, raid, waveIndex) {
       alive: true,
       raidId: raid.plotZoneId,
       wave: waveIndex,
+      costMap: costMap, // shared cost map for pathing
     };
     raid.enemies.push(enemy);
   }

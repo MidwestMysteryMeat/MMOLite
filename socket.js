@@ -56,6 +56,7 @@ const updateWarningHandler = require('./handlers/update-warning');
 const disconnectHandler = require('./handlers/disconnect');
 const challengesHandler = require('./handlers/challenges');
 const doomHandler = require('./handlers/doom');
+const worldSystemsHandler = require('./handlers/world-systems');
 
 // Moderator account keys — loaded from MODERATOR_KEYS env var (comma-separated)
 const MODERATORS = new Set(
@@ -496,6 +497,12 @@ function setupSocket(io) {
       members: accounts.getMemberCount(),
     });
 
+    // Seasonal visual config
+    try {
+      var seasonal = require('./seasonal');
+      socket.emit('season_visual_update', seasonal.getVisual());
+    } catch (_svErr) { /* seasonal not loaded yet */ }
+
     // Slur filter
     if (linkedAccount && linkedAccount.slurFilter) {
       socket.emit('slur_filter_updated', { enabled: true, pattern: filter.getFilterPattern() });
@@ -608,6 +615,7 @@ function setupSocket(io) {
     dmsHandler.init(io, socket, deps);
     challengesHandler.init(io, socket, deps);
     doomHandler.init(io, socket, deps);
+    worldSystemsHandler.init(io, socket, deps);
     disconnectHandler.init(io, socket, deps);
 
     // TOS acceptance

@@ -95,6 +95,10 @@ local SCENE_EVENTS = {
     "mastery_tree_status", "mastery_invest_result", "mastery_reset_result",
     "doom_status", "doom_countdown_started", "doom_countdown_paused",
     "doom_countdown_resumed", "doom_ascension_event",
+    "season_visual_update",
+    "disease_status", "disease_contracted", "disease_symptom",
+    "weather_info", "influence_info", "ecology_info",
+    "mmo_auction_market_price",
 }
 
 -- Debug logger: writes to file so we can diagnose issues in fused exe (no console)
@@ -284,7 +288,7 @@ local zoneList = {}
 local hoverConnection = nil
 
 -- World
-local world = { timeOfDay = "day", weather = "clear" }
+local world = { timeOfDay = "day", weather = "clear", seasonVisual = nil }
 
 -- Account info
 local account = nil
@@ -451,6 +455,36 @@ local doom = {
     eventTimer = 0,           -- seconds remaining for cinematic
     eventMessage = nil,
     flashTimer = 0,           -- for capital corruption warning flash
+}
+
+-- Disease state
+local diseaseState = {
+    playerDiseases = {},      -- { diseaseId = { state, name } }
+    chunkDiseases = {},       -- diseases at current chunk
+    contractedFlash = 0,      -- flash timer when contracting disease
+    contractedName = nil,
+    symptomMsg = nil,
+    symptomTimer = 0,
+}
+
+-- Weather propagation state
+local weatherState = {
+    weather = "clear",
+    intensity = 0.5,
+    wind = "east",
+}
+
+-- Faction influence state
+local influenceState = {
+    controlling = nil,
+    area = {},
+}
+
+-- Ecology state
+local ecologyState = {
+    state = -1,
+    name = "unknown",
+    resourceBonus = 1.0,
 }
 
 -- Turn-based combat state (grouped to reduce upvalue count)
@@ -1271,6 +1305,12 @@ function game.setupListeners()
         end
     end)
 
+    client:on("season_visual_update", function(data)
+        if data then
+            world.seasonVisual = data
+        end
+    end)
+
     client:on("server_stats", function(data)
         if data then
             _G.serverStats = data
@@ -1387,6 +1427,60 @@ function game.setupListeners()
         doom.eventTimer = 8.0
         doom.eventMessage = data and data.message or "The world resets."
         doom.doomAscensionCount = data and data.doomAscensionCount or 0
+    end)
+
+    -- Disease system events
+    client:on("disease_status", function(data)
+        if data then
+            diseaseState.playerDiseases = data.diseases or {}
+            diseaseState.chunkDiseases = data.chunkDiseases or {}
+        end
+    end)
+
+    client:on("disease_contracted", function(data)
+        if data then
+            diseaseState.contractedFlash = 3.0
+            diseaseState.contractedName = data.name or "Unknown Disease"
+            table.insert(directorEvents, {
+                title = "Disease Contracted",
+                description = data.message or ("You have contracted " .. (data.name or "a disease")),
+                type = "disease",
+                timer = 8,
+            })
+        end
+    end)
+
+    client:on("disease_symptom", function(data)
+        if data then
+            diseaseState.symptomMsg = data.name .. ": " .. (data.damage or 0) .. " damage"
+            diseaseState.symptomTimer = 2.0
+        end
+    end)
+
+    -- Weather propagation events
+    client:on("weather_info", function(data)
+        if data then
+            weatherState.weather = data.weather or "clear"
+            weatherState.intensity = data.intensity or 0.5
+            weatherState.wind = data.wind and data.wind.name or "east"
+        end
+    end)
+
+    -- Faction influence events
+    client:on("influence_info", function(data)
+        if data then
+            influenceState.controlling = data.controlling
+            influenceState.area = data.area or {}
+        end
+    end)
+
+    -- Ecology events
+    client:on("ecology_info", function(data)
+        if data then
+            ecologyState.state = data.state or -1
+            ecologyState.name = data.name or "unknown"
+            ecologyState.resourceBonus = data.resourceBonus or 1.0
+        end
     end)
 
     client:on("account_created", function(data)
@@ -5009,6 +5103,13 @@ function game.update(dt)
     if doom.flashTimer > 0 then
         doom.flashTimer = math.max(0, doom.flashTimer - dt)
     end
+    -- Disease flash timers
+    if diseaseState.contractedFlash > 0 then
+        diseaseState.contractedFlash = math.max(0, diseaseState.contractedFlash - dt)
+    end
+    if diseaseState.symptomTimer > 0 then
+        diseaseState.symptomTimer = math.max(0, diseaseState.symptomTimer - dt)
+    end
     if doom.showEvent then
         doom.eventTimer = doom.eventTimer - dt
         if doom.eventTimer <= 0 then
@@ -6263,6 +6364,9 @@ function game.draw()
     -- Weather overlay
     game.drawWeather(W, H)
 
+    -- Seasonal visual overlay (color shift + particles)
+    game.drawSeasonVisual(W, H)
+
     -- NPC Dialogue panel
     game.drawDialoguePanel(W, H)
 
@@ -6372,6 +6476,9 @@ function game.draw()
 
     -- HUD
     game.drawHUD(W, H)
+
+    -- World systems HUD (disease, faction, ecology, wind)
+    game.drawWorldSystemsHUD(W, H)
 
     -- Doom countdown HUD (above other overlays)
     game.drawDoomHUD(W, H)
@@ -8632,6 +8739,87 @@ function game.drawWeather(W, H)
     end
 end
 
+function game.drawSeasonVisual(W, H)
+    local sv = world.seasonVisual
+    if not sv then return end
+
+    -- Color shift overlay (subtle screen tint)
+    local cs = sv.colorShift
+    if cs then
+        local r = cs.r and (cs.r / 255) or 0
+        local g = cs.g and (cs.g / 255) or 0
+        local b = cs.b and (cs.b / 255) or 0
+        -- Positive shift: add color, negative: subtract via blend
+        if r > 0 or g > 0 or b > 0 then
+            love.graphics.setColor(math.max(0, r), math.max(0, g), math.max(0, b), 0.06)
+            love.graphics.rectangle("fill", 0, 0, W, H)
+        end
+        if r < 0 or g < 0 or b < 0 then
+            love.graphics.setColor(math.abs(r), math.abs(g), math.abs(b), 0.04)
+            love.graphics.rectangle("fill", 0, 0, W, H)
+        end
+    end
+
+    -- Seasonal particles
+    local effect = sv.particleEffect
+    if not effect then return end
+
+    weatherRng:setSeed(math.floor(love.timer.getTime() * 3))
+    local t = love.timer.getTime()
+
+    if effect == "snowfall" then
+        -- Gentle persistent snowfall (lighter than weather snow)
+        love.graphics.setColor(0.95, 0.95, 1, 0.35)
+        for i = 1, 25 do
+            local sx = weatherRng:random(0, W)
+            local sy = (weatherRng:random(0, H) + t * 20 * (1 + i % 3)) % H
+            local sz = 1 + (i % 3)
+            love.graphics.circle("fill", sx, sy, sz)
+        end
+
+    elseif effect == "leaves" then
+        -- Falling autumn leaves
+        for i = 1, 15 do
+            local lx = weatherRng:random(0, W)
+            local ly = (weatherRng:random(0, H) + t * 15 * (1 + i % 2)) % H
+            -- Warm autumn colors
+            local leafColors = {
+                {0.85, 0.45, 0.15},
+                {0.80, 0.30, 0.10},
+                {0.90, 0.60, 0.10},
+                {0.70, 0.25, 0.05},
+            }
+            local lc = leafColors[(i % #leafColors) + 1]
+            love.graphics.setColor(lc[1], lc[2], lc[3], 0.5)
+            -- Small diamond shape for leaf
+            local angle = t * 2 + i
+            local dx = math.cos(angle) * 3
+            local dy = math.sin(angle) * 2
+            love.graphics.polygon("fill", lx + dx, ly - 3, lx + 3, ly + dy, lx - dx, ly + 3, lx - 3, ly - dy)
+        end
+
+    elseif effect == "pollen" then
+        -- Floating pollen/petals
+        love.graphics.setColor(1, 1, 0.7, 0.25)
+        for i = 1, 20 do
+            local px = (weatherRng:random(0, W) + math.sin(t + i) * 30) % W
+            local py = (weatherRng:random(0, H) + math.cos(t * 0.7 + i) * 20) % H
+            love.graphics.circle("fill", px, py, 1.5)
+        end
+
+    elseif effect == "shimmer" then
+        -- Heat shimmer / distortion dots
+        love.graphics.setColor(1, 0.95, 0.8, 0.15)
+        for i = 1, 12 do
+            local hx = weatherRng:random(0, W)
+            local hy = H - weatherRng:random(0, math.floor(H * 0.4))
+            local pulse = math.sin(t * 3 + i) * 0.5 + 0.5
+            love.graphics.setColor(1, 0.95, 0.8, 0.08 + pulse * 0.08)
+            love.graphics.circle("fill", hx, hy, 4 + pulse * 3)
+        end
+    end
+end
+
 function game.drawHUD(W, H)
     -- Top bar
     love.graphics.setColor(0, 0, 0, 0.5)
@@ -8813,6 +9001,68 @@ function game.drawHUD(W, H)
     love.graphics.setColor(0.5, 0.5, 0.6, fadeIn * 0.4)
     local sprintHint = overworld.chunkBased and "" or " | Shift:Sprint"
     love.graphics.printf("WASD:Move" .. sprintHint .. " | Enter:Chat | E:Interact | I:Inv | C:Char | K:Cards | M:Map | F:Farm | H:Home", 0, H - 18, W - 10, "right")
+end
+
+function game.drawWorldSystemsHUD(W, H)
+    -- Disease indicators (top-right area, below minimap)
+    local diseaseY = 120
+    local diseaseCount = 0
+    for diseaseId, info in pairs(diseaseState.playerDiseases) do
+        diseaseCount = diseaseCount + 1
+        local stateLabel = "?"
+        if info.state == 1 then stateLabel = "Exposed"
+        elseif info.state == 2 then stateLabel = "Infected"
+        elseif info.state == 3 then stateLabel = "Quarantined"
+        elseif info.state == 4 then stateLabel = "Recovering" end
+
+        love.graphics.setColor(0.8, 0.2, 0.2, 0.9)
+        love.graphics.printf(diseaseId:gsub("_", " ") .. " [" .. stateLabel .. "]",
+            W - 220, diseaseY, 210, "right")
+        diseaseY = diseaseY + 16
+    end
+
+    -- Disease contraction flash
+    if diseaseState.contractedFlash > 0 then
+        local alpha = math.min(1, diseaseState.contractedFlash)
+        love.graphics.setColor(0.6, 0.0, 0.0, alpha * 0.3)
+        love.graphics.rectangle("fill", 0, 0, W, H)
+        love.graphics.setColor(1, 0.2, 0.2, alpha)
+        love.graphics.printf(diseaseState.contractedName or "Disease Contracted",
+            0, H * 0.3, W, "center")
+    end
+
+    -- Disease symptom flash
+    if diseaseState.symptomTimer > 0 and diseaseState.symptomMsg then
+        local alpha = math.min(1, diseaseState.symptomTimer)
+        love.graphics.setColor(0.7, 0.1, 0.1, alpha)
+        love.graphics.printf(diseaseState.symptomMsg, 0, H * 0.4, W, "center")
+    end
+
+    -- Faction territory indicator (top-left, below HUD)
+    if influenceState.controlling then
+        love.graphics.setColor(0.7, 0.7, 0.3, 0.8)
+        love.graphics.printf("Territory: " .. influenceState.controlling:gsub("_", " "),
+            10, 90, 250, "left")
+    end
+
+    -- Ecology indicator
+    if ecologyState.name ~= "unknown" then
+        love.graphics.setColor(0.3, 0.7, 0.3, 0.6)
+        local bonusStr = ""
+        if ecologyState.resourceBonus ~= 1.0 then
+            bonusStr = " (x" .. string.format("%.1f", ecologyState.resourceBonus) .. ")"
+        end
+        love.graphics.printf("Ecology: " .. ecologyState.name .. bonusStr,
+            10, 106, 250, "left")
+    end
+
+    -- Wind direction (subtle)
+    if weatherState.wind then
+        love.graphics.setColor(0.6, 0.6, 0.8, 0.4)
+        love.graphics.printf("Wind: " .. weatherState.wind, W - 120, H - 34, 110, "right")
+    end
+
+    love.graphics.setColor(1, 1, 1, 1)
 end
 
 function game.drawDoomHUD(W, H)
@@ -17397,6 +17647,16 @@ function game.unload()
     doom.remainingMs = 0
     doom.showEvent = false
     doom.flashTimer = 0
+
+    -- Clear world systems state
+    diseaseState.playerDiseases = {}
+    diseaseState.chunkDiseases = {}
+    diseaseState.contractedFlash = 0
+    diseaseState.symptomTimer = 0
+    influenceState.controlling = nil
+    influenceState.area = {}
+    ecologyState.state = -1
+    ecologyState.name = "unknown"
 
     -- Clear portal state
     portal.show = false

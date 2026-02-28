@@ -111,6 +111,18 @@ function resetWorldState(state) {
   // Doom counter
   state.world.doomAscensionCount = (state.world.doomAscensionCount || 0) + 1;
 
+  // Seasonal world regeneration — new doom cycle produces new definitions
+  try {
+    var seasonal = require('./seasonal');
+    var worldgen = require('./worldgen');
+    state.world.seasonSeed = worldgen.chunkSeed(state.world.doomAscensionCount, 0, 'mmolite_season');
+    seasonal.generate(state.world.seasonSeed, state.world.calendar.season);
+    seasonal.apply();
+    console.log('[doom] Seasonal world regenerated for doom cycle #' + state.world.doomAscensionCount);
+  } catch (err) {
+    console.error('[doom] Seasonal regeneration failed:', err.message);
+  }
+
   // Director macro state
   if (state.world.directorState) {
     state.world.directorState.globalTensionScore = 0;
@@ -183,6 +195,10 @@ function _executeWipe(doomCount) {
     if (_directors.raids && _directors.raids.reset) _directors.raids.reset();
     if (_directors.rifts && _directors.rifts.reset) _directors.rifts.reset();
     if (_directors.structures && _directors.structures.reset) _directors.structures.reset();
+    if (_directors.disease && _directors.disease.reset) _directors.disease.reset();
+    if (_directors.weather && _directors.weather.reset) _directors.weather.reset();
+    if (_directors.influence && _directors.influence.reset) _directors.influence.reset();
+    if (_directors.ecology && _directors.ecology.revertAll) _directors.ecology.revertAll();
   }
 
   // 7. Save director state

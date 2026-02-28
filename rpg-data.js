@@ -1287,4 +1287,13 @@ module.exports = {
   BIOME_WEATHER_EFFECTS,
   getWeatherForBiome,
   getBiomeWeatherEffect,
+
+  // Seasonal override hook
+  applySeasonalOverrides: function(overrides) {
+    for (var key in overrides) {
+      if (module.exports.hasOwnProperty(key)) {
+        module.exports[key] = overrides[key];
+      }
+    }
+  },
 };

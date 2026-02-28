@@ -239,4 +239,10 @@ module.exports = {
   awardPetEvoXp: awardPetEvoXp,
   TAMEABLE_CREATURES: TAMEABLE_CREATURES,
   PET_CARE: PET_CARE,
+  applySeasonalOverrides: function(overrides) {
+    if (overrides.TAMEABLE_CREATURES) {
+      TAMEABLE_CREATURES = overrides.TAMEABLE_CREATURES;
+      module.exports.TAMEABLE_CREATURES = TAMEABLE_CREATURES;
+    }
+  },
 };

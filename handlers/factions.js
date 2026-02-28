@@ -129,4 +129,10 @@ module.exports = {
   isFactionHostile: isFactionHostile,
   getFactionForZone: getFactionForZone,
   addRep: addRep,
+  applySeasonalOverrides: function(overrides) {
+    if (overrides.FACTIONS)          { FACTIONS = overrides.FACTIONS;                   module.exports.FACTIONS = FACTIONS; }
+    if (overrides.REP_THRESHOLDS)    { REP_THRESHOLDS = overrides.REP_THRESHOLDS;       module.exports.REP_THRESHOLDS = REP_THRESHOLDS; }
+    if (overrides.REP_SHOP_DISCOUNT) { REP_SHOP_DISCOUNT = overrides.REP_SHOP_DISCOUNT; module.exports.REP_SHOP_DISCOUNT = REP_SHOP_DISCOUNT; }
+    if (overrides.ZONE_FACTION_MAP)  { ZONE_FACTION_MAP = overrides.ZONE_FACTION_MAP;   module.exports.ZONE_FACTION_MAP = ZONE_FACTION_MAP; }
+  },
 };

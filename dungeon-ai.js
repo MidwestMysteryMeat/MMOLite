@@ -1671,22 +1671,8 @@ function decideTurnAction(enemy, combat, players, floor) {
     }
   }
 
-  // Get all alive enemies for ally tracking
-  var allies = [];
-  combat.units.forEach(function(unit) {
-    if (unit.type === 'enemy' && unit.alive && unit.id !== enemy.id) {
-      allies.push(unit);
-    }
-  });
-
-  // Get all alive players
-  var alivePlayers = [];
-  for (var pi = 0; pi < players.length; pi++) {
-    if (players[pi].alive) alivePlayers.push(players[pi]);
-  }
-  if (alivePlayers.length === 0) {
-    return { type: 'wait' };
-  }
+  // Delegate to utility-based action scoring
+  var combatUtility = require('./combat-utility');
 
   // Check if taunted — forced to target the taunter
   var tauntTarget = null;
@@ -1702,46 +1688,21 @@ function decideTurnAction(enemy, combat, players, floor) {
     }
   }
 
-  // Pick target using threat scoring (overridden by taunt)
-  var bestTarget = tauntTarget;
-  var bestThreat = -999;
-  if (!bestTarget) {
-    for (var ti = 0; ti < alivePlayers.length; ti++) {
-      var p = alivePlayers[ti];
-      var threat = calculateThreatScore(enemy, p, p.combat || {});
-      if (threat > bestThreat) {
-        bestThreat = threat;
-        bestTarget = p;
-      }
-    }
-  }
-  if (!bestTarget) {
-    return { type: 'wait' };
-  }
+  // If taunted, restrict players list to just the taunter
+  var effectivePlayers = tauntTarget ? [tauntTarget] : players;
 
-  var dist = manhattanDist(enemy.x, enemy.y, bestTarget.x, bestTarget.y);
-  var hasLOS = hasLineOfSight(grid, enemy.x, enemy.y, bestTarget.x, bestTarget.y, width, height);
-
-  // Check retreat threshold
-  var hpPct = enemy.maxHp > 0 ? enemy.hp / enemy.maxHp : 1;
-  if (arch.retreatThreshold > 0 && hpPct < arch.retreatThreshold) {
-    // Retreating: move away, don't attack
-    var retreatPath = buildMovePath(enemy.x, enemy.y,
-      enemy.x + (enemy.x - bestTarget.x), enemy.y + (enemy.y - bestTarget.y),
-      grid, width, height, combat, enemy.mp || 2);
-    if (retreatPath.length > 0) {
-      return { type: 'move', movePath: retreatPath, targetId: null, abilityId: null };
-    }
-  }
-
-  // Support: prioritize healing low allies (uses tactical scoring)
+  // Support: check for urgent heals before utility scoring
   if (arch.preferHeal && enemy.abilities) {
+    var allies = [];
+    combat.units.forEach(function(unit) {
+      if (unit.type === 'enemy' && unit.alive && unit.id !== enemy.id && !unit.isPlayerSummon) {
+        allies.push(unit);
+      }
+    });
     for (var ai = 0; ai < allies.length; ai++) {
       if (allies[ai].hp < (allies[ai].maxHp || allies[ai].hp) * 0.5) {
-        // Use tactical scoring to find the best heal ability for this ally
         var healAbility = selectBestAbility(enemy, allies[ai], allies, grid, width, height);
         if (healAbility && healAbility.heals) {
-          // Set heal saturation
           if (!enemy.saturation) enemy.saturation = {};
           enemy.saturation.heal = { ticksRemaining: 4 };
           return { type: 'ability', movePath: [], targetId: allies[ai].id, abilityId: healAbility.id };
@@ -1750,60 +1711,22 @@ function decideTurnAction(enemy, combat, players, floor) {
     }
   }
 
-  // Try ability first (if in range and has one) - uses tactical scoring
-  var ability = selectBestAbility(enemy, bestTarget, allies, grid, width, height);
-  if (ability && hasLOS && enemy.ap > 0) {
-    // If in ability range, use it
-    if (!ability.range || dist <= ability.range) {
-      // Set heal saturation if applicable
-      if (ability.heals) {
+  // Score all candidate actions using influence maps + utility
+  var candidates = combatUtility.scoreActions(enemy, combat, effectivePlayers, floor);
+  var action = combatUtility.pickBestAction(candidates);
+
+  // Set heal saturation for ability actions that heal
+  if (action.type === 'ability' && action.abilityId && enemy.abilities) {
+    for (var ahi = 0; ahi < enemy.abilities.length; ahi++) {
+      if (enemy.abilities[ahi].id === action.abilityId && enemy.abilities[ahi].heals) {
         if (!enemy.saturation) enemy.saturation = {};
         enemy.saturation.heal = { ticksRemaining: 4 };
+        break;
       }
-      return { type: 'ability', movePath: [], targetId: bestTarget.id, abilityId: ability.id };
     }
   }
 
-  // Adjacent? Attack directly
-  var isAdj = Math.abs(enemy.x - bestTarget.x) <= 1 && Math.abs(enemy.y - bestTarget.y) <= 1 && dist > 0;
-  if (isAdj && enemy.ap > 0) {
-    return { type: 'attack', movePath: [], targetId: bestTarget.id, abilityId: null };
-  }
-
-  // Not adjacent — need to move
-  var mp = enemy.mp || 2;
-  var movePath = [];
-
-  // For ranged/controller: try to stay at preferred range
-  if (arch.keepDistance && dist <= 1 && mp > 0) {
-    movePath = buildMovePath(enemy.x, enemy.y,
-      enemy.x + (enemy.x - bestTarget.x), enemy.y + (enemy.y - bestTarget.y),
-      grid, width, height, combat, mp);
-    if (movePath.length > 0) {
-      return { type: 'move', movePath: movePath, targetId: null, abilityId: null };
-    }
-  }
-
-  // Move toward target
-  movePath = buildMovePath(enemy.x, enemy.y, bestTarget.x, bestTarget.y,
-    grid, width, height, combat, mp);
-
-  // Check if we end up adjacent after moving
-  var finalX = movePath.length > 0 ? movePath[movePath.length - 1].x : enemy.x;
-  var finalY = movePath.length > 0 ? movePath[movePath.length - 1].y : enemy.y;
-  var finalDist = manhattanDist(finalX, finalY, bestTarget.x, bestTarget.y);
-  var finalAdj = Math.abs(finalX - bestTarget.x) <= 1 && Math.abs(finalY - bestTarget.y) <= 1 && finalDist > 0;
-
-  if (movePath.length > 0 && finalAdj && enemy.ap > 0) {
-    return { type: 'move_and_attack', movePath: movePath, targetId: bestTarget.id, abilityId: null };
-  }
-
-  if (movePath.length > 0) {
-    return { type: 'move', movePath: movePath, targetId: null, abilityId: null };
-  }
-
-  // Can't move, can't attack — wait
-  return { type: 'wait' };
+  return action;
 }
 
 // Build a step-by-step move path toward a target, limited by MP.

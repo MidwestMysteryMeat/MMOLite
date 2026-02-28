@@ -168,4 +168,16 @@ function init(io, socket, deps) {
   });
 }
 
-module.exports = { init: init, canAscend: canAscend, doAscend: doAscend, ASCENSION_TREE: ASCENSION_TREE, getApReward: getApReward };
+module.exports = {
+  init: init,
+  canAscend: canAscend,
+  doAscend: doAscend,
+  ASCENSION_TREE: ASCENSION_TREE,
+  getApReward: getApReward,
+  applySeasonalOverrides: function(overrides) {
+    if (overrides.ASCENSION_TREE) {
+      ASCENSION_TREE = overrides.ASCENSION_TREE;
+      module.exports.ASCENSION_TREE = ASCENSION_TREE;
+    }
+  },
+};
