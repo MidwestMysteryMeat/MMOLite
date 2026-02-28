@@ -39,6 +39,13 @@
 'use strict';
 
 var worldgen = require('../worldgen');
+var doomAscension = null; // lazy-loaded to avoid circular require
+function _getDoomAscension() {
+  if (!doomAscension) {
+    try { doomAscension = require('../doom-ascension'); } catch (e) { /* not loaded yet */ }
+  }
+  return doomAscension;
+}
 var overworldRifts = null; // lazy-loaded to avoid circular require
 function _getOverworldRifts() {
   if (!overworldRifts) {
@@ -54,7 +61,7 @@ function _getOverworldRifts() {
 // Corruption spread
 var SPREAD_RADIUS = 3;           // max chunks per daily tick
 var SPREAD_CHANCE = 0.10;        // 10% chance per candidate chunk per tick
-var WATER_BLOCKS_SPREAD = true;  // water biome blocks corruption
+var WATER_SPREAD_CHANCE = 0.25;  // water biome slows corruption (25% of normal chance)
 var MAX_CORRUPTION_LEVEL = 100;  // full corruption
 var CORRUPTION_PER_SPREAD = 15;  // corruption added per spread tick
 var NATURAL_DECAY_RATE = 2;      // corruption lost per day in uncorrupted-adjacent areas
@@ -68,8 +75,18 @@ var HORDE_SPAWN_INTERVAL = 300000;    // 5 min between horde spawn checks
 
 // Player debuff
 var CORRUPTION_DEBUFF_INTERVAL = 10000;  // 10s between shadow damage ticks
-var CORRUPTION_DEBUFF_DAMAGE = 5;        // base shadow damage per tick
-var CORRUPTION_DEBUFF_SCALING = 0.1;     // extra damage per corruption level
+var CORRUPTION_DEBUFF_DAMAGE = 2;        // base shadow damage per tick
+var CORRUPTION_DEBUFF_SCALING = 0.05;    // extra damage per corruption level (max ~7 at 100)
+
+// Capital (Solara) detection
+var CAPITAL_CX = worldgen.WORLD_SCALE.originCX + 40;
+var CAPITAL_CY = worldgen.WORLD_SCALE.originCY + 38;
+var CAPITAL_CORRUPTION_THRESHOLD = 50;   // corruption level to trigger countdown
+var CAPITAL_AMPLIFY_RADIUS = 5;          // debuff doubled within 5 chunks of capital
+
+// Doom countdown
+var DOOM_DURATION_MS = 48 * 3600000;     // 48 hours
+var CAPITAL_NARRATIVE_INTERVAL = 600000; // 10 minutes between narrative broadcasts
 
 // ---------------------------------------------------------------------------
 // State
@@ -86,6 +103,21 @@ var activeHordes = [];
 
 // Player debuff tracking: socketId -> lastDebuffTick timestamp
 var playerDebuffTimers = {};
+
+// Cached state reference (set on first tick)
+var _stateRef = null;
+
+// Doom countdown state
+var doomCountdown = {
+  active: false,
+  startedAt: null,
+  expiresAt: null,
+  pausedAt: null,
+  remainingMs: DOOM_DURATION_MS,
+  pushbackCount: 0,
+};
+var lastCapitalNarrative = 0;  // timestamp of last narrative broadcast
+var lichDefeatedMonth = null;  // calendar month when lich was killed (null = never)
 
 // ---------------------------------------------------------------------------
 // Initialization
@@ -111,6 +143,24 @@ function _buildCorruptionSources() {
 }
 
 // ---------------------------------------------------------------------------
+// Capital corruption detection + scaling
+// ---------------------------------------------------------------------------
+
+function isCapitalCorrupted() {
+  var key = CAPITAL_CX + ',' + CAPITAL_CY;
+  var chunk = corruptedChunks[key];
+  return !!(chunk && chunk.level >= CAPITAL_CORRUPTION_THRESHOLD);
+}
+
+function _getScalingFactor() {
+  return 1 + doomCountdown.pushbackCount * 0.15;
+}
+
+function _isNearCapital(cx, cy, radius) {
+  return Math.abs(cx - CAPITAL_CX) + Math.abs(cy - CAPITAL_CY) <= radius;
+}
+
+// ---------------------------------------------------------------------------
 // Daily spread tick — called on interval (60s check, acts once per day)
 // ---------------------------------------------------------------------------
 
@@ -126,30 +176,38 @@ function _dailySpread() {
 
   console.log('[lich] Daily corruption spread tick for ' + today);
 
-  // 1. Seed corruption at sources if not already present
-  for (var si = 0; si < corruptionSources.length; si++) {
-    var src = corruptionSources[si];
-    var srcKey = src.cx + ',' + src.cy;
-    if (!corruptedChunks[srcKey]) {
-      corruptedChunks[srcKey] = {
-        level: MAX_CORRUPTION_LEVEL,
-        sourceId: src.dungeonId,
-        lastSpread: today,
-      };
-    } else {
-      // Source chunk always at max
-      corruptedChunks[srcKey].level = MAX_CORRUPTION_LEVEL;
+  // 1. Seed corruption at sources if not already present (skip if lich is dormant)
+  var currentCalMonth = _stateRef && _stateRef.world && _stateRef.world.calendar
+    ? _stateRef.world.calendar.month : null;
+  var dormant = currentCalMonth !== null && isLichDormant(currentCalMonth);
+
+  if (!dormant) {
+    for (var si = 0; si < corruptionSources.length; si++) {
+      var src = corruptionSources[si];
+      var srcKey = src.cx + ',' + src.cy;
+      if (!corruptedChunks[srcKey]) {
+        corruptedChunks[srcKey] = {
+          level: MAX_CORRUPTION_LEVEL,
+          sourceId: src.dungeonId,
+          lastSpread: today,
+        };
+      } else {
+        // Source chunk always at max
+        corruptedChunks[srcKey].level = MAX_CORRUPTION_LEVEL;
+      }
     }
   }
 
-  // 1b. Seed corruption from active mini-rifts
+  // 1b. Seed corruption from active mini-rifts (rifts spawn at any corruption,
+  //     but seed their chunk at 50-100 based on tier to act as spread sources)
   var riftMod = _getOverworldRifts();
   if (riftMod) {
     var allRifts = riftMod.getAllRifts();
     for (var ri = 0; ri < allRifts.length; ri++) {
       var rift = allRifts[ri];
       if (rift.destroyed || rift.cleared) continue;
-      var riftLevel = 70 + (rift.tier || 1) * 6; // 76-100
+      var riftLevel = 50 + (rift.tier || 1) * 10; // 60-100
+      if (riftLevel > MAX_CORRUPTION_LEVEL) riftLevel = MAX_CORRUPTION_LEVEL;
       var riftKey = rift.chunkX + ',' + rift.chunkY;
       if (!corruptedChunks[riftKey]) {
         corruptedChunks[riftKey] = {
@@ -189,17 +247,18 @@ function _dailySpread() {
         // Skip already heavily corrupted
         if (corruptedChunks[nkey] && corruptedChunks[nkey].level >= MAX_CORRUPTION_LEVEL) continue;
 
-        // Distance-based spread chance (closer = higher chance)
-        var chance = SPREAD_CHANCE * (1.0 - (dist - 1) / SPREAD_RADIUS);
+        // Distance-based spread chance (closer = higher chance), scaled by pushbacks
+        var scaledSpreadChance = SPREAD_CHANCE * _getScalingFactor();
+        var chance = scaledSpreadChance * (1.0 - (dist - 1) / SPREAD_RADIUS);
+
+        // Water slows spread instead of blocking
+        var biome = worldgen.getBiome(ncx, ncy);
+        if (biome === 0) chance *= WATER_SPREAD_CHANCE;
+
         if (Math.random() > chance) continue;
 
-        // Water blocks spread
-        if (WATER_BLOCKS_SPREAD) {
-          var biome = worldgen.getBiome(ncx, ncy);
-          if (biome === 0) continue; // WATER
-        }
-
-        var addAmount = Math.floor(CORRUPTION_PER_SPREAD * (1.0 - dist / (SPREAD_RADIUS + 1)));
+        var scaledCorruptionPerSpread = Math.floor(CORRUPTION_PER_SPREAD * _getScalingFactor());
+        var addAmount = Math.floor(scaledCorruptionPerSpread * (1.0 - dist / (SPREAD_RADIUS + 1)));
         if (addAmount < 1) addAmount = 1;
 
         if (corruptedChunks[nkey]) {
@@ -338,11 +397,12 @@ function _checkHordes(io, state) {
     return now - h.spawnedAt < 600000;
   });
 
-  // Check high-corruption areas for horde spawning
+  // Check high-corruption areas for horde spawning (threshold lowers with scaling)
+  var scaledHordeThreshold = Math.max(20, Math.floor(HORDE_CORRUPTION_THRESHOLD / _getScalingFactor()));
   var keys = Object.keys(corruptedChunks);
   for (var ki = 0; ki < keys.length; ki++) {
     var chunk = corruptedChunks[keys[ki]];
-    if (chunk.level < HORDE_CORRUPTION_THRESHOLD) continue;
+    if (chunk.level < scaledHordeThreshold) continue;
 
     var parts = keys[ki].split(',');
     var cx = parseInt(parts[0], 10);
@@ -425,9 +485,15 @@ function getCorruptionLevel(cx, cy) {
 function getCorruptionDebuff(cx, cy) {
   var level = getCorruptionLevel(cx, cy);
   if (level <= 0) return null;
+  var scale = _getScalingFactor();
+  var baseDamage = Math.floor((CORRUPTION_DEBUFF_DAMAGE + level * CORRUPTION_DEBUFF_SCALING) * scale);
+  // Double debuff damage near capital when capital is corrupted
+  if (isCapitalCorrupted() && _isNearCapital(cx, cy, CAPITAL_AMPLIFY_RADIUS)) {
+    baseDamage *= 2;
+  }
   return {
     level: level,
-    damage: Math.floor(CORRUPTION_DEBUFF_DAMAGE + level * CORRUPTION_DEBUFF_SCALING),
+    damage: baseDamage,
     interval: CORRUPTION_DEBUFF_INTERVAL,
   };
 }
@@ -442,6 +508,144 @@ function shouldApplyDebuff(socketId) {
 
 function clearDebuffTimer(socketId) {
   delete playerDebuffTimers[socketId];
+}
+
+// ---------------------------------------------------------------------------
+// Doom countdown lifecycle
+// ---------------------------------------------------------------------------
+
+function _tickDoomCountdown(io) {
+  var now = Date.now();
+  var capitalCorrupted = isCapitalCorrupted();
+
+  if (capitalCorrupted && !doomCountdown.active && !doomCountdown.pausedAt) {
+    // START countdown
+    doomCountdown.active = true;
+    doomCountdown.startedAt = now;
+    doomCountdown.expiresAt = now + doomCountdown.remainingMs;
+    doomCountdown.pausedAt = null;
+    console.log('[lich] DOOM COUNTDOWN STARTED — ' + Math.round(doomCountdown.remainingMs / 3600000) + 'h remaining');
+    if (io) {
+      io.emit('doom_countdown_started', {
+        expiresAt: doomCountdown.expiresAt,
+        message: 'The corruption has breached Solara. Beneath the Cathedral, Helios stirs in agony. The world has ' + Math.round(doomCountdown.remainingMs / 3600000) + ' hours.',
+      });
+    }
+    return;
+  }
+
+  if (capitalCorrupted && doomCountdown.pausedAt) {
+    // RESUME countdown (corruption returned)
+    doomCountdown.active = true;
+    doomCountdown.expiresAt = now + doomCountdown.remainingMs;
+    doomCountdown.pausedAt = null;
+    console.log('[lich] DOOM COUNTDOWN RESUMED — ' + Math.round(doomCountdown.remainingMs / 3600000) + 'h remaining');
+    if (io) {
+      io.emit('doom_countdown_resumed', {
+        expiresAt: doomCountdown.expiresAt,
+        remainingMs: doomCountdown.remainingMs,
+        message: 'The corruption reclaims Solara. The countdown resumes.',
+      });
+    }
+    return;
+  }
+
+  if (!capitalCorrupted && doomCountdown.active) {
+    // PAUSE countdown (corruption pushed out)
+    doomCountdown.remainingMs = Math.max(0, doomCountdown.expiresAt - now);
+    doomCountdown.pausedAt = now;
+    doomCountdown.active = false;
+    doomCountdown.pushbackCount++;
+    console.log('[lich] DOOM COUNTDOWN PAUSED — pushback #' + doomCountdown.pushbackCount + ', ' + Math.round(doomCountdown.remainingMs / 3600000) + 'h remaining');
+    if (io) {
+      io.emit('doom_countdown_paused', {
+        remainingMs: doomCountdown.remainingMs,
+        pushbackCount: doomCountdown.pushbackCount,
+        message: 'The corruption recedes from Solara. But the pressure builds. Scaling increased.',
+      });
+    }
+    return;
+  }
+
+  if (doomCountdown.active && now >= doomCountdown.expiresAt) {
+    // DOOM ASCENSION — countdown expired
+    console.log('[lich] DOOM COUNTDOWN EXPIRED — triggering doom ascension');
+    _triggerDoom();
+  }
+}
+
+function _tickCapitalNarrative(io) {
+  if (!isCapitalCorrupted()) return;
+  var now = Date.now();
+  if (now - lastCapitalNarrative < CAPITAL_NARRATIVE_INTERVAL) return;
+  lastCapitalNarrative = now;
+
+  var messages = [
+    'The ground trembles beneath Solara. Helios screams without a voice.',
+    'Corruption seeps through the Cathedral floor. The divine seal cracks.',
+    'Citizens of Solara flee in terror. The dead walk openly in the streets.',
+    'The Cardinals cannot contain it. Five centuries of stolen essence unravels.',
+    'He is closer now. Not to freedom — to the end of everything.',
+  ];
+  var msg = messages[Math.floor(Math.random() * messages.length)];
+  if (io) {
+    io.emit('world_event', {
+      title: 'Solara Falls',
+      description: msg,
+      type: 'doom_capital',
+    });
+  }
+}
+
+function _triggerDoom() {
+  var doom = _getDoomAscension();
+  if (doom) {
+    doom.execute(function() {
+      // After doom, reset our own state
+      _resetDoomState();
+    });
+  } else {
+    console.error('[lich] doom-ascension module not available');
+  }
+}
+
+function _resetDoomState() {
+  doomCountdown.active = false;
+  doomCountdown.startedAt = null;
+  doomCountdown.expiresAt = null;
+  doomCountdown.pausedAt = null;
+  doomCountdown.remainingMs = DOOM_DURATION_MS;
+  doomCountdown.pushbackCount = 0;
+  lastCapitalNarrative = 0;
+  lichDefeatedMonth = null;
+}
+
+// ---------------------------------------------------------------------------
+// Reset (called by doom ascension or externally)
+// ---------------------------------------------------------------------------
+
+function reset() {
+  corruptedChunks = {};
+  activeHordes = [];
+  playerDebuffTimers = {};
+  lastDailySpread = null;
+  lastHordeCheck = 0;
+  _resetDoomState();
+  console.log('[lich] State fully reset');
+}
+
+// ---------------------------------------------------------------------------
+// Lich defeated tracking
+// ---------------------------------------------------------------------------
+
+function setLichDefeated(calendarMonth) {
+  lichDefeatedMonth = calendarMonth;
+  console.log('[lich] Lich defeated in month ' + calendarMonth + ', corruption sources dormant until next month');
+}
+
+function isLichDormant(currentMonth) {
+  if (lichDefeatedMonth === null) return false;
+  return currentMonth <= lichDefeatedMonth;
 }
 
 // ---------------------------------------------------------------------------
@@ -474,10 +678,18 @@ function getActiveHordes() {
 // ---------------------------------------------------------------------------
 
 function tick(io, state, accounts, socketAccountMap) {
+  if (!_stateRef && state) _stateRef = state;
+
   // Daily spread
   var didSpread = _dailySpread();
 
-  // Horde checks
+  // Doom countdown logic
+  _tickDoomCountdown(io);
+
+  // Capital narrative broadcasts
+  _tickCapitalNarrative(io);
+
+  // Horde checks (3x rate near capital when corrupted)
   _checkHordes(io, state);
 
   // Apply debuffs to players in corrupted overworld chunks
@@ -573,6 +785,8 @@ function getState() {
     corruptedChunks: corruptedChunks,
     lastDailySpread: lastDailySpread,
     activeHordes: activeHordes,
+    doomCountdown: doomCountdown,
+    lichDefeatedMonth: lichDefeatedMonth,
   };
 }
 
@@ -581,7 +795,16 @@ function loadState(saved) {
   if (saved.corruptedChunks) corruptedChunks = saved.corruptedChunks;
   if (saved.lastDailySpread) lastDailySpread = saved.lastDailySpread;
   if (saved.activeHordes) activeHordes = saved.activeHordes;
-  console.log('[lich] Loaded corruption state: ' + Object.keys(corruptedChunks).length + ' corrupted chunks');
+  if (saved.doomCountdown) {
+    doomCountdown = saved.doomCountdown;
+    // Ensure remainingMs doesn't go below 0 after server restart
+    if (doomCountdown.active && doomCountdown.expiresAt) {
+      doomCountdown.remainingMs = Math.max(0, doomCountdown.expiresAt - Date.now());
+    }
+  }
+  if (saved.lichDefeatedMonth !== undefined) lichDefeatedMonth = saved.lichDefeatedMonth;
+  console.log('[lich] Loaded corruption state: ' + Object.keys(corruptedChunks).length + ' corrupted chunks' +
+    (doomCountdown.active ? ', DOOM ACTIVE (' + Math.round(doomCountdown.remainingMs / 3600000) + 'h)' : ''));
 }
 
 // ---------------------------------------------------------------------------
@@ -658,6 +881,7 @@ module.exports = {
   tick: tick,
   getState: getState,
   loadState: loadState,
+  reset: reset,
 
   // Corruption queries
   getCorruptionLevel: getCorruptionLevel,
@@ -667,6 +891,7 @@ module.exports = {
   cleanseCorruption: cleanseCorruption,
   cleanseRiftCorruption: cleanseRiftCorruption,
   playerCleanse: playerCleanse,
+  isCapitalCorrupted: isCapitalCorrupted,
 
   // Debuff
   shouldApplyDebuff: shouldApplyDebuff,
@@ -674,6 +899,12 @@ module.exports = {
 
   // Hordes
   getActiveHordes: getActiveHordes,
+
+  // Doom
+  getDoomState: function() { return doomCountdown; },
+  triggerDoom: _triggerDoom,
+  setLichDefeated: setLichDefeated,
+  isLichDormant: isLichDormant,
 
   // Constants (for handler use)
   CORRUPTION_DEBUFF_DAMAGE: CORRUPTION_DEBUFF_DAMAGE,

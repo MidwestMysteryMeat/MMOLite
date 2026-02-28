@@ -611,6 +611,7 @@ function gracefulShutdown(signal) {
     shardBridge.saveAllCharacters();
     shardBridge.stopHeartbeat();
     accounts.flushAll();
+    try { director.saveState(); } catch (_) {}
     try { loot.flushSerialCounter(); } catch (_) {}
     try { db.close(); } catch (_) {}
     server.close(function() {

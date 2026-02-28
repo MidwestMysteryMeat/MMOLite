@@ -344,4 +344,13 @@ module.exports = {
   cureLycanthropy: cureLycanthropy,
   getActivePacks: getActivePacks,
   getWerewolfSources: getWerewolfSources,
+  reset: function() {
+    nextFullMoon = Date.now() + FULL_MOON_CYCLE_MS;
+    fullMoonStartedAt = null;
+    isFullMoonActive = false;
+    lastBroadcast = 0;
+    activePacks = [];
+    lycanthropePlayers = {};
+    console.log('[werewolf] State fully reset');
+  },
 };
