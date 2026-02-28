@@ -323,15 +323,13 @@ module.exports = {
 
           // Execute card transfers atomically: modify both accounts in memory, then save both
           if (pendingCardTransfers.length > 0) {
-            var initAccCards = accounts.loadAccount(initKey);
-            var targAccCards = accounts.loadAccount(targKey);
-            if (initAccCards && targAccCards) {
-              if (!initAccCards.rpgCards) initAccCards.rpgCards = [];
-              if (!targAccCards.rpgCards) targAccCards.rpgCards = [];
+            if (initAcc && targAcc) {
+              if (!initAcc.rpgCards) initAcc.rpgCards = [];
+              if (!targAcc.rpgCards) targAcc.rpgCards = [];
               for (var pci = 0; pci < pendingCardTransfers.length; pci++) {
                 var xfer = pendingCardTransfers[pci];
-                var srcAcc = xfer.fromKey === initKey ? initAccCards : targAccCards;
-                var dstAcc = xfer.toKey === initKey ? initAccCards : targAccCards;
+                var srcAcc = xfer.fromKey === initKey ? initAcc : targAcc;
+                var dstAcc = xfer.toKey === initKey ? initAcc : targAcc;
                 if (!srcAcc.rpgCards || !dstAcc.rpgCards) continue;
                 var cardIdx = -1;
                 for (var ci = 0; ci < srcAcc.rpgCards.length; ci++) {
@@ -347,8 +345,8 @@ module.exports = {
               }
               // Save both accounts together — minimizes crash window
               try {
-                accounts.saveAccount(initAccCards);
-                accounts.saveAccount(targAccCards);
+                accounts.saveAccount(initAcc);
+                accounts.saveAccount(targAcc);
               } catch (saveErr) {
                 console.error('[trade] Card transfer save failed:', saveErr.message);
               }
@@ -412,14 +410,20 @@ module.exports = {
 
     // --- disconnect: clean up any active trades involving this socket ---
     socket.on('disconnect', function() {
+      // Collect trades to cancel first to avoid mutating the Map during iteration
+      var toCancel = [];
       for (var entry of trades) {
         var trade = entry[1];
         if (trade.initiator === socket.id || trade.target === socket.id) {
-          var otherId = trade.initiator === socket.id ? trade.target : trade.initiator;
-          trade.state = 'cancelled';
-          trades.delete(trade.id);
-          io.to(otherId).emit('trade_cancelled', { tradeId: trade.id, cancelledBy: socket.id, reason: 'disconnect' });
+          toCancel.push(trade);
         }
+      }
+      for (var ci = 0; ci < toCancel.length; ci++) {
+        var t = toCancel[ci];
+        var otherId = t.initiator === socket.id ? t.target : t.initiator;
+        t.state = 'cancelled';
+        trades.delete(t.id);
+        io.to(otherId).emit('trade_cancelled', { tradeId: t.id, cancelledBy: socket.id, reason: 'disconnect' });
       }
       tradeExecLocks.delete(socketAccountMap.get(socket.id));
     });

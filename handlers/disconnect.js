@@ -119,7 +119,8 @@ module.exports = {
           }
         }
 
-        // Clean up active battles
+        // Clean up active battles — collect IDs first to avoid mutating Map during iteration
+        var battleIdsToEnd = [];
         for (var [battleId, battle] of state.activeBattles) {
           var isParticipant = false;
           for (var bi = 0; bi < battle.participants.length; bi++) {
@@ -135,8 +136,11 @@ module.exports = {
                 });
               }
             }
-            state.endBattle(battleId);
+            battleIdsToEnd.push(battleId);
           }
+        }
+        for (var ei = 0; ei < battleIdsToEnd.length; ei++) {
+          state.endBattle(battleIdsToEnd[ei]);
         }
 
         // Clean up lich corruption debuff timer

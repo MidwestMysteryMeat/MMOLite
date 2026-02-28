@@ -37,6 +37,8 @@ var BLOODLUST_DECAY_PER_TURN, BLOODLUST_DECAY_DELAY;
 var checkCombatEnd, endCombat, checkExhaustion;
 var endUnitTurn, getDynamicTurnTimer, handleUnitDeath;
 var processNPCActions;
+var EXHAUSTION_START, EXHAUSTION_START_BOSS;
+var handleTurnTimeout;
 
 function init(deps) {
   activeCombats = deps.activeCombats;
@@ -53,6 +55,9 @@ function init(deps) {
   getDynamicTurnTimer = deps.getDynamicTurnTimer;
   handleUnitDeath = deps.handleUnitDeath;
   processNPCActions = deps.processNPCActions;
+  EXHAUSTION_START = deps.EXHAUSTION_START;
+  EXHAUSTION_START_BOSS = deps.EXHAUSTION_START_BOSS;
+  handleTurnTimeout = deps.handleTurnTimeout;
 }
 
 function startPlayerTurn(combat, unitIds) {

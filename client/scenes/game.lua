@@ -33,6 +33,9 @@ local SCENE_EVENTS = {
     "dungeon_combat_state", "dungeon_error", "cave_is_dungeon",
     "dungeon_enemies_update", "dungeon_enemy_attack", "dungeon_enemy_attack_visual",
     "dungeon_enemy_heal", "dungeon_boss_phase",
+    "dungeon_notification", "dungeon_ambush", "dungeon_mana_update",
+    "dungeon_heal", "dungeon_form_interact_result", "dungeon_animal_interact_result",
+    "dungeon_warning", "dungeon_combat_use_card_result",
     "dungeon_visibility_update", "dungeon_torch_active", "dungeon_lantern_active",
     "dungeon_torch_placed", "dungeon_chat_message", "dungeon_vision_changed",
     "dungeon_harvest_result", "dungeon_trap_detected", "dungeon_shortcut_found",
@@ -43,6 +46,8 @@ local SCENE_EVENTS = {
     "tc_combat_end", "tc_combat_initiative", "tc_combat_reaction",
     "tc_combat_reaction_result", "tc_combat_error", "tc_combat_join_offer",
     "equipment_updated", "equip_error", "durability_info",
+    "abilities_list", "ability_error", "ability_result", "cooldown_update",
+    "card_ability_result", "card_cooldown_update",
     "food_consumed", "food_error", "repair_result", "repair_error",
     "connection_added", "connection_removed", "zone_kicked",
     "zone_error",
@@ -70,6 +75,8 @@ local SCENE_EVENTS = {
     "zone_monsters", "zone_monster_spawned", "zone_monster_died",
     "zone_monster_hit", "zone_monster_attack", "zone_monster_killed", "zone_monster_positions",
     "zone_attack_error",
+    "biome_weather", "town_rumors", "town_rep_update", "cave_enter_error",
+    "zone_animal_interact_result", "bonus_drop", "item_broken", "durability_warning",
     "batch_move",
     "knowledge_data", "knowledge_book_content",
     "knowledge_book_discovered", "knowledge_term_unlocked",
@@ -92,6 +99,7 @@ local SCENE_EVENTS = {
     "rift_spawned", "rift_destroyed", "rift_sealed_rewards",
     "card_vendor_bought", "card_vendor_sold", "card_vendor_catalog",
     "card_loadout_saved", "card_loadouts",
+    "card_evolution_complete", "card_evolution_info", "card_curse_cleansed",
     "dungeon_quest_update",
     "mastery_tree_status", "mastery_invest_result", "mastery_reset_result",
     "doom_status", "doom_countdown_started", "doom_countdown_paused",
@@ -123,8 +131,14 @@ local SCENE_EVENTS = {
     "guild_left", "guild_message", "guild_vault_contents", "guild_vault_updated",
     -- Crafting minigame
     "craft_minigame",
+    -- Crafting: advanced results
+    "gem_socket_result", "augment_result", "imbue_result", "inscribe_result",
     -- Guard hostility
     "guard_hostile",
+    -- Other
+    "affliction_status", "npc_interact_result", "wild_encounter_result",
+    "placed_objects", "portal_crafted", "portal_destroyed",
+    "pin_setup_required", "monster_roster", "monster_party_updated",
 }
 
 -- Debug logger: writes to file so we can diagnose issues in fused exe (no console)
@@ -193,6 +207,25 @@ local chat = {
     scrollY = 0,
     maxDisplay = 12,
 }
+
+-- Helper: insert a system chat message with RGB color table {r,g,b} (0-1 range)
+local function addChatMessage(text, rgbColor)
+    local hex = "#CCCCCC"
+    if rgbColor then
+        hex = string.format("#%02X%02X%02X",
+            math.floor((rgbColor[1] or 0.8) * 255 + 0.5),
+            math.floor((rgbColor[2] or 0.8) * 255 + 0.5),
+            math.floor((rgbColor[3] or 0.8) * 255 + 0.5))
+    end
+    table.insert(chat.messages, {
+        authorName = "System",
+        authorColor = hex,
+        content = text or "",
+        isSystem = true,
+        _localTime = love.timer.getTime(),
+    })
+    while #chat.messages > 50 do table.remove(chat.messages, 1) end
+end
 
 -- Resources
 local resources = {}     -- list from server zone state
@@ -388,6 +421,9 @@ local abilityBar = {
     abilities = {},          -- [{name, manaCost, cooldown, maxCooldown, cardId, index}]
     hoverIndex = nil,
 }
+
+-- Forward-declare raid (defined fully at line ~647) so getContextMenuItems can reference it
+local raid
 
 -- Context menu item definitions (label + action key)
 local CONTEXT_MENU_ITEMS_BASE = {
@@ -644,7 +680,7 @@ local tcState = {
 -- AI Event Director UI state
 local directorEvents = {}       -- world event banners (gold banner, fade)
 local zoneTicker = {}           -- zone director updates (bottom-right)
-local raid = {
+raid = {
     state = nil,                  -- current raid floor state
     bossHp = nil,                 -- raid boss health bar data
     gathering = nil,              -- lich raid gathering phase
@@ -1284,6 +1320,9 @@ function game.setupListeners()
         players = {}
         resources = {}
         overworld.chunks = {}
+        if overworld.chunkCanvases then
+            for _, canvas in pairs(overworld.chunkCanvases) do canvas:release() end
+        end
         overworld.chunkCanvases = {}
         corruption.chunks = {}  -- Clear corruption data on zone transition
 
@@ -1760,7 +1799,7 @@ function game.setupListeners()
 
     client:on("disease_symptom", function(data)
         if data then
-            diseaseState.symptomMsg = data.name .. ": " .. (data.damage or 0) .. " damage"
+            diseaseState.symptomMsg = (data.name or "Disease") .. ": " .. (data.damage or 0) .. " damage"
             diseaseState.symptomTimer = 2.0
         end
     end)
@@ -2098,6 +2137,7 @@ function game.setupListeners()
                 overworld.chunks[key] = chunk
                 -- Invalidate canvas cache for this chunk
                 if overworld.chunkCanvases then
+                    if overworld.chunkCanvases[key] then overworld.chunkCanvases[key]:release() end
                     overworld.chunkCanvases[key] = nil
                 end
                 -- Extract plots from chunk data
@@ -2134,7 +2174,10 @@ function game.setupListeners()
                 end
                 for _, ck in ipairs(toRemove) do
                     overworld.chunks[ck] = nil
-                    if overworld.chunkCanvases then overworld.chunkCanvases[ck] = nil end
+                    if overworld.chunkCanvases then
+                        if overworld.chunkCanvases[ck] then overworld.chunkCanvases[ck]:release() end
+                        overworld.chunkCanvases[ck] = nil
+                    end
                 end
             end
         end
@@ -2484,6 +2527,30 @@ function game.setupListeners()
         if data then
             cardLoadouts.loadouts = data.loadouts or { nil, nil, nil, nil, nil }
         end
+    end)
+
+    -- Card evolution complete (path chosen, card evolved)
+    client:on("card_evolution_complete", function(data)
+        if not data then return end
+        local cardName = (data.card and data.card.name) or "Card"
+        addChatMessage("Evolution complete: " .. cardName .. " (Path " .. (data.path or "?") .. ")", {0.6, 0.3, 1})
+        if client then client:emit("get_cards", {}) end
+    end)
+
+    -- Card evolution info (evolution status query result)
+    client:on("card_evolution_info", function(data)
+        if not data then return end
+        if data.evolvable and data.paths then
+            addChatMessage("Card is ready to evolve! Paths available: " .. #data.paths, {0.7, 0.5, 1})
+        end
+    end)
+
+    -- Card curse cleansed
+    client:on("card_curse_cleansed", function(data)
+        if not data then return end
+        local cardName = (data.card and data.card.name) or "Card"
+        addChatMessage("Curse cleansed from " .. cardName .. "!", {0.3, 1, 0.3})
+        if client then client:emit("get_cards", {}) end
     end)
 
     -- Auction house events
@@ -3603,6 +3670,62 @@ function game.setupListeners()
         end
     end)
 
+    -- -----------------------------------------------------------------------
+    -- Combat ability listeners (overworld weapon/card abilities)
+    -- -----------------------------------------------------------------------
+
+    -- Abilities list (response to get_abilities — weapon-family abilities + cooldowns)
+    client:on("abilities_list", function(data)
+        if not data then return end
+        abilityBar.abilities = data.abilities or {}
+        abilityBar.weaponFamily = data.weaponFamily
+    end)
+
+    -- Ability error (cooldown, out of mana, out of range, etc.)
+    client:on("ability_error", function(data)
+        if not data then return end
+        addChatMessage(data.message or "Ability failed", {1, 0.3, 0.3})
+    end)
+
+    -- Ability result (weapon ability hit/miss/damage feedback)
+    client:on("ability_result", function(data)
+        if not data then return end
+        if data.success == false then
+            addChatMessage(data.error or "Ability missed", {1, 0.5, 0.3})
+        end
+    end)
+
+    -- Cooldown update (after using a weapon ability)
+    client:on("cooldown_update", function(data)
+        if not data then return end
+        if data.abilities then
+            abilityBar.abilities = data.abilities
+        end
+        if data.mana ~= nil then dungeon.playerMana = data.mana end
+        if data.maxMana ~= nil then dungeon.playerMaxMana = data.maxMana end
+        if data.cardAbilities then
+            abilityBar.cardAbilities = data.cardAbilities
+        end
+    end)
+
+    -- Card ability result (card-based ability used in overworld combat)
+    client:on("card_ability_result", function(data)
+        if not data then return end
+        if data.success == false then
+            addChatMessage(data.error or "Card ability failed", {1, 0.5, 0.3})
+        end
+    end)
+
+    -- Card cooldown update (after using a card ability)
+    client:on("card_cooldown_update", function(data)
+        if not data then return end
+        if data.cardAbilities then
+            abilityBar.cardAbilities = data.cardAbilities
+        end
+        if data.mana ~= nil then dungeon.playerMana = data.mana end
+        if data.maxMana ~= nil then dungeon.playerMaxMana = data.maxMana end
+    end)
+
     -- Dungeon: error message
     client:on("dungeon_error", function(data)
         if not data then return end
@@ -4473,6 +4596,72 @@ function game.setupListeners()
         end
     end)
 
+    -- Dungeon: notification (special events, shrines, merchants)
+    client:on("dungeon_notification", function(data)
+        if not data then return end
+        if data.title then
+            addChatMessage("[Dungeon] " .. data.title .. (data.message and (": " .. data.message) or ""), {1, 0.85, 0.3})
+        elseif data.message then
+            addChatMessage(data.message, {1, 0.85, 0.3})
+        end
+    end)
+
+    -- Dungeon: ambush (hidden enemy revealed)
+    client:on("dungeon_ambush", function(data)
+        if not data then return end
+        addChatMessage(data.message or "Ambush!", {1, 0.3, 0.3})
+        dungeon.hitFlashTimer = 0.3
+    end)
+
+    -- Dungeon: mana update (after spending mana on abilities)
+    client:on("dungeon_mana_update", function(data)
+        if not data then return end
+        if data.mana ~= nil then dungeon.playerMana = data.mana end
+        if data.maxMana ~= nil then dungeon.playerMaxMana = data.maxMana end
+    end)
+
+    -- Dungeon: heal (out-of-combat passive heal between floors)
+    client:on("dungeon_heal", function(data)
+        if not data then return end
+        if data.hp ~= nil then dungeon.playerHp = data.hp end
+        if data.maxHp ~= nil then dungeon.playerMaxHp = data.maxHp end
+        if data.message then
+            addChatMessage(data.message, {0.3, 1, 0.5})
+        end
+    end)
+
+    -- Dungeon: form interact result (shapeshift puzzle interactions)
+    client:on("dungeon_form_interact_result", function(data)
+        if not data then return end
+        if data.message then
+            local color = data.success and {0.3, 1, 0.5} or {1, 0.5, 0.2}
+            addChatMessage(data.message, color)
+        end
+    end)
+
+    -- Dungeon: animal interact result (animal communication in dungeon)
+    client:on("dungeon_animal_interact_result", function(data)
+        if not data then return end
+        if data.message then
+            local color = data.success and {0.5, 0.9, 0.7} or {1, 0.7, 0.3}
+            addChatMessage(data.message, color)
+        end
+    end)
+
+    -- Dungeon: warning (level too low, dangerous area)
+    client:on("dungeon_warning", function(data)
+        if not data then return end
+        addChatMessage(data.message or "Warning!", {1, 0.8, 0.3})
+    end)
+
+    -- Dungeon: combat use card result (card ability feedback in dungeon combat)
+    client:on("dungeon_combat_use_card_result", function(data)
+        if not data then return end
+        if not data.ok then
+            addChatMessage(data.error or "Card ability failed", {1, 0.3, 0.3})
+        end
+    end)
+
     -- ================================================================
     -- Admin panel event listeners (for server hosts)
     -- ================================================================
@@ -5096,6 +5285,82 @@ function game.setupListeners()
         end
     end)
 
+    -- Biome weather update (pushed when biome weather changes)
+    client:on("biome_weather", function(data)
+        if not data then return end
+        weatherState.weather = data.weather or weatherState.weather
+        if data.effects then
+            weatherState.effects = data.effects
+        end
+        if data.biome then
+            weatherState.biome = data.biome
+        end
+    end)
+
+    -- Town rumors (NPC rumor list for current town)
+    client:on("town_rumors", function(data)
+        if not data then return end
+        if data.rumors then
+            addChatMessage("You hear " .. #data.rumors .. " rumor" .. (#data.rumors ~= 1 and "s" or "") .. " around town.", {0.8, 0.7, 0.4})
+            for _, rumor in ipairs(data.rumors) do
+                if type(rumor) == "string" then
+                    addChatMessage("  - " .. rumor, {0.7, 0.65, 0.4})
+                elseif rumor.text then
+                    addChatMessage("  - " .. rumor.text, {0.7, 0.65, 0.4})
+                end
+            end
+        end
+    end)
+
+    -- Town reputation update (after actions that affect town rep)
+    client:on("town_rep_update", function(data)
+        if not data then return end
+        local label = data.label or "Neutral"
+        addChatMessage("Town reputation: " .. label, {0.5, 0.8, 1})
+    end)
+
+    -- Cave enter error (too far from entrance, etc.)
+    client:on("cave_enter_error", function(data)
+        if not data then return end
+        addChatMessage(data.message or "Cannot enter cave", {1, 0.3, 0.3})
+    end)
+
+    -- Zone animal interact result (overworld animal communication)
+    client:on("zone_animal_interact_result", function(data)
+        if not data then return end
+        if data.message then
+            local color = data.success and {0.5, 0.9, 0.7} or {1, 0.7, 0.3}
+            addChatMessage(data.message, color)
+        end
+    end)
+
+    -- Bonus drop (rare resource/seed found during harvesting)
+    client:on("bonus_drop", function(data)
+        if not data then return end
+        local msg = data.message or "Bonus drop!"
+        if data.resource then
+            msg = msg .. " (" .. data.resource .. ")"
+        end
+        addChatMessage(msg, {1, 0.85, 0.2})
+    end)
+
+    -- Item broken (equipment destroyed from durability loss)
+    client:on("item_broken", function(data)
+        if not data then return end
+        local msg = (data.itemName or data.slot or "Item") .. " has broken!"
+        table.insert(notifications, { text = msg, color = {1, 0.2, 0.2}, timer = NOTIFICATION_DURATION, maxTimer = NOTIFICATION_DURATION })
+    end)
+
+    -- Durability warning (equipment close to breaking)
+    client:on("durability_warning", function(data)
+        if not data then return end
+        local msg = (data.itemName or data.slot or "Item") .. " durability low"
+        if data.durability and data.maxDurability then
+            msg = msg .. " (" .. data.durability .. "/" .. data.maxDurability .. ")"
+        end
+        table.insert(notifications, { text = msg, color = {1, 0.7, 0.2}, timer = NOTIFICATION_DURATION, maxTimer = NOTIFICATION_DURATION })
+    end)
+
     -- -----------------------------------------------------------------------
     -- Portal travel listeners
     -- -----------------------------------------------------------------------
@@ -5210,7 +5475,7 @@ function game.setupListeners()
     client:on("seed_planted", function(data)
         if not data then return end
         addChatMessage("[Farming] Planted " .. (data.seedType or "seed"):gsub("_", " "), {0.4, 0.8, 0.3})
-        if data.inventory then inventory = data.inventory end
+        if data.inventory then mmoInventory = data.inventory end
     end)
 
     client:on("crop_watered", function(data)
@@ -5223,7 +5488,7 @@ function game.setupListeners()
         local msg = "[Farming] Harvested " .. (data.amount or 1) .. "x " .. (data.output or "crop"):gsub("_", " ")
         if data.seedBack then msg = msg .. " (+1 seed back!)" end
         addChatMessage(msg, {0.4, 0.9, 0.3})
-        if data.inventory then inventory = data.inventory end
+        if data.inventory then mmoInventory = data.inventory end
     end)
 
     client:on("crop_cleared", function(data)
@@ -5261,7 +5526,7 @@ function game.setupListeners()
     client:on("animals_fed", function(data)
         if not data then return end
         addChatMessage("[Farming] Animals fed!", {0.4, 0.8, 0.3})
-        if data.inventory then inventory = data.inventory end
+        if data.inventory then mmoInventory = data.inventory end
     end)
 
     client:on("products_collected", function(data)
@@ -5273,7 +5538,7 @@ function game.setupListeners()
             end
         end
         addChatMessage("[Farming] Collected: " .. table.concat(items, ", "), {0.4, 0.9, 0.3})
-        if data.inventory then inventory = data.inventory end
+        if data.inventory then mmoInventory = data.inventory end
     end)
 
     client:on("animal_named", function(data)
@@ -5615,30 +5880,115 @@ function game.setupListeners()
         minigameState.resultTimer = 0
     end)
 
-    -- ===== Patrol Units =====
-    client:on("patrol_spawned", function(data)
-        if not data or not data.id then return end
-        patrolUnits[data.id] = { x = data.x, y = data.y, name = data.name or "Patrol", members = data.members or {} }
-    end)
+    -- -----------------------------------------------------------------------
+    -- Crafting: advanced result listeners (gem socketing, augments, imbue, inscribe)
+    -- -----------------------------------------------------------------------
 
-    client:on("patrol_moved", function(data)
-        if not data or not data.id then return end
-        if patrolUnits[data.id] then
-            patrolUnits[data.id].x = data.x
-            patrolUnits[data.id].y = data.y
+    client:on("gem_socket_result", function(data)
+        if not data then return end
+        if data.success then
+            addChatMessage("Gem socketed successfully!", {0.3, 1, 0.3})
+            if data.inventory then mmoInventory = data.inventory end
         end
     end)
 
-    client:on("patrol_despawned", function(data)
-        if not data or not data.id then return end
-        patrolUnits[data.id] = nil
+    client:on("augment_result", function(data)
+        if not data then return end
+        if data.success then
+            addChatMessage("Augment applied!", {0.3, 1, 0.3})
+            if data.inventory then mmoInventory = data.inventory end
+        end
     end)
 
-    client:on("patrol_arrived", function(data)
-        if not data or not data.id then return end
-        if patrolUnits[data.id] then
-            patrolUnits[data.id].x = data.x
-            patrolUnits[data.id].y = data.y
+    client:on("imbue_result", function(data)
+        if not data then return end
+        if data.success then
+            addChatMessage("Imbue successful!", {0.4, 0.7, 1})
+            if data.inventory then mmoInventory = data.inventory end
+        end
+    end)
+
+    client:on("inscribe_result", function(data)
+        if not data then return end
+        if data.success then
+            addChatMessage("Inscription applied!", {0.8, 0.6, 1})
+            if data.inventory then mmoInventory = data.inventory end
+            if data.inscriptions then
+                game._itemUI.inscriptionSlots = data.inscriptions
+            end
+        end
+    end)
+
+    -- -----------------------------------------------------------------------
+    -- Miscellaneous event listeners
+    -- -----------------------------------------------------------------------
+
+    -- Affliction status (lycanthropy, vampire exposure)
+    client:on("affliction_status", function(data)
+        if not data then return end
+        if data.lycanthropy then
+            addChatMessage("Affliction: Lycanthropy detected", {0.6, 0.3, 0.6})
+        end
+        if data.vampireExposed then
+            addChatMessage("Affliction: Vampire exposure detected", {0.5, 0.1, 0.1})
+        end
+    end)
+
+    -- NPC interact result (overworld NPC interaction feedback)
+    client:on("npc_interact_result", function(data)
+        if not data then return end
+        -- State update only — NPC dialogues handled separately by npc_dialogue
+    end)
+
+    -- Wild encounter result (random monster encounter in overworld)
+    client:on("wild_encounter_result", function(data)
+        if not data then return end
+        if data.encountered and data.name then
+            addChatMessage("Wild " .. data.name .. " appeared!", {1, 0.6, 0.2})
+        end
+    end)
+
+    -- Placed objects (furniture/bridges in claimed plots)
+    client:on("placed_objects", function(data)
+        if not data then return end
+        placedObjects = data.objects or {}
+    end)
+
+    -- Portal crafted (personal portal created)
+    client:on("portal_crafted", function(data)
+        if not data then return end
+        if data.success then
+            addChatMessage("Personal portal crafted!", {0.5, 0.6, 1})
+            if data.inventory then mmoInventory = data.inventory end
+        end
+    end)
+
+    -- Portal destroyed (personal portal removed)
+    client:on("portal_destroyed", function(data)
+        if not data then return end
+        addChatMessage(data.message or "Portal destroyed", {0.8, 0.5, 0.3})
+    end)
+
+    -- PIN setup required (account security prompt)
+    client:on("pin_setup_required", function(data)
+        if not data then return end
+        addChatMessage(data.message or "Please set a PIN to secure your account", {1, 0.85, 0.3})
+    end)
+
+    -- Monster roster (tamed monsters list)
+    client:on("monster_roster", function(data)
+        if not data then return end
+        if account then
+            account.monsters = data.monsters or {}
+            account.activeParty = data.activeParty or {}
+        end
+    end)
+
+    -- Monster party updated (active party changed)
+    client:on("monster_party_updated", function(data)
+        if not data then return end
+        if account then
+            account.activeParty = data.activeParty or {}
         end
     end)
 
@@ -7502,8 +7852,8 @@ function game.draw()
         if cLevel and cLevel > 0 then
             -- Check if player has purification crystal (client-side hint; server validates)
             local hasCrystal = false
-            if inventoryData and inventoryData.resources then
-                hasCrystal = (inventoryData.resources.purification_crystal or 0) > 0
+            if mmoInventory then
+                hasCrystal = (mmoInventory.purification_crystal or 0) > 0
             end
             -- Check if player has an active overworld cleansing card equipped
             local hasCleanseCard = false

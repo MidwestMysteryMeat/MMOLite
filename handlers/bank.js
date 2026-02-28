@@ -159,10 +159,10 @@ module.exports = {
       try {
         var amount = Math.floor(data.amount);
         if (amount < 1) { socket.emit('bank_error', { message: 'Invalid amount' }); return; }
-        var result = accounts.removeResource(key, data.resource, amount);
-        if (!result) { socket.emit('bank_error', { message: 'Not enough resources' }); return; }
         var acc = accounts.loadAccount(key);
         if (!acc) return;
+        var result = accounts.removeResource(key, data.resource, amount);
+        if (!result) { socket.emit('bank_error', { message: 'Not enough resources' }); return; }
         _ensureVault(acc);
         acc.bankVault.resources[data.resource] = (acc.bankVault.resources[data.resource] || 0) + amount;
         accounts.saveAccount(acc);

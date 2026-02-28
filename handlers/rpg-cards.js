@@ -285,10 +285,6 @@ module.exports = {
       try {
         accounts.updateChips(key, -price);
 
-        // Reload account after chip deduction to avoid stale snapshot overwrite
-        acc = accounts.loadAccount(key);
-        if (!acc) return;
-
         var cardInstance = rpgData.generateCardInstance(template, 'vendor');
         if (!acc.rpgCards) acc.rpgCards = [];
         acc.rpgCards.push(cardInstance);

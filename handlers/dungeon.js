@@ -3684,6 +3684,21 @@ function initiateTurnCombat(socket, io, state, accounts, socketAccountMap, user,
     }
   }
 
+  // Clear inTurnCombat on combat end for all participating players
+  var _combatPlayerSockets = players.map(function(p) { return p.socketId; });
+  var _combatZoneId = zoneId;
+  var origOnCombatEnd = callbacks.onCombatEnd;
+  callbacks.onCombatEnd = function(combatOrResult, resultOrUndef) {
+    var fpMap = floorPlayers.get(_combatZoneId);
+    if (fpMap) {
+      for (var ci = 0; ci < _combatPlayerSockets.length; ci++) {
+        var cfp = fpMap.get(_combatPlayerSockets[ci]);
+        if (cfp) cfp.inTurnCombat = false;
+      }
+    }
+    if (origOnCombatEnd) origOnCombatEnd(combatOrResult, resultOrUndef);
+  };
+
   // Start combat
   var combatId = dungeonCombat.initCombat(
     info.dungeonId, players, nearbyEnemies, floor, callbacks
@@ -4918,6 +4933,12 @@ module.exports = {
         if (!info) {
           socket.emit('dungeon_error', { message: 'You are not in a dungeon' });
           return;
+        }
+
+        // Clean up active turn-based combat before exiting
+        var exitCombat = dungeonCombat.getCombatBySocketId(socket.id);
+        if (exitCombat) {
+          dungeonCombat.handlePlayerDisconnect(exitCombat.id, socket.id);
         }
 
         var accKey = socketAccountMap.get(socket.id);

@@ -1603,7 +1603,7 @@ module.exports = {
       }
 
       // Consume 1 crystal
-      accounts.addResource(accKey, 'purification_crystal', -1);
+      accounts.removeResource(accKey, 'purification_crystal', 1);
 
       // Cleanse corruption (with card bonuses)
       var result = deps.directorLich.playerCleanse(cx, cy, socket.id, cleanseBonuses);

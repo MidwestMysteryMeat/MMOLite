@@ -375,7 +375,14 @@ module.exports = {
     // The client also sends auction_close when closing the panel (if supported).
     // Clean up on disconnect to prevent stale entries.
     socket.on('auction_close', function() { _auctionViewers.delete(socket.id); });
-    socket.on('disconnect', function() { _auctionViewers.delete(socket.id); });
+    socket.on('disconnect', function() {
+      _auctionViewers.delete(socket.id);
+      var key = socketAccountMap.get(socket.id);
+      if (key) {
+        purchaseLocks.delete(key);
+        _sellerLocks.delete(key);
+      }
+    });
 
     // --- mmo_auction_browse: get marketplace listings (paginated) ---
     socket.on('mmo_auction_browse', function(data) {
@@ -764,36 +771,46 @@ module.exports = {
       var key = socketAccountMap.get(socket.id);
       if (!key) return;
 
-      var listing = listings.get(data.listingId);
-      if (!listing) {
-        socket.emit('mmo_auction_error', { message: 'Listing not found' });
+      if (_sellerLocks.has(key)) {
+        socket.emit('mmo_auction_error', { message: 'Operation in progress' });
         return;
       }
-      if (listing.sellerKey !== key) {
-        socket.emit('mmo_auction_error', { message: 'Not your listing' });
-        return;
-      }
+      _sellerLocks.add(key);
 
-      var removed = removeListing(data.listingId);
-      if (!removed) {
-        socket.emit('mmo_auction_error', { message: 'Listing already removed' });
-        return;
-      }
-
-      // Return items to seller
-      if (removed.listingType === 'card' && removed.cardData) {
-        var acc = accounts.loadAccount(key);
-        if (acc) {
-          if (!acc.rpgCards) acc.rpgCards = [];
-          acc.rpgCards.push(removed.cardData);
-          accounts.saveAccount(acc);
+      try {
+        var listing = listings.get(data.listingId);
+        if (!listing) {
+          socket.emit('mmo_auction_error', { message: 'Listing not found' });
+          return;
         }
-      } else if (removed.listingType === 'resource') {
-        accounts.addResource(key, removed.resourceType, removed.amount);
-      }
+        if (listing.sellerKey !== key) {
+          socket.emit('mmo_auction_error', { message: 'Not your listing' });
+          return;
+        }
 
-      socket.emit('mmo_auction_cancelled', { listingId: data.listingId });
-      debouncedAuctionUpdate(io);
+        var removed = removeListing(data.listingId);
+        if (!removed) {
+          socket.emit('mmo_auction_error', { message: 'Listing already removed' });
+          return;
+        }
+
+        // Return items to seller
+        if (removed.listingType === 'card' && removed.cardData) {
+          var acc = accounts.loadAccount(key);
+          if (acc) {
+            if (!acc.rpgCards) acc.rpgCards = [];
+            acc.rpgCards.push(removed.cardData);
+            accounts.saveAccount(acc);
+          }
+        } else if (removed.listingType === 'resource') {
+          accounts.addResource(key, removed.resourceType, removed.amount);
+        }
+
+        socket.emit('mmo_auction_cancelled', { listingId: data.listingId });
+        debouncedAuctionUpdate(io);
+      } finally {
+        _sellerLocks.delete(key);
+      }
     });
 
     // --- mmo_auction_market_price: get dynamic pricing info ---

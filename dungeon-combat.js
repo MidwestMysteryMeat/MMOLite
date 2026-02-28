@@ -282,9 +282,10 @@ combatBasicAttack.init({
 });
 
 combatAbilities.init({
-  handleUnitDeath:        handleUnitDeath,
-  FOCUS_CONSECUTIVE_GAIN: FOCUS_CONSECUTIVE_GAIN,
-  FOCUS_BASE_RETAIN:      FOCUS_BASE_RETAIN,
+  handleUnitDeath:          handleUnitDeath,
+  FOCUS_CONSECUTIVE_GAIN:   FOCUS_CONSECUTIVE_GAIN,
+  FOCUS_BASE_RETAIN:        FOCUS_BASE_RETAIN,
+  BLOODLUST_ON_TAKE_DAMAGE: BLOODLUST_ON_TAKE_DAMAGE,
 });
 
 combatTurnStart.init({
@@ -302,6 +303,9 @@ combatTurnStart.init({
   getDynamicTurnTimer:    getDynamicTurnTimer,
   handleUnitDeath:        handleUnitDeath,
   processNPCActions:      processNPCActions,
+  EXHAUSTION_START:        EXHAUSTION_START,
+  EXHAUSTION_START_BOSS:   EXHAUSTION_START_BOSS,
+  handleTurnTimeout:       handleTurnTimeout,
 });
 
 combatDeath.init({
@@ -1065,14 +1069,13 @@ function endCombat(combat, result) {
     combat.callbacks.handleRaidWipe();
   }
 
-  // Leviathan combat end — trigger onCombatEnd callback
-  if (combat._isLeviathanCombat && combat.callbacks.onCombatEnd) {
-    combat.callbacks.onCombatEnd(combat, result);
-  }
-
-  // Lich raid combat end — trigger onCombatEnd callback
-  if (combat.isLichRaid && combat.callbacks.onCombatEnd) {
-    combat.callbacks.onCombatEnd(result);
+  // Trigger onCombatEnd callback (clears inTurnCombat flags, handles raid/leviathan cleanup)
+  if (combat.callbacks.onCombatEnd) {
+    if (combat._isLeviathanCombat) {
+      combat.callbacks.onCombatEnd(combat, result);
+    } else {
+      combat.callbacks.onCombatEnd(result);
+    }
   }
 
   // Broadcast combat end
