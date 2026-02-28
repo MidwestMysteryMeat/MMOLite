@@ -1,0 +1,306 @@
+====================================================================
+LPC SPRITE ASSETS - MASTER CREDITS AND ATTRIBUTION
+====================================================================
+
+This collection contains assets from the Liberated Pixel Cup (LPC) and
+related sprite packs from OpenGameArt.org. All assets are used under
+their respective open licenses as detailed below.
+
+====================================================================
+CHARACTER ASSETS (lpc/characters/)
+====================================================================
+
+1. LPC Dark Elves
+   - Author: Nila122
+   - Based on: Stephen Challener (Redshrike), Johannes Sjölund, Makrohn,
+     David Conway Jr. (Jaidyn Reiman)
+   - License: CC-BY-SA 3.0, GPL 3.0, GPL 2.0
+   - URL: https://opengameart.org/content/lpc-dark-elves
+   - Contents: Dark elf character variants with walkcycle, hurt, slash,
+     spellcast, shooting, and thrusting animations
+
+2. Werewolf (LPC)
+   - Authors: Jordan Irwin (AntumDeluge), Stephen Challener (Redshrike),
+     William Thompson (William.Thompsonj)
+   - License: CC-BY-SA 3.0
+   - URL: https://opengameart.org/content/werewolf-lpc
+   - Contents: 48x64 werewolf sprites with idle and walk animations in
+     4 directions, multiple body style variants
+
+3. LPC Folk
+   - Author: bluecarrot16
+   - Contributors: AntumDeluge, BenCreating, daneeklu, ElizaWy, Evert,
+     wulax, Joshua Taylor, kheftel, MadMarcel, makrohn, Nila122,
+     castelonia, Redshrike, reemax, William.Thompsonj, Zi Ye
+   - License: CC-BY-SA 3.0, GPL 3.0
+   - URL: https://opengameart.org/content/lpc-folk
+   - Contents: Modular character heads (warthog, mouse, rat, rabbit, pig,
+     sheep, goblin, troll, vampire, Frankenstein, alien) with full
+     animation support
+
+4. LPC Revised Character Basics
+   - Primary Creator: Eliza Wyatt (Death's Darling)
+   - Contributors: Stephen Challener (Redshrike), Durrani, BenCreating,
+     Johannes Sjölund (Wulax), Thecilekli, BlueCarrot16
+   - License: CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0
+   - URL: https://opengameart.org/content/lpc-revised-character-basics
+   - Contents: Comprehensive character base with idle, walk, run, jump
+     animations, emotes, 18 hairstyles, 17 clothing options in 44 colors,
+     11 skin tones
+
+5. Tileset and Characters (Unfinished)
+   - Author: NaRNeRZz
+   - License: CC0 (Public Domain)
+   - URL: https://opengameart.org/content/tileset-and-characters-unfinished
+   - Contents: Character animation sprites and fantasy tileset elements
+
+====================================================================
+CREATURE ASSETS (lpc/creatures/)
+====================================================================
+
+6. Red Dragon
+   - Author: ZaPaper
+   - Commissioned by: Buko Studios (PlayCraft app)
+   - License: CC-BY 3.0
+   - URL: https://opengameart.org/content/red-dragon
+   - Contents: 4 PNG sprite sheets with flying animations in 4 directions,
+     attack, move, and hit sequences
+
+7. Flying Dragon Rework
+   - Author: Jordan Irwin (AntumDeluge), based on ZaPaper's work
+   - License: CC-BY 3.0
+   - URL: https://opengameart.org/content/flying-dragon-rework
+   - Contents: Single-headed and twin-headed dragon variants with flying
+     animations (144x128 and 191x161 pixels)
+
+8. LPC Birds
+   - Author: bluecarrot16 (commissioned by castelonia)
+   - License: CC-BY 4.0, CC-BY 3.0, CC-BY-SA 4.0, CC-BY-SA 3.0,
+     GPL 3.0, GPL 2.0, OGA-BY 3.0
+   - URL: https://opengameart.org/content/lpc-birds
+   - Contents: 15 bird variants (eagle, sparrow, robin, bluejay, cardinal)
+     with flying and walking animations in 4 directions
+
+9. LPC Horse Riding
+   - Author: bigbeargames
+   - Based on: bluecarrot16's horses
+   - License: CC-BY 3.0, GPL 3.0, GPL 2.0, OGA-BY 3.0
+   - URL: https://opengameart.org/content/lpc-horse-riding-updated-091
+   - Contents: Character riding animations (walk, gallop, eat, stand) for
+     all horse colors
+
+10. Pigs Rework
+    - Authors: Jordan Irwin (AntumDeluge), Daniel Eddeland (daneeklu)
+    - License: CC-BY 3.0
+    - URL: https://opengameart.org/content/pigs-rework
+    - Contents: Pig, boar, and piglet sprites (64x64, 48x64) with 4
+      directional animations
+
+11. LPC Chicken Rework
+    - Author: AntumDeluge (rework of Daniel Eddeland's original)
+    - License: CC-BY 3.0, GPL 2.0
+    - URL: https://opengameart.org/content/lpc-chicken-rework
+    - Contents: 32x32 chicken sprites with idle and walk animations
+
+====================================================================
+TILESET ASSETS (lpc/tilesets/)
+====================================================================
+
+12. Stone Home Interior Tileset
+    - Authors: Tyler Olsen (Roots), Jetrel
+    - License: CC-BY-SA 3.0
+    - URL: https://opengameart.org/content/stone-home-interior-tileset
+    - Contents: 32x32 interior tiles including stone walls/floors, rugs,
+      columns, stairs, wooden elements
+
+13. LPC Bazaar Rework
+    - Author: AntumDeluge
+    - Contributors: Daniel Eddeland (daneeklu), Zachariah Husiar (Zabin),
+      Tuomo Untinen (Reemax), Hyptosis, Jetrel
+    - License: CC-BY-SA 3.0, CC-BY-SA 4.0, GPL 3.0
+    - URL: https://opengameart.org/content/lpc-bazaar-rework
+    - Contents: 32x32 bazaar/marketplace tiles with merchant tables,
+      bottles, flowers, market stalls (64x64 & 128x96 dimensions)
+
+14. LPC Beach / Desert
+    - Author: bluecarrot16
+    - License: CC-BY-SA 3.0
+    - Contributors: See CREDITS-beach-desert.txt (Guillaume Lecollinet,
+      Johann Charlot, cynicmusic, Surt, vk, Yar, Michele Bucelli,
+      Richard Kettering, Zachariah Husiar, Hyptosis, Lanea Zimmerman,
+      Leonard Pabin, and others)
+    - URL: https://opengameart.org/content/lpc-beach-desert
+    - Contents: Shells, cacti, desert plants, bones, skeletal formations,
+      dry trees, sand formations
+
+15. Dock Tileset
+    - Author: Reid
+    - License: CC-BY-SA 3.0
+    - URL: https://opengameart.org/content/dock-tileset
+    - Contents: 32x32 wooden dock tiles with underwater variants and
+      terrain compatibility
+
+16. LPC Desert Ruins
+    - Author: bluecarrot16 (commissioned by Pierre Vigier)
+    - License: OGA-BY 3.0+, CC-BY 3.0+, CC-BY 4.0, GPL 2.0+, GPL 3.0
+    - URL: https://opengameart.org/content/lpc-desert-ruins
+    - Contents: Modular ruins (Egyptian/Greek-inspired) with interior/
+      exterior walls, pyramids, statues in various decay states
+
+17. RPG Tiles: Cobble Stone Paths & Town Objects
+    - Contributors: Zabin, Daneeklu, Jetrel, Hyptosis, Redshrike, Bertram
+    - License: CC-BY-SA 3.0 (with CC-BY 3.0 exceptions noted)
+    - URL: https://opengameart.org/content/rpg-tiles-cobble-stone-paths-town-objects
+    - Contents: 512x512 tileset (256 tiles) with cobblestone paths, market
+      booths, docks, boats, grass/water transitions
+
+18. LPC Farm
+    - Author: bluecarrot16 (commissioned by Rupil)
+    - Contributors: Wolthera van Hövell tot Westerflier, Ivan Voirol
+    - License: CC-BY 4.0
+    - URL: https://opengameart.org/content/lpc-farm
+    - Contents: Modular barn, towers, silos, granary, chicken coop, apiary,
+      sheds, fencing, windmill/water wheel animations, crafting equipment
+
+19. LPC Walls
+    - Author: bluecarrot16 (with 19 contributors)
+    - License: CC-BY-SA 3.0
+    - URL: https://opengameart.org/content/lpc-walls
+    - Contents: 300+ wall tiles in various styles (brick, wood, metal,
+      timber-framed, panel, wallpaper), 32 ceiling trim variations,
+      Wang Tile terrain data
+
+20. LPC Winter Tiles
+    - Author: Demetrius
+    - Based on: Lanea Zimmerman's Modified Base Tiles
+    - License: CC-BY 3.0, CC-BY-SA 3.0, GPL 3.0, OGA-BY 3.0
+    - URL: https://opengameart.org/content/lpc-winter-tiles
+    - Contents: Winter terrain, pine trees (2 sizes), RPG Maker formatted
+      32x32 tiles
+    - Attribution: "LPC Winter Tiles by Demetrius. Based on LPC: Modified
+      Base tiles by Lanea Zimmerman, special thanks to William Thompson"
+
+21. Tiled Terrains
+    - Compiler: adrix89
+    - Contributors: ~14 contributors (see Attribution.txt in package)
+    - License: CC-BY-SA 3.0, GPL 3.0
+    - URL: https://opengameart.org/content/tiled-terrains
+    - Contents: 32x32 terrain atlas with grass, sand, snow, earth, sewer,
+      water; includes Tiled TSX configuration
+
+====================================================================
+OBJECT ASSETS (lpc/objects/)
+====================================================================
+
+22. LPC Containers
+    - Author: bluecarrot16
+    - Contributors: Lanea Zimmerman (Sharm), William Thompson, Tuomo
+      Untinen (Reemax), Evert, Buch, Blarumyrran, n2liquid, Jetrel,
+      Guido Bos, Hyptosis, Bonsaiheldin, NaRNeRZz, PriorBlue, Jerom,
+      7Soul, Wolthera van Hövell tot Westerflier (TheraHedwig)
+    - License: CC-BY-SA 4.0
+    - URL: https://opengameart.org/content/lpc-containers
+    - Contents: Boxes, crates, barrels, sacks, baskets, pots, glassware,
+      copper-ware, alchemy equipment, pottery; modular with separate lids
+
+23. Wooden Boat
+    - Author: Kutejnikov
+    - License: CC0 (Public Domain)
+    - URL: https://opengameart.org/content/wooden-boat
+    - Contents: 72x72 wooden boat sprite (3 versions)
+    - Note: Requires 7-Zip extraction tool
+
+====================================================================
+ANIMATION & WEAPON ASSETS (lpc/animations/)
+====================================================================
+
+24. LPC Character Animations: Push and Carry
+    - Author: Evert
+    - Base work: Stephen Challener (Redshrike), Johannes Sjölund (wulax),
+      Manuel Riecke (MrBeast), Daniel Eddeland
+    - License: CC-BY-SA 3.0, GPL 3.0
+    - URL: https://opengameart.org/content/lpc-character-animations-push-and-carry
+    - Contents: Push and carry overhead walkcycles (1-frame idle, 8-frame
+      walk), base clothing, armless foundation, separate arm sheets
+
+25. LPC Extended Weapon Animations
+    - Author: bluecarrot16
+    - Contributors: Johannes Sjölund, Benjamin K. Smith, Daniel Eddeland,
+      gr3yh47, tskaufma
+    - License: CC-BY-SA 3.0, OGA-BY 3.0+, GPL 3.0
+    - URL: https://opengameart.org/content/lpc-extended-weapon-animations
+    - Contents: Extended animations (walk, hurt, reverse slash, thrust) for
+      longsword, dagger, mace, rapier, saber, scythe, glow sword, farming
+      tools; layered format for all body types
+
+26. LPC Medieval Weapons
+    - Author: Benjamin K. Smith (BenCreating, commissioned by castelonia)
+    - License: OGA-BY 3.0 and 4.0, GPL 3.0, CC-BY-SA 3.0 and 4.0
+    - URL: https://opengameart.org/content/lpc-medieval-weapons
+    - Contents: Flail, halberd, war axe for male/female bases (192x192
+      grid) with walk, slash, thrust (halberd only), and hurt animations
+
+====================================================================
+GENERAL LICENSE INFORMATION
+====================================================================
+
+Creative Commons Attribution (CC-BY 3.0/4.0):
+- You may use, modify, and distribute
+- Must credit the original author(s)
+- Commercial use allowed
+
+Creative Commons Attribution-ShareAlike (CC-BY-SA 3.0/4.0):
+- You may use, modify, and distribute
+- Must credit the original author(s)
+- Derivatives must use same or compatible license
+- Commercial use allowed
+
+GNU General Public License (GPL 2.0/3.0):
+- You may use, modify, and distribute
+- Source must be made available
+- Derivatives must use GPL license
+- See individual asset licenses for full terms
+
+OpenGameArt.org License (OGA-BY 3.0):
+- Similar to CC-BY but specific to OpenGameArt.org
+- Must credit and link back to original submission
+- Commercial use allowed
+
+Creative Commons Zero (CC0):
+- Public domain dedication
+- No attribution required (but appreciated)
+- Use freely for any purpose
+
+====================================================================
+USAGE REQUIREMENTS
+====================================================================
+
+When using these assets in your game:
+
+1. Include this CREDITS.txt file or equivalent attribution
+2. For CC-BY and CC-BY-SA assets, credit the authors as listed above
+3. For GPL assets, ensure compliance with GPL terms
+4. Link back to original OpenGameArt.org submissions when possible
+5. For CC-BY-SA and GPL assets, derivatives must use compatible licenses
+
+====================================================================
+ADDITIONAL NOTES
+====================================================================
+
+- Most LPC sprites use a 32x32 tile size for environment/objects
+- Character sprites are typically 48x64 or 64x64 pixels
+- Animation frames vary by asset - see individual READMEs
+- Many assets include multiple color variations and modular pieces
+- Check extracted folders for asset-specific documentation
+- Some assets include Tiled map editor files (.tsx, .tmx)
+- LPC standard animations include: walk, idle, hurt, slash, thrust,
+  cast, shoot in 4 directions (N, E, S, W)
+
+====================================================================
+For detailed information about specific assets, refer to the
+individual README or CREDITS files within each extracted folder.
+====================================================================
+
+Generated: 2026-01-29
+For: LÖVE2D game project
+Base directory: C:\Users\<you>\LOVEGAME_work\assets\sprites\lpc\

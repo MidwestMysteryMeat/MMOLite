@@ -1,0 +1,24 @@
+[LPC] Extended Weapon Animations by bluecarrot16, Johannes Sjölund (wulax), Benjamin K. Smith (BenCreating),  Daniel Eddeland (daneeklu), gr3yh47, and tskaufma. Commisioned by castelonia. 
+
+Based on: 
+
+[LPC] Medieval fantasy character sprites
+Johannes Sjölund (wulax)
+CC-BY-SA 3.0 / GPL 3.0
+https://opengameart.org/content/lpc-medieval-fantasy-character-sprites
+
+[LPC] Glow Sword
+tskaufma, Johannes Sjölund (wulax)
+CC-BY-SA 3.0 / GPL 3.0
+https://opengameart.org/content/lpc-glow-sword
+
+LPC Weapons: two bows, a spear and a trident
+Daniel Eddeland (daneeklu), wulax, gr3yh47
+CC-BY-SA 3.0
+https://opengameart.org/content/lpc-weapons-two-bows-a-spear-and-a-trident
+
+[LPC] Medieval Weapons
+Benjamin K. Smith (BenCreating), commissioned by castelonia
+CC-BY-SA 3.0, GPL 3.0
+https://opengameart.org/content/lpc-medieval-weapons
+
