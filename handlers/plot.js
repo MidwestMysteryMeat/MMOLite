@@ -22,7 +22,7 @@ setInterval(function() {
   for (var entry of pendingUnclaims) {
     if (now > entry[1].expiresAt) pendingUnclaims.delete(entry[0]);
   }
-}, 300000);
+}, 300000).unref();
 
 // ---------------------------------------------------------------------------
 // Persistence

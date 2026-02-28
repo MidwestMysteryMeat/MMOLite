@@ -85,7 +85,7 @@ function _startMoveBatchTicker(io, state) {
         _moveBatchIO.to('zone:' + zoneId).emit('batch_move', { moves: moves });
       }
     }
-  }, 100);
+  }, 100).unref();
 }
 
 module.exports = {

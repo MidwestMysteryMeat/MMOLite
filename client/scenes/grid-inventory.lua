@@ -459,28 +459,96 @@ end
 function gridInventory.drawTooltip(item, tx, ty)
     if not item then return end
 
+    -- Build lines as {text, color} pairs
     local lines = {}
-    table.insert(lines, item.name or item.type or "Unknown")
-    if item.rarity then table.insert(lines, "Rarity: " .. item.rarity) end
-    if item.quality then table.insert(lines, "Quality: " .. item.quality) end
+    local rc = C.rarity[item.rarity] or C.rarity.common
+    table.insert(lines, { text = item.name or item.type or "Unknown", color = {rc[1], rc[2], rc[3], 1} })
+    if item.rarity then table.insert(lines, { text = "Rarity: " .. item.rarity, color = C.dimText }) end
+    if item.quality then table.insert(lines, { text = "Quality: " .. item.quality, color = {0.5, 0.8, 0.9, 0.9} }) end
+
+    -- Stats
     if item.stats then
         for k, v in pairs(item.stats) do
             if type(v) == "number" and v ~= 0 then
-                table.insert(lines, k .. ": " .. (v > 0 and "+" or "") .. string.format("%.1f", v))
+                local statColor = v > 0 and {0.4, 0.9, 0.4, 0.9} or {0.9, 0.4, 0.4, 0.9}
+                table.insert(lines, { text = k .. ": " .. (v > 0 and "+" or "") .. string.format("%.1f", v), color = statColor })
             end
         end
     end
+
+    -- Damage / defense
+    if item.damage and item.damage > 0 then
+        table.insert(lines, { text = "Damage: " .. item.damage, color = {0.9, 0.6, 0.3, 1} })
+    end
+    if item.defense and item.defense > 0 then
+        table.insert(lines, { text = "Defense: " .. item.defense, color = {0.3, 0.6, 0.9, 1} })
+    end
+    if item.magicDamage and item.magicDamage > 0 then
+        table.insert(lines, { text = "Magic Dmg: " .. item.magicDamage, color = {0.6, 0.3, 0.9, 1} })
+    end
+
+    -- Affixes
+    if item.affixes and #item.affixes > 0 then
+        table.insert(lines, { text = "--- Affixes ---", color = {0.6, 0.6, 0.7, 0.6} })
+        for _, aff in ipairs(item.affixes) do
+            local label = aff.label or aff.id or "?"
+            local tier = aff.tier and (" T" .. aff.tier) or ""
+            table.insert(lines, { text = "  " .. label .. tier, color = {0.5, 0.8, 1, 0.9} })
+        end
+    end
+
+    -- Mutations
+    if item.mutations and #item.mutations > 0 then
+        table.insert(lines, { text = "--- Mutations ---", color = {0.6, 0.6, 0.7, 0.6} })
+        for _, mut in ipairs(item.mutations) do
+            local label = mut.label or mut.id or "?"
+            local tier = mut.tier and (" T" .. mut.tier) or ""
+            table.insert(lines, { text = "  " .. label .. tier, color = {0.4, 0.9, 0.7, 0.9} })
+        end
+    end
+    -- Single mutation field (older items)
+    if item.mutation and not (item.mutations and #item.mutations > 0) then
+        local mut = item.mutation
+        local label = mut.label or mut.id or "?"
+        table.insert(lines, { text = "Mutation: " .. label, color = {0.4, 0.9, 0.7, 0.9} })
+    end
+
+    -- Curses
+    if item.curse then
+        local curse = item.curse
+        local label = curse.label or curse.id or "Cursed"
+        table.insert(lines, { text = "CURSED: " .. label, color = {0.9, 0.2, 0.2, 1} })
+    end
+
+    -- Durability
+    if item.durability and item.maxDurability then
+        local ratio = item.durability / item.maxDurability
+        local durColor = ratio > 0.5 and {0.6, 0.8, 0.6, 0.9} or ratio > 0.2 and {0.9, 0.7, 0.3, 0.9} or {0.9, 0.3, 0.3, 1}
+        table.insert(lines, { text = "Durability: " .. item.durability .. "/" .. item.maxDurability, color = durColor })
+    end
+
+    -- Size + weight
     if item.gridW and item.gridH then
-        table.insert(lines, "Size: " .. item.gridW .. "x" .. item.gridH)
+        table.insert(lines, { text = "Size: " .. item.gridW .. "x" .. item.gridH, color = C.dimText })
     end
     if item.weight then
-        table.insert(lines, string.format("Weight: %.1f", item.weight))
+        table.insert(lines, { text = string.format("Weight: %.1f", item.weight), color = C.dimText })
+    end
+
+    -- Sub-grid (container info)
+    if item.subGrid then
+        table.insert(lines, { text = "Container: " .. (item.subGrid.width or 0) .. "x" .. (item.subGrid.height or 0), color = {0.7, 0.5, 0.9, 0.9} })
     end
 
     if fonts and fonts.chat then love.graphics.setFont(fonts.chat) end
     local font = love.graphics.getFont()
     local lineH = font:getHeight() + 2
-    local tipW = 180
+    local tipW = 220
+    -- Calculate actual width needed
+    for _, l in ipairs(lines) do
+        local w = font:getWidth(l.text) + 16
+        if w > tipW then tipW = w end
+    end
     local tipH = #lines * lineH + 10
 
     -- Clamp to screen
@@ -495,14 +563,9 @@ function gridInventory.drawTooltip(item, tx, ty)
     love.graphics.setColor(C.border)
     love.graphics.rectangle("line", tx, ty, tipW, tipH, 4, 4)
 
-    for i, line in ipairs(lines) do
-        if i == 1 then
-            local rc = C.rarity[item.rarity] or C.rarity.common
-            love.graphics.setColor(rc[1], rc[2], rc[3], 1)
-        else
-            love.graphics.setColor(C.text)
-        end
-        love.graphics.print(line, tx + 6, ty + 4 + (i-1) * lineH)
+    for i, l in ipairs(lines) do
+        love.graphics.setColor(l.color)
+        love.graphics.print(l.text, tx + 6, ty + 4 + (i-1) * lineH)
     end
 end
 

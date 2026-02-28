@@ -431,7 +431,7 @@ function startSpawnTicker() {
     } catch (err) {
       console.error('[monsters] Spawn tick error:', err.message);
     }
-  }, SPAWN_INTERVAL_MS);
+  }, SPAWN_INTERVAL_MS).unref();
 
   // Patrol ticker — monster movement AI
   setInterval(function() {
@@ -440,7 +440,7 @@ function startSpawnTicker() {
     } catch (err) {
       console.error('[monsters] Patrol tick error:', err.message);
     }
-  }, PATROL_INTERVAL_MS);
+  }, PATROL_INTERVAL_MS).unref();
 
   console.log('[monsters] Overworld spawn ticker started (' + SPAWN_INTERVAL_MS + 'ms interval)');
   console.log('[monsters] Patrol ticker started (' + PATROL_INTERVAL_MS + 'ms interval)');
@@ -835,15 +835,16 @@ function _engageMonsterCombat(io, monster, playerSocketId, zoneId) {
         var targetSock = io.sockets.sockets.get(capturedSocketId);
 
         if (result === 'victory') {
+          var victoryAcc = _accounts.loadAccount(capturedAccKey);
+          if (!victoryAcc) return;
           var xpRate = (_serverRules && _serverRules.xpRate) ? _serverRules.xpRate : undefined;
-          var xpResult = _accounts.addSkillXp(capturedAccKey, 'melee', capturedMonster.xp, xpRate);
+          var xpResult = _accounts.addSkillXp(capturedAccKey, 'melee', capturedMonster.xp, xpRate, victoryAcc);
 
           // Monster XP: award XP to player's active monster
           try {
-            var monAcc = _accounts.loadAccount(capturedAccKey);
-            if (monAcc && monAcc.monsters && monAcc.activeParty && monAcc.activeParty.length > 0) {
-              var activeMonId = monAcc.activeParty[0];
-              var activeMon = monAcc.monsters.find(function(m) { return m.instanceId === activeMonId; });
+            if (victoryAcc.monsters && victoryAcc.activeParty && victoryAcc.activeParty.length > 0) {
+              var activeMonId = victoryAcc.activeParty[0];
+              var activeMon = victoryAcc.monsters.find(function(m) { return m.instanceId === activeMonId; });
               if (activeMon) {
                 if (!activeMon.xp) activeMon.xp = 0;
                 if (!activeMon.level) activeMon.level = 1;
@@ -859,7 +860,7 @@ function _engageMonsterCombat(io, monster, playerSocketId, zoneId) {
                   activeMon.hp = activeMon.maxHp;
                   monXpNeeded = Math.floor(50 * Math.pow(activeMon.level, 1.5));
                 }
-                _accounts.saveAccount(monAcc);
+                _accounts.saveAccount(victoryAcc);
               }
             }
           } catch (monXpErr) {
@@ -869,9 +870,9 @@ function _engageMonsterCombat(io, monster, playerSocketId, zoneId) {
           // Phantom Skill XP: skinning for beast-type, anatomy for all kills
           var _owBeastPattern = /wolf|bear|boar|spider|lizard|bat|crab|scorpion|viper|raptor|toad|beetle|hound|drake|serpent|worm|ape|bird|insect|crawler|goat|imp|hawk/i;
           if (capturedMonster.name && _owBeastPattern.test(capturedMonster.name)) {
-            _accounts.addSkillXp(capturedAccKey, 'skinning', 10 + Math.floor(Math.random() * 11), xpRate);
+            _accounts.addSkillXp(capturedAccKey, 'skinning', 10 + Math.floor(Math.random() * 11), xpRate, victoryAcc);
           }
-          _accounts.addSkillXp(capturedAccKey, 'anatomy', 3, xpRate);
+          _accounts.addSkillXp(capturedAccKey, 'anatomy', 3, xpRate, victoryAcc);
 
           // Gold
           var goldAmount = capturedMonster.goldDrop;

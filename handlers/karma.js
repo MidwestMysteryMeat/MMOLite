@@ -21,6 +21,10 @@ var GOOD_KARMA_GAINS = {
 
 var GUARD_HOSTILITY_THRESHOLD = -30; // below this, town guards refuse service
 var BOUNTY_THRESHOLD = -20;          // below this, bounty can be placed
+var KARMA_DECAY_INTERVAL_MS = 5 * 60 * 1000; // tick every 5 minutes
+var _decayStarted = false;
+var _decayAccounts = null;
+var _decaySocketMap = null;
 
 function addKarma(account, delta, reason) {
   if (!account) return;
@@ -53,9 +57,38 @@ function isGuardHostile(account) {
   return typeof account.karma === 'number' && account.karma <= GUARD_HOSTILITY_THRESHOLD;
 }
 
+function _tickKarmaDecay() {
+  if (!_decayAccounts || !_decaySocketMap) return;
+  var keys = new Set(_decaySocketMap.values());
+  keys.forEach(function(k) {
+    var acc = _decayAccounts.loadAccount(k);
+    if (!acc || typeof acc.karma !== 'number' || acc.karma === 0) return;
+    // Drift toward 0: decay proportional to current karma magnitude
+    var decayAmount = Math.max(0.5, Math.abs(acc.karma) * KARMA_DECAY_RATE);
+    if (acc.karma > 0) {
+      acc.karma = Math.max(0, acc.karma - decayAmount);
+    } else {
+      acc.karma = Math.min(0, acc.karma + decayAmount);
+    }
+    acc.karma = Math.round(acc.karma * 100) / 100;
+    // Clear bounty if karma recovered above threshold
+    if (acc.karma > BOUNTY_THRESHOLD && acc.activeBounty) {
+      acc.activeBounty = null;
+    }
+    _decayAccounts.saveAccount(acc);
+  });
+}
+
 function init(io, socket, deps) {
   var accounts = deps.accounts;
   var socketAccountMap = deps.socketAccountMap;
+
+  if (!_decayStarted) {
+    _decayStarted = true;
+    _decayAccounts = accounts;
+    _decaySocketMap = socketAccountMap;
+    setInterval(_tickKarmaDecay, KARMA_DECAY_INTERVAL_MS).unref();
+  }
 
   socket.on('karma_status', function() {
     var key = socketAccountMap.get(socket.id);

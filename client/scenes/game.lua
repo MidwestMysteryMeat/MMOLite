@@ -99,8 +99,6 @@ local SCENE_EVENTS = {
     "season_visual_update",
     "disease_status", "disease_contracted", "disease_symptom",
     "weather_info", "influence_info", "ecology_info",
-    "mmo_auction_market_price",
-    "mmo_auction_market_health",
     "patrol_spawned", "patrol_moved", "patrol_despawned", "patrol_arrived",
     "bank_contents", "bank_result", "bank_error", "npc_action",
     "grid_state", "grid_update", "grid_reject", "grid_item_added",
@@ -108,6 +106,25 @@ local SCENE_EVENTS = {
     "loot_corpse_result",
     "zone_container_spawned", "zone_container_looted",
     "loot_container_result",
+    -- Karma / factions
+    "karma_status", "bounty_list",
+    "faction_status", "faction_list",
+    -- Companions
+    "companion_hired", "companion_error", "companion_list",
+    "companion_dismissed", "companion_status",
+    -- Pets
+    "pet_tamed", "pet_error", "pet_list", "pet_fed", "pet_active_set",
+    -- Jail
+    "jail_status", "jail_bail", "jail_serve_time",
+    -- Ascension
+    "ascension_status", "ascension_result", "ascension_ap_result",
+    -- Guild
+    "guild_created", "guild_error", "guild_list_result", "guild_updated",
+    "guild_left", "guild_message", "guild_vault_contents", "guild_vault_updated",
+    -- Crafting minigame
+    "craft_minigame",
+    -- Guard hostility
+    "guard_hostile",
 }
 
 -- Debug logger: writes to file so we can diagnose issues in fused exe (no console)
@@ -226,6 +243,12 @@ local ui = {
     -- Mastery tree panel
     showMastery = false,
     showGridInventory = false,
+    -- New panels
+    showCompanions = false,
+    showPets = false,
+    showGuild = false,
+    showAscension = false,
+    showJail = false,
 }
 
 -- Knowledge panel state (cached data from server)
@@ -256,6 +279,113 @@ local mastery = {
     hoverNode = nil,    -- node currently hovered
     message = nil,      -- feedback message
     messageTimer = 0,
+}
+
+-- Karma / faction HUD state
+local karmaState = {
+    karma = 0,
+    activeBounty = nil,
+    isGuardHostile = false,
+    factions = {},           -- {factionId = {name, points, level, levelName, discount}}
+    factionList = {},        -- [{id, name, homeZone, raceBonus}]
+    bounties = {},           -- [{username, amount, reason}]
+    showFactions = false,
+    showBounties = false,
+    message = nil,
+    messageTimer = 0,
+}
+
+-- Companion panel state
+local companionState = {
+    companions = {},         -- [{id, class, name, level, hp, maxHp, dailyWage, baseDmg}]
+    selectedId = nil,
+    scroll = 0,
+    message = nil,
+    messageTimer = 0,
+    hireClass = nil,         -- class being hired
+}
+
+-- Pet panel state
+local petState = {
+    pets = {},               -- [{id, type, name, level, stage, hunger, happiness, speed}]
+    selectedId = nil,
+    activePetId = nil,
+    scroll = 0,
+    message = nil,
+    messageTimer = 0,
+}
+
+-- Jail panel state
+local jailState = {
+    inJail = false,
+    crime = nil,
+    crimeLabel = nil,
+    remainingMs = 0,
+    bail = 0,
+    jailZoneId = nil,
+    lastUpdate = 0,
+    message = nil,
+    messageTimer = 0,
+}
+
+-- Ascension panel state
+local ascensionState = {
+    canAscend = false,
+    ascensionCount = 0,
+    ascensionPoints = 0,
+    ascensionTree = {},      -- {nodeId = rank}
+    tree = nil,              -- ASCENSION_TREE from server
+    hoverNode = nil,
+    message = nil,
+    messageTimer = 0,
+}
+
+-- Guild panel state
+local guildState = {
+    guildId = nil,
+    guildName = nil,
+    members = {},            -- [{name, role}]
+    guildList = {},          -- [{id, name, leaderName, memberCount, maxMembers, description}]
+    messages = {},           -- [{authorName, content, timestamp}]
+    vault = nil,             -- {cards, resources}
+    tab = "info",            -- "info", "members", "chat", "vault", "browse"
+    scroll = 0,
+    chatScroll = 0,
+    chatInput = "",
+    chatActive = false,
+    createName = "",
+    createDesc = "",
+    createActive = false,
+    message = nil,
+    messageTimer = 0,
+}
+
+-- Crafting minigame state
+local minigameState = {
+    active = false,
+    recipeId = nil,
+    duration = 0,
+    windowStart = 0,         -- sweet spot range (0-1000)
+    windowEnd = 0,
+    expiresAt = 0,
+    barPos = 0,              -- moving bar position (0-1000)
+    barDir = 1,              -- 1 = right, -1 = left
+    startedAt = 0,
+    result = nil,            -- nil, "perfect", "good", "miss"
+    resultTimer = 0,
+}
+
+-- Notification/warning state
+local notifications = {}     -- [{text, color, timer, maxTimer}]
+local NOTIFICATION_DURATION = 4.0
+
+-- Patrol units visible on overworld
+local patrolUnits = {}       -- {id -> {x, y, name, members}}
+
+-- Combat ability bar state
+local abilityBar = {
+    abilities = {},          -- [{name, manaCost, cooldown, maxCooldown, cardId, index}]
+    hoverIndex = nil,
 }
 
 -- Context menu item definitions (label + action key)
@@ -1088,6 +1218,13 @@ function game.closeAllPanels()
     fusionMode.active = false
     fusionMode.card1 = nil
     ui.showMastery = false
+    ui.showCompanions = false
+    ui.showPets = false
+    ui.showGuild = false
+    ui.showAscension = false
+    ui.showJail = false
+    karmaState.showFactions = false
+    karmaState.showBounties = false
     -- Close trade panel (but don't cancel server-side — let server handle timeout)
     if trade.show and trade.tradeId and client then
         client:emit("trade_cancel", { tradeId = trade.tradeId })
@@ -1257,6 +1394,12 @@ function game.setupListeners()
             camera.y = players[myId].y - love.graphics.getHeight() / 2
         end
         debugLog("zone_state handler COMPLETE, zone=" .. tostring(zone and zone.id))
+
+        -- Request karma/jail status on zone load
+        if client then
+            client:emit("karma_status", {})
+            client:emit("jail_status", {})
+        end
     end)
 
     client:on("player_entered_zone", function(data)
@@ -3408,7 +3551,17 @@ function game.setupListeners()
 
     -- B4: Durability info response
     client:on("durability_info", function(data)
-        if data and data.durability then durabilityData = data.durability end
+        if data and data.durability then
+            durabilityData = data.durability
+            -- Show notifications for broken/low durability items
+            for slot, info in pairs(data.durability) do
+                if info.broken then
+                    table.insert(notifications, { text = slot .. " item broke!", color = {1, 0.2, 0.2}, timer = NOTIFICATION_DURATION, maxTimer = NOTIFICATION_DURATION })
+                elseif info.low then
+                    table.insert(notifications, { text = slot .. " durability low!", color = {1, 0.7, 0.2}, timer = NOTIFICATION_DURATION, maxTimer = NOTIFICATION_DURATION })
+                end
+            end
+        end
     end)
 
     -- B4: Food consumed response
@@ -5210,6 +5363,297 @@ function game.setupListeners()
         end
         mastery.messageTimer = 3
     end)
+
+    -- ===== Karma / Factions =====
+    client:on("karma_status", function(data)
+        if not data then return end
+        karmaState.karma = data.karma or 0
+        karmaState.activeBounty = data.activeBounty
+        karmaState.isGuardHostile = data.isGuardHostile or false
+    end)
+
+    client:on("bounty_list", function(data)
+        if not data then return end
+        karmaState.bounties = data.bounties or {}
+    end)
+
+    client:on("faction_status", function(data)
+        if not data then return end
+        karmaState.factions = data.factions or {}
+    end)
+
+    client:on("faction_list", function(data)
+        if not data then return end
+        karmaState.factionList = data.factions or {}
+    end)
+
+    -- ===== Companions =====
+    client:on("companion_hired", function(data)
+        if not data then return end
+        companionState.message = "Hired " .. (data.companion and data.companion.name or "companion") .. "!"
+        companionState.messageTimer = 3
+        if client then client:emit("companion_list", {}) end
+    end)
+
+    client:on("companion_error", function(data)
+        if not data then return end
+        companionState.message = data.message or "Error"
+        companionState.messageTimer = 3
+    end)
+
+    client:on("companion_list", function(data)
+        if not data then return end
+        companionState.companions = data.companions or {}
+    end)
+
+    client:on("companion_dismissed", function(data)
+        if not data then return end
+        companionState.message = "Companion dismissed"
+        companionState.messageTimer = 3
+        if client then client:emit("companion_list", {}) end
+    end)
+
+    client:on("companion_status", function(data)
+        if not data then return end
+        for i, c in ipairs(companionState.companions) do
+            if c.id == data.id then
+                companionState.companions[i] = data
+                break
+            end
+        end
+    end)
+
+    -- ===== Pets =====
+    client:on("pet_tamed", function(data)
+        if not data then return end
+        petState.message = "Tamed " .. (data.pet and data.pet.name or "pet") .. "!"
+        petState.messageTimer = 3
+        if client then client:emit("pet_list", {}) end
+    end)
+
+    client:on("pet_error", function(data)
+        if not data then return end
+        petState.message = data.message or "Error"
+        petState.messageTimer = 3
+    end)
+
+    client:on("pet_list", function(data)
+        if not data then return end
+        petState.pets = data.pets or {}
+        for _, p in ipairs(petState.pets) do
+            if p.isActive then petState.activePetId = p.id end
+        end
+    end)
+
+    client:on("pet_fed", function(data)
+        if not data then return end
+        for _, p in ipairs(petState.pets) do
+            if p.id == data.petId then
+                p.hunger = data.hunger
+                p.happiness = data.happiness
+                break
+            end
+        end
+        petState.message = "Pet fed!"
+        petState.messageTimer = 2
+    end)
+
+    client:on("pet_active_set", function(data)
+        if not data then return end
+        petState.activePetId = data.petId
+        petState.message = data.petId and "Pet set as active" or "Pet dismissed from active"
+        petState.messageTimer = 2
+    end)
+
+    -- ===== Jail =====
+    client:on("jail_status", function(data)
+        if not data then return end
+        jailState.inJail = data.inJail or false
+        jailState.crime = data.crime
+        jailState.crimeLabel = data.crimeLabel
+        jailState.remainingMs = data.remainingMs or 0
+        jailState.bail = data.bail or 0
+        jailState.jailZoneId = data.jailZoneId
+        jailState.lastUpdate = love.timer.getTime()
+        if data.inJail and not ui.showJail then
+            ui.showJail = true
+        end
+    end)
+
+    client:on("jail_bail", function(data)
+        if not data then return end
+        if data.ok then
+            jailState.inJail = false
+            jailState.message = data.message or "Bail paid! You are free."
+            ui.showJail = false
+        else
+            jailState.message = data.error or "Cannot pay bail"
+        end
+        jailState.messageTimer = 3
+    end)
+
+    client:on("jail_serve_time", function(data)
+        if not data then return end
+        if data.released then
+            jailState.inJail = false
+            jailState.message = data.message or "Time served. You are free."
+            ui.showJail = false
+        else
+            jailState.remainingMs = data.remainingMs or 0
+            jailState.lastUpdate = love.timer.getTime()
+            jailState.message = data.message or "Still serving time..."
+        end
+        jailState.messageTimer = 3
+    end)
+
+    -- ===== Ascension =====
+    client:on("ascension_status", function(data)
+        if not data then return end
+        ascensionState.canAscend = data.canAscend or false
+        ascensionState.ascensionCount = data.ascensionCount or 0
+        ascensionState.ascensionPoints = data.ascensionPoints or 0
+        ascensionState.ascensionTree = data.ascensionTree or {}
+        ascensionState.tree = data.tree
+    end)
+
+    client:on("ascension_result", function(data)
+        if not data then return end
+        if data.ok then
+            ascensionState.ascensionCount = data.ascensionCount or ascensionState.ascensionCount
+            ascensionState.ascensionPoints = data.totalAp or ascensionState.ascensionPoints
+            ascensionState.message = "Ascended! +" .. (data.apGained or 0) .. " AP"
+            ascensionState.canAscend = false
+        else
+            ascensionState.message = data.error or "Cannot ascend"
+        end
+        ascensionState.messageTimer = 3
+    end)
+
+    client:on("ascension_ap_result", function(data)
+        if not data then return end
+        if data.ok then
+            ascensionState.ascensionTree[data.nodeId] = data.rank
+            ascensionState.ascensionPoints = data.apLeft
+            ascensionState.message = "Invested in " .. data.nodeId .. " (rank " .. data.rank .. ")"
+        else
+            ascensionState.message = data.error or "Cannot invest"
+        end
+        ascensionState.messageTimer = 3
+    end)
+
+    -- ===== Guild =====
+    client:on("guild_created", function(data)
+        if not data then return end
+        guildState.guildId = data.guildId
+        guildState.guildName = data.name
+        guildState.members = data.members or {}
+        guildState.tab = "info"
+        guildState.message = "Guild created!"
+        guildState.messageTimer = 3
+    end)
+
+    client:on("guild_error", function(data)
+        if not data then return end
+        guildState.message = data.message or "Guild error"
+        guildState.messageTimer = 3
+    end)
+
+    client:on("guild_list_result", function(data)
+        if not data then return end
+        guildState.guildList = data.guilds or {}
+    end)
+
+    client:on("guild_updated", function(data)
+        if not data then return end
+        guildState.guildId = data.guildId
+        guildState.members = data.members or guildState.members
+        guildState.message = data.event or "Guild updated"
+        guildState.messageTimer = 2
+    end)
+
+    client:on("guild_left", function(data)
+        guildState.guildId = nil
+        guildState.guildName = nil
+        guildState.members = {}
+        guildState.vault = nil
+        guildState.messages = {}
+        guildState.tab = "browse"
+        guildState.message = "Left guild"
+        guildState.messageTimer = 3
+    end)
+
+    client:on("guild_message", function(data)
+        if not data then return end
+        table.insert(guildState.messages, {
+            authorName = data.authorName or "???",
+            content = data.content or "",
+            timestamp = data.timestamp or 0,
+        })
+        if #guildState.messages > 100 then table.remove(guildState.messages, 1) end
+    end)
+
+    client:on("guild_vault_contents", function(data)
+        if not data then return end
+        guildState.vault = { cards = data.cards or {}, resources = data.resources or {} }
+    end)
+
+    client:on("guild_vault_updated", function(data)
+        if not data then return end
+        if data.resources then guildState.vault = guildState.vault or {}; guildState.vault.resources = data.resources end
+        if data.cards then guildState.vault = guildState.vault or {}; guildState.vault.cards = data.cards end
+        guildState.message = data.event or "Vault updated"
+        guildState.messageTimer = 2
+    end)
+
+    -- ===== Crafting Minigame =====
+    client:on("craft_minigame", function(data)
+        if not data then return end
+        minigameState.active = true
+        minigameState.recipeId = data.recipeId
+        minigameState.duration = data.duration or 3000
+        minigameState.windowStart = data.windowStart or 400
+        minigameState.windowEnd = data.windowEnd or 600
+        minigameState.expiresAt = love.timer.getTime() + (data.duration or 3000) / 1000
+        minigameState.barPos = 0
+        minigameState.barDir = 1
+        minigameState.startedAt = love.timer.getTime()
+        minigameState.result = nil
+        minigameState.resultTimer = 0
+    end)
+
+    -- ===== Patrol Units =====
+    client:on("patrol_spawned", function(data)
+        if not data or not data.id then return end
+        patrolUnits[data.id] = { x = data.x, y = data.y, name = data.name or "Patrol", members = data.members or {} }
+    end)
+
+    client:on("patrol_moved", function(data)
+        if not data or not data.id then return end
+        if patrolUnits[data.id] then
+            patrolUnits[data.id].x = data.x
+            patrolUnits[data.id].y = data.y
+        end
+    end)
+
+    client:on("patrol_despawned", function(data)
+        if not data or not data.id then return end
+        patrolUnits[data.id] = nil
+    end)
+
+    client:on("patrol_arrived", function(data)
+        if not data or not data.id then return end
+        if patrolUnits[data.id] then
+            patrolUnits[data.id].x = data.x
+            patrolUnits[data.id].y = data.y
+        end
+    end)
+
+    -- ===== Guard Hostility Warning =====
+    client:on("guard_hostile", function(data)
+        if not data then return end
+        table.insert(notifications, { text = data.message or "Guards refuse to serve you!", color = {1, 0.3, 0.3}, timer = NOTIFICATION_DURATION, maxTimer = NOTIFICATION_DURATION })
+        karmaState.isGuardHostile = true
+    end)
 end
 
 -- Helper: get feature type at world pixel coords
@@ -6171,6 +6615,48 @@ function game.update(dt)
             end
         end
     end
+
+    -- Update notification timers
+    for i = #notifications, 1, -1 do
+        notifications[i].timer = notifications[i].timer - dt
+        if notifications[i].timer <= 0 then table.remove(notifications, i) end
+    end
+
+    -- Update message timers for panels
+    if companionState.messageTimer > 0 then companionState.messageTimer = companionState.messageTimer - dt end
+    if petState.messageTimer > 0 then petState.messageTimer = petState.messageTimer - dt end
+    if jailState.messageTimer > 0 then jailState.messageTimer = jailState.messageTimer - dt end
+    if ascensionState.messageTimer > 0 then ascensionState.messageTimer = ascensionState.messageTimer - dt end
+    if guildState.messageTimer > 0 then guildState.messageTimer = guildState.messageTimer - dt end
+    if karmaState.messageTimer > 0 then karmaState.messageTimer = karmaState.messageTimer - dt end
+
+    -- Update crafting minigame bar
+    if minigameState.active then
+        if minigameState.result then
+            minigameState.resultTimer = minigameState.resultTimer - dt
+            if minigameState.resultTimer <= 0 then
+                minigameState.active = false
+                minigameState.result = nil
+            end
+        else
+            local elapsed = love.timer.getTime() - minigameState.startedAt
+            local speed = 800  -- pixels per second on 0-1000 bar
+            minigameState.barPos = minigameState.barPos + minigameState.barDir * speed * dt
+            if minigameState.barPos >= 1000 then
+                minigameState.barPos = 1000
+                minigameState.barDir = -1
+            elseif minigameState.barPos <= 0 then
+                minigameState.barPos = 0
+                minigameState.barDir = 1
+            end
+            -- Auto-fail if expired
+            if love.timer.getTime() >= minigameState.expiresAt then
+                minigameState.result = "miss"
+                minigameState.resultTimer = 1.5
+                if client then client:emit("craft_minigame_result", { clickPos = -1 }) end
+            end
+        end
+    end
 end
 
 function game.draw()
@@ -6582,6 +7068,7 @@ function game.draw()
     if not dungeon.inDungeon and not tcState.overworldCombat then
         game.drawZoneMonsters()
         game.drawCorpsesAndContainers()
+        game.drawPatrolUnits()
     end
 
     -- Draw leviathans on overworld (world space)
@@ -6764,6 +7251,47 @@ function game.draw()
     if ui.showFarming then
         game.drawFarmingPanel(W, H)
     end
+
+    -- Companion panel overlay
+    if ui.showCompanions then
+        game.drawCompanionPanel(W, H)
+    end
+
+    -- Pet panel overlay
+    if ui.showPets then
+        game.drawPetPanel(W, H)
+    end
+
+    -- Guild panel overlay
+    if ui.showGuild then
+        game.drawGuildPanel(W, H)
+    end
+
+    -- Ascension panel overlay
+    if ui.showAscension then
+        game.drawAscensionPanel(W, H)
+    end
+
+    -- Jail overlay (forced when jailed)
+    if ui.showJail and jailState.inJail then
+        game.drawJailPanel(W, H)
+    end
+
+    -- Crafting minigame overlay
+    if minigameState.active then
+        game.drawCraftingMinigame(W, H)
+    end
+
+    -- Karma HUD (always visible, small indicator)
+    game.drawKarmaHUD(W, H)
+
+    -- Faction rep panel (toggle)
+    if karmaState.showFactions then
+        game.drawFactionPanel(W, H)
+    end
+
+    -- Notifications (guard warnings, durability, etc.)
+    game.drawNotifications(W, H)
 
     -- Knowledge notifications (book/term discovery popups)
     game.drawKnowledgeNotifications(W, H)
@@ -10976,6 +11504,55 @@ function game.keypressed(key)
         return -- block all input while downed
     end
 
+    -- Crafting minigame: space to click
+    if minigameState.active and not minigameState.result then
+        if key == "space" then
+            local clickPos = math.floor(minigameState.barPos)
+            if clickPos >= minigameState.windowStart and clickPos <= minigameState.windowEnd then
+                local mid = (minigameState.windowStart + minigameState.windowEnd) / 2
+                local dist = math.abs(clickPos - mid)
+                local range = (minigameState.windowEnd - minigameState.windowStart) / 2
+                minigameState.result = dist < range * 0.3 and "perfect" or "good"
+            else
+                minigameState.result = "miss"
+            end
+            minigameState.resultTimer = 1.5
+            if client then client:emit("craft_minigame_result", { clickPos = clickPos }) end
+            return
+        end
+    end
+
+    -- Guild chat/create input handling
+    if ui.showGuild then
+        if guildState.chatActive then
+            if key == "return" or key == "kpenter" then
+                if #guildState.chatInput > 0 and client then
+                    client:emit("guild_chat", { message = guildState.chatInput })
+                    guildState.chatInput = ""
+                end
+                return
+            elseif key == "backspace" then
+                guildState.chatInput = guildState.chatInput:sub(1, -2)
+                return
+            elseif key == "escape" then
+                guildState.chatActive = false
+                return
+            end
+        end
+        if guildState.createActive then
+            if key == "return" or key == "kpenter" then
+                guildState.createActive = false
+                return
+            elseif key == "backspace" then
+                guildState.createName = guildState.createName:sub(1, -2)
+                return
+            elseif key == "escape" then
+                guildState.createActive = false
+                return
+            end
+        end
+    end
+
     -- Dismiss context menu on Escape (highest priority)
     if ui.contextMenu and key == "escape" then
         ui.contextMenu = nil
@@ -11372,9 +11949,19 @@ function game.keypressed(key)
             client:emit("leviathan_flee", { leviathanId = overworld.leviathanAggro.leviathanId })
         end
     elseif key == "h" and not chat.active then
-        -- Hall of Heroes (permadeath memorial)
-        if client then
-            client:emit("hall_of_heroes", {})
+        if permadeath.showHallOfHeroes then
+            -- Toggle hall of heroes off
+            permadeath.showHallOfHeroes = false
+        elseif love.keyboard.isDown("lshift") or love.keyboard.isDown("rshift") then
+            -- Shift+H: Hall of Heroes (permadeath memorial)
+            if client then
+                client:emit("hall_of_heroes", {})
+            end
+        else
+            -- H: Home teleport
+            if client then
+                client:emit("home_teleport", {})
+            end
         end
     elseif key == "f" and dungeon.inDungeon and not tcState.inCombat and not chat.active then
         -- Activate weapon special
@@ -11710,11 +12297,6 @@ function game.keypressed(key)
         if ui.showFarming and client then
             client:emit("check_crops", {})
         end
-    elseif key == "h" then
-        -- Home teleport
-        if not permadeath.showHallOfHeroes and client then
-            client:emit("home_teleport", {})
-        end
     elseif key == "p" then
         -- Plot claim/unclaim toggle
         if client and overworld.chunkBased then
@@ -11772,6 +12354,49 @@ function game.keypressed(key)
         local wasOpen = ui.showPartyPanel
         game.closeAllPanels()
         ui.showPartyPanel = not wasOpen
+    elseif key == "u" and not chat.active then
+        -- Toggle companion panel
+        local wasOpen = ui.showCompanions
+        game.closeAllPanels()
+        ui.showCompanions = not wasOpen
+        if ui.showCompanions and client then
+            client:emit("companion_list", {})
+        end
+    elseif key == "o" and not chat.active then
+        -- Toggle pet panel
+        local wasOpen = ui.showPets
+        game.closeAllPanels()
+        ui.showPets = not wasOpen
+        if ui.showPets and client then
+            client:emit("pet_list", {})
+        end
+    elseif key == "]" and not chat.active then
+        -- Toggle guild panel
+        local wasOpen = ui.showGuild
+        game.closeAllPanels()
+        ui.showGuild = not wasOpen
+        if ui.showGuild and client then
+            if guildState.guildId then
+                client:emit("guild_vault_browse", {})
+            else
+                client:emit("guild_list", {})
+            end
+        end
+    elseif key == ";" and not chat.active then
+        -- Toggle ascension panel
+        local wasOpen = ui.showAscension
+        game.closeAllPanels()
+        ui.showAscension = not wasOpen
+        if ui.showAscension and client then
+            client:emit("ascension_status", {})
+        end
+    elseif key == "/" and not chat.active then
+        -- Toggle faction rep panel
+        karmaState.showFactions = not karmaState.showFactions
+        if karmaState.showFactions and client then
+            client:emit("faction_status", {})
+            client:emit("faction_list", {})
+        end
     elseif key == "f10" then
         -- Toggle admin panel (server hosts only)
         if _G.isServerHost then
@@ -11795,6 +12420,21 @@ function game.keypressed(key)
             ui.placementMode = false
             ui.placementType = nil
             ui.placementItemId = nil
+        elseif ui.showCompanions then
+            ui.showCompanions = false
+        elseif ui.showPets then
+            ui.showPets = false
+        elseif ui.showGuild then
+            ui.showGuild = false
+        elseif ui.showAscension then
+            ui.showAscension = false
+        elseif ui.showJail then
+            -- Can't close jail if still jailed
+            if not jailState.inJail then ui.showJail = false end
+        elseif karmaState.showFactions then
+            karmaState.showFactions = false
+        elseif minigameState.active then
+            -- Can't escape minigame — must click or timeout
         else
             -- Go to character select (switch characters) instead of disconnecting
             _G.switchScene("character_select")
@@ -11810,6 +12450,20 @@ function game.textinput(text)
             trade.coinInput = trade.coinInput .. text
         end
         return
+    end
+    -- Guild chat/create input
+    if ui.showGuild then
+        if guildState.chatActive then
+            if #guildState.chatInput < 200 then
+                guildState.chatInput = guildState.chatInput .. text
+            end
+            return
+        elseif guildState.createActive then
+            if #guildState.createName < 30 then
+                guildState.createName = guildState.createName .. text
+            end
+            return
+        end
     end
     -- Auction inputs
     if auction.show then
@@ -11840,6 +12494,211 @@ function game.mousepressed(x, y, button)
     -- Grid inventory intercept
     if ui.showGridInventory then
         if gridInv.mousepressed(x, y, button) then return end
+    end
+
+    -- Crafting minigame click
+    if minigameState.active and not minigameState.result and button == 1 then
+        local clickPos = math.floor(minigameState.barPos)
+        if clickPos >= minigameState.windowStart and clickPos <= minigameState.windowEnd then
+            local mid = (minigameState.windowStart + minigameState.windowEnd) / 2
+            local dist = math.abs(clickPos - mid)
+            local range = (minigameState.windowEnd - minigameState.windowStart) / 2
+            minigameState.result = dist < range * 0.3 and "perfect" or "good"
+        else
+            minigameState.result = "miss"
+        end
+        minigameState.resultTimer = 1.5
+        if client then client:emit("craft_minigame_result", { clickPos = clickPos }) end
+        return
+    end
+
+    -- Companion panel clicks
+    if ui.showCompanions and button == 1 then
+        local panelW = 400
+        local panelH = 420
+        local px = (love.graphics.getWidth() - panelW) / 2
+        local py = (love.graphics.getHeight() - panelH) / 2
+
+        -- Hire buttons
+        local COMP_CLASSES = {"warrior", "ranger", "mage", "healer", "thief", "bard"}
+        local cy = py + 54
+        for i, cls in ipairs(COMP_CLASSES) do
+            local bx = px + 12 + (i - 1) * 62
+            if x >= bx and x <= bx + 58 and y >= cy and y <= cy + 20 then
+                if client then client:emit("companion_hire", { companionClass = cls }) end
+                return
+            end
+        end
+        cy = cy + 34
+        -- Dismiss buttons
+        for _, c in ipairs(companionState.companions) do
+            local dBx = px + panelW - 70
+            if x >= dBx and x <= dBx + 50 and y >= cy + 20 and y <= cy + 38 then
+                if client then client:emit("companion_dismiss", { companionId = c.id }) end
+                return
+            end
+            cy = cy + 50
+        end
+    end
+
+    -- Pet panel clicks
+    if ui.showPets and button == 1 then
+        local panelW = 400
+        local panelH = 420
+        local px = (love.graphics.getWidth() - panelW) / 2
+        local py = (love.graphics.getHeight() - panelH) / 2
+        local cy = py + 36
+        for _, p in ipairs(petState.pets) do
+            local feedX = px + panelW - 120
+            if x >= feedX and x <= feedX + 50 and y >= cy + 4 and y <= cy + 22 then
+                if client then client:emit("pet_feed", { petId = p.id }) end
+                return
+            end
+            local actX = px + panelW - 60
+            if x >= actX and x <= actX + 46 and y >= cy + 4 and y <= cy + 22 then
+                local newId = (petState.activePetId == p.id) and nil or p.id
+                if client then client:emit("pet_set_active", { petId = newId }) end
+                return
+            end
+            cy = cy + 62
+        end
+    end
+
+    -- Jail panel clicks
+    if ui.showJail and jailState.inJail and button == 1 then
+        local panelW = 340
+        local panelH = 260
+        local px = (love.graphics.getWidth() - panelW) / 2
+        local py = (love.graphics.getHeight() - panelH) / 2
+        local bailX = px + panelW / 2 - 80
+        local bailY = py + 120
+        if x >= bailX and x <= bailX + 160 and y >= bailY and y <= bailY + 36 then
+            if client then client:emit("jail_bail", {}) end
+            return
+        end
+        local serveY = bailY + 48
+        if x >= bailX and x <= bailX + 160 and y >= serveY and y <= serveY + 36 then
+            if client then client:emit("jail_serve_time", {}) end
+            return
+        end
+    end
+
+    -- Ascension panel clicks
+    if ui.showAscension and button == 1 then
+        local panelW = 500
+        local panelH = 450
+        local px = (love.graphics.getWidth() - panelW) / 2
+        local py = (love.graphics.getHeight() - panelH) / 2
+
+        -- Ascend button
+        if ascensionState.canAscend then
+            local bx = px + panelW / 2 - 60
+            local by = py + 54
+            if x >= bx and x <= bx + 120 and y >= by and y <= by + 28 then
+                if client then client:emit("ascension_confirm", {}) end
+                return
+            end
+        end
+
+        -- Tree node clicks
+        local cy = py + 90
+        if ascensionState.tree then
+            for nodeId, nodeData in pairs(ascensionState.tree) do
+                if cy + 38 > py + panelH - 30 then break end
+                local nx = px + 12
+                local nw = panelW - 24
+                if x >= nx and x <= nx + nw and y >= cy and y <= cy + 34 then
+                    local rank = (ascensionState.ascensionTree and ascensionState.ascensionTree[nodeId]) or 0
+                    local maxRank = nodeData.maxRank or 3
+                    local cost = nodeData.cost or 1
+                    if rank < maxRank and (ascensionState.ascensionPoints or 0) >= cost then
+                        if client then client:emit("ascension_spend_ap", { nodeId = nodeId }) end
+                    end
+                    return
+                end
+                cy = cy + 38
+            end
+        end
+    end
+
+    -- Guild panel clicks
+    if ui.showGuild and button == 1 then
+        local panelW = 500
+        local panelH = 460
+        local px = (love.graphics.getWidth() - panelW) / 2
+        local py = (love.graphics.getHeight() - panelH) / 2
+
+        -- Tab clicks
+        local tabs
+        if guildState.guildId then
+            tabs = {"info", "members", "chat", "vault"}
+        else
+            tabs = {"browse", "create"}
+        end
+        local tabW = 70
+        local tabStartX = px + 10
+        local tabY = py + 34
+        for i, tab in ipairs(tabs) do
+            local tx = tabStartX + (i - 1) * (tabW + 4)
+            if x >= tx and x <= tx + tabW and y >= tabY and y <= tabY + 22 then
+                guildState.tab = tab
+                if tab == "vault" and client then client:emit("guild_vault_browse", {}) end
+                if tab == "browse" and client then client:emit("guild_list", {}) end
+                return
+            end
+        end
+
+        local contentY = tabY + 28
+
+        -- Browse: join guild
+        if guildState.tab == "browse" then
+            local cy = contentY
+            for _, g in ipairs(guildState.guildList) do
+                if x >= px + 10 and x <= px + panelW - 10 and y >= cy and y <= cy + 32 then
+                    if client then client:emit("guild_join", { guildId = g.id }) end
+                    return
+                end
+                cy = cy + 36
+            end
+        end
+
+        -- Create: activate name input + create button
+        if guildState.tab == "create" then
+            if x >= px + 20 and x <= px + panelW - 20 and y >= contentY + 28 and y <= contentY + 52 then
+                guildState.createActive = true
+                guildState.chatActive = false
+                return
+            end
+            local createBx = px + panelW / 2 - 50
+            local createBy = contentY + 70
+            if x >= createBx and x <= createBx + 100 and y >= createBy and y <= createBy + 28 then
+                if client and #guildState.createName > 0 then
+                    client:emit("guild_create", { name = guildState.createName })
+                end
+                return
+            end
+        end
+
+        -- Chat: activate input
+        if guildState.tab == "chat" then
+            local contentH = panelH - (contentY - py) - 24
+            local inputY = contentY + contentH - 24
+            if x >= px + 14 and x <= px + panelW - 14 and y >= inputY and y <= inputY + 22 then
+                guildState.chatActive = true
+                guildState.createActive = false
+                return
+            end
+        end
+
+        -- Leave button (info/members tab)
+        if guildState.tab == "info" or guildState.tab == "members" then
+            local lx = px + panelW - 80
+            local ly = py + panelH - 40
+            if x >= lx and x <= lx + 60 and y >= ly and y <= ly + 22 then
+                if client then client:emit("guild_leave", {}) end
+                return
+            end
+        end
     end
 
     -- Loot panel click handling (corpse/container)
@@ -19964,6 +20823,752 @@ function game.drawHallOfHeroes(W, H)
     love.graphics.setFont(fonts.chat or fonts.main)
     love.graphics.setColor(0.5, 0.5, 0.5, 0.6)
     love.graphics.printf("Press ESC or H to close", dlgX, dlgY + dlgH - 20, dlgW, "center")
+end
+
+-- =========================================================================
+-- Karma HUD (small indicator, always visible)
+-- =========================================================================
+function game.drawKarmaHUD(W, H)
+    if not zone then return end
+    local font = fonts.chat or fonts.main or _G.getFont(12)
+    love.graphics.setFont(font)
+
+    local x = 10
+    local y = H - 40
+    local barW = 100
+    local barH = 8
+
+    -- Karma label + value
+    local kVal = karmaState.karma or 0
+    local kColor
+    if kVal > 20 then kColor = {0.3, 0.9, 0.4}
+    elseif kVal < -20 then kColor = {0.9, 0.3, 0.3}
+    else kColor = {0.7, 0.7, 0.7} end
+
+    love.graphics.setColor(kColor[1], kColor[2], kColor[3], 0.9)
+    love.graphics.print("Karma: " .. math.floor(kVal), x, y - 14)
+
+    -- Bar background
+    love.graphics.setColor(0.15, 0.15, 0.2, 0.7)
+    love.graphics.rectangle("fill", x, y, barW, barH, 3, 3)
+
+    -- Bar fill (centered at 50, positive goes right, negative goes left)
+    local mid = barW / 2
+    local fillW = math.abs(kVal) / 100 * mid
+    if kVal > 0 then
+        love.graphics.setColor(0.3, 0.8, 0.4, 0.8)
+        love.graphics.rectangle("fill", x + mid, y, fillW, barH, 0, 3)
+    elseif kVal < 0 then
+        love.graphics.setColor(0.8, 0.3, 0.3, 0.8)
+        love.graphics.rectangle("fill", x + mid - fillW, y, fillW, barH, 3, 0)
+    end
+
+    -- Center mark
+    love.graphics.setColor(0.5, 0.5, 0.5, 0.5)
+    love.graphics.rectangle("fill", x + mid - 1, y, 2, barH)
+
+    -- Guard hostile warning
+    if karmaState.isGuardHostile then
+        love.graphics.setColor(1, 0.2, 0.2, 0.7 + math.sin(love.timer.getTime() * 4) * 0.3)
+        love.graphics.print("HOSTILE", x + barW + 8, y - 4)
+    end
+
+    -- Bounty indicator
+    if karmaState.activeBounty then
+        love.graphics.setColor(1, 0.6, 0.1, 0.8)
+        love.graphics.print("Bounty: " .. (karmaState.activeBounty.amount or 0) .. "g", x + barW + 8, y - 18)
+    end
+end
+
+-- =========================================================================
+-- Faction Rep Panel (/ key toggle)
+-- =========================================================================
+function game.drawFactionPanel(W, H)
+    local font = fonts.ui or _G.getFont(14)
+    local smallFont = fonts.chat or _G.getFont(12)
+    local panelW = 360
+    local panelH = 400
+    local px = (W - panelW) / 2
+    local py = (H - panelH) / 2
+
+    -- Background
+    love.graphics.setColor(0.06, 0.06, 0.12, 0.95)
+    love.graphics.rectangle("fill", px, py, panelW, panelH, 8, 8)
+    love.graphics.setColor(0.35, 0.30, 0.50, 0.7)
+    love.graphics.setLineWidth(2)
+    love.graphics.rectangle("line", px, py, panelW, panelH, 8, 8)
+    love.graphics.setLineWidth(1)
+
+    -- Title
+    love.graphics.setFont(font)
+    love.graphics.setColor(0.85, 0.80, 0.60, 1)
+    love.graphics.printf("Faction Reputation", px, py + 10, panelW, "center")
+
+    -- Faction list
+    love.graphics.setFont(smallFont)
+    local cy = py + 36
+    if karmaState.factions and next(karmaState.factions) then
+        for factionId, f in pairs(karmaState.factions) do
+            if cy + 40 > py + panelH - 20 then break end
+            -- Name + level
+            love.graphics.setColor(0.9, 0.85, 0.7, 1)
+            love.graphics.print((f.name or factionId), px + 12, cy)
+            love.graphics.setColor(0.6, 0.7, 0.9, 0.9)
+            love.graphics.print((f.levelName or "Neutral") .. " (Lv" .. (f.level or 0) .. ")", px + 12, cy + 16)
+
+            -- Rep bar
+            local barX = px + 200
+            local barW = 140
+            local barH = 10
+            local pts = f.points or 0
+            local maxPts = 1000  -- rough max per level
+            local ratio = math.min(1, math.max(0, (pts % maxPts) / maxPts))
+            love.graphics.setColor(0.15, 0.15, 0.2, 0.7)
+            love.graphics.rectangle("fill", barX, cy + 8, barW, barH, 3, 3)
+            love.graphics.setColor(0.3, 0.5, 0.9, 0.8)
+            love.graphics.rectangle("fill", barX, cy + 8, barW * ratio, barH, 3, 3)
+            love.graphics.setColor(0.5, 0.5, 0.6, 0.6)
+            love.graphics.rectangle("line", barX, cy + 8, barW, barH, 3, 3)
+
+            -- Discount
+            if f.discount and f.discount ~= 0 then
+                local discText = string.format("%+d%%", math.floor(f.discount * 100))
+                love.graphics.setColor(0.4, 0.9, 0.4, 0.8)
+                love.graphics.print(discText, barX + barW + 6, cy + 6)
+            end
+
+            cy = cy + 38
+        end
+    else
+        love.graphics.setColor(0.5, 0.5, 0.5, 0.7)
+        love.graphics.printf("No faction data yet", px, cy + 20, panelW, "center")
+    end
+
+    -- Close hint
+    love.graphics.setColor(0.5, 0.5, 0.5, 0.5)
+    love.graphics.printf("Press / or ESC to close", px, py + panelH - 18, panelW, "center")
+end
+
+-- =========================================================================
+-- Companion Panel (U key)
+-- =========================================================================
+function game.drawCompanionPanel(W, H)
+    local font = fonts.ui or _G.getFont(14)
+    local smallFont = fonts.chat or _G.getFont(12)
+    local panelW = 400
+    local panelH = 420
+    local px = (W - panelW) / 2
+    local py = (H - panelH) / 2
+
+    love.graphics.setColor(0.06, 0.06, 0.10, 0.95)
+    love.graphics.rectangle("fill", px, py, panelW, panelH, 8, 8)
+    love.graphics.setColor(0.30, 0.40, 0.50, 0.7)
+    love.graphics.setLineWidth(2)
+    love.graphics.rectangle("line", px, py, panelW, panelH, 8, 8)
+    love.graphics.setLineWidth(1)
+
+    love.graphics.setFont(font)
+    love.graphics.setColor(0.85, 0.85, 0.70, 1)
+    love.graphics.printf("Companions", px, py + 10, panelW, "center")
+
+    love.graphics.setFont(smallFont)
+    local cy = py + 36
+
+    -- Available classes to hire
+    local COMP_CLASSES = {"warrior", "ranger", "mage", "healer", "thief", "bard"}
+    love.graphics.setColor(0.7, 0.7, 0.8, 0.8)
+    love.graphics.print("Hire (click class):", px + 12, cy)
+    cy = cy + 18
+    for i, cls in ipairs(COMP_CLASSES) do
+        local bx = px + 12 + (i - 1) * 62
+        local mx, my = love.mouse.getPosition()
+        local hover = mx >= bx and mx <= bx + 58 and my >= cy and my <= cy + 20
+        love.graphics.setColor(hover and {0.3, 0.5, 0.7, 0.9} or {0.18, 0.20, 0.28, 0.8})
+        love.graphics.rectangle("fill", bx, cy, 58, 20, 4, 4)
+        love.graphics.setColor(0.8, 0.8, 0.9, 1)
+        love.graphics.printf(cls:sub(1, 1):upper() .. cls:sub(2), bx, cy + 3, 58, "center")
+    end
+    cy = cy + 28
+
+    -- Hired companions list
+    love.graphics.setColor(0.6, 0.7, 0.8, 0.6)
+    love.graphics.line(px + 12, cy, px + panelW - 12, cy)
+    cy = cy + 6
+
+    if #companionState.companions == 0 then
+        love.graphics.setColor(0.5, 0.5, 0.5, 0.7)
+        love.graphics.printf("No companions hired", px, cy + 10, panelW, "center")
+    else
+        for _, c in ipairs(companionState.companions) do
+            if cy + 50 > py + panelH - 30 then break end
+            love.graphics.setColor(0.12, 0.14, 0.20, 0.8)
+            love.graphics.rectangle("fill", px + 10, cy, panelW - 20, 46, 4, 4)
+
+            love.graphics.setColor(0.9, 0.85, 0.7, 1)
+            love.graphics.print((c.name or "???") .. "  Lv" .. (c.level or 1), px + 16, cy + 4)
+            love.graphics.setColor(0.6, 0.7, 0.8, 0.9)
+            love.graphics.print(c.class or "?", px + 16, cy + 20)
+
+            -- HP bar
+            local barX = px + 150
+            local barW = 80
+            local hp = c.hp or 0
+            local maxHp = c.maxHp or 1
+            love.graphics.setColor(0.15, 0.15, 0.2, 0.7)
+            love.graphics.rectangle("fill", barX, cy + 22, barW, 8, 3, 3)
+            love.graphics.setColor(0.3, 0.8, 0.3, 0.8)
+            love.graphics.rectangle("fill", barX, cy + 22, barW * (hp / maxHp), 8, 3, 3)
+
+            -- Wage + dismiss button
+            love.graphics.setColor(0.8, 0.7, 0.4, 0.7)
+            love.graphics.print("Wage: " .. (c.dailyWage or 0) .. "g/day", px + 250, cy + 4)
+
+            local dBx = px + panelW - 70
+            local mx, my = love.mouse.getPosition()
+            local dHover = mx >= dBx and mx <= dBx + 50 and my >= cy + 20 and my <= cy + 38
+            love.graphics.setColor(dHover and {0.7, 0.2, 0.2, 0.9} or {0.4, 0.15, 0.15, 0.7})
+            love.graphics.rectangle("fill", dBx, cy + 20, 50, 18, 3, 3)
+            love.graphics.setColor(0.9, 0.7, 0.7, 1)
+            love.graphics.printf("Dismiss", dBx, cy + 22, 50, "center")
+
+            cy = cy + 50
+        end
+    end
+
+    -- Message
+    if companionState.messageTimer > 0 and companionState.message then
+        love.graphics.setColor(0.9, 0.9, 0.5, math.min(1, companionState.messageTimer))
+        love.graphics.printf(companionState.message, px, py + panelH - 36, panelW, "center")
+    end
+
+    love.graphics.setColor(0.5, 0.5, 0.5, 0.5)
+    love.graphics.printf("U to close", px, py + panelH - 18, panelW, "center")
+end
+
+-- =========================================================================
+-- Pet Panel (O key)
+-- =========================================================================
+function game.drawPetPanel(W, H)
+    local font = fonts.ui or _G.getFont(14)
+    local smallFont = fonts.chat or _G.getFont(12)
+    local panelW = 400
+    local panelH = 420
+    local px = (W - panelW) / 2
+    local py = (H - panelH) / 2
+
+    love.graphics.setColor(0.06, 0.08, 0.06, 0.95)
+    love.graphics.rectangle("fill", px, py, panelW, panelH, 8, 8)
+    love.graphics.setColor(0.30, 0.50, 0.30, 0.7)
+    love.graphics.setLineWidth(2)
+    love.graphics.rectangle("line", px, py, panelW, panelH, 8, 8)
+    love.graphics.setLineWidth(1)
+
+    love.graphics.setFont(font)
+    love.graphics.setColor(0.70, 0.90, 0.70, 1)
+    love.graphics.printf("Pets", px, py + 10, panelW, "center")
+
+    love.graphics.setFont(smallFont)
+    local cy = py + 36
+
+    if #petState.pets == 0 then
+        love.graphics.setColor(0.5, 0.5, 0.5, 0.7)
+        love.graphics.printf("No pets tamed. Find creatures in the wild!", px, cy + 20, panelW, "center")
+    else
+        for _, p in ipairs(petState.pets) do
+            if cy + 65 > py + panelH - 30 then break end
+            local isActive = (petState.activePetId == p.id)
+            love.graphics.setColor(isActive and {0.15, 0.22, 0.15, 0.9} or {0.12, 0.14, 0.18, 0.8})
+            love.graphics.rectangle("fill", px + 10, cy, panelW - 20, 58, 4, 4)
+            if isActive then
+                love.graphics.setColor(0.4, 0.8, 0.4, 0.5)
+                love.graphics.setLineWidth(2)
+                love.graphics.rectangle("line", px + 10, cy, panelW - 20, 58, 4, 4)
+                love.graphics.setLineWidth(1)
+            end
+
+            -- Name + type + stage
+            love.graphics.setColor(0.9, 0.9, 0.8, 1)
+            love.graphics.print((p.name or p.type or "???") .. "  Lv" .. (p.level or 1), px + 16, cy + 4)
+            love.graphics.setColor(0.6, 0.7, 0.8, 0.8)
+            love.graphics.print("Stage: " .. (p.stage or 1) .. "  Speed: " .. (p.currentSpeed or p.speed or "?"), px + 16, cy + 20)
+
+            -- Hunger bar
+            local hungerPct = (p.hunger or 50) / 100
+            love.graphics.setColor(0.5, 0.5, 0.6, 0.5)
+            love.graphics.print("Hunger:", px + 16, cy + 36)
+            love.graphics.setColor(0.15, 0.15, 0.2, 0.7)
+            love.graphics.rectangle("fill", px + 80, cy + 38, 60, 8, 3, 3)
+            love.graphics.setColor(0.8, 0.6, 0.2, 0.8)
+            love.graphics.rectangle("fill", px + 80, cy + 38, 60 * hungerPct, 8, 3, 3)
+
+            -- Happiness bar
+            local happyPct = (p.happiness or 50) / 100
+            love.graphics.setColor(0.5, 0.5, 0.6, 0.5)
+            love.graphics.print("Happy:", px + 160, cy + 36)
+            love.graphics.setColor(0.15, 0.15, 0.2, 0.7)
+            love.graphics.rectangle("fill", px + 220, cy + 38, 60, 8, 3, 3)
+            love.graphics.setColor(0.9, 0.4, 0.6, 0.8)
+            love.graphics.rectangle("fill", px + 220, cy + 38, 60 * happyPct, 8, 3, 3)
+
+            -- Feed + Set Active buttons
+            local mx, my = love.mouse.getPosition()
+            local feedX = px + panelW - 120
+            local feedHover = mx >= feedX and mx <= feedX + 50 and my >= cy + 4 and my <= cy + 22
+            love.graphics.setColor(feedHover and {0.3, 0.6, 0.3, 0.9} or {0.18, 0.28, 0.18, 0.7})
+            love.graphics.rectangle("fill", feedX, cy + 4, 50, 18, 3, 3)
+            love.graphics.setColor(0.8, 0.9, 0.8, 1)
+            love.graphics.printf("Feed", feedX, cy + 6, 50, "center")
+
+            local actX = px + panelW - 60
+            local actHover = mx >= actX and mx <= actX + 46 and my >= cy + 4 and my <= cy + 22
+            love.graphics.setColor(actHover and {0.3, 0.4, 0.7, 0.9} or {0.18, 0.18, 0.30, 0.7})
+            love.graphics.rectangle("fill", actX, cy + 4, 46, 18, 3, 3)
+            love.graphics.setColor(0.8, 0.8, 0.95, 1)
+            love.graphics.printf(isActive and "Rest" or "Set", actX, cy + 6, 46, "center")
+
+            cy = cy + 62
+        end
+    end
+
+    if petState.messageTimer > 0 and petState.message then
+        love.graphics.setColor(0.9, 0.9, 0.5, math.min(1, petState.messageTimer))
+        love.graphics.printf(petState.message, px, py + panelH - 36, panelW, "center")
+    end
+
+    love.graphics.setColor(0.5, 0.5, 0.5, 0.5)
+    love.graphics.printf("O to close", px, py + panelH - 18, panelW, "center")
+end
+
+-- =========================================================================
+-- Jail Panel (auto-opens when jailed)
+-- =========================================================================
+function game.drawJailPanel(W, H)
+    local font = fonts.ui or _G.getFont(14)
+    local smallFont = fonts.chat or _G.getFont(12)
+    local panelW = 340
+    local panelH = 260
+    local px = (W - panelW) / 2
+    local py = (H - panelH) / 2
+
+    -- Dark overlay
+    love.graphics.setColor(0, 0, 0, 0.5)
+    love.graphics.rectangle("fill", 0, 0, W, H)
+
+    love.graphics.setColor(0.08, 0.04, 0.04, 0.95)
+    love.graphics.rectangle("fill", px, py, panelW, panelH, 8, 8)
+    love.graphics.setColor(0.50, 0.25, 0.25, 0.7)
+    love.graphics.setLineWidth(2)
+    love.graphics.rectangle("line", px, py, panelW, panelH, 8, 8)
+    love.graphics.setLineWidth(1)
+
+    love.graphics.setFont(font)
+    love.graphics.setColor(0.9, 0.3, 0.3, 1)
+    love.graphics.printf("JAILED", px, py + 12, panelW, "center")
+
+    love.graphics.setFont(smallFont)
+    love.graphics.setColor(0.8, 0.7, 0.6, 1)
+    love.graphics.printf("Crime: " .. (jailState.crimeLabel or jailState.crime or "Unknown"), px + 12, py + 44, panelW - 24, "center")
+
+    -- Timer
+    local elapsed = love.timer.getTime() - jailState.lastUpdate
+    local remaining = math.max(0, (jailState.remainingMs or 0) / 1000 - elapsed)
+    local mins = math.floor(remaining / 60)
+    local secs = math.floor(remaining % 60)
+    love.graphics.setColor(0.9, 0.8, 0.6, 1)
+    love.graphics.printf("Time remaining: " .. string.format("%d:%02d", mins, secs), px, py + 72, panelW, "center")
+
+    -- Bail button
+    local mx, my = love.mouse.getPosition()
+    local bailX = px + panelW / 2 - 80
+    local bailY = py + 120
+    local bailHover = mx >= bailX and mx <= bailX + 160 and my >= bailY and my <= bailY + 36
+    love.graphics.setColor(bailHover and {0.5, 0.4, 0.15, 0.9} or {0.3, 0.25, 0.10, 0.8})
+    love.graphics.rectangle("fill", bailX, bailY, 160, 36, 6, 6)
+    love.graphics.setColor(0.9, 0.8, 0.5, 1)
+    love.graphics.printf("Pay Bail: " .. (jailState.bail or 0) .. "g", bailX, bailY + 8, 160, "center")
+
+    -- Serve time button
+    local serveY = bailY + 48
+    local serveHover = mx >= bailX and mx <= bailX + 160 and my >= serveY and my <= serveY + 36
+    love.graphics.setColor(serveHover and {0.3, 0.3, 0.4, 0.9} or {0.18, 0.18, 0.25, 0.8})
+    love.graphics.rectangle("fill", bailX, serveY, 160, 36, 6, 6)
+    love.graphics.setColor(0.7, 0.7, 0.8, 1)
+    love.graphics.printf("Serve Time", bailX, serveY + 8, 160, "center")
+
+    if jailState.messageTimer > 0 and jailState.message then
+        love.graphics.setColor(0.9, 0.9, 0.5, math.min(1, jailState.messageTimer))
+        love.graphics.printf(jailState.message, px, py + panelH - 30, panelW, "center")
+    end
+end
+
+-- =========================================================================
+-- Ascension Panel (; key)
+-- =========================================================================
+function game.drawAscensionPanel(W, H)
+    local font = fonts.ui or _G.getFont(14)
+    local smallFont = fonts.chat or _G.getFont(12)
+    local tinyFont = fonts.small or _G.getFont(10)
+    local panelW = 500
+    local panelH = 450
+    local px = (W - panelW) / 2
+    local py = (H - panelH) / 2
+
+    love.graphics.setColor(0.04, 0.04, 0.10, 0.95)
+    love.graphics.rectangle("fill", px, py, panelW, panelH, 8, 8)
+    love.graphics.setColor(0.40, 0.35, 0.60, 0.7)
+    love.graphics.setLineWidth(2)
+    love.graphics.rectangle("line", px, py, panelW, panelH, 8, 8)
+    love.graphics.setLineWidth(1)
+
+    love.graphics.setFont(font)
+    love.graphics.setColor(0.80, 0.70, 1.00, 1)
+    love.graphics.printf("Ascension", px, py + 10, panelW, "center")
+
+    -- Stats bar
+    love.graphics.setFont(smallFont)
+    love.graphics.setColor(0.7, 0.7, 0.8, 0.9)
+    love.graphics.printf("Ascensions: " .. (ascensionState.ascensionCount or 0) ..
+        "   AP: " .. (ascensionState.ascensionPoints or 0), px, py + 32, panelW, "center")
+
+    -- Ascend button (if eligible)
+    if ascensionState.canAscend then
+        local mx, my = love.mouse.getPosition()
+        local bx = px + panelW / 2 - 60
+        local by = py + 54
+        local bHover = mx >= bx and mx <= bx + 120 and my >= by and my <= by + 28
+        love.graphics.setColor(bHover and {0.6, 0.4, 0.9, 0.9} or {0.35, 0.25, 0.55, 0.8})
+        love.graphics.rectangle("fill", bx, by, 120, 28, 6, 6)
+        love.graphics.setColor(1, 0.9, 0.5, 1)
+        love.graphics.printf("ASCEND", bx, by + 5, 120, "center")
+    end
+
+    -- Ascension tree
+    local cy = py + 90
+    love.graphics.setFont(smallFont)
+    if ascensionState.tree then
+        local nodeI = 0
+        for nodeId, nodeData in pairs(ascensionState.tree) do
+            if cy + 38 > py + panelH - 30 then break end
+            nodeI = nodeI + 1
+            local rank = (ascensionState.ascensionTree and ascensionState.ascensionTree[nodeId]) or 0
+            local maxRank = nodeData.maxRank or 3
+            local cost = nodeData.cost or 1
+
+            local mx, my = love.mouse.getPosition()
+            local nx = px + 12
+            local nw = panelW - 24
+            local nHover = mx >= nx and mx <= nx + nw and my >= cy and my <= cy + 34
+
+            love.graphics.setColor(nHover and {0.18, 0.18, 0.30, 0.9} or {0.12, 0.12, 0.22, 0.8})
+            love.graphics.rectangle("fill", nx, cy, nw, 34, 4, 4)
+
+            -- Node name + rank
+            local nameColor = rank >= maxRank and {0.5, 0.9, 0.5} or {0.8, 0.8, 0.9}
+            love.graphics.setColor(nameColor[1], nameColor[2], nameColor[3], 1)
+            love.graphics.print((nodeData.name or nodeId), nx + 8, cy + 2)
+
+            love.graphics.setColor(0.6, 0.6, 0.7, 0.8)
+            love.graphics.print("Rank: " .. rank .. "/" .. maxRank .. "  Cost: " .. cost .. " AP", nx + 8, cy + 18)
+
+            -- Description
+            if nodeData.desc then
+                love.graphics.setColor(0.5, 0.5, 0.6, 0.7)
+                love.graphics.printf(nodeData.desc, nx + 200, cy + 4, nw - 210, "left")
+            end
+
+            -- Invest indicator
+            if nHover and rank < maxRank and (ascensionState.ascensionPoints or 0) >= cost then
+                love.graphics.setColor(0.9, 0.8, 0.3, 0.9)
+                love.graphics.printf("Click to invest", nx, cy + 8, nw - 8, "right")
+            end
+
+            cy = cy + 38
+        end
+    else
+        love.graphics.setColor(0.5, 0.5, 0.5, 0.7)
+        love.graphics.printf("Reach level 100 to unlock ascension", px, cy + 20, panelW, "center")
+    end
+
+    if ascensionState.messageTimer > 0 and ascensionState.message then
+        love.graphics.setColor(0.9, 0.9, 0.5, math.min(1, ascensionState.messageTimer))
+        love.graphics.printf(ascensionState.message, px, py + panelH - 36, panelW, "center")
+    end
+
+    love.graphics.setColor(0.5, 0.5, 0.5, 0.5)
+    love.graphics.printf("; to close", px, py + panelH - 18, panelW, "center")
+end
+
+-- =========================================================================
+-- Guild Panel (G key)
+-- =========================================================================
+function game.drawGuildPanel(W, H)
+    local font = fonts.ui or _G.getFont(14)
+    local smallFont = fonts.chat or _G.getFont(12)
+    local panelW = 500
+    local panelH = 460
+    local px = (W - panelW) / 2
+    local py = (H - panelH) / 2
+
+    love.graphics.setColor(0.06, 0.06, 0.08, 0.95)
+    love.graphics.rectangle("fill", px, py, panelW, panelH, 8, 8)
+    love.graphics.setColor(0.35, 0.35, 0.50, 0.7)
+    love.graphics.setLineWidth(2)
+    love.graphics.rectangle("line", px, py, panelW, panelH, 8, 8)
+    love.graphics.setLineWidth(1)
+
+    love.graphics.setFont(font)
+    love.graphics.setColor(0.80, 0.80, 0.90, 1)
+    love.graphics.printf(guildState.guildName and ("Guild: " .. guildState.guildName) or "Guilds", px, py + 10, panelW, "center")
+
+    -- Tabs
+    love.graphics.setFont(smallFont)
+    local tabs
+    if guildState.guildId then
+        tabs = {"info", "members", "chat", "vault"}
+    else
+        tabs = {"browse", "create"}
+    end
+
+    local tabW = 70
+    local tabStartX = px + 10
+    local tabY = py + 34
+    local mx, my = love.mouse.getPosition()
+    for i, tab in ipairs(tabs) do
+        local tx = tabStartX + (i - 1) * (tabW + 4)
+        local isActive = (guildState.tab == tab)
+        local tHover = mx >= tx and mx <= tx + tabW and my >= tabY and my <= tabY + 22
+        love.graphics.setColor(isActive and {0.25, 0.25, 0.40, 0.9} or tHover and {0.18, 0.18, 0.28, 0.8} or {0.12, 0.12, 0.18, 0.6})
+        love.graphics.rectangle("fill", tx, tabY, tabW, 22, 4, 4)
+        love.graphics.setColor(isActive and {1, 0.9, 0.6} or {0.7, 0.7, 0.8})
+        love.graphics.printf(tab:sub(1,1):upper() .. tab:sub(2), tx, tabY + 3, tabW, "center")
+    end
+
+    local contentY = tabY + 28
+    local contentH = panelH - (contentY - py) - 24
+
+    if guildState.tab == "browse" then
+        -- Browse available guilds
+        local cy = contentY
+        if #guildState.guildList == 0 then
+            love.graphics.setColor(0.5, 0.5, 0.5, 0.7)
+            love.graphics.printf("No guilds found", px, cy + 20, panelW, "center")
+        else
+            for _, g in ipairs(guildState.guildList) do
+                if cy + 36 > contentY + contentH then break end
+                local gHover = mx >= px + 10 and mx <= px + panelW - 10 and my >= cy and my <= cy + 32
+                love.graphics.setColor(gHover and {0.18, 0.20, 0.30, 0.9} or {0.12, 0.14, 0.20, 0.7})
+                love.graphics.rectangle("fill", px + 10, cy, panelW - 20, 32, 4, 4)
+                love.graphics.setColor(0.9, 0.85, 0.7, 1)
+                love.graphics.print(g.name or "???", px + 16, cy + 2)
+                love.graphics.setColor(0.6, 0.6, 0.7, 0.8)
+                love.graphics.print("Leader: " .. (g.leaderName or "?") .. "  " .. (g.memberCount or 0) .. "/" .. (g.maxMembers or 50), px + 16, cy + 16)
+                if gHover then
+                    love.graphics.setColor(0.4, 0.8, 0.4, 0.9)
+                    love.graphics.printf("Click to join", px + 10, cy + 8, panelW - 26, "right")
+                end
+                cy = cy + 36
+            end
+        end
+
+    elseif guildState.tab == "create" then
+        -- Create guild form
+        love.graphics.setColor(0.7, 0.7, 0.8, 0.8)
+        love.graphics.print("Guild Name:", px + 20, contentY + 10)
+        love.graphics.setColor(0.12, 0.12, 0.20, 0.9)
+        love.graphics.rectangle("fill", px + 20, contentY + 28, panelW - 40, 24, 4, 4)
+        love.graphics.setColor(0.9, 0.9, 0.9, 1)
+        love.graphics.print(guildState.createName .. (guildState.createActive and "_" or ""), px + 26, contentY + 32)
+
+        local createBx = px + panelW / 2 - 50
+        local createBy = contentY + 70
+        local createHover = mx >= createBx and mx <= createBx + 100 and my >= createBy and my <= createBy + 28
+        love.graphics.setColor(createHover and {0.3, 0.5, 0.3, 0.9} or {0.18, 0.28, 0.18, 0.8})
+        love.graphics.rectangle("fill", createBx, createBy, 100, 28, 6, 6)
+        love.graphics.setColor(0.9, 0.9, 0.7, 1)
+        love.graphics.printf("Create", createBx, createBy + 5, 100, "center")
+
+    elseif guildState.tab == "members" or guildState.tab == "info" then
+        -- Member list
+        local cy = contentY
+        for _, m in ipairs(guildState.members) do
+            if cy + 22 > contentY + contentH then break end
+            local roleColor = m.role == "leader" and {1, 0.85, 0.3} or m.role == "officer" and {0.5, 0.7, 1} or {0.7, 0.7, 0.7}
+            love.graphics.setColor(roleColor[1], roleColor[2], roleColor[3], 1)
+            love.graphics.print((m.name or "???") .. " [" .. (m.role or "member") .. "]", px + 20, cy)
+            cy = cy + 20
+        end
+        if #guildState.members == 0 then
+            love.graphics.setColor(0.5, 0.5, 0.5, 0.7)
+            love.graphics.printf("No members loaded", px, contentY + 20, panelW, "center")
+        end
+
+        -- Leave button
+        local lx = px + panelW - 80
+        local ly = py + panelH - 40
+        local lHover = mx >= lx and mx <= lx + 60 and my >= ly and my <= ly + 22
+        love.graphics.setColor(lHover and {0.6, 0.2, 0.2, 0.9} or {0.3, 0.12, 0.12, 0.7})
+        love.graphics.rectangle("fill", lx, ly, 60, 22, 4, 4)
+        love.graphics.setColor(0.9, 0.6, 0.6, 1)
+        love.graphics.printf("Leave", lx, ly + 3, 60, "center")
+
+    elseif guildState.tab == "chat" then
+        -- Chat messages
+        local cy = contentY
+        for _, msg in ipairs(guildState.messages) do
+            if cy + 16 > contentY + contentH - 30 then break end
+            love.graphics.setColor(0.6, 0.8, 1, 0.9)
+            love.graphics.print(msg.authorName .. ": ", px + 16, cy)
+            love.graphics.setColor(0.8, 0.8, 0.8, 1)
+            love.graphics.print(msg.content, px + 16 + smallFont:getWidth(msg.authorName .. ": "), cy)
+            cy = cy + 16
+        end
+
+        -- Chat input
+        local inputY = contentY + contentH - 24
+        love.graphics.setColor(0.12, 0.12, 0.18, 0.9)
+        love.graphics.rectangle("fill", px + 14, inputY, panelW - 28, 22, 4, 4)
+        love.graphics.setColor(0.8, 0.8, 0.8, 1)
+        love.graphics.print(guildState.chatInput .. (guildState.chatActive and "_" or ""), px + 20, inputY + 3)
+
+    elseif guildState.tab == "vault" then
+        -- Vault contents
+        local cy = contentY
+        if guildState.vault then
+            love.graphics.setColor(0.8, 0.75, 0.5, 0.9)
+            love.graphics.print("Resources:", px + 16, cy)
+            cy = cy + 18
+            if guildState.vault.resources then
+                for resName, amount in pairs(guildState.vault.resources) do
+                    if cy + 14 > contentY + contentH then break end
+                    love.graphics.setColor(0.7, 0.7, 0.7, 0.9)
+                    love.graphics.print("  " .. resName .. ": " .. amount, px + 20, cy)
+                    cy = cy + 14
+                end
+            end
+            cy = cy + 8
+            love.graphics.setColor(0.8, 0.75, 0.5, 0.9)
+            love.graphics.print("Cards: " .. (#(guildState.vault.cards or {})), px + 16, cy)
+        else
+            love.graphics.setColor(0.5, 0.5, 0.5, 0.7)
+            love.graphics.printf("Loading vault...", px, cy + 20, panelW, "center")
+        end
+    end
+
+    if guildState.messageTimer > 0 and guildState.message then
+        love.graphics.setColor(0.9, 0.9, 0.5, math.min(1, guildState.messageTimer))
+        love.graphics.printf(guildState.message, px, py + panelH - 36, panelW, "center")
+    end
+
+    love.graphics.setColor(0.5, 0.5, 0.5, 0.5)
+    love.graphics.printf("] to close", px, py + panelH - 18, panelW, "center")
+end
+
+-- =========================================================================
+-- Crafting Minigame (timing bar)
+-- =========================================================================
+function game.drawCraftingMinigame(W, H)
+    local font = fonts.ui or _G.getFont(14)
+    local smallFont = fonts.chat or _G.getFont(12)
+
+    -- Dark overlay
+    love.graphics.setColor(0, 0, 0, 0.4)
+    love.graphics.rectangle("fill", 0, 0, W, H)
+
+    local barW = 400
+    local barH = 30
+    local panelW = barW + 40
+    local panelH = 120
+    local px = (W - panelW) / 2
+    local py = (H - panelH) / 2
+
+    love.graphics.setColor(0.06, 0.06, 0.10, 0.95)
+    love.graphics.rectangle("fill", px, py, panelW, panelH, 8, 8)
+    love.graphics.setColor(0.45, 0.35, 0.20, 0.7)
+    love.graphics.setLineWidth(2)
+    love.graphics.rectangle("line", px, py, panelW, panelH, 8, 8)
+    love.graphics.setLineWidth(1)
+
+    love.graphics.setFont(font)
+    love.graphics.setColor(0.9, 0.8, 0.5, 1)
+    love.graphics.printf("Crafting — Click in the sweet spot!", px, py + 8, panelW, "center")
+
+    -- Bar background
+    local bx = px + 20
+    local by = py + 40
+    love.graphics.setColor(0.15, 0.15, 0.2, 0.9)
+    love.graphics.rectangle("fill", bx, by, barW, barH, 4, 4)
+
+    -- Sweet spot zone (green)
+    local zoneStart = (minigameState.windowStart / 1000) * barW
+    local zoneEnd = (minigameState.windowEnd / 1000) * barW
+    love.graphics.setColor(0.2, 0.6, 0.2, 0.5)
+    love.graphics.rectangle("fill", bx + zoneStart, by, zoneEnd - zoneStart, barH)
+
+    -- Perfect center (bright green line)
+    local perfectPos = bx + (zoneStart + zoneEnd) / 2
+    love.graphics.setColor(0.4, 1, 0.4, 0.7)
+    love.graphics.rectangle("fill", perfectPos - 1, by, 2, barH)
+
+    -- Moving indicator
+    if not minigameState.result then
+        local indicatorX = bx + (minigameState.barPos / 1000) * barW
+        love.graphics.setColor(1, 0.9, 0.3, 1)
+        love.graphics.rectangle("fill", indicatorX - 2, by - 4, 4, barH + 8, 2, 2)
+    end
+
+    -- Result text
+    if minigameState.result then
+        local rColor
+        if minigameState.result == "perfect" then rColor = {0.3, 1, 0.3}
+        elseif minigameState.result == "good" then rColor = {0.7, 0.9, 0.3}
+        else rColor = {0.9, 0.3, 0.3} end
+        love.graphics.setFont(font)
+        love.graphics.setColor(rColor[1], rColor[2], rColor[3], 1)
+        love.graphics.printf(minigameState.result:upper() .. "!", px, py + panelH - 34, panelW, "center")
+    else
+        love.graphics.setFont(smallFont)
+        love.graphics.setColor(0.6, 0.6, 0.6, 0.7)
+        love.graphics.printf("Click or press Space to strike!", px, py + panelH - 26, panelW, "center")
+    end
+end
+
+-- =========================================================================
+-- Patrol Units (overworld markers)
+-- =========================================================================
+function game.drawPatrolUnits()
+    local smallFont = fonts.small or _G.getFont(10)
+    love.graphics.setFont(smallFont)
+    for _, patrol in pairs(patrolUnits) do
+        local px = patrol.x or 0
+        local py = patrol.y or 0
+        -- Shield icon (triangle + circle)
+        love.graphics.setColor(0.3, 0.5, 0.8, 0.8)
+        love.graphics.circle("fill", px, py, 8)
+        love.graphics.setColor(0.5, 0.7, 1, 0.9)
+        love.graphics.circle("line", px, py, 8)
+        -- Label
+        love.graphics.setColor(0.6, 0.7, 0.9, 0.8)
+        love.graphics.printf(patrol.name or "Patrol", px - 30, py - 18, 60, "center")
+    end
+end
+
+-- =========================================================================
+-- Notifications (guard warnings, durability, dungeon events)
+-- =========================================================================
+function game.drawNotifications(W, H)
+    if #notifications == 0 then return end
+    local font = fonts.chat or fonts.main or _G.getFont(12)
+    love.graphics.setFont(font)
+    local cy = 60
+    for _, n in ipairs(notifications) do
+        local alpha = math.min(1, n.timer / (n.maxTimer * 0.3))
+        love.graphics.setColor(0, 0, 0, 0.6 * alpha)
+        local tw = font:getWidth(n.text) + 20
+        love.graphics.rectangle("fill", (W - tw) / 2, cy - 2, tw, 20, 4, 4)
+        love.graphics.setColor(n.color[1], n.color[2], n.color[3], alpha)
+        love.graphics.printf(n.text, 0, cy, W, "center")
+        cy = cy + 24
+    end
 end
 
 function game.mousereleased(x, y, button)

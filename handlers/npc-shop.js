@@ -236,6 +236,7 @@ var purchaseLocks = new Set();
 
 // Start price ticker
 priceTickTimer = setInterval(tickPrices, TICK_INTERVAL_MS);
+priceTickTimer.unref();
 
 // ---------------------------------------------------------------------------
 // Handler
