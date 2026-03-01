@@ -628,7 +628,7 @@ function Client:_startReconnect(reason)
     self._reconnect.attempt = self._reconnect.attempt + 1
     -- Exponential backoff: base * 2^(attempt-1), capped at maxDelay
     local delay = math.min(
-        self._reconnect.baseDelay * math.pow(2, self._reconnect.attempt - 1),
+        self._reconnect.baseDelay * (2 ^ (self._reconnect.attempt - 1)),
         self._reconnect.maxDelay
     )
     -- Add jitter: +/- jitterFactor * delay

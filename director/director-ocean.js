@@ -668,6 +668,9 @@ function initiateLeviathanCombat(socketId, leviathan, io) {
       }
     },
     onCombatEnd: function(combat, result) {
+      // Clean up combat tracking
+      if (combat && combat.id) _combatLeviathans.delete(combat.id);
+      else if (combatId) _combatLeviathans.delete(combatId);
       if (result === 'victory') {
         handleLeviathanKill(levUid, memberIds, io);
       }

@@ -37,7 +37,7 @@ setInterval(() => {
       usedChallengeTimestamps.delete(ch);
     }
   }
-}, CLEANUP_INTERVAL_MS);
+}, CLEANUP_INTERVAL_MS).unref();
 
 /**
  * Generate a new PoW challenge.

@@ -110,7 +110,7 @@ function _getSocketsForAccount(accountKey) {
 const sessionTokens = new Map();
 
 // Periodic session token cleanup (remove tokens older than 24 hours)
-setInterval(function() {
+var _sessionCleanupTimer = setInterval(function() {
   var now = Date.now();
   var maxAge = 24 * 60 * 60 * 1000;
   for (var _ref of sessionTokens) {
@@ -120,6 +120,7 @@ setInterval(function() {
     }
   }
 }, 60 * 60 * 1000);
+_sessionCleanupTimer.unref();
 
 // Concurrent connection tracking: Map<ip, Set<socketId>>
 const MAX_CONCURRENT_PER_IP = 3;
@@ -138,11 +139,11 @@ function setupSocket(io) {
   // Cleanup expired accounts every 6 hours
   setInterval(function() {
     accounts.cleanupExpiredAccounts();
-  }, 6 * 60 * 60 * 1000);
-  setTimeout(function() { accounts.cleanupExpiredAccounts(); }, 30000);
+  }, 6 * 60 * 60 * 1000).unref();
+  setTimeout(function() { accounts.cleanupExpiredAccounts(); }, 30000).unref();
 
   // Run background re-encryption once on startup
-  setTimeout(function() { accounts.reencryptAccounts(); }, 60000);
+  setTimeout(function() { accounts.reencryptAccounts(); }, 60000).unref();
 
   // Broadcast server stats every 30 seconds
   setInterval(function() {
@@ -161,7 +162,7 @@ function setupSocket(io) {
       }
     }
     io.emit('server_stats', stats);
-  }, 30000);
+  }, 30000).unref();
 
   io.on('connection', async (socket) => {
     // Debug: log Engine.IO transport events (only when DEBUG env var is set)
@@ -368,6 +369,11 @@ function setupSocket(io) {
       _linkSocket(socket.id, accountKey);
       linkedAccount.lastSeen = Date.now();
       accounts.saveAccount(linkedAccount);
+
+      // Rejoin guild room if in a guild
+      if (linkedAccount.guildId) {
+        socket.join('guild:' + linkedAccount.guildId);
+      }
     }
 
     // Auto-create permanent account for new players (key assigned by server)

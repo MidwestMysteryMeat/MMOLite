@@ -70,7 +70,7 @@ setInterval(function() {
     }
     if (events.size === 0) _socketCooldowns.delete(sid);
   }
-}, 120000);
+}, 120000).unref();
 
 /**
  * Remove all cooldown state for a socket (call on disconnect).

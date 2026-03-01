@@ -3,6 +3,7 @@
 -- Displays character cards, allows Play/New Character/Rename/Delete/Back.
 
 local net = require("lib.net")
+local audio = require("lib.audio")
 
 local charSelect = {}
 
@@ -265,8 +266,7 @@ function charSelect.load()
             end
         end)
 
-        -- Note: we don't off("identity") here since other scenes share it.
-        -- The isCharacterSwitch guard prevents duplicate processing.
+        client:off("identity")
         client:on("identity", function(data)
             print("[charSelect] identity event: isCharacterSwitch=" .. tostring(data and data.isCharacterSwitch))
             if data and data.isCharacterSwitch then
@@ -1025,6 +1025,7 @@ end
 
 function charSelect.mousepressed(x, y, button)
     if button ~= 1 then return end
+    audio.playClick()
 
     if showDeleteConfirm then
         if pointInRect(x, y, deleteConfirmBtn) then
@@ -1312,6 +1313,20 @@ function charSelect.resize(w, h)
     fonts.main = love.graphics.newFont(14)
     fonts.small = love.graphics.newFont(12)
     fonts.button = love.graphics.newFont(16)
+end
+
+function charSelect.unload()
+    local c = _G.gameClient
+    if c then
+        c:off("character_list_result")
+        c:off("character_created")
+        c:off("character_deleted")
+        c:off("character_switch_result")
+        c:off("name_lists")
+        c:off("character_renamed")
+        c:off("hall_of_heroes_result")
+        c:off("identity")
+    end
 end
 
 return charSelect

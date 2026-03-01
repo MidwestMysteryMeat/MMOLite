@@ -147,6 +147,7 @@ function startHeartbeat(getPlayerCount) {
   beat();
   // Repeat every 30s
   heartbeatInterval = setInterval(beat, 30000);
+  heartbeatInterval.unref();
   console.log('[shard-bridge] Heartbeat started -> ' + config.masterServerUrl);
 }
 
@@ -154,6 +155,10 @@ function stopHeartbeat() {
   if (heartbeatInterval) {
     clearInterval(heartbeatInterval);
     heartbeatInterval = null;
+  }
+  if (saveInterval) {
+    clearInterval(saveInterval);
+    saveInterval = null;
   }
   if (isMasterMode) {
     // Deregister on shutdown
@@ -268,6 +273,7 @@ function saveAllCharacters() {
 var saveInterval = null;
 if (isMasterMode) {
   saveInterval = setInterval(saveAllCharacters, 2 * 60 * 1000);
+  saveInterval.unref();
 }
 
 // ---------------------------------------------------------------------------

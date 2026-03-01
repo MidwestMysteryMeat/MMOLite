@@ -474,7 +474,7 @@ function _findNearestTown(cx, cy) {
   return best;
 }
 
-function _checkHordes(io, state) {
+function _checkHordes(io, state, accounts, socketAccountMap) {
   var now = Date.now();
   if (now - lastHordeCheck < HORDE_SPAWN_INTERVAL) return;
   lastHordeCheck = now;
@@ -554,7 +554,7 @@ function _checkHordes(io, state) {
         if (state && state.zones) {
           state.zones.forEach(function(zone, zoneId) {
             if (zone && zone.type === 'plot' && zone.ownerKey && Math.random() < 0.10) {
-              baseRaids.triggerCorruptionRaid(io, state, null, null, zoneId);
+              baseRaids.triggerCorruptionRaid(io, state, accounts, socketAccountMap, zoneId);
             }
           });
         }
@@ -785,7 +785,7 @@ function tick(io, state, accounts, socketAccountMap) {
   _tickCapitalNarrative(io);
 
   // Horde checks (3x rate near capital when corrupted)
-  _checkHordes(io, state);
+  _checkHordes(io, state, accounts, socketAccountMap);
 
   // Apply debuffs to players in corrupted overworld chunks
   if (state && state.playerZones && state.playerPositions) {
@@ -895,6 +895,13 @@ function loadState(saved) {
     // Ensure remainingMs doesn't go below 0 after server restart
     if (doomCountdown.active && doomCountdown.expiresAt) {
       doomCountdown.remainingMs = Math.max(0, doomCountdown.expiresAt - Date.now());
+      if (doomCountdown.remainingMs === 0) {
+        // Server was down past expiry — don't auto-doom on restart; reset
+        doomCountdown.active = false;
+        doomCountdown.expiresAt = null;
+        doomCountdown.remainingMs = 0;
+        console.log('[lich] Doom countdown expired during downtime — reset instead of auto-triggering');
+      }
     }
   }
   if (saved.lichDefeatedMonth !== undefined) lichDefeatedMonth = saved.lichDefeatedMonth;

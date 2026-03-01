@@ -99,7 +99,10 @@ module.exports = {
         var amount = Math.floor(data.amount);
         if (amount < 1) { socket.emit('bank_error', { message: 'Invalid amount' }); return; }
         if (acc.chips < amount) { socket.emit('bank_error', { message: 'Not enough gold' }); return; }
-        acc.chips -= amount;
+        accounts.updateChips(key, -amount);
+        acc = accounts.loadAccount(key);
+        if (!acc) return;
+        _ensureVault(acc);
         acc.bankVault.gold += amount;
         accounts.saveAccount(acc);
         socket.emit('bank_result', {
@@ -132,8 +135,9 @@ module.exports = {
         if (amount < 1) { socket.emit('bank_error', { message: 'Invalid amount' }); return; }
         if (acc.bankVault.gold < amount) { socket.emit('bank_error', { message: 'Not enough gold in bank' }); return; }
         acc.bankVault.gold -= amount;
-        acc.chips += amount;
         accounts.saveAccount(acc);
+        accounts.updateChips(key, amount);
+        acc = accounts.loadAccount(key);
         socket.emit('bank_result', {
           success: true, action: 'withdraw_gold',
           bank: _bankContentsPayload(acc.bankVault),
@@ -163,6 +167,8 @@ module.exports = {
         if (!acc) return;
         var result = accounts.removeResource(key, data.resource, amount);
         if (!result) { socket.emit('bank_error', { message: 'Not enough resources' }); return; }
+        acc = accounts.loadAccount(key);
+        if (!acc) return;
         _ensureVault(acc);
         acc.bankVault.resources[data.resource] = (acc.bankVault.resources[data.resource] || 0) + amount;
         accounts.saveAccount(acc);

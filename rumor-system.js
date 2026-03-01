@@ -43,7 +43,8 @@ var RARITIES = ['Legendary','Mythic Rare','Godly','Relic'];
 var RESOURCES = ['iron','wood','mana crystals','gem','fish'];
 var FACTION_NAMES = ['Holy Dominion','Veiled Hand','Luminary Inquest','Iron Vanguard','Merchant League','Rift Wardens'];
 var RACE_NAMES = ['Human','Elf','Dwarf','Orc','Gnome','Goblin','Lizard Folk','Cat Folk'];
-var TOWN_NAMES = ['The Holy Dominion','Solara','Sylvaris','Ironhold','Kragmor','BoneTrap','Murkmire','Mechspire'];
+var TOWN_DISPLAY_NAMES = ['The Holy Dominion','Solara','Sylvaris','Ironhold','Kragmor','BoneTrap','Murkmire','Mechspire'];
+var TOWN_IDS = ['starter_town','solara','sylvaris','ironhold','kragmor','bonetrap','murkmire','mechspire'];
 var BIOME_NAMES = ['forest','swamp','mountain','coastal','tundra','desert','plains'];
 
 // Generate rumors per town -- called on server startup and periodically
@@ -67,7 +68,7 @@ function _fillTemplate(template, vars) {
         return _pool.length > 0 ? _pool[Math.floor(Math.random() * _pool.length)] : FACTION_NAMES[0];
       }
       case 'race': return RACE_NAMES[Math.floor(Math.random() * RACE_NAMES.length)];
-      case 'town': return TOWN_NAMES[Math.floor(Math.random() * TOWN_NAMES.length)];
+      case 'town': return TOWN_DISPLAY_NAMES[Math.floor(Math.random() * TOWN_DISPLAY_NAMES.length)];
       case 'biome': return BIOME_NAMES[Math.floor(Math.random() * BIOME_NAMES.length)];
       case 'floor': return String(Math.floor(Math.random() * 20) + 1);
       case 'guild': return 'The ' + ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)] + ' Company';
@@ -110,7 +111,7 @@ function getTownRumors(townId) {
 }
 
 function refreshAllTownRumors(worldState) {
-  TOWN_NAMES.forEach(function(t) { generateTownRumors(t, worldState); });
+  TOWN_IDS.forEach(function(t) { generateTownRumors(t, worldState); });
 }
 
 /**

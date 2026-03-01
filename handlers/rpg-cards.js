@@ -284,6 +284,8 @@ module.exports = {
       _cardVendorLocks.add(key);
       try {
         accounts.updateChips(key, -price);
+        acc = accounts.loadAccount(key);
+        if (!acc) return;
 
         var cardInstance = rpgData.generateCardInstance(template, 'vendor');
         if (!acc.rpgCards) acc.rpgCards = [];

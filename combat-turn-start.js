@@ -189,10 +189,10 @@ function startPlayerTurn(combat, unitIds) {
           // Check poison immunity on the target
           if (!hasImmunity(paTarget, 'poison')) {
             paTarget.hp -= poisonAuraValue;
-            if (paTarget.hp <= 0) {
-              paTarget.alive = false;
+            var paKilled = paTarget.hp <= 0;
+            if (paKilled) {
               paTarget.hp = 0;
-              handleUnitDeath(combat, paTarget.id, unit.id);
+              paTarget.alive = false;
             }
             if (combat.callbacks.broadcastToFloor) {
               combat.callbacks.broadcastToFloor('tc_combat_passive_damage', {
@@ -200,10 +200,13 @@ function startPlayerTurn(combat, unitIds) {
                 sourceId: unit.id,
                 targetId: paTarget.id,
                 damage: poisonAuraValue,
-                targetHp: Math.max(0, paTarget.hp),
+                targetHp: paKilled ? 0 : paTarget.hp,
                 targetMaxHp: paTarget.maxHp,
                 passive: 'poison_aura',
               });
+            }
+            if (paKilled) {
+              handleUnitDeath(combat, paTarget.id, unit.id);
             }
           }
         }
@@ -519,7 +522,7 @@ function startPlayerTurn(combat, unitIds) {
           } else if (gz.type === 'fire_totem' && gzUnit.type !== gz.ownerType) {
             var gzFireDmg = gz.damagePerTurn || 8;
             gzUnit.hp -= gzFireDmg;
-            if (gzUnit.hp <= 0) { gzUnit.alive = false; gzUnit.hp = 0; handleUnitDeath(combat, gzUnit.id, gz.sourceId); }
+            if (gzUnit.hp <= 0) { gzUnit.hp = 0; gzUnit.alive = false; handleUnitDeath(combat, gzUnit.id, gz.sourceId); }
           } else if (gz.type === 'earthen_ward_totem' && gzUnit.type === gz.ownerType) {
             if (!gzUnit.statusEffects) gzUnit.statusEffects = [];
             // Only apply if not already present
@@ -533,7 +536,7 @@ function startPlayerTurn(combat, unitIds) {
           } else if (gz.type === 'salted_earth' && gzUnit.type !== gz.ownerType) {
             var gzShadowDmg = gz.damagePerTurn || 6;
             gzUnit.hp -= gzShadowDmg;
-            if (gzUnit.hp <= 0) { gzUnit.alive = false; gzUnit.hp = 0; handleUnitDeath(combat, gzUnit.id, gz.sourceId); }
+            if (gzUnit.hp <= 0) { gzUnit.hp = 0; gzUnit.alive = false; handleUnitDeath(combat, gzUnit.id, gz.sourceId); }
           }
         }
       }

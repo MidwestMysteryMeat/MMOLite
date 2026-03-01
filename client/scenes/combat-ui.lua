@@ -3,6 +3,8 @@
 -- Renders initiative bar, action bar, tile overlays, unit overlays, HUD, banners, timers
 -- Part of MMOLite client
 
+local audio = require("lib.audio")
+
 local combatUI = {}
 
 -- ============================================================================
@@ -1271,14 +1273,17 @@ function combatUI.handleClick(x, y, cameraX, cameraY)
                 if actions[i] == "wait" then
                     selectedAction = nil
                     abilityRange = {}
+                    audio.playClick()
                     return { type = "wait", data = {} }
                 elseif actions[i] == "end_turn" then
                     selectedAction = nil
                     abilityRange = {}
+                    audio.playClick()
                     return { type = "end_turn", data = {} }
                 else
                     selectedAction = actions[i]
                     updateAbilityRangeForAction(selectedAction)
+                    audio.playClick()
                     return nil -- action selected, waiting for tile target
                 end
             end
@@ -1308,6 +1313,7 @@ function combatUI.handleClick(x, y, cameraX, cameraY)
             local target = getUnitAt(tileX, tileY)
             if target and isEnemy(target) then
                 selectedAction = nil
+                audio.playSwordDraw()
                 return { type = "attack", data = { targetId = target.id, x = tileX, y = tileY } }
             end
         end
@@ -1426,6 +1432,7 @@ function combatUI.showTurnBanner(text)
         elapsed = 0,
         duration = 0.8,
     }
+    audio.playTurnBanner()
 end
 
 function combatUI.setMyTurn(isTurn, turnData)

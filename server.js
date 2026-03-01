@@ -336,11 +336,11 @@ function proxyToMaster(req, res) {
     proxyRes.pipe(res, { end: true });
   });
   proxyReq.on('error', function(err) {
-    res.status(502).json({ error: 'Master server unavailable: ' + err.message });
+    if (!res.headersSent) res.status(502).json({ error: 'Master server unavailable: ' + err.message });
   });
   proxyReq.on('timeout', function() {
     proxyReq.destroy();
-    res.status(504).json({ error: 'Master server timeout' });
+    if (!res.headersSent) res.status(504).json({ error: 'Master server timeout' });
   });
   if (postData) proxyReq.write(postData);
   proxyReq.end();
@@ -517,8 +517,8 @@ setInterval(function() {
               var bucket = chunkBuckets.get(ncx + ',' + ncy);
               if (!bucket) continue;
               for (var bi = 0; bi < bucket.length; bi++) {
-                var entry = bucket[bi];
-                nearby.push({ id: entry.id, x: entry.pos.x, y: entry.pos.y, f: entry.pos.facing });
+                var bEntry = bucket[bi];
+                nearby.push({ id: bEntry.id, x: bEntry.pos.x, y: bEntry.pos.y, f: bEntry.pos.facing });
               }
             }
           }
@@ -766,6 +766,7 @@ server.listen(PORT, () => {
         var buf = Buffer.from(packet);
         udpBroadcast.send(buf, 0, buf.length, 5050, '255.255.255.255');
       }, 3000);
+      broadcastInterval.unref();
 
       console.log('[server] LAN broadcast started on UDP port 5050');
 

@@ -690,35 +690,31 @@ module.exports = {
           }
         }
 
-        // Execute purchase — record sale for dynamic pricing
-        _recordSale(listing);
-        removeListing(data.listingId);
-
         var effectiveFee = getDynamicFee(listing.sellerKey, listing);
         var fee = Math.ceil(listing.price * effectiveFee / 100);
         var sellerProceeds = listing.price - fee;
 
-        // Deduct buyer (re-verify balance atomically to prevent race condition BUG-3)
+        // Re-verify balance before committing
         var freshAcc = accounts.loadAccount(key);
         if (!freshAcc || (freshAcc.chips || 0) < listing.price) {
-          // Balance changed between check and deduction — restore listing
-          addListing(listing);
           socket.emit('mmo_auction_error', { message: 'Not enough coins (balance changed)' });
           return;
         }
 
-        // Re-check card capacity with fresh account (may have changed)
+        // Re-check card capacity with fresh account
         if (listing.listingType === 'card' && listing.cardData) {
           if (!freshAcc.rpgCards) freshAcc.rpgCards = [];
           if (freshAcc.rpgCards.length >= rpgData.MAX_CARD_COLLECTION) {
-            addListing(listing);
             socket.emit('mmo_auction_error', { message: 'Card collection full (' + rpgData.MAX_CARD_COLLECTION + ' max)' });
             return;
           }
         }
 
+        // All checks passed — commit: remove listing, record sale, transfer
+        removeListing(data.listingId);
+        _recordSale(listing);
+
         accounts.updateChips(key, -listing.price);
-        // Pay seller
         accounts.updateChips(listing.sellerKey, sellerProceeds);
 
         // Transfer item to buyer
@@ -732,7 +728,15 @@ module.exports = {
             accounts.saveAccount(buyerAcc);
           }
         } else if (listing.listingType === 'resource') {
-          accounts.addResource(key, listing.resourceType, listing.amount);
+          var resourceResult = accounts.addResource(key, listing.resourceType, listing.amount);
+          if (resourceResult && resourceResult.error) {
+            // Refund buyer and seller
+            accounts.updateChips(key, listing.price);
+            accounts.updateChips(listing.sellerKey, -sellerProceeds);
+            addListing(listing);
+            socket.emit('mmo_auction_error', { message: resourceResult.error });
+            return;
+          }
         }
 
         socket.emit('mmo_auction_bought', {

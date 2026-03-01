@@ -90,6 +90,7 @@ function executeBasicAttack(combat, attackerId, targetId) {
   // --- Hound Form: Guard intercept -- 20% chance to redirect attack to hound ---
   if (attacker.type === 'enemy' && target.type === 'player') {
     var guardAllies = getUnitsInRadius(combat, target.x, target.y, 3);
+    var intercepted = false;
     for (var gai = 0; gai < guardAllies.length; gai++) {
       var gAlly = guardAllies[gai];
       if (gAlly.id === target.id || gAlly.type !== target.type || !gAlly.alive) continue;
@@ -101,12 +102,13 @@ function executeBasicAttack(combat, attackerId, targetId) {
               target = gAlly;
               targetId = gAlly.id;
               dist = chebyshevDist(attacker.x, attacker.y, target.x, target.y);
+              intercepted = true;
             }
             break;
           }
         }
       }
-      if (target.id !== targetId) break; // Already intercepted
+      if (intercepted) break;
     }
   }
 

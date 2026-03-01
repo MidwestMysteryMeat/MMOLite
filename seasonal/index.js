@@ -35,6 +35,10 @@ var _cache = null;
 var _currentSeed = null;
 var _currentSeason = null;
 
+// Baseline snapshots taken before any seasonal overrides are applied
+var _baselineSkills = null;
+var _baselineDialogues = null;
+
 // Generator modules
 var generators = {
   crops: seasonalCrops,
@@ -98,19 +102,31 @@ function apply() {
 
   var rpgData = require('../rpg-data');
 
-  // Seasonal skills are additive — merge into existing SKILL_DEFINITIONS
+  // Snapshot baselines on first apply so subsequent season changes don't accumulate
+  if (!_baselineSkills && rpgData.SKILL_DEFINITIONS) {
+    _baselineSkills = {};
+    for (var bsk in rpgData.SKILL_DEFINITIONS) _baselineSkills[bsk] = rpgData.SKILL_DEFINITIONS[bsk];
+  }
+  if (!_baselineDialogues && rpgData.NPC_DIALOGUES) {
+    _baselineDialogues = {};
+    for (var bdk in rpgData.NPC_DIALOGUES) _baselineDialogues[bdk] = rpgData.NPC_DIALOGUES[bdk];
+  }
+
+  // Seasonal skills are additive — merge into baseline (not mutated rpgData)
   if (_cache.skills && _cache.skills.SEASONAL_SKILLS) {
     var merged = {};
-    for (var sk in rpgData.SKILL_DEFINITIONS) merged[sk] = rpgData.SKILL_DEFINITIONS[sk];
+    var baseSkills = _baselineSkills || rpgData.SKILL_DEFINITIONS;
+    for (var sk in baseSkills) merged[sk] = baseSkills[sk];
     var seasonal = _cache.skills.SEASONAL_SKILLS;
     for (var sk in seasonal) merged[sk] = seasonal[sk];
     rpgOverrides.SKILL_DEFINITIONS = merged;
   }
 
-  // Seasonal dialogues are additive — merge into existing NPC_DIALOGUES
+  // Seasonal dialogues are additive — merge into baseline (not mutated rpgData)
   if (_cache.dialogue && _cache.dialogue.NPC_DIALOGUES) {
     var mergedDialogues = {};
-    for (var dk in rpgData.NPC_DIALOGUES) mergedDialogues[dk] = rpgData.NPC_DIALOGUES[dk];
+    var baseDlg = _baselineDialogues || rpgData.NPC_DIALOGUES;
+    for (var dk in baseDlg) mergedDialogues[dk] = baseDlg[dk];
     var seasonalDialogues = _cache.dialogue.NPC_DIALOGUES;
     for (var dk in seasonalDialogues) mergedDialogues[dk] = seasonalDialogues[dk];
     rpgOverrides.NPC_DIALOGUES = mergedDialogues;

@@ -39,12 +39,8 @@ function arrestPlayer(account, crime, jailZoneId) {
 function isJailed(account) {
   if (!account || !account.jailState) return false;
   if (!account.jailState.inJail) return false;
-  // Check if sentence already expired
-  if (Date.now() >= account.jailState.releasedAt) {
-    account.jailState.inJail = false;
-    return false;
-  }
-  return true;
+  // Pure check — does not mutate account (callers handle persistence)
+  return Date.now() < account.jailState.releasedAt;
 }
 
 function releasePlayer(account) {
@@ -75,6 +71,10 @@ function init(io, socket, deps) {
     if (!account) return;
 
     if (!isJailed(account)) {
+      if (account.jailState && account.jailState.inJail) {
+        account.jailState.inJail = false;
+        accounts.saveAccount(account);
+      }
       socket.emit('jail_status', { inJail: false });
       return;
     }

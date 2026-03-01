@@ -63,7 +63,7 @@ setInterval(() => {
       logSecurity('ban_expired', { ip: ip });
     }
   }
-}, CLEANUP_INTERVAL_MS);
+}, CLEANUP_INTERVAL_MS).unref();
 
 /**
  * Check if an IP is currently banned.

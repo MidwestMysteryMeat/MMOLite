@@ -5,6 +5,7 @@
 
 local net = require("lib.net")
 local sha256 = require("lib.sha256")
+local audio = require("lib.audio")
 
 local login = {}
 
@@ -466,6 +467,7 @@ end
 
 function login.mousepressed(x, y, button)
     if button ~= 1 then return end
+    audio.playClick()
 
     local W = love.graphics.getWidth()
 
@@ -728,6 +730,14 @@ function login.finishConnect()
 
     -- Connect via Socket.IO
     local client = net.Client.new()
+
+    -- Clear any stale listeners from a previous connection cycle
+    client:off("connect")
+    client:off("identity")
+    client:off("connect_error")
+    client:off("error")
+    client:off("pin_required")
+    client:off("password_required")
 
     client:on("connect", function(data)
         statusMsg = "Connected! Loading..."

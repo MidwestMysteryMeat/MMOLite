@@ -230,14 +230,21 @@ function handleRaidWipe(zoneId, io) {
   rs.barrierActive = true;
   rs.boss.invincible = true;
 
-  // Reset boss to current phase HP (not full HP)
-  var currentPhase = rs.boss.currentPhase;
-  if (currentPhase > 0 && rs.boss.phases[currentPhase - 1]) {
-    var phaseHpPct = rs.boss.phases[currentPhase - 1].hpThreshold;
-    rs.boss.hp = Math.floor(rs.boss.maxHp * phaseHpPct);
+  // Reset boss to current phase HP (not full HP) — compute phase from actual HP at wipe
+  var hpPct = rs.boss.hp / rs.boss.maxHp;
+  var effectivePhase = 0;
+  for (var pi = 0; pi < rs.boss.phases.length; pi++) {
+    if (hpPct <= rs.boss.phases[pi].hpThreshold) {
+      effectivePhase = pi + 1;
+      break;
+    }
+  }
+  if (effectivePhase > 0 && rs.boss.phases[effectivePhase - 1]) {
+    rs.boss.hp = Math.floor(rs.boss.maxHp * rs.boss.phases[effectivePhase - 1].hpThreshold);
   } else {
     rs.boss.hp = rs.boss.maxHp;
   }
+  rs.boss.currentPhase = effectivePhase;
 
   if (io) {
     io.to('zone:' + zoneId).emit('raid_boss_wipe', {
