@@ -94,7 +94,7 @@ var WEAPON_TYPES = {
 
   // ===== STAFFS (magic, magicDamage focus) =====
   wooden_staff:   { slot: 'weapon', category: 'magic', damage: 4,  speed: 1.0, magicDamage: 12, handedness: '2h', name: 'Wooden Staff',   rarity: 'common',    icon: 'weapons/staff_1.PNG' },
-  copper_staff:   { slot: 'weapon', category: 'magic', damage: 5,  speed: 1.0, magicDamage: 16, handedness: '2h', name: 'Copper Staff',   rarity: 'common',    icon: 'weapons/Staff_05.PNG' },
+  copper_staff:   { slot: 'weapon', category: 'magic', damage: 5,  speed: 1.0, magicDamage: 16, handedness: '2h', name: 'Copper Staff',   rarity: 'common',    icon: 'weapons/staff_5.PNG' },
   bronze_staff:   { slot: 'weapon', category: 'magic', damage: 6,  speed: 1.0, magicDamage: 20, handedness: '2h', name: 'Bronze Staff',   rarity: 'uncommon',  icon: 'weapons/Staff_10.PNG' },
   iron_staff:     { slot: 'weapon', category: 'magic', damage: 7,  speed: 1.0, magicDamage: 24, handedness: '2h', name: 'Iron Staff',     rarity: 'uncommon',  icon: 'weapons/Staff_15.PNG' },
   silver_staff:   { slot: 'weapon', category: 'magic', damage: 8,  speed: 1.05, magicDamage: 30, handedness: '2h', name: 'Silver Staff',  rarity: 'rare',      icon: 'weapons/Staff_25.PNG' },
@@ -103,8 +103,8 @@ var WEAPON_TYPES = {
 
   // ===== WANDS (magic, fast cast, moderate power) =====
   wooden_wand:    { slot: 'weapon', category: 'magic', damage: 2,  speed: 1.2, magicDamage: 8,  handedness: '1h', name: 'Wooden Wand',    rarity: 'common',    icon: 'weapons/Wand.PNG' },
-  copper_wand:    { slot: 'weapon', category: 'magic', damage: 3,  speed: 1.2, magicDamage: 11, handedness: '1h', name: 'Copper Wand',    rarity: 'common',    icon: 'weapons/Staff_02.PNG' },
-  iron_wand:      { slot: 'weapon', category: 'magic', damage: 4,  speed: 1.2, magicDamage: 16, handedness: '1h', name: 'Iron Wand',      rarity: 'uncommon',  icon: 'weapons/Staff_08.PNG' },
+  copper_wand:    { slot: 'weapon', category: 'magic', damage: 3,  speed: 1.2, magicDamage: 11, handedness: '1h', name: 'Copper Wand',    rarity: 'common',    icon: 'weapons/staff_2.PNG' },
+  iron_wand:      { slot: 'weapon', category: 'magic', damage: 4,  speed: 1.2, magicDamage: 16, handedness: '1h', name: 'Iron Wand',      rarity: 'uncommon',  icon: 'weapons/staff_8.PNG' },
   silver_wand:    { slot: 'weapon', category: 'magic', damage: 5,  speed: 1.25, magicDamage: 22, handedness: '1h', name: 'Silver Wand',   rarity: 'rare',      icon: 'weapons/Staff_20.PNG' },
   gold_wand:      { slot: 'weapon', category: 'magic', damage: 6,  speed: 1.2, magicDamage: 28, handedness: '1h', name: 'Gold Wand',      rarity: 'rare',      icon: 'weapons/Staff_35.PNG' },
   mithril_wand:   { slot: 'weapon', category: 'magic', damage: 8,  speed: 1.3, magicDamage: 36, handedness: '1h', name: 'Mithril Wand',   rarity: 'ultra_rare', icon: 'weapons/Staff_40.PNG' },
@@ -145,16 +145,16 @@ var WEAPON_TYPES = {
   mithril_armor:   { slot: 'chest', defense: 28, armorType: 'plate', speedPenalty: 0.02, name: 'Mithril Armor',   rarity: 'ultra_rare', icon: 'armor/KnightChest3.PNG' },
 
   // ===== NECKLACES =====
-  amulet_vigor:     { slot: 'necklace', effects: [{ type: 'stat_boost', stat: 'vigor', value: 2 }], name: 'Amulet of Vigor',      rarity: 'uncommon', icon: 'resourcesandfood/NecklaceCross.PNG' },
-  amulet_might:     { slot: 'necklace', effects: [{ type: 'stat_boost', stat: 'might', value: 2 }], name: 'Amulet of Might',      rarity: 'uncommon', icon: 'resourcesandfood/NecklaceGold.PNG' },
-  pearl_amulet:     { slot: 'necklace', effects: [{ type: 'stat_boost', stat: 'presence', value: 3 }], name: 'Pearl Amulet',      rarity: 'rare',     icon: 'resourcesandfood/Pearl.PNG' },
+  amulet_vigor:     { slot: 'necklace', effects: [{ type: 'stat_boost', stat: 'vigor', value: 2 }], name: 'Amulet of Vigor',      rarity: 'uncommon', icon: 'resources/NecklaceCross.PNG' },
+  amulet_might:     { slot: 'necklace', effects: [{ type: 'stat_boost', stat: 'might', value: 2 }], name: 'Amulet of Might',      rarity: 'uncommon', icon: 'resources/NecklaceGold.PNG' },
+  pearl_amulet:     { slot: 'necklace', effects: [{ type: 'stat_boost', stat: 'presence', value: 3 }], name: 'Pearl Amulet',      rarity: 'rare',     icon: 'resources/Pearl.PNG' },
 
   // ===== RINGS =====
-  ring_finesse:     { slot: 'ring1', effects: [{ type: 'stat_boost', stat: 'finesse', value: 2 }], name: 'Ring of Finesse',    rarity: 'uncommon', icon: 'resourcesandfood/RingSilver.PNG' },
-  ring_acumen:      { slot: 'ring1', effects: [{ type: 'stat_boost', stat: 'acumen', value: 2 }], name: 'Ring of Acumen',      rarity: 'uncommon', icon: 'resourcesandfood/RingGold.PNG' },
-  ring_resolve:     { slot: 'ring1', effects: [{ type: 'stat_boost', stat: 'resolve', value: 2 }], name: 'Ring of Resolve',    rarity: 'uncommon', icon: 'resourcesandfood/RingBronze.PNG' },
-  ring_ingenuity:   { slot: 'ring1', effects: [{ type: 'stat_boost', stat: 'ingenuity', value: 2 }], name: 'Ring of Ingenuity', rarity: 'uncommon', icon: 'resourcesandfood/RingViking.PNG' },
-  gold_ring:        { slot: 'ring1', effects: [{ type: 'stat_boost', stat: 'might', value: 3 }, { type: 'stat_boost', stat: 'vigor', value: 3 }], name: 'Gold Ring of Power', rarity: 'rare', icon: 'resourcesandfood/RingGold2.PNG' },
+  ring_finesse:     { slot: 'ring1', effects: [{ type: 'stat_boost', stat: 'finesse', value: 2 }], name: 'Ring of Finesse',    rarity: 'uncommon', icon: 'resources/RingSilver.PNG' },
+  ring_acumen:      { slot: 'ring1', effects: [{ type: 'stat_boost', stat: 'acumen', value: 2 }], name: 'Ring of Acumen',      rarity: 'uncommon', icon: 'resources/RingGold.PNG' },
+  ring_resolve:     { slot: 'ring1', effects: [{ type: 'stat_boost', stat: 'resolve', value: 2 }], name: 'Ring of Resolve',    rarity: 'uncommon', icon: 'resources/RingBronze.PNG' },
+  ring_ingenuity:   { slot: 'ring1', effects: [{ type: 'stat_boost', stat: 'ingenuity', value: 2 }], name: 'Ring of Ingenuity', rarity: 'uncommon', icon: 'resources/RingViking.PNG' },
+  gold_ring:        { slot: 'ring1', effects: [{ type: 'stat_boost', stat: 'might', value: 3 }, { type: 'stat_boost', stat: 'vigor', value: 3 }], name: 'Gold Ring of Power', rarity: 'rare', icon: 'resources/RingGold2.PNG' },
 
   // ===== CLOTH ARMOR (sewing, mage-friendly, low defense, magic resist) =====
   cloth_hood:     { slot: 'head',  defense: 1, magicResist: 2, armorType: 'cloth', name: 'Cloth Hood',    rarity: 'common',    icon: 'armor/LeatherHelmet.PNG' },
@@ -240,39 +240,39 @@ var WEAPON_TYPES = {
   reinforced_leather_bracers: { slot: 'arms', defense: 5, armorType: 'leather', name: 'Reinforced Leather Bracers', rarity: 'uncommon', icon: 'armor/LeatherChest0.PNG' },
 
   // ===== JEWELCRAFTED RINGS =====
-  silver_ring:     { slot: 'ring1', effects: [{ type: 'stat_boost', stat: 'finesse', value: 2 }], name: 'Silver Ring',     rarity: 'uncommon', icon: 'resourcesandfood/RingSilver.PNG' },
-  gold_ring_craft: { slot: 'ring1', effects: [{ type: 'stat_boost', stat: 'might', value: 3 }], name: 'Gold Ring',        rarity: 'rare',     icon: 'resourcesandfood/RingGold.PNG' },
-  mithril_ring:    { slot: 'ring1', effects: [{ type: 'stat_boost', stat: 'acumen', value: 4 }, { type: 'stat_boost', stat: 'resolve', value: 2 }], name: 'Mithril Ring', rarity: 'ultra_rare', icon: 'resourcesandfood/RingViking.PNG' },
-  enchanted_ring:  { slot: 'ring1', effects: [{ type: 'stat_boost', stat: 'acumen', value: 3 }, { type: 'stat_boost', stat: 'ingenuity', value: 3 }], magicDamage: 5, name: 'Enchanted Ring', rarity: 'rare', icon: 'resourcesandfood/RingGold2.PNG' },
+  silver_ring:     { slot: 'ring1', effects: [{ type: 'stat_boost', stat: 'finesse', value: 2 }], name: 'Silver Ring',     rarity: 'uncommon', icon: 'resources/RingSilver.PNG' },
+  gold_ring_craft: { slot: 'ring1', effects: [{ type: 'stat_boost', stat: 'might', value: 3 }], name: 'Gold Ring',        rarity: 'rare',     icon: 'resources/RingGold.PNG' },
+  mithril_ring:    { slot: 'ring1', effects: [{ type: 'stat_boost', stat: 'acumen', value: 4 }, { type: 'stat_boost', stat: 'resolve', value: 2 }], name: 'Mithril Ring', rarity: 'ultra_rare', icon: 'resources/RingViking.PNG' },
+  enchanted_ring:  { slot: 'ring1', effects: [{ type: 'stat_boost', stat: 'acumen', value: 3 }, { type: 'stat_boost', stat: 'ingenuity', value: 3 }], magicDamage: 5, name: 'Enchanted Ring', rarity: 'rare', icon: 'resources/RingGold2.PNG' },
 
   // ===== JEWELCRAFTED NECKLACES =====
-  silver_necklace:  { slot: 'necklace', effects: [{ type: 'stat_boost', stat: 'resolve', value: 2 }], name: 'Silver Necklace',  rarity: 'uncommon', icon: 'resourcesandfood/NecklaceCross.PNG' },
-  gold_necklace:    { slot: 'necklace', effects: [{ type: 'stat_boost', stat: 'presence', value: 3 }, { type: 'stat_boost', stat: 'vigor', value: 2 }], name: 'Gold Necklace', rarity: 'rare', icon: 'resourcesandfood/NecklaceGold.PNG' },
-  mithril_necklace: { slot: 'necklace', effects: [{ type: 'stat_boost', stat: 'vigor', value: 4 }, { type: 'stat_boost', stat: 'resolve', value: 3 }], magicResist: 5, name: 'Mithril Necklace', rarity: 'ultra_rare', icon: 'resourcesandfood/NecklaceGold.PNG' },
-  ruby_pendant:     { slot: 'necklace', effects: [{ type: 'stat_boost', stat: 'might', value: 3 }, { type: 'stat_boost', stat: 'finesse', value: 2 }], name: 'Ruby Pendant', rarity: 'rare', icon: 'resourcesandfood/Pearl.PNG' },
+  silver_necklace:  { slot: 'necklace', effects: [{ type: 'stat_boost', stat: 'resolve', value: 2 }], name: 'Silver Necklace',  rarity: 'uncommon', icon: 'resources/NecklaceCross.PNG' },
+  gold_necklace:    { slot: 'necklace', effects: [{ type: 'stat_boost', stat: 'presence', value: 3 }, { type: 'stat_boost', stat: 'vigor', value: 2 }], name: 'Gold Necklace', rarity: 'rare', icon: 'resources/NecklaceGold.PNG' },
+  mithril_necklace: { slot: 'necklace', effects: [{ type: 'stat_boost', stat: 'vigor', value: 4 }, { type: 'stat_boost', stat: 'resolve', value: 3 }], magicResist: 5, name: 'Mithril Necklace', rarity: 'ultra_rare', icon: 'resources/NecklaceGold.PNG' },
+  ruby_pendant:     { slot: 'necklace', effects: [{ type: 'stat_boost', stat: 'might', value: 3 }, { type: 'stat_boost', stat: 'finesse', value: 2 }], name: 'Ruby Pendant', rarity: 'rare', icon: 'resources/Pearl.PNG' },
 
   // ===== SPECIALIZED RINGS (from loot-generator RING_DESIGNS) =====
-  ring_of_the_blade:     { slot: 'ring1', effects: [{ type: 'stat_boost', stat: 'finesse', value: 2 }], name: 'Ring of the Blade',     rarity: 'rare',      icon: 'resourcesandfood/RingSilver.PNG' },
-  ring_of_arcane_focus:  { slot: 'ring1', effects: [{ type: 'stat_boost', stat: 'acumen', value: 3 }],  name: 'Ring of Arcane Focus',  rarity: 'rare',      icon: 'resourcesandfood/RingGold.PNG' },
-  ring_of_the_hunt:      { slot: 'ring1', effects: [{ type: 'stat_boost', stat: 'finesse', value: 3 }], name: 'Ring of the Hunt',      rarity: 'rare',      icon: 'resourcesandfood/RingSilver.PNG' },
-  ring_of_brutality:     { slot: 'ring1', effects: [{ type: 'stat_boost', stat: 'might', value: 3 }],   name: 'Ring of Brutality',     rarity: 'rare',      icon: 'resourcesandfood/RingSilver.PNG' },
-  ring_of_iron_will:     { slot: 'ring2', effects: [{ type: 'stat_boost', stat: 'vigor', value: 4 }],   name: 'Ring of Iron Will',     rarity: 'rare',      icon: 'resourcesandfood/RingSilver.PNG' },
-  ring_of_warding:       { slot: 'ring2', magicResist: 8, effects: [{ type: 'stat_boost', stat: 'resolve', value: 2 }], name: 'Ring of Warding', rarity: 'rare', icon: 'resourcesandfood/RingGold.PNG' },
-  ring_of_regeneration:  { slot: 'ring2', effects: [{ type: 'stat_boost', stat: 'vigor', value: 2 }],   name: 'Ring of Regeneration',  rarity: 'rare',      icon: 'resourcesandfood/RingGold.PNG' },
-  ring_of_the_well:      { slot: 'ring3', effects: [{ type: 'stat_boost', stat: 'acumen', value: 2 }],  name: 'Ring of the Well',      rarity: 'rare',      icon: 'resourcesandfood/RingGold.PNG' },
-  ring_of_fury:          { slot: 'ring3', effects: [{ type: 'stat_boost', stat: 'might', value: 2 }],   name: 'Ring of Fury',          rarity: 'rare',      icon: 'resourcesandfood/RingSilver.PNG' },
-  ring_of_concentration: { slot: 'ring3', effects: [{ type: 'stat_boost', stat: 'finesse', value: 2 }], name: 'Ring of Concentration', rarity: 'rare',      icon: 'resourcesandfood/RingSilver.PNG' },
-  ring_of_endurance:     { slot: 'ring3', effects: [{ type: 'stat_boost', stat: 'vigor', value: 2 }],   name: 'Ring of Endurance',     rarity: 'rare',      icon: 'resourcesandfood/RingSilver.PNG' },
-  ring_of_the_guide:     { slot: 'ring4', effects: [{ type: 'stat_boost', stat: 'acumen', value: 1 }],  name: 'Ring of the Guide',     rarity: 'uncommon',  icon: 'resourcesandfood/RingSilver.PNG' },
-  ring_of_fortune:       { slot: 'ring4', effects: [{ type: 'stat_boost', stat: 'presence', value: 2 }], name: 'Ring of Fortune',      rarity: 'rare',      icon: 'resourcesandfood/RingGold.PNG' },
-  ring_of_swiftness:     { slot: 'ring4', speedBonus: 0.08, effects: [{ type: 'stat_boost', stat: 'finesse', value: 1 }], name: 'Ring of Swiftness', rarity: 'uncommon', icon: 'resourcesandfood/RingSilver.PNG' },
-  ring_of_the_smith:     { slot: 'ring5', effects: [{ type: 'stat_boost', stat: 'ingenuity', value: 2 }], name: 'Ring of the Smith',   rarity: 'uncommon',  icon: 'resourcesandfood/RingSilver.PNG' },
-  ring_of_the_miner:     { slot: 'ring5', effects: [{ type: 'stat_boost', stat: 'vigor', value: 1 }],   name: 'Ring of the Miner',     rarity: 'uncommon',  icon: 'resourcesandfood/RingSilver.PNG' },
-  ring_of_the_alchemist: { slot: 'ring5', effects: [{ type: 'stat_boost', stat: 'acumen', value: 2 }],  name: 'Ring of the Alchemist', rarity: 'rare',      icon: 'resourcesandfood/RingGold.PNG' },
-  ring_of_the_enchanter: { slot: 'ring5', effects: [{ type: 'stat_boost', stat: 'acumen', value: 2 }],  name: 'Ring of the Enchanter', rarity: 'rare',      icon: 'resourcesandfood/RingGold.PNG' },
-  ring_of_the_void_walker: { slot: 'ring6', effects: [{ type: 'stat_boost', stat: 'finesse', value: 3 }], name: 'Ring of the Void Walker', rarity: 'legendary', icon: 'resourcesandfood/RingViking.PNG' },
-  ring_of_the_phoenix:   { slot: 'ring6', effects: [{ type: 'stat_boost', stat: 'vigor', value: 3 }],   name: 'Ring of the Phoenix',   rarity: 'legendary', icon: 'resourcesandfood/RingViking.PNG' },
-  ring_of_the_leviathan: { slot: 'ring6', effects: [{ type: 'stat_boost', stat: 'vigor', value: 3 }, { type: 'stat_boost', stat: 'acumen', value: 3 }], name: 'Ring of the Leviathan', rarity: 'legendary', icon: 'resourcesandfood/RingViking.PNG' },
+  ring_of_the_blade:     { slot: 'ring1', effects: [{ type: 'stat_boost', stat: 'finesse', value: 2 }], name: 'Ring of the Blade',     rarity: 'rare',      icon: 'resources/RingSilver.PNG' },
+  ring_of_arcane_focus:  { slot: 'ring1', effects: [{ type: 'stat_boost', stat: 'acumen', value: 3 }],  name: 'Ring of Arcane Focus',  rarity: 'rare',      icon: 'resources/RingGold.PNG' },
+  ring_of_the_hunt:      { slot: 'ring1', effects: [{ type: 'stat_boost', stat: 'finesse', value: 3 }], name: 'Ring of the Hunt',      rarity: 'rare',      icon: 'resources/RingSilver.PNG' },
+  ring_of_brutality:     { slot: 'ring1', effects: [{ type: 'stat_boost', stat: 'might', value: 3 }],   name: 'Ring of Brutality',     rarity: 'rare',      icon: 'resources/RingSilver.PNG' },
+  ring_of_iron_will:     { slot: 'ring2', effects: [{ type: 'stat_boost', stat: 'vigor', value: 4 }],   name: 'Ring of Iron Will',     rarity: 'rare',      icon: 'resources/RingSilver.PNG' },
+  ring_of_warding:       { slot: 'ring2', magicResist: 8, effects: [{ type: 'stat_boost', stat: 'resolve', value: 2 }], name: 'Ring of Warding', rarity: 'rare', icon: 'resources/RingGold.PNG' },
+  ring_of_regeneration:  { slot: 'ring2', effects: [{ type: 'stat_boost', stat: 'vigor', value: 2 }],   name: 'Ring of Regeneration',  rarity: 'rare',      icon: 'resources/RingGold.PNG' },
+  ring_of_the_well:      { slot: 'ring3', effects: [{ type: 'stat_boost', stat: 'acumen', value: 2 }],  name: 'Ring of the Well',      rarity: 'rare',      icon: 'resources/RingGold.PNG' },
+  ring_of_fury:          { slot: 'ring3', effects: [{ type: 'stat_boost', stat: 'might', value: 2 }],   name: 'Ring of Fury',          rarity: 'rare',      icon: 'resources/RingSilver.PNG' },
+  ring_of_concentration: { slot: 'ring3', effects: [{ type: 'stat_boost', stat: 'finesse', value: 2 }], name: 'Ring of Concentration', rarity: 'rare',      icon: 'resources/RingSilver.PNG' },
+  ring_of_endurance:     { slot: 'ring3', effects: [{ type: 'stat_boost', stat: 'vigor', value: 2 }],   name: 'Ring of Endurance',     rarity: 'rare',      icon: 'resources/RingSilver.PNG' },
+  ring_of_the_guide:     { slot: 'ring4', effects: [{ type: 'stat_boost', stat: 'acumen', value: 1 }],  name: 'Ring of the Guide',     rarity: 'uncommon',  icon: 'resources/RingSilver.PNG' },
+  ring_of_fortune:       { slot: 'ring4', effects: [{ type: 'stat_boost', stat: 'presence', value: 2 }], name: 'Ring of Fortune',      rarity: 'rare',      icon: 'resources/RingGold.PNG' },
+  ring_of_swiftness:     { slot: 'ring4', speedBonus: 0.08, effects: [{ type: 'stat_boost', stat: 'finesse', value: 1 }], name: 'Ring of Swiftness', rarity: 'uncommon', icon: 'resources/RingSilver.PNG' },
+  ring_of_the_smith:     { slot: 'ring5', effects: [{ type: 'stat_boost', stat: 'ingenuity', value: 2 }], name: 'Ring of the Smith',   rarity: 'uncommon',  icon: 'resources/RingSilver.PNG' },
+  ring_of_the_miner:     { slot: 'ring5', effects: [{ type: 'stat_boost', stat: 'vigor', value: 1 }],   name: 'Ring of the Miner',     rarity: 'uncommon',  icon: 'resources/RingSilver.PNG' },
+  ring_of_the_alchemist: { slot: 'ring5', effects: [{ type: 'stat_boost', stat: 'acumen', value: 2 }],  name: 'Ring of the Alchemist', rarity: 'rare',      icon: 'resources/RingGold.PNG' },
+  ring_of_the_enchanter: { slot: 'ring5', effects: [{ type: 'stat_boost', stat: 'acumen', value: 2 }],  name: 'Ring of the Enchanter', rarity: 'rare',      icon: 'resources/RingGold.PNG' },
+  ring_of_the_void_walker: { slot: 'ring6', effects: [{ type: 'stat_boost', stat: 'finesse', value: 3 }], name: 'Ring of the Void Walker', rarity: 'legendary', icon: 'resources/RingViking.PNG' },
+  ring_of_the_phoenix:   { slot: 'ring6', effects: [{ type: 'stat_boost', stat: 'vigor', value: 3 }],   name: 'Ring of the Phoenix',   rarity: 'legendary', icon: 'resources/RingViking.PNG' },
+  ring_of_the_leviathan: { slot: 'ring6', effects: [{ type: 'stat_boost', stat: 'vigor', value: 3 }, { type: 'stat_boost', stat: 'acumen', value: 3 }], name: 'Ring of the Leviathan', rarity: 'legendary', icon: 'resources/RingViking.PNG' },
 
   // ===== CONTAINER EQUIPMENT (backpacks & rigs) =====
   leather_satchel:   { slot: 'backpack', name: 'Leather Satchel',     rarity: 'common',    containerGridW: 2, containerGridH: 2 },

@@ -225,8 +225,9 @@ function _evictCache() {
   const iter = accountCache.keys();
   while (accountCache.size > CACHE_MAX * 0.8) {
     const oldest = iter.next().value;
-    if (oldest) accountCache.delete(oldest);
-    else break;
+    if (!oldest) break;
+    if (pendingWrites.has(oldest)) continue;
+    accountCache.delete(oldest);
   }
 }
 

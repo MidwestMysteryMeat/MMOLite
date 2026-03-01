@@ -355,7 +355,7 @@ module.exports = {
             var _canAfford = true;
             var _costKeys = Object.keys(recipe.cost);
             for (var _ci = 0; _ci < _costKeys.length; _ci++) {
-              if ((_preInv[_costKeys[_ci]] || 0) < recipe.cost[_costKeys[_ci]]) { _canAfford = false; craftLocks.delete(key); break; }
+              if ((_preInv[_costKeys[_ci]] || 0) < recipe.cost[_costKeys[_ci]]) { _canAfford = false; craftLocks.delete(key); socket.emit('craft_error', { message: 'Not enough resources' }); return; }
             }
             if (_canAfford) {
               // Deduct resources before minigame (consumed regardless of quality)
@@ -492,18 +492,27 @@ module.exports = {
             }
           }
 
-          // --- Deduct resources (amounts already rolled above) ---
+          // --- Deduct resources (amounts already rolled above) with rollback on failure ---
+          var _deducted = [];
+          var _deductFailed = false;
           for (var j = 0; j < costTypes.length; j++) {
             var rt = costTypes[j];
             var amt = _prerolledAmounts[rt];
             var result = accounts.removeResource(key, rt, amt);
             if (result === null) {
+              // Rollback previously deducted resources
+              for (var rj = 0; rj < _deducted.length; rj++) {
+                accounts.addResource(key, _deducted[rj].rt, _deducted[rj].amt);
+              }
               socket.emit('craft_error', {
                 message: 'Failed to deduct ' + rt.replace(/_/g, ' ') + ' -- not enough resources',
               });
-              return;
+              _deductFailed = true;
+              break;
             }
+            _deducted.push({ rt: rt, amt: amt });
           }
+          if (_deductFailed) { craftLocks.delete(key); return; }
 
           // --- Determine crafting context for card bonuses ---
           var isSewingRecipe = (recipe.station === 'loom');
@@ -1319,12 +1328,15 @@ module.exports = {
           socket.emit('craft_error', { message: 'You don\'t have that gem' }); return;
         }
 
-        // Apply the gem
+        // Deduct the gem resource first (before mutating item)
+        var gemRemoved = accounts.removeResource(key, data.gemType, 1);
+        if (gemRemoved === null) { socket.emit('craft_error', { message: 'Failed to deduct gem' }); return; }
+
+        // Apply the gem to the item
+        acc = accounts.loadAccount(key);
+        if (!acc) return;
         var result = lootGen.socketGem(item, data.gemType);
         if (result.error) { socket.emit('craft_error', { message: result.error }); return; }
-
-        // Deduct the gem resource
-        accounts.removeResource(key, data.gemType, 1);
 
         // Save
         accounts.saveAccount(acc);
@@ -1615,28 +1627,20 @@ module.exports = {
           qualityMultiplier: qualityTier.multiplier,
         };
         if (recipe.output.quantity) output.quantity = recipe.output.quantity;
-        // Add to inventory (weight-checked)
-        var account = accounts.loadAccount(key);
-        if (!account) { craftLocks.delete(key); return; }
-        var accountWeight = require('../account-weight');
-        var itemW = accountWeight.getItemWeight(output);
-        if (!accountWeight.canCarryWeight(account, itemW)) {
-          socket.emit('craft_error', { message: 'Too heavy to carry' });
+        // Add to inventory via addMMOItem (weight-checked + grid placement)
+        var addResult = accounts.addMMOItem(key, output);
+        if (addResult && addResult.error) {
+          socket.emit('craft_error', { message: addResult.error });
           craftLocks.delete(key);
           return;
         }
-        var inv = account.mmoInventory || {};
-        if (!inv.items) inv.items = [];
-        inv.items.push(output);
-        account.mmoInventory = inv;
-        accounts.saveAccount(account);
         craftLocks.delete(key);
         socket.emit('craft_result', {
           success: true,
           recipeId: pending.recipeId,
           item: output,
           quality: quality,
-          inventory: account.mmoInventory,
+          inventory: accounts.getMMOInventory(key),
         });
       } catch (err) {
         if (_mgKey) craftLocks.delete(_mgKey);

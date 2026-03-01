@@ -4,6 +4,7 @@
 -- confirmation dialog before committing the permanent choice.
 
 local net = require("lib.net")
+local audio = require("lib.audio")
 
 local raceSelect = {}
 
@@ -333,6 +334,7 @@ end
 
 function raceSelect.mousepressed(x, y, button)
     if button ~= 1 then return end
+    audio.playClick()
 
     -- When the confirmation dialog is open, only process dialog clicks
     if selectedRace then

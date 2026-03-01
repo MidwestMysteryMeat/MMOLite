@@ -6,6 +6,7 @@ local net = require("lib.net")
 local serverLauncher = require("lib.server_launcher")
 local lanDiscovery = require("lib.lan_discovery")
 local steamcloud = require("lib.steamcloud")
+local audio = require("lib.audio")
 
 local shards = {}
 
@@ -100,6 +101,7 @@ function shards.resize(w, h)
 end
 
 function shards.load()
+    audio.init()
     recreateFonts()
     fadeIn = 0
     errorMsg = nil
@@ -806,6 +808,7 @@ end
 
 function shards.mousepressed(x, y, button)
     if button ~= 1 then return end
+    audio.playClick()
 
     local W = love.graphics.getWidth()
     local H = love.graphics.getHeight()
@@ -1322,6 +1325,10 @@ end
 
 function shards.tryConnect()
     shards.browseConnect()
+end
+
+function shards.unload()
+    lanDiscovery.stop()
 end
 
 return shards

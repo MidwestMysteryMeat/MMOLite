@@ -78,7 +78,7 @@ function generate(seasonSeed, calendarSeason) {
   // Shop discounts — shift +/-3%
   var REP_SHOP_DISCOUNT = BASE_REP_SHOP_DISCOUNT.slice();
   for (var d = 0; d < REP_SHOP_DISCOUNT.length; d++) {
-    REP_SHOP_DISCOUNT[d] = rng.varyRound(r, REP_SHOP_DISCOUNT[d] || 0.01, 0.30);
+    REP_SHOP_DISCOUNT[d] = REP_SHOP_DISCOUNT[d] === 0 ? 0 : rng.varyRound(r, REP_SHOP_DISCOUNT[d], 0.30);
   }
   // Dominant faction gets +5% universal discount
   // (stored as metadata; factions.js can read FACTIONS[x].dominant)

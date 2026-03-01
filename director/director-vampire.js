@@ -445,6 +445,10 @@ function clearLair(dungeonId) {
     var cryptDist = Math.abs(crypt.cx - source.cx) + Math.abs(crypt.cy - source.cy);
     if (cryptDist <= MAX_CRYPT_DISTANCE_CHUNKS + 5) {
       cryptsRemoved++;
+      // Remove crypt zone from state
+      if (state && state.zones && crypt.cryptId) {
+        state.zones.delete(crypt.cryptId);
+      }
     } else {
       remainingCrypts.push(crypt);
     }

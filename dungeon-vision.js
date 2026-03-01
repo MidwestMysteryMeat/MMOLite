@@ -1273,6 +1273,40 @@ function createCampfireLight(x, y) {
 }
 
 // ---------------------------------------------------------------------------
+// Client light source collection — compact wire format for rendering
+// ---------------------------------------------------------------------------
+
+function collectLightSourcesForClient(floor, staticSources, playerDataMap) {
+  var sources = [];
+  // Static torches placed on the floor
+  if (staticSources) {
+    for (var i = 0; i < staticSources.length; i++) {
+      var s = staticSources[i];
+      sources.push({ x: s.x, y: s.y, r: s.radius, b: s.brightness, t: s.type || 'torch' });
+    }
+  }
+  // Active campfires
+  var camps = floor.camps || [];
+  for (var ci = 0; ci < camps.length; ci++) {
+    if (camps[ci].campfire) {
+      sources.push({ x: camps[ci].x, y: camps[ci].y, r: CAMPFIRE_LIGHT_RADIUS, b: CAMPFIRE_LIGHT_BRIGHTNESS, t: 'campfire' });
+    }
+  }
+  // Player-held torches/lanterns
+  if (playerDataMap) {
+    playerDataMap.forEach(function(pd) {
+      if (pd.hasTorch) {
+        sources.push({ x: pd.x, y: pd.y, r: TORCH_LIGHT_RADIUS, b: TORCH_LIGHT_BRIGHTNESS, t: 'player_torch' });
+      }
+      if (pd.hasLantern) {
+        sources.push({ x: pd.x, y: pd.y, r: LANTERN_LIGHT_RADIUS, b: LANTERN_LIGHT_BRIGHTNESS, t: 'player_lantern' });
+      }
+    });
+  }
+  return sources;
+}
+
+// ---------------------------------------------------------------------------
 // Exports
 // ---------------------------------------------------------------------------
 
@@ -1319,6 +1353,7 @@ module.exports = {
   createTorchLight: createTorchLight,
   createLanternLight: createLanternLight,
   createCampfireLight: createCampfireLight,
+  collectLightSourcesForClient: collectLightSourcesForClient,
 
   // Init
   setWalkableTiles: setWalkableTiles,

@@ -122,6 +122,7 @@ function _saveLeaderboard() {
       fs.writeFileSync(_LEADERBOARD_FILE, JSON.stringify(leaderboard), 'utf8');
     } catch (e) { console.error('[dungeon] leaderboard save error:', e.message); }
   }, 2000);
+  if (_leaderboardSaveTimer.unref) _leaderboardSaveTimer.unref();
 }
 
 // LRU tracking for empty-floor eviction (Map preserves insertion order for O(1) LRU)
@@ -928,6 +929,10 @@ function recomputePlayerVisibility(zoneId, socketId, floor) {
   pd.lastVisibleSet = visibility.visibleTiles;
   pd._packedVisibleSet = null; // invalidate packed cache
 
+  // Attach compact light source positions for client rendering
+  var pMap = floorPlayers.get(zoneId);
+  delta.lightSources = dungeonVision.collectLightSourcesForClient(floor, floorLightSources.get(zoneId) || [], pMap);
+
   return {
     visibility: visibility,
     delta: delta,
@@ -1209,6 +1214,9 @@ function buildFloorState(floor, dungeonId, state, zoneId, socketId) {
       baseState.visionRadius = visResult.visibility.visionRadius;
       baseState.lightLevel = visResult.visibility.lightLevel;
       baseState.playerLightRadius = visResult.visibility.visionRadius;
+      // Compact light source positions for client-side rendering
+      var pMap = floorPlayers.get(zoneId);
+      baseState.lightSources = dungeonVision.collectLightSourcesForClient(floor, floorLightSources.get(zoneId) || [], pMap);
     }
   } else {
     // Fallback: send all entities (for compatibility)
@@ -3546,6 +3554,7 @@ function initiateTurnCombat(socket, io, state, accounts, socketAccountMap, user,
   var pty = Math.floor(pos.y / 32);
 
   var zoneId = getZoneIdForDungeon(info.dungeonId, info.floorNum);
+  var pMap = floorPlayers.get(zoneId);
 
   // Find nearby enemies (8-tile radius)
   var nearbyEnemies = findNearbyEnemies(floor, ptx, pty, 8);
@@ -3676,7 +3685,6 @@ function initiateTurnCombat(socket, io, state, accounts, socketAccountMap, user,
   }
 
   // Mark all participating players as inTurnCombat
-  var pMap = floorPlayers.get(zoneId);
   for (var pi2 = 0; pi2 < players.length; pi2++) {
     if (pMap) {
       var fp = pMap.get(players[pi2].socketId);
@@ -7113,11 +7121,11 @@ module.exports = {
         accounts.removeResource(accKey, 'torch', 1);
 
         var zoneId = getZoneIdForDungeon(info.dungeonId, info.floorNum);
+        var torchExpiry = Date.now() + TORCH_DURATION * 1000;
         var pMap = floorPlayers.get(zoneId);
         if (pMap) {
           var fp = pMap.get(socket.id);
           if (fp) {
-            var torchExpiry = Date.now() + TORCH_DURATION * 1000;
             fp.hasTorch = true;
             fp.torchExpiry = torchExpiry;
           }
@@ -7221,11 +7229,11 @@ module.exports = {
         accounts.removeResource(accKey, 'lantern', 1);
 
         var zoneId = getZoneIdForDungeon(info.dungeonId, info.floorNum);
+        var lanternExpiry = Date.now() + LANTERN_DURATION * 1000;
         var pMap = floorPlayers.get(zoneId);
         if (pMap) {
           var fp = pMap.get(socket.id);
           if (fp) {
-            var lanternExpiry = Date.now() + LANTERN_DURATION * 1000;
             fp.hasLantern = true;
             fp.lanternExpiry = lanternExpiry;
           }

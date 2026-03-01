@@ -5,8 +5,15 @@ local net = require("lib.net")
 local combatUI = require("scenes.combat-ui")
 local combatAnim = require("scenes.combat-anim")
 local gridInv = require("scenes.grid-inventory")
+local lighting = require("lib.lighting")
+local dungeonParticles = require("lib.particles")
 
 local game = {}
+
+-- Stash audio/assets on game table to avoid adding upvalues to setupListeners
+-- (Lua 5.1 limit: 60 upvalues per function)
+game._audio = require("lib.audio")
+game._assets = require("lib.assets")
 
 -- Single source of truth for all client:on() event names registered by this scene.
 -- Both setupListeners() and unload() reference this list to prevent cleanup drift.
@@ -265,9 +272,9 @@ local ui = {
     farmAnimals = {},      -- animals from server
     farmingPlotId = nil,   -- selected crop plot for planting
     farmingScroll = 0,
-    -- Base raid state
+    -- Base game._raid state
     baseRaidAlert = nil,   -- { plotZoneId, message, alertDuration, receivedAt }
-    baseRaidWaves = {},    -- raid wave data
+    baseRaidWaves = {},    -- game._raid wave data
     baseRaidEnded = nil,   -- { result, message, rewards }
     equipmentScroll = 0,
     -- Items tab filter (B2)
@@ -283,6 +290,7 @@ local ui = {
     showGuild = false,
     showAscension = false,
     showJail = false,
+    showAudioSettings = false,
 }
 
 -- Knowledge panel state (cached data from server)
@@ -315,8 +323,8 @@ local mastery = {
     messageTimer = 0,
 }
 
--- Karma / faction HUD state
-local karmaState = {
+-- Karma / faction HUD state (on game table to reduce upvalues)
+game._karma = {
     karma = 0,
     activeBounty = nil,
     isGuardHostile = false,
@@ -329,8 +337,8 @@ local karmaState = {
     messageTimer = 0,
 }
 
--- Companion panel state
-local companionState = {
+-- Companion panel state (on game table to reduce upvalues)
+game._companions = {
     companions = {},         -- [{id, class, name, level, hp, maxHp, dailyWage, baseDmg}]
     selectedId = nil,
     scroll = 0,
@@ -339,8 +347,8 @@ local companionState = {
     hireClass = nil,         -- class being hired
 }
 
--- Pet panel state
-local petState = {
+-- Pet panel state (on game table to reduce upvalues)
+game._pets = {
     pets = {},               -- [{id, type, name, level, stage, hunger, happiness, speed}]
     selectedId = nil,
     activePetId = nil,
@@ -349,8 +357,8 @@ local petState = {
     messageTimer = 0,
 }
 
--- Jail panel state
-local jailState = {
+-- Jail panel state (on game table to reduce upvalues)
+game._jail = {
     inJail = false,
     crime = nil,
     crimeLabel = nil,
@@ -362,8 +370,8 @@ local jailState = {
     messageTimer = 0,
 }
 
--- Ascension panel state
-local ascensionState = {
+-- Ascension panel state (on game table to reduce upvalues)
+game._ascension = {
     canAscend = false,
     ascensionCount = 0,
     ascensionPoints = 0,
@@ -374,8 +382,8 @@ local ascensionState = {
     messageTimer = 0,
 }
 
--- Guild panel state
-local guildState = {
+-- Guild panel state (on game table to reduce upvalues)
+game._guild = {
     guildId = nil,
     guildName = nil,
     members = {},            -- [{name, role}]
@@ -394,8 +402,8 @@ local guildState = {
     messageTimer = 0,
 }
 
--- Crafting minigame state
-local minigameState = {
+-- Crafting minigame state (on game table to reduce upvalues)
+game._minigame = {
     active = false,
     recipeId = nil,
     duration = 0,
@@ -410,26 +418,24 @@ local minigameState = {
 }
 
 -- Notification/warning state
-local notifications = {}     -- [{text, color, timer, maxTimer}]
+game._notifications = {}     -- [{text, color, timer, maxTimer}]
 local NOTIFICATION_DURATION = 4.0
 
 -- Patrol units visible on overworld
-local patrolUnits = {}       -- {id -> {x, y, name, members}}
+game._patrolUnits = {}       -- {id -> {x, y, name, members}}
 
 -- Combat ability bar state
-local abilityBar = {
+game._abilityBar = {
     abilities = {},          -- [{name, manaCost, cooldown, maxCooldown, cardId, index}]
     hoverIndex = nil,
 }
 
--- Forward-declare raid (defined fully at line ~647) so getContextMenuItems can reference it
-local raid
 
 -- Context menu item definitions (label + action key)
 local CONTEXT_MENU_ITEMS_BASE = {
     { label = "Add Friend",      action = "friend" },
     { label = "Invite to Party", action = "party" },
-    { label = "Trade",           action = "trade" },
+    { label = "Trade",           action = "game._trade" },
     { label = "Duel (PvP)",      action = "duel" },
     { label = "View Profile",    action = "profile" },
     { label = "Whisper",         action = "whisper" },
@@ -442,9 +448,9 @@ local function getContextMenuItems(targetId)
         table.insert(items, item)
     end
     -- Add "Kick from Party" if we are party leader and target is in our party
-    if raid.partyData and raid.partyData.leader == myId and targetId then
+    if game._raid.partyData and game._raid.partyData.leader == myId and targetId then
         local targetInParty = false
-        for _, m in ipairs(raid.partyData.members) do
+        for _, m in ipairs(game._raid.partyData.members) do
             if m.id == targetId then
                 targetInParty = true
                 break
@@ -588,6 +594,7 @@ local dungeon = {
     hasLantern = false,     -- player holding lantern
     lanternExpiry = 0,      -- lantern expiry timestamp
     placedTorches = {},     -- placed torches on floor
+    lightSources = {},      -- compact light source list from server [{x,y,r,b,t}]
     progress = nil,         -- guild/quest/stats from account
     hoverEntrance = false,  -- near rift entrance
     moveTimer = 0,          -- cooldown between grid moves
@@ -638,7 +645,7 @@ local doom = {
 local activePatrols = {}  -- id -> { factionId, cx, cy, strength, description, hostile, color }
 
 -- Disease state
-local diseaseState = {
+game._disease = {
     playerDiseases = {},      -- { diseaseId = { state, name } }
     chunkDiseases = {},       -- diseases at current chunk
     contractedFlash = 0,      -- flash timer when contracting disease
@@ -648,20 +655,20 @@ local diseaseState = {
 }
 
 -- Weather propagation state
-local weatherState = {
+game._weather = {
     weather = "clear",
     intensity = 0.5,
     wind = "east",
 }
 
 -- Faction influence state
-local influenceState = {
+game._influence = {
     controlling = nil,
     area = {},
 }
 
 -- Ecology state
-local ecologyState = {
+game._ecology = {
     state = -1,
     name = "unknown",
     resourceBonus = 1.0,
@@ -678,13 +685,13 @@ local tcState = {
 }
 
 -- AI Event Director UI state
-local directorEvents = {}       -- world event banners (gold banner, fade)
-local zoneTicker = {}           -- zone director updates (bottom-right)
-raid = {
-    state = nil,                  -- current raid floor state
-    bossHp = nil,                 -- raid boss health bar data
-    gathering = nil,              -- lich raid gathering phase
-    myParty = nil,                -- partyId assigned in lich raid
+game._directorEvents = {}       -- world event banners (gold banner, fade)
+game._zoneTicker = {}           -- zone director updates (bottom-right)
+game._raid = {
+    state = nil,                  -- current game._raid floor state
+    bossHp = nil,                 -- game._raid boss health bar data
+    gathering = nil,              -- lich game._raid gathering phase
+    myParty = nil,                -- partyId assigned in lich game._raid
     phase = nil,                  -- { phase, phaseName, message }
     corruptionZones = {},         -- { x, y, radius, damage, timer }
     phylacteries = {},            -- { id, hp, maxHp, name }
@@ -695,16 +702,16 @@ raid = {
     partyInviteActive = false,    -- true when invite input is focused
 }
 
-local hoverNpc = nil            -- NPC we're near in town (guild master etc)
+game._hoverNpc = nil            -- NPC we're near in town (guild master etc)
 
 -- NPC Dialogue state
-local npcDialogue = { show = false, npcName = "", text = "", choices = {}, npcId = "" }
+game._npcDialogue = { show = false, npcName = "", text = "", choices = {}, npcId = "" }
 
 -- Quest log state
-local questLog = { active = {}, completed = {} }
+game._questLog = { active = {}, completed = {} }
 
 -- NPC Shop state
-local npcShop = {
+game._npcShop = {
     show = false,
     tab = "buy",            -- "buy" or "sell"
     scroll = 0,
@@ -720,7 +727,7 @@ local npcShop = {
 }
 
 -- Bank vault state
-local bank = {
+game._bank = {
     show = false,
     tab = "gold",              -- "gold", "resources", "items"
     scroll = 0,
@@ -732,7 +739,7 @@ local bank = {
 }
 
 -- Auction House state
-local auction = {
+game._auction = {
     show = false,
     tab = "browse",        -- "browse", "sell", "my_listings"
     listings = {},
@@ -750,7 +757,7 @@ local auction = {
 }
 
 -- Card vendor state
-local cardVendor = {
+game._cardVendor = {
     show = false,
     tab = "buy",           -- "buy", "sell"
     catalog = {},          -- buyable card templates with prices
@@ -761,20 +768,20 @@ local cardVendor = {
 }
 
 -- Card loadout state
-local cardLoadouts = {
+game._cardLoadouts = {
     loadouts = { nil, nil, nil, nil, nil },
     renaming = nil,        -- index being renamed
     renameInput = "",
 }
 
 -- Fusion mode state
-local fusionMode = {
+game._fusionMode = {
     active = false,
     card1 = nil,           -- first card selected for fusion
 }
 
 -- P2P Trade panel state
-local trade = {
+game._trade = {
     show = false,
     tradeId = nil,
     partnerId = nil,
@@ -793,24 +800,24 @@ local trade = {
 
 -- Helper: reset trade state to defaults
 local function resetTradeState()
-    trade.show = false
-    trade.tradeId = nil
-    trade.partnerId = nil
-    trade.partnerName = "???"
-    trade.myOffer = { items = {}, chips = 0 }
-    trade.theirOffer = { items = {}, chips = 0 }
-    trade.myConfirmed = false
-    trade.theirConfirmed = false
-    trade.coinInput = ""
-    trade.coinInputActive = false
-    trade.pendingRequest = nil
-    trade.message = nil
-    trade.myScroll = 0
-    trade.offerScroll = 0
+    game._trade.show = false
+    game._trade.tradeId = nil
+    game._trade.partnerId = nil
+    game._trade.partnerName = "???"
+    game._trade.myOffer = { items = {}, chips = 0 }
+    game._trade.theirOffer = { items = {}, chips = 0 }
+    game._trade.myConfirmed = false
+    game._trade.theirConfirmed = false
+    game._trade.coinInput = ""
+    game._trade.coinInputActive = false
+    game._trade.pendingRequest = nil
+    game._trade.message = nil
+    game._trade.myScroll = 0
+    game._trade.offerScroll = 0
 end
 
 -- Portal travel panel state
-local portal = {
+game._portal = {
     show = false,
     destinations = {},  -- array from server: { id, name, type, zoneId }
     scroll = 0,
@@ -833,7 +840,7 @@ local PORTAL_TOWN_RACE = {
 }
 
 -- Admin panel state (F10 for server hosts)
-local admin = {
+game._admin = {
     showPanel = false,
     xpRate = 1.0,
     dropRate = 1.0,
@@ -1000,6 +1007,11 @@ function game.load()
     fonts.zone = _G.getFont(sf(15))
     fonts.levelUp = _G.getFont(sf(28))
 
+    game._audio.init()
+    game._assets.init()
+    lighting.init()
+    game._audioSliderDrag = nil
+
     fadeIn = 0
     chat.messages = {}
     chat.input = ""
@@ -1082,25 +1094,25 @@ function game.load()
     ui.showDungeonQuests = false
     ui.showLeaderboard = false
     ui.showPartyPanel = false
-    raid.partyData = nil
-    raid.partyInvitePending = nil
-    raid.partyInviteInput = ""
-    raid.partyInviteActive = false
-    hoverNpc = nil
-    portal.show = false
-    portal.destinations = {}
-    portal.scroll = 0
-    portal.message = nil
-    portal.cooldownEnd = 0
-    npcShop.show = false
-    npcShop.tab = "buy"
-    npcShop.scroll = 0
-    npcShop.selected = nil
-    npcShop.amount = 1
-    npcShop.prices = nil
-    npcShop.shopList = nil
-    npcShop.message = nil
-    npcShop.transactionLock = false
+    game._raid.partyData = nil
+    game._raid.partyInvitePending = nil
+    game._raid.partyInviteInput = ""
+    game._raid.partyInviteActive = false
+    game._hoverNpc = nil
+    game._portal.show = false
+    game._portal.destinations = {}
+    game._portal.scroll = 0
+    game._portal.message = nil
+    game._portal.cooldownEnd = 0
+    game._npcShop.show = false
+    game._npcShop.tab = "buy"
+    game._npcShop.scroll = 0
+    game._npcShop.selected = nil
+    game._npcShop.amount = 1
+    game._npcShop.prices = nil
+    game._npcShop.shopList = nil
+    game._npcShop.message = nil
+    game._npcShop.transactionLock = false
     resetTradeState()
     dungeon.hoverEntrance = false
     dungeon.moveTimer = 0
@@ -1231,40 +1243,41 @@ function game.closeAllPanels()
     ui.farmingPlotId = nil
     ui.equipmentScroll = 0
     ui.selectedCard = nil
-    raid.partyInviteActive = false
-    raid.partyInviteInput = ""
-    portal.show = false
-    portal.scroll = 0
-    portal.message = nil
-    npcShop.show = false
-    npcShop.selected = nil
-    npcShop.amount = 1
-    npcShop.scroll = 0
-    bank.show = false
-    bank.selected = nil
-    bank.amount = 1
-    bank.scroll = 0
-    auction.show = false
-    auction.selected = nil
-    auction.scroll = 0
-    auction.searchActive = false
-    auction.priceActive = false
-    cardVendor.show = false
-    cardVendor.selected = nil
-    cardVendor.scroll = 0
-    fusionMode.active = false
-    fusionMode.card1 = nil
+    game._raid.partyInviteActive = false
+    game._raid.partyInviteInput = ""
+    game._portal.show = false
+    game._portal.scroll = 0
+    game._portal.message = nil
+    game._npcShop.show = false
+    game._npcShop.selected = nil
+    game._npcShop.amount = 1
+    game._npcShop.scroll = 0
+    game._bank.show = false
+    game._bank.selected = nil
+    game._bank.amount = 1
+    game._bank.scroll = 0
+    game._auction.show = false
+    game._auction.selected = nil
+    game._auction.scroll = 0
+    game._auction.searchActive = false
+    game._auction.priceActive = false
+    game._cardVendor.show = false
+    game._cardVendor.selected = nil
+    game._cardVendor.scroll = 0
+    game._fusionMode.active = false
+    game._fusionMode.card1 = nil
     ui.showMastery = false
     ui.showCompanions = false
     ui.showPets = false
     ui.showGuild = false
     ui.showAscension = false
     ui.showJail = false
-    karmaState.showFactions = false
-    karmaState.showBounties = false
-    -- Close trade panel (but don't cancel server-side — let server handle timeout)
-    if trade.show and trade.tradeId and client then
-        client:emit("trade_cancel", { tradeId = trade.tradeId })
+    ui.showAudioSettings = false
+    game._karma.showFactions = false
+    game._karma.showBounties = false
+    -- Close game._trade panel (but don't cancel server-side — let server handle timeout)
+    if game._trade.show and game._trade.tradeId and client then
+        client:emit("trade_cancel", { tradeId = game._trade.tradeId })
     end
     resetTradeState()
 end
@@ -1332,6 +1345,8 @@ function game.setupListeners()
             dungeon.floor = nil
             dungeon.grid = nil
             dungeon.fog = {}
+            dungeon.lightSources = {}
+            dungeonParticles.cleanup()
             -- Clear combat state
             if tcState.inCombat then
                 tcState.inCombat = false
@@ -1435,6 +1450,18 @@ function game.setupListeners()
         end
         debugLog("zone_state handler COMPLETE, zone=" .. tostring(zone and zone.id))
 
+        -- Transition ambient audio for this zone
+        if not dungeon.inDungeon then
+            game._audio.setAmbientForZone(data.type)
+            game._audio.setWeather(world.weather)
+            -- Start biome/zone-aware music
+            if data.type == "town" or data.type == "building" then
+                game._audio.playTownMusic()
+            elseif overworld.chunkBased then
+                game._audio.playOverworldMusic(overworld.currentBiome)
+            end
+        end
+
         -- Request karma/jail status on zone load
         if client then
             client:emit("karma_status", {})
@@ -1464,6 +1491,7 @@ function game.setupListeners()
     client:on("player_left_zone", function(data)
         if data and data.playerId then
             players[data.playerId] = nil
+            game._audio.removeOtherPlayer(data.playerId)
         end
     end)
 
@@ -1477,6 +1505,10 @@ function game.setupListeners()
                 players[data.id].facing = INT_TO_FACING_LUT[data.f] or data.f
             elseif data.facing then
                 players[data.id].facing = data.facing
+            end
+            -- Track for spatial footstep audio
+            if data.id ~= myId then
+                game._audio.trackOtherPlayer(data.id, data.x, data.y)
             end
         end
     end)
@@ -1519,6 +1551,7 @@ function game.setupListeners()
                     elseif p.facing then
                         players[p.id].facing = p.facing
                     end
+                    game._audio.trackOtherPlayer(p.id, p.x, p.y)
                 end
             end
         end
@@ -1535,6 +1568,7 @@ function game.setupListeners()
                 if m.f then
                     players[m.id].facing = INT_TO_FACING[m.f] or m.f
                 end
+                game._audio.trackOtherPlayer(m.id, m.x, m.y)
             end
         end
     end)
@@ -1543,6 +1577,7 @@ function game.setupListeners()
         if data then
             world.timeOfDay = data.timeOfDay or world.timeOfDay
             world.weather = data.weather or world.weather
+            game._audio.setWeather(world.weather)
         end
     end)
 
@@ -1595,7 +1630,7 @@ function game.setupListeners()
     -- Lich Corruption: town under attack notification
     client:on("town_under_attack", function(data)
         if data then
-            table.insert(directorEvents, {
+            table.insert(game._directorEvents, {
                 title = "Town Under Attack!",
                 description = data.message or "Undead forces are attacking!",
                 type = "lich_attack",
@@ -1623,7 +1658,7 @@ function game.setupListeners()
             doom.lastUpdate = love.timer.getTime()
             doom.capitalCorrupted = true
             doom.flashTimer = 3.0  -- 3s capital breach warning flash
-            table.insert(directorEvents, {
+            table.insert(game._directorEvents, {
                 title = "DOOM APPROACHES",
                 description = data.message or "The corruption has breached Solara.",
                 type = "doom_started",
@@ -1639,7 +1674,7 @@ function game.setupListeners()
             doom.pushbackCount = data.pushbackCount or 0
             doom.capitalCorrupted = false
             doom.lastUpdate = love.timer.getTime()
-            table.insert(directorEvents, {
+            table.insert(game._directorEvents, {
                 title = "Doom Paused",
                 description = data.message or "The corruption recedes from Solara.",
                 type = "doom_paused",
@@ -1654,7 +1689,7 @@ function game.setupListeners()
             doom.remainingMs = data.remainingMs or 0
             doom.capitalCorrupted = true
             doom.lastUpdate = love.timer.getTime()
-            table.insert(directorEvents, {
+            table.insert(game._directorEvents, {
                 title = "DOOM RESUMES",
                 description = data.message or "The corruption reclaims Solara.",
                 type = "doom_resumed",
@@ -1702,7 +1737,7 @@ function game.setupListeners()
         if data and data.id then
             activePatrols[data.id] = nil
             if data.hostile then
-                table.insert(directorEvents, {
+                table.insert(game._directorEvents, {
                     title = (data.description or "Hostile Force") .. " Arrives!",
                     description = "A hostile force has reached its target.",
                     type = "patrol_arrived",
@@ -1715,16 +1750,16 @@ function game.setupListeners()
     -- Bank vault events
     client:on("bank_contents", function(data)
         if data then
-            bank.data = data
-            bank.transactionLock = false
+            game._bank.data = data
+            game._bank.transactionLock = false
         end
     end)
 
     client:on("bank_result", function(data)
         if not data then return end
-        bank.transactionLock = false
+        game._bank.transactionLock = false
         if data.success then
-            if data.bank then bank.data = data.bank end
+            if data.bank then game._bank.data = data.bank end
             if data.chips ~= nil then
                 if identity and identity.account then identity.account.chips = data.chips end
             end
@@ -1733,15 +1768,15 @@ function game.setupListeners()
                 if identity and identity.account then identity.account.mmoInventory = data.inventory end
             end
             if data.message then
-                bank.message = { text = data.message, color = {1, 0.85, 0.2}, timer = 3 }
+                game._bank.message = { text = data.message, color = {1, 0.85, 0.2}, timer = 3 }
             end
         end
     end)
 
     client:on("bank_error", function(data)
-        bank.transactionLock = false
+        game._bank.transactionLock = false
         if data and data.message then
-            bank.message = { text = data.message, color = {1, 0.3, 0.3}, timer = 3 }
+            game._bank.message = { text = data.message, color = {1, 0.3, 0.3}, timer = 3 }
         end
     end)
 
@@ -1750,13 +1785,13 @@ function game.setupListeners()
         if not data or not data.action then return end
         if data.action == "open_bank" then
             game.closeAllPanels()
-            bank.show = true
-            bank.tab = "gold"
-            bank.selected = nil
-            bank.amount = 1
-            bank.scroll = 0
-            bank.data = nil
-            bank.transactionLock = false
+            game._bank.show = true
+            game._bank.tab = "gold"
+            game._bank.selected = nil
+            game._bank.amount = 1
+            game._bank.scroll = 0
+            game._bank.data = nil
+            game._bank.transactionLock = false
             if client then client:emit("bank_open", {}) end
         elseif data.action == "healed" then
             local me = players[myId]
@@ -1779,16 +1814,16 @@ function game.setupListeners()
     -- Disease system events
     client:on("disease_status", function(data)
         if data then
-            diseaseState.playerDiseases = data.diseases or {}
-            diseaseState.chunkDiseases = data.chunkDiseases or {}
+            game._disease.playerDiseases = data.diseases or {}
+            game._disease.chunkDiseases = data.chunkDiseases or {}
         end
     end)
 
     client:on("disease_contracted", function(data)
         if data then
-            diseaseState.contractedFlash = 3.0
-            diseaseState.contractedName = data.name or "Unknown Disease"
-            table.insert(directorEvents, {
+            game._disease.contractedFlash = 3.0
+            game._disease.contractedName = data.name or "Unknown Disease"
+            table.insert(game._directorEvents, {
                 title = "Disease Contracted",
                 description = data.message or ("You have contracted " .. (data.name or "a disease")),
                 type = "disease",
@@ -1799,34 +1834,34 @@ function game.setupListeners()
 
     client:on("disease_symptom", function(data)
         if data then
-            diseaseState.symptomMsg = (data.name or "Disease") .. ": " .. (data.damage or 0) .. " damage"
-            diseaseState.symptomTimer = 2.0
+            game._disease.symptomMsg = (data.name or "Disease") .. ": " .. (data.damage or 0) .. " damage"
+            game._disease.symptomTimer = 2.0
         end
     end)
 
     -- Weather propagation events
     client:on("weather_info", function(data)
         if data then
-            weatherState.weather = data.weather or "clear"
-            weatherState.intensity = data.intensity or 0.5
-            weatherState.wind = data.wind and data.wind.name or "east"
+            game._weather.weather = data.weather or "clear"
+            game._weather.intensity = data.intensity or 0.5
+            game._weather.wind = data.wind and data.wind.name or "east"
         end
     end)
 
     -- Faction influence events
     client:on("influence_info", function(data)
         if data then
-            influenceState.controlling = data.controlling
-            influenceState.area = data.area or {}
+            game._influence.controlling = data.controlling
+            game._influence.area = data.area or {}
         end
     end)
 
     -- Ecology events
     client:on("ecology_info", function(data)
         if data then
-            ecologyState.state = data.state or -1
-            ecologyState.name = data.name or "unknown"
-            ecologyState.resourceBonus = data.resourceBonus or 1.0
+            game._ecology.state = data.state or -1
+            game._ecology.name = data.name or "unknown"
+            game._ecology.resourceBonus = data.resourceBonus or 1.0
         end
     end)
 
@@ -1849,6 +1884,7 @@ function game.setupListeners()
     -- Harvest result: floating text feedback + skill update
     client:on("harvest_result", function(data)
         if not data then return end
+        game._audio.playItemPickup()
 
         -- Find the resource position for floating text
         local rx, ry = 0, 0
@@ -2375,6 +2411,7 @@ function game.setupListeners()
             local newLevel = data.level or 1
             if newLevel > oldLevel and oldLevel >= 1 then
                 levelUpEffect = { timer = 3.0, level = newLevel, alpha = 1.0, ringRadius = 0 }
+                game._audio.playLevelUp()
             end
 
             rpg.race = data.race
@@ -2421,6 +2458,7 @@ function game.setupListeners()
 
     client:on("card_pack_opened", function(data)
         if data then
+            game._audio.playPackOpen()
             rpg.pendingPacks = data.pendingPacks or 0
             if data.cards and #data.cards > 0 then
                 -- Start pack reveal animation instead of instant floating texts
@@ -2505,14 +2543,14 @@ function game.setupListeners()
 
     client:on("card_vendor_catalog", function(data)
         if data then
-            cardVendor.catalog = data.cards or {}
+            game._cardVendor.catalog = data.cards or {}
         end
     end)
 
     -- Card loadout events
     client:on("card_loadout_saved", function(data)
         if data then
-            cardLoadouts.loadouts = data.loadouts or { nil, nil, nil, nil, nil }
+            game._cardLoadouts.loadouts = data.loadouts or { nil, nil, nil, nil, nil }
             if myId and players[myId] then
                 addFloatingText({
                     text = "Loadout saved!",
@@ -2525,7 +2563,7 @@ function game.setupListeners()
 
     client:on("card_loadouts", function(data)
         if data then
-            cardLoadouts.loadouts = data.loadouts or { nil, nil, nil, nil, nil }
+            game._cardLoadouts.loadouts = data.loadouts or { nil, nil, nil, nil, nil }
         end
     end)
 
@@ -2556,10 +2594,10 @@ function game.setupListeners()
     -- Auction house events
     client:on("mmo_auction_listings", function(data)
         if data then
-            auction.listings = data.listings or {}
-            auction.page = data.page or 1
-            auction.totalPages = data.totalPages or 1
-            auction.totalResults = data.totalResults or 0
+            game._auction.listings = data.listings or {}
+            game._auction.page = data.page or 1
+            game._auction.totalPages = data.totalPages or 1
+            game._auction.totalResults = data.totalResults or 0
         end
     end)
 
@@ -2599,7 +2637,7 @@ function game.setupListeners()
 
     client:on("mmo_auction_my_results", function(data)
         if data then
-            auction.myListings = data.listings or {}
+            game._auction.myListings = data.listings or {}
         end
     end)
 
@@ -2614,8 +2652,8 @@ function game.setupListeners()
     end)
 
     client:on("mmo_auction_update", function()
-        if auction.show and client then
-            client:emit("mmo_auction_browse", auction.filters or {})
+        if game._auction.show and client then
+            client:emit("mmo_auction_browse", game._auction.filters or {})
         end
     end)
 
@@ -2695,6 +2733,12 @@ function game.setupListeners()
         dungeon.magicAuras = data.magicAuras or {}
         dungeon.isPitchBlack = data.isPitchBlack or false
         dungeon.placedTorches = {}
+        dungeon.lightSources = data.lightSources or {}
+
+        -- Transition dungeon ambient audio by theme
+        game._audio.setAmbientForDungeon(data.theme)
+        game._audio.setDarkFloor(data.isPitchBlack or (data.lightLevel and data.lightLevel < 0.2))
+        game._audio.playDungeonMusic(data.theme)
 
         -- Initialize combat state from server
         dungeon.playerHp = data.playerHp or 100
@@ -2811,6 +2855,7 @@ function game.setupListeners()
         if data.visionRadius then dungeon.visionRadius = data.visionRadius end
         if data.lightLevel then dungeon.lightLevel = data.lightLevel end
         if data.isPitchBlack ~= nil then dungeon.isPitchBlack = data.isPitchBlack end
+        if data.lightSources then dungeon.lightSources = data.lightSources end
 
         -- Invalidate minimap cache so it redraws with new visibility
         dungeon._minimapDirty = true
@@ -2974,6 +3019,7 @@ function game.setupListeners()
     -- Dungeon: trap triggered
     client:on("dungeon_trap_triggered", function(data)
         if not data then return end
+        game._audio.playTrap()
         -- Update server-side HP
         if data.playerHp ~= nil then dungeon.playerHp = data.playerHp end
         if data.playerMaxHp ~= nil then dungeon.playerMaxHp = data.playerMaxHp end
@@ -3181,6 +3227,12 @@ function game.setupListeners()
         if data.playerHp ~= nil then dungeon.playerHp = data.playerHp end
         if data.playerMaxHp ~= nil then dungeon.playerMaxHp = data.playerMaxHp end
 
+        -- Hit/dodge/block sounds
+        if data.dodged then game._audio.playMiss()
+        elseif data.blocked then game._audio.playBlock()
+        elseif data.damage and data.damage > 0 then game._audio.playHit()
+        end
+
         -- Floating text
         if data.dodged then
             addFloatingText({
@@ -3277,6 +3329,8 @@ function game.setupListeners()
         dungeon.inDungeon = false
         dungeon.floor = nil
         dungeon.grid = nil
+        dungeon.lightSources = {}
+        dungeonParticles.cleanup()
         -- Clear combat state on death
         if tcState.inCombat then
             tcState.inCombat = false
@@ -3293,6 +3347,7 @@ function game.setupListeners()
     -- Permadeath: player downed (bleedout state)
     client:on("player_downed", function(data)
         if not data then return end
+        game._audio.playDeath()
         permadeath.isDowned = true
         permadeath.bleedoutTimer = data.timeRemaining or 120
         permadeath.causeOfDeath = data.causeOfDeath or "Unknown"
@@ -3362,6 +3417,8 @@ function game.setupListeners()
         dungeon.inDungeon = false
         dungeon.floor = nil
         dungeon.grid = nil
+        dungeon.lightSources = {}
+        dungeonParticles.cleanup()
         if tcState.inCombat then
             tcState.inCombat = false
             tcState.combatId = nil
@@ -3399,6 +3456,7 @@ function game.setupListeners()
     -- Loot drop notification (procedural items from dungeons)
     client:on("loot_dropped", function(data)
         if not data or not data.item then return end
+        game._audio.playItemPickup()
         local item = data.item
         local rc = game.getItemRarityColor(item)
         local name = game.getItemDisplayName(item)
@@ -3410,7 +3468,7 @@ function game.setupListeners()
             alpha = 1.0,
         }
         table.insert(game._itemUI.lootNotifications, 1, notif)
-        -- Cap notifications
+        -- Cap game._notifications
         while #game._itemUI.lootNotifications > (game._itemUI.maxLootNotifs or 5) do
             table.remove(game._itemUI.lootNotifications)
         end
@@ -3459,6 +3517,10 @@ function game.setupListeners()
             camera.x = arenaW / 2 - love.graphics.getWidth() / 2
             camera.y = arenaH / 2 - love.graphics.getHeight() / 2
         end
+
+        -- Combat start audio: SFX + music
+        game._audio.playCombatStart()
+        game._audio.playRandomCombatMusic()
 
         -- Initialize combat UI and animation systems
         combatUI.init(data)
@@ -3510,6 +3572,10 @@ function game.setupListeners()
     -- Combat ended: exit combat mode
     client:on("tc_combat_end", function(data)
         if not data then return end
+
+        -- Combat end audio
+        if data.result == "victory" then game._audio.playVictory() else game._audio.playDefeat() end
+        game._audio.stopMusic(2)
 
         -- Play end transition
         local endText = data.result == "victory" and "VICTORY" or "DEFEAT"
@@ -3614,12 +3680,12 @@ function game.setupListeners()
     client:on("durability_info", function(data)
         if data and data.durability then
             durabilityData = data.durability
-            -- Show notifications for broken/low durability items
+            -- Show game._notifications for broken/low durability items
             for slot, info in pairs(data.durability) do
                 if info.broken then
-                    table.insert(notifications, { text = slot .. " item broke!", color = {1, 0.2, 0.2}, timer = NOTIFICATION_DURATION, maxTimer = NOTIFICATION_DURATION })
+                    table.insert(game._notifications, { text = slot .. " item broke!", color = {1, 0.2, 0.2}, timer = NOTIFICATION_DURATION, maxTimer = NOTIFICATION_DURATION })
                 elseif info.low then
-                    table.insert(notifications, { text = slot .. " durability low!", color = {1, 0.7, 0.2}, timer = NOTIFICATION_DURATION, maxTimer = NOTIFICATION_DURATION })
+                    table.insert(game._notifications, { text = slot .. " durability low!", color = {1, 0.7, 0.2}, timer = NOTIFICATION_DURATION, maxTimer = NOTIFICATION_DURATION })
                 end
             end
         end
@@ -3677,8 +3743,8 @@ function game.setupListeners()
     -- Abilities list (response to get_abilities — weapon-family abilities + cooldowns)
     client:on("abilities_list", function(data)
         if not data then return end
-        abilityBar.abilities = data.abilities or {}
-        abilityBar.weaponFamily = data.weaponFamily
+        game._abilityBar.abilities = data.abilities or {}
+        game._abilityBar.weaponFamily = data.weaponFamily
     end)
 
     -- Ability error (cooldown, out of mana, out of range, etc.)
@@ -3699,12 +3765,12 @@ function game.setupListeners()
     client:on("cooldown_update", function(data)
         if not data then return end
         if data.abilities then
-            abilityBar.abilities = data.abilities
+            game._abilityBar.abilities = data.abilities
         end
         if data.mana ~= nil then dungeon.playerMana = data.mana end
         if data.maxMana ~= nil then dungeon.playerMaxMana = data.maxMana end
         if data.cardAbilities then
-            abilityBar.cardAbilities = data.cardAbilities
+            game._abilityBar.cardAbilities = data.cardAbilities
         end
     end)
 
@@ -3720,7 +3786,7 @@ function game.setupListeners()
     client:on("card_cooldown_update", function(data)
         if not data then return end
         if data.cardAbilities then
-            abilityBar.cardAbilities = data.cardAbilities
+            game._abilityBar.cardAbilities = data.cardAbilities
         end
         if data.mana ~= nil then dungeon.playerMana = data.mana end
         if data.maxMana ~= nil then dungeon.playerMaxMana = data.maxMana end
@@ -3752,7 +3818,7 @@ function game.setupListeners()
     -- Director: world event banner (gold banner, 5s fade)
     client:on("world_event", function(data)
         if not data then return end
-        table.insert(directorEvents, {
+        table.insert(game._directorEvents, {
             title = data.title or "World Event",
             description = data.description or "",
             type = data.type or "unknown",
@@ -3764,7 +3830,7 @@ function game.setupListeners()
     -- Director: zone ticker (bottom-right, 5s)
     client:on("zone_director_update", function(data)
         if not data then return end
-        table.insert(zoneTicker, {
+        table.insert(game._zoneTicker, {
             message = data.message or "",
             eventType = data.eventType or "info",
             timer = 5,
@@ -3774,7 +3840,7 @@ function game.setupListeners()
     -- Raid: state update (waiting/active/completed)
     client:on("raid_state_update", function(data)
         if not data then return end
-        raid.state = {
+        game._raid.state = {
             state = data.state or "waiting",
             playerCount = data.playerCount or 0,
             minPlayers = data.minPlayers or 8,
@@ -3786,9 +3852,9 @@ function game.setupListeners()
     -- Raid: barrier drops, boss ready
     client:on("raid_boss_ready", function(data)
         if not data then return end
-        if raid.state then
-            raid.state.state = "active"
-            raid.state.barrierActive = false
+        if game._raid.state then
+            game._raid.state.state = "active"
+            game._raid.state.barrierActive = false
         end
         local me = players[myId]
         if me then
@@ -3804,7 +3870,7 @@ function game.setupListeners()
     -- Raid: boss HP update for health bar
     client:on("raid_boss_hp", function(data)
         if not data then return end
-        raid.bossHp = {
+        game._raid.bossHp = {
             hp = data.hp or 0,
             maxHp = data.maxHp or 1,
             name = data.name or "Raid Boss",
@@ -3846,7 +3912,7 @@ function game.setupListeners()
 
     client:on("raid_gathering_update", function(data)
         if not data then return end
-        raid.gathering = {
+        game._raid.gathering = {
             totalPlayers = data.totalPlayers or 0,
             minRequired = data.minRequired or 16,
             maxAllowed = data.maxAllowed or 32,
@@ -3859,7 +3925,7 @@ function game.setupListeners()
 
     client:on("raid_joined", function(data)
         if not data then return end
-        raid.myParty = data.partyId
+        game._raid.myParty = data.partyId
         local me = players[myId]
         if me then
             addFloatingText({
@@ -3873,7 +3939,7 @@ function game.setupListeners()
 
     client:on("raid_activated", function(data)
         if not data then return end
-        raid.gathering = nil
+        game._raid.gathering = nil
         local me = players[myId]
         if me then
             addFloatingText({
@@ -3883,13 +3949,13 @@ function game.setupListeners()
                 timer = 5,
             })
         end
-        -- Auto-enter raid floor
+        -- Auto-enter game._raid floor
         if client then client:emit("raid_enter_floor", {}) end
     end)
 
     client:on("raid_cancelled", function(data)
-        raid.gathering = nil
-        raid.myParty = nil
+        game._raid.gathering = nil
+        game._raid.myParty = nil
         local me = players[myId]
         if me then
             addFloatingText({
@@ -3941,11 +4007,11 @@ function game.setupListeners()
     end)
 
     client:on("raid_complete", function(data)
-        raid.gathering = nil
-        raid.myParty = nil
-        raid.phase = nil
-        raid.corruptionZones = {}
-        raid.phylacteries = {}
+        game._raid.gathering = nil
+        game._raid.myParty = nil
+        game._raid.phase = nil
+        game._raid.corruptionZones = {}
+        game._raid.phylacteries = {}
         local me = players[myId]
         if me then
             addFloatingText({
@@ -3963,7 +4029,7 @@ function game.setupListeners()
             -- Start purification VFX
             local me = players[myId]
             if me then
-                raid.purificationVfx = { x = me.x, y = me.y, timer = 2.0, maxTimer = 2.0, radius = 0 }
+                game._raid.purificationVfx = { x = me.x, y = me.y, timer = 2.0, maxTimer = 2.0, radius = 0 }
                 addFloatingText({
                     text = "Corruption cleansed! (" .. (data.cleansed or 0) .. " chunks)",
                     x = me.x, y = me.y - 50,
@@ -4000,7 +4066,7 @@ function game.setupListeners()
             local me = players[myId]
             if me then
                 -- Dramatic purification VFX (bigger than crystal cleanse)
-                raid.purificationVfx = { x = me.x, y = me.y, timer = 3.0, maxTimer = 3.0, radius = 0 }
+                game._raid.purificationVfx = { x = me.x, y = me.y, timer = 3.0, maxTimer = 3.0, radius = 0 }
                 addFloatingText({
                     text = (data.cardName or "Holy Power") .. "! " .. (data.cleansed or 0) .. " chunks cleansed!",
                     x = me.x, y = me.y - 60,
@@ -4048,7 +4114,7 @@ function game.setupListeners()
 
     client:on("tc_boss_phase_change", function(data)
         if not data then return end
-        raid.phase = {
+        game._raid.phase = {
             phase = data.phase or 1,
             phaseName = data.phaseName or "",
             message = data.message or "",
@@ -4068,7 +4134,7 @@ function game.setupListeners()
         if not data or not data.units then return end
         for _, unit in ipairs(data.units) do
             if unit.isPhylactery then
-                table.insert(raid.phylacteries, {
+                table.insert(game._raid.phylacteries, {
                     id = unit.id,
                     hp = unit.hp or 100,
                     maxHp = unit.maxHp or 100,
@@ -4089,9 +4155,9 @@ function game.setupListeners()
 
     client:on("tc_corruption_zones", function(data)
         if not data or not data.zones then return end
-        raid.corruptionZones = {}
+        game._raid.corruptionZones = {}
         for _, zone in ipairs(data.zones) do
-            table.insert(raid.corruptionZones, {
+            table.insert(game._raid.corruptionZones, {
                 x = zone.x or 0, y = zone.y or 0,
                 radius = zone.radius or 1,
                 damage = zone.damage or 20,
@@ -4132,7 +4198,7 @@ function game.setupListeners()
 
     client:on("party_created", function(data)
         if not data then return end
-        raid.partyData = {
+        game._raid.partyData = {
             partyId = data.partyId,
             leader = data.leader,
             members = data.members or {},
@@ -4150,10 +4216,10 @@ function game.setupListeners()
 
     client:on("party_updated", function(data)
         if not data then return end
-        raid.partyData = raid.partyData or {}
-        raid.partyData.partyId = data.partyId or (raid.partyData and raid.partyData.partyId)
-        raid.partyData.leader = data.leader
-        raid.partyData.members = data.members or {}
+        game._raid.partyData = game._raid.partyData or {}
+        game._raid.partyData.partyId = data.partyId or (game._raid.partyData and game._raid.partyData.partyId)
+        game._raid.partyData.leader = data.leader
+        game._raid.partyData.members = data.members or {}
         -- Show event message if provided
         if data.event then
             local me = players[myId]
@@ -4169,7 +4235,7 @@ function game.setupListeners()
     end)
 
     client:on("party_disbanded", function(data)
-        raid.partyData = nil
+        game._raid.partyData = nil
         local me = players[myId]
         if me then
             addFloatingText({
@@ -4182,7 +4248,7 @@ function game.setupListeners()
     end)
 
     client:on("party_left", function(data)
-        raid.partyData = nil
+        game._raid.partyData = nil
         local me = players[myId]
         if me then
             addFloatingText({
@@ -4195,7 +4261,7 @@ function game.setupListeners()
     end)
 
     client:on("party_kicked", function(data)
-        raid.partyData = nil
+        game._raid.partyData = nil
         local me = players[myId]
         if me then
             addFloatingText({
@@ -4209,7 +4275,7 @@ function game.setupListeners()
 
     client:on("party_invite_received", function(data)
         if not data then return end
-        raid.partyInvitePending = {
+        game._raid.partyInvitePending = {
             fromId = data.fromId,
             fromName = data.fromName or "Someone",
             partyId = data.partyId,
@@ -4668,13 +4734,13 @@ function game.setupListeners()
 
     client:on("server_rules_updated", function(data)
         if not data then return end
-        if data.xpRate then admin.xpRate = data.xpRate end
-        if data.dropRate then admin.dropRate = data.dropRate end
-        admin.resultMsg = { text = "Rules updated", color = {0.3, 1, 0.3}, timer = 3 }
+        if data.xpRate then game._admin.xpRate = data.xpRate end
+        if data.dropRate then game._admin.dropRate = data.dropRate end
+        game._admin.resultMsg = { text = "Rules updated", color = {0.3, 1, 0.3}, timer = 3 }
     end)
 
     client:on("server_shutdown", function(data)
-        admin.shutdownWarning = 10
+        game._admin.shutdownWarning = 10
         addFloatingText({
             text = "SERVER SHUTTING DOWN",
             x = players[myId] and players[myId].x or 0,
@@ -4686,7 +4752,7 @@ function game.setupListeners()
 
     client:on("admin_kicked", function(data)
         addFloatingText({
-            text = data and data.message or "You have been kicked by an admin",
+            text = data and data.message or "You have been kicked by an game._admin",
             x = players[myId] and players[myId].x or 0,
             y = players[myId] and (players[myId].y - 40) or 0,
             color = {1, 0.3, 0.3},
@@ -4701,7 +4767,7 @@ function game.setupListeners()
 
     client:on("admin_result", function(data)
         if not data then return end
-        admin.resultMsg = {
+        game._admin.resultMsg = {
             text = data.message or "Action completed",
             color = data.success and {0.3, 1, 0.3} or {1, 0.3, 0.3},
             timer = 4,
@@ -4711,13 +4777,13 @@ function game.setupListeners()
     -- NPC Shop: shop list (response to npc_shop_browse)
     client:on("npc_shop_list", function(data)
         if not data or not data.shops then return end
-        npcShop.shopList = data.shops
+        game._npcShop.shopList = data.shops
         -- Auto-select first shop and fetch prices
-        if #data.shops > 0 and not npcShop.prices then
+        if #data.shops > 0 and not game._npcShop.prices then
             local firstShop = data.shops[1]
-            npcShop.shopId = firstShop.id
-            npcShop.shopName = firstShop.name or "Shop"
-            npcShop.shopDesc = firstShop.description or ""
+            game._npcShop.shopId = firstShop.id
+            game._npcShop.shopName = firstShop.name or "Shop"
+            game._npcShop.shopDesc = firstShop.description or ""
             client:emit("npc_shop_prices", { shopId = firstShop.id })
         end
     end)
@@ -4725,21 +4791,21 @@ function game.setupListeners()
     -- NPC Shop: price data for a specific shop
     client:on("npc_shop_prices_result", function(data)
         if not data or not data.prices then return end
-        npcShop.prices = data.prices
+        game._npcShop.prices = data.prices
         if data.shop then
-            npcShop.shopId = data.shop.id or npcShop.shopId
-            npcShop.shopName = data.shop.name or npcShop.shopName
-            npcShop.shopDesc = data.shop.description or ""
+            game._npcShop.shopId = data.shop.id or game._npcShop.shopId
+            game._npcShop.shopName = data.shop.name or game._npcShop.shopName
+            game._npcShop.shopDesc = data.shop.description or ""
         end
-        npcShop.selected = nil
-        npcShop.scroll = 0
-        npcShop.amount = 1
+        game._npcShop.selected = nil
+        game._npcShop.scroll = 0
+        game._npcShop.amount = 1
     end)
 
     -- NPC Shop: bought item
     client:on("npc_shop_bought", function(data)
         if not data then return end
-        npcShop.transactionLock = false
+        game._npcShop.transactionLock = false
         -- Update local coin balance
         if data.coins ~= nil and account then
             account.coins = data.coins
@@ -4751,7 +4817,7 @@ function game.setupListeners()
             end
         end
         -- Feedback message
-        npcShop.message = {
+        game._npcShop.message = {
             text = data.message or "Purchase complete!",
             color = {0.3, 1, 0.4},
             timer = 3,
@@ -4767,14 +4833,14 @@ function game.setupListeners()
         end
         -- Refresh prices (they may have changed due to pressure)
         if client then
-            client:emit("npc_shop_prices", { shopId = npcShop.shopId })
+            client:emit("npc_shop_prices", { shopId = game._npcShop.shopId })
         end
     end)
 
     -- NPC Shop: sold item
     client:on("npc_shop_sold", function(data)
         if not data then return end
-        npcShop.transactionLock = false
+        game._npcShop.transactionLock = false
         -- Update local coin balance
         if data.coins ~= nil and account then
             account.coins = data.coins
@@ -4786,7 +4852,7 @@ function game.setupListeners()
             end
         end
         -- Feedback message
-        npcShop.message = {
+        game._npcShop.message = {
             text = data.message or "Sale complete!",
             color = {0.3, 1, 0.4},
             timer = 3,
@@ -4802,15 +4868,15 @@ function game.setupListeners()
         end
         -- Refresh prices
         if client then
-            client:emit("npc_shop_prices", { shopId = npcShop.shopId })
+            client:emit("npc_shop_prices", { shopId = game._npcShop.shopId })
         end
     end)
 
     -- NPC Shop: error
     client:on("npc_shop_error", function(data)
         if not data then return end
-        npcShop.transactionLock = false
-        npcShop.message = {
+        game._npcShop.transactionLock = false
+        game._npcShop.message = {
             text = data.message or "Transaction failed",
             color = {1, 0.3, 0.3},
             timer = 4,
@@ -4831,11 +4897,11 @@ function game.setupListeners()
 
     client:on("npc_dialogue", function(data)
         if not data then return end
-        npcDialogue.show = true
-        npcDialogue.npcName = data.npcName or "NPC"
-        npcDialogue.text = data.text or "..."
-        npcDialogue.choices = data.choices or {}
-        npcDialogue.npcId = data.npcId or ""
+        game._npcDialogue.show = true
+        game._npcDialogue.npcName = data.npcName or "NPC"
+        game._npcDialogue.text = data.text or "..."
+        game._npcDialogue.choices = data.choices or {}
+        game._npcDialogue.npcId = data.npcId or ""
     end)
 
     -- ========================================================================
@@ -4873,9 +4939,9 @@ function game.setupListeners()
     end)
 
     client:on("npc_dialogue_end", function(data)
-        npcDialogue.show = false
-        npcDialogue.text = ""
-        npcDialogue.choices = {}
+        game._npcDialogue.show = false
+        game._npcDialogue.text = ""
+        game._npcDialogue.choices = {}
     end)
 
     -- ========================================================================
@@ -4915,7 +4981,7 @@ function game.setupListeners()
 
     client:on("quest_list_result", function(data)
         if not data then return end
-        questLog = { active = data.active or {}, completed = data.completed or {} }
+        game._questLog = { active = data.active or {}, completed = data.completed or {} }
     end)
 
     client:on("quest_error", function(data)
@@ -4963,19 +5029,19 @@ function game.setupListeners()
     -- P2P Trade event listeners
     -- ========================================================================
 
-    -- Someone wants to trade with us
+    -- Someone wants to game._trade with us
     client:on("trade_request_received", function(data)
         if not data then return end
-        trade.pendingRequest = {
+        game._trade.pendingRequest = {
             tradeId = data.tradeId,
             fromName = data.fromName or "???",
             fromId = data.fromId,
         }
         -- Auto-dismiss after 25 seconds (server expires at 30s)
-        trade._pendingTimer = 25
+        game._trade._pendingTimer = 25
     end)
 
-    -- Our trade request was sent (acknowledgement)
+    -- Our game._trade request was sent (acknowledgement)
     client:on("trade_request_sent", function(data)
         -- Already showed floating text from context menu action; nothing extra needed
     end)
@@ -4984,56 +5050,56 @@ function game.setupListeners()
     client:on("trade_started", function(data)
         if not data or not data.tradeId then return end
         -- Clear pending request if this matches
-        if trade.pendingRequest and trade.pendingRequest.tradeId == data.tradeId then
+        if game._trade.pendingRequest and game._trade.pendingRequest.tradeId == data.tradeId then
             -- We accepted: partner is the requester
-            trade.partnerId = trade.pendingRequest.fromId
-            trade.partnerName = trade.pendingRequest.fromName
+            game._trade.partnerId = game._trade.pendingRequest.fromId
+            game._trade.partnerName = game._trade.pendingRequest.fromName
         else
             -- We initiated: partner is whoever we sent the request to
             -- partnerName/Id will be filled from players table if possible
             -- (trade_request context menu already sent the request with targetId)
         end
-        trade.pendingRequest = nil
-        trade._pendingTimer = nil
-        trade.tradeId = data.tradeId
-        trade.show = true
-        trade.myOffer = { items = {}, chips = 0 }
-        trade.theirOffer = { items = {}, chips = 0 }
-        trade.myConfirmed = false
-        trade.theirConfirmed = false
-        trade.coinInput = ""
-        trade.coinInputActive = false
-        trade.myScroll = 0
-        trade.offerScroll = 0
-        trade.message = nil
+        game._trade.pendingRequest = nil
+        game._trade._pendingTimer = nil
+        game._trade.tradeId = data.tradeId
+        game._trade.show = true
+        game._trade.myOffer = { items = {}, chips = 0 }
+        game._trade.theirOffer = { items = {}, chips = 0 }
+        game._trade.myConfirmed = false
+        game._trade.theirConfirmed = false
+        game._trade.coinInput = ""
+        game._trade.coinInputActive = false
+        game._trade.myScroll = 0
+        game._trade.offerScroll = 0
+        game._trade.message = nil
 
         -- If we don't have a partner name yet (we initiated), try to resolve it
-        if (not trade.partnerName or trade.partnerName == "???") and trade.partnerId then
-            local p = players[trade.partnerId]
+        if (not game._trade.partnerName or game._trade.partnerName == "???") and game._trade.partnerId then
+            local p = players[game._trade.partnerId]
             if p then
-                trade.partnerName = p.name or "???"
+                game._trade.partnerName = p.name or "???"
             end
         end
     end)
 
     -- Partner updated their offer
     client:on("trade_offer_updated", function(data)
-        if not data or data.tradeId ~= trade.tradeId then return end
+        if not data or data.tradeId ~= game._trade.tradeId then return end
         if data.offer then
-            trade.theirOffer = {
+            game._trade.theirOffer = {
                 items = data.offer.items or {},
                 chips = data.offer.chips or 0,
             }
         end
         -- Offer changed: both confirmations reset (server does this too)
-        trade.myConfirmed = false
-        trade.theirConfirmed = false
+        game._trade.myConfirmed = false
+        game._trade.theirConfirmed = false
     end)
 
     -- Partner confirmed their side
     client:on("trade_partner_confirmed", function(data)
-        if not data or data.tradeId ~= trade.tradeId then return end
-        trade.theirConfirmed = true
+        if not data or data.tradeId ~= game._trade.tradeId then return end
+        game._trade.theirConfirmed = true
     end)
 
     -- Trade completed successfully
@@ -5067,8 +5133,8 @@ function game.setupListeners()
     -- Trade cancelled (by partner or disconnect)
     client:on("trade_cancelled", function(data)
         if not data then return end
-        -- Only handle if this is our active trade
-        if trade.tradeId and data.tradeId == trade.tradeId then
+        -- Only handle if this is our active game._trade
+        if game._trade.tradeId and data.tradeId == game._trade.tradeId then
             if myId and players[myId] then
                 addFloatingText({
                     text = "Trade cancelled",
@@ -5080,21 +5146,21 @@ function game.setupListeners()
             resetTradeState()
         end
         -- Also clear pending request if it matches
-        if trade.pendingRequest and trade.pendingRequest.tradeId == data.tradeId then
-            trade.pendingRequest = nil
-            trade._pendingTimer = nil
+        if game._trade.pendingRequest and game._trade.pendingRequest.tradeId == data.tradeId then
+            game._trade.pendingRequest = nil
+            game._trade._pendingTimer = nil
         end
     end)
 
     -- Trade request expired (30s timeout)
     client:on("trade_expired", function(data)
         if not data then return end
-        if trade.pendingRequest and trade.pendingRequest.tradeId == data.tradeId then
-            trade.pendingRequest = nil
-            trade._pendingTimer = nil
+        if game._trade.pendingRequest and game._trade.pendingRequest.tradeId == data.tradeId then
+            game._trade.pendingRequest = nil
+            game._trade._pendingTimer = nil
         end
-        -- If our sent request expired while trade panel not yet open
-        if trade.tradeId == data.tradeId and not trade.show then
+        -- If our sent request expired while game._trade panel not yet open
+        if game._trade.tradeId == data.tradeId and not game._trade.show then
             resetTradeState()
         end
     end)
@@ -5103,8 +5169,8 @@ function game.setupListeners()
     client:on("trade_error", function(data)
         if not data then return end
         local msg = data.message or "Trade error"
-        if trade.show then
-            trade.message = {
+        if game._trade.show then
+            game._trade.message = {
                 text = msg,
                 color = {1, 0.3, 0.3},
                 timer = 4,
@@ -5288,12 +5354,12 @@ function game.setupListeners()
     -- Biome weather update (pushed when biome weather changes)
     client:on("biome_weather", function(data)
         if not data then return end
-        weatherState.weather = data.weather or weatherState.weather
+        game._weather.weather = data.weather or game._weather.weather
         if data.effects then
-            weatherState.effects = data.effects
+            game._weather.effects = data.effects
         end
         if data.biome then
-            weatherState.biome = data.biome
+            game._weather.biome = data.biome
         end
     end)
 
@@ -5347,8 +5413,9 @@ function game.setupListeners()
     -- Item broken (equipment destroyed from durability loss)
     client:on("item_broken", function(data)
         if not data then return end
+        game._audio.playItemBreak()
         local msg = (data.itemName or data.slot or "Item") .. " has broken!"
-        table.insert(notifications, { text = msg, color = {1, 0.2, 0.2}, timer = NOTIFICATION_DURATION, maxTimer = NOTIFICATION_DURATION })
+        table.insert(game._notifications, { text = msg, color = {1, 0.2, 0.2}, timer = NOTIFICATION_DURATION, maxTimer = NOTIFICATION_DURATION })
     end)
 
     -- Durability warning (equipment close to breaking)
@@ -5358,28 +5425,29 @@ function game.setupListeners()
         if data.durability and data.maxDurability then
             msg = msg .. " (" .. data.durability .. "/" .. data.maxDurability .. ")"
         end
-        table.insert(notifications, { text = msg, color = {1, 0.7, 0.2}, timer = NOTIFICATION_DURATION, maxTimer = NOTIFICATION_DURATION })
+        table.insert(game._notifications, { text = msg, color = {1, 0.7, 0.2}, timer = NOTIFICATION_DURATION, maxTimer = NOTIFICATION_DURATION })
     end)
 
     -- -----------------------------------------------------------------------
     -- Portal travel listeners
     -- -----------------------------------------------------------------------
 
-    -- Server sends back list of available portal destinations
+    -- Server sends back list of available game._portal destinations
     client:on("portal_list", function(data)
         if not data then return end
-        portal.destinations = data.destinations or {}
-        portal.show = true
-        portal.scroll = 0
+        game._portal.destinations = data.destinations or {}
+        game._portal.show = true
+        game._portal.scroll = 0
         -- Preserve any existing error/cooldown message; it will auto-expire via timer
     end)
 
     -- Portal teleport succeeded — zone_state will follow from server
     client:on("portal_traveled", function(data)
         if not data then return end
-        portal.show = false
+        game._audio.playPortal()
+        game._portal.show = false
         -- Set cooldown: 30 seconds from now
-        portal.cooldownEnd = love.timer.getTime() + 30
+        game._portal.cooldownEnd = love.timer.getTime() + 30
         -- Show success floating text
         local destName = data.destinationName or "destination"
         if myId and players[myId] then
@@ -5396,13 +5464,13 @@ function game.setupListeners()
     client:on("portal_error", function(data)
         if not data then return end
         local msg = data.message or "Portal error"
-        portal.message = {
+        game._portal.message = {
             text = msg,
             color = {1, 0.35, 0.35},
             timer = 5,
         }
         -- If the panel is not open, also show as floating text
-        if not portal.show and myId and players[myId] then
+        if not game._portal.show and myId and players[myId] then
             addFloatingText({
                 text = msg,
                 x = players[myId].x, y = players[myId].y - 40,
@@ -5413,7 +5481,7 @@ function game.setupListeners()
         -- Parse cooldown from error message (e.g. "Portal on cooldown (25s remaining)")
         local remaining = msg:match("%((%d+)s remaining%)")
         if remaining then
-            portal.cooldownEnd = love.timer.getTime() + tonumber(remaining)
+            game._portal.cooldownEnd = love.timer.getTime() + tonumber(remaining)
         end
     end)
 
@@ -5552,7 +5620,7 @@ function game.setupListeners()
     end)
 
     -- -----------------------------------------------------------------------
-    -- Base raid listeners
+    -- Base game._raid listeners
     -- -----------------------------------------------------------------------
     client:on("base_raid_alert", function(data)
         if not data then return end
@@ -5626,57 +5694,57 @@ function game.setupListeners()
     -- ===== Karma / Factions =====
     client:on("karma_status", function(data)
         if not data then return end
-        karmaState.karma = data.karma or 0
-        karmaState.activeBounty = data.activeBounty
-        karmaState.isGuardHostile = data.isGuardHostile or false
+        game._karma.karma = data.karma or 0
+        game._karma.activeBounty = data.activeBounty
+        game._karma.isGuardHostile = data.isGuardHostile or false
     end)
 
     client:on("bounty_list", function(data)
         if not data then return end
-        karmaState.bounties = data.bounties or {}
+        game._karma.bounties = data.bounties or {}
     end)
 
     client:on("faction_status", function(data)
         if not data then return end
-        karmaState.factions = data.factions or {}
+        game._karma.factions = data.factions or {}
     end)
 
     client:on("faction_list", function(data)
         if not data then return end
-        karmaState.factionList = data.factions or {}
+        game._karma.factionList = data.factions or {}
     end)
 
     -- ===== Companions =====
     client:on("companion_hired", function(data)
         if not data then return end
-        companionState.message = "Hired " .. (data.companion and data.companion.name or "companion") .. "!"
-        companionState.messageTimer = 3
+        game._companions.message = "Hired " .. (data.companion and data.companion.name or "companion") .. "!"
+        game._companions.messageTimer = 3
         if client then client:emit("companion_list", {}) end
     end)
 
     client:on("companion_error", function(data)
         if not data then return end
-        companionState.message = data.message or "Error"
-        companionState.messageTimer = 3
+        game._companions.message = data.message or "Error"
+        game._companions.messageTimer = 3
     end)
 
     client:on("companion_list", function(data)
         if not data then return end
-        companionState.companions = data.companions or {}
+        game._companions.companions = data.companions or {}
     end)
 
     client:on("companion_dismissed", function(data)
         if not data then return end
-        companionState.message = "Companion dismissed"
-        companionState.messageTimer = 3
+        game._companions.message = "Companion dismissed"
+        game._companions.messageTimer = 3
         if client then client:emit("companion_list", {}) end
     end)
 
     client:on("companion_status", function(data)
         if not data then return end
-        for i, c in ipairs(companionState.companions) do
+        for i, c in ipairs(game._companions.companions) do
             if c.id == data.id then
-                companionState.companions[i] = data
+                game._companions.companions[i] = data
                 break
             end
         end
@@ -5685,55 +5753,55 @@ function game.setupListeners()
     -- ===== Pets =====
     client:on("pet_tamed", function(data)
         if not data then return end
-        petState.message = "Tamed " .. (data.pet and data.pet.name or "pet") .. "!"
-        petState.messageTimer = 3
+        game._pets.message = "Tamed " .. (data.pet and data.pet.name or "pet") .. "!"
+        game._pets.messageTimer = 3
         if client then client:emit("pet_list", {}) end
     end)
 
     client:on("pet_error", function(data)
         if not data then return end
-        petState.message = data.message or "Error"
-        petState.messageTimer = 3
+        game._pets.message = data.message or "Error"
+        game._pets.messageTimer = 3
     end)
 
     client:on("pet_list", function(data)
         if not data then return end
-        petState.pets = data.pets or {}
-        for _, p in ipairs(petState.pets) do
-            if p.isActive then petState.activePetId = p.id end
+        game._pets.pets = data.pets or {}
+        for _, p in ipairs(game._pets.pets) do
+            if p.isActive then game._pets.activePetId = p.id end
         end
     end)
 
     client:on("pet_fed", function(data)
         if not data then return end
-        for _, p in ipairs(petState.pets) do
+        for _, p in ipairs(game._pets.pets) do
             if p.id == data.petId then
                 p.hunger = data.hunger
                 p.happiness = data.happiness
                 break
             end
         end
-        petState.message = "Pet fed!"
-        petState.messageTimer = 2
+        game._pets.message = "Pet fed!"
+        game._pets.messageTimer = 2
     end)
 
     client:on("pet_active_set", function(data)
         if not data then return end
-        petState.activePetId = data.petId
-        petState.message = data.petId and "Pet set as active" or "Pet dismissed from active"
-        petState.messageTimer = 2
+        game._pets.activePetId = data.petId
+        game._pets.message = data.petId and "Pet set as active" or "Pet dismissed from active"
+        game._pets.messageTimer = 2
     end)
 
     -- ===== Jail =====
     client:on("jail_status", function(data)
         if not data then return end
-        jailState.inJail = data.inJail or false
-        jailState.crime = data.crime
-        jailState.crimeLabel = data.crimeLabel
-        jailState.remainingMs = data.remainingMs or 0
-        jailState.bail = data.bail or 0
-        jailState.jailZoneId = data.jailZoneId
-        jailState.lastUpdate = love.timer.getTime()
+        game._jail.inJail = data.inJail or false
+        game._jail.crime = data.crime
+        game._jail.crimeLabel = data.crimeLabel
+        game._jail.remainingMs = data.remainingMs or 0
+        game._jail.bail = data.bail or 0
+        game._jail.jailZoneId = data.jailZoneId
+        game._jail.lastUpdate = love.timer.getTime()
         if data.inJail and not ui.showJail then
             ui.showJail = true
         end
@@ -5742,142 +5810,142 @@ function game.setupListeners()
     client:on("jail_bail", function(data)
         if not data then return end
         if data.ok then
-            jailState.inJail = false
-            jailState.message = data.message or "Bail paid! You are free."
+            game._jail.inJail = false
+            game._jail.message = data.message or "Bail paid! You are free."
             ui.showJail = false
         else
-            jailState.message = data.error or "Cannot pay bail"
+            game._jail.message = data.error or "Cannot pay bail"
         end
-        jailState.messageTimer = 3
+        game._jail.messageTimer = 3
     end)
 
     client:on("jail_serve_time", function(data)
         if not data then return end
         if data.released then
-            jailState.inJail = false
-            jailState.message = data.message or "Time served. You are free."
+            game._jail.inJail = false
+            game._jail.message = data.message or "Time served. You are free."
             ui.showJail = false
         else
-            jailState.remainingMs = data.remainingMs or 0
-            jailState.lastUpdate = love.timer.getTime()
-            jailState.message = data.message or "Still serving time..."
+            game._jail.remainingMs = data.remainingMs or 0
+            game._jail.lastUpdate = love.timer.getTime()
+            game._jail.message = data.message or "Still serving time..."
         end
-        jailState.messageTimer = 3
+        game._jail.messageTimer = 3
     end)
 
     -- ===== Ascension =====
     client:on("ascension_status", function(data)
         if not data then return end
-        ascensionState.canAscend = data.canAscend or false
-        ascensionState.ascensionCount = data.ascensionCount or 0
-        ascensionState.ascensionPoints = data.ascensionPoints or 0
-        ascensionState.ascensionTree = data.ascensionTree or {}
-        ascensionState.tree = data.tree
+        game._ascension.canAscend = data.canAscend or false
+        game._ascension.ascensionCount = data.ascensionCount or 0
+        game._ascension.ascensionPoints = data.ascensionPoints or 0
+        game._ascension.ascensionTree = data.ascensionTree or {}
+        game._ascension.tree = data.tree
     end)
 
     client:on("ascension_result", function(data)
         if not data then return end
         if data.ok then
-            ascensionState.ascensionCount = data.ascensionCount or ascensionState.ascensionCount
-            ascensionState.ascensionPoints = data.totalAp or ascensionState.ascensionPoints
-            ascensionState.message = "Ascended! +" .. (data.apGained or 0) .. " AP"
-            ascensionState.canAscend = false
+            game._ascension.ascensionCount = data.ascensionCount or game._ascension.ascensionCount
+            game._ascension.ascensionPoints = data.totalAp or game._ascension.ascensionPoints
+            game._ascension.message = "Ascended! +" .. (data.apGained or 0) .. " AP"
+            game._ascension.canAscend = false
         else
-            ascensionState.message = data.error or "Cannot ascend"
+            game._ascension.message = data.error or "Cannot ascend"
         end
-        ascensionState.messageTimer = 3
+        game._ascension.messageTimer = 3
     end)
 
     client:on("ascension_ap_result", function(data)
         if not data then return end
         if data.ok then
-            ascensionState.ascensionTree[data.nodeId] = data.rank
-            ascensionState.ascensionPoints = data.apLeft
-            ascensionState.message = "Invested in " .. data.nodeId .. " (rank " .. data.rank .. ")"
+            game._ascension.ascensionTree[data.nodeId] = data.rank
+            game._ascension.ascensionPoints = data.apLeft
+            game._ascension.message = "Invested in " .. data.nodeId .. " (rank " .. data.rank .. ")"
         else
-            ascensionState.message = data.error or "Cannot invest"
+            game._ascension.message = data.error or "Cannot invest"
         end
-        ascensionState.messageTimer = 3
+        game._ascension.messageTimer = 3
     end)
 
     -- ===== Guild =====
     client:on("guild_created", function(data)
         if not data then return end
-        guildState.guildId = data.guildId
-        guildState.guildName = data.name
-        guildState.members = data.members or {}
-        guildState.tab = "info"
-        guildState.message = "Guild created!"
-        guildState.messageTimer = 3
+        game._guild.guildId = data.guildId
+        game._guild.guildName = data.name
+        game._guild.members = data.members or {}
+        game._guild.tab = "info"
+        game._guild.message = "Guild created!"
+        game._guild.messageTimer = 3
     end)
 
     client:on("guild_error", function(data)
         if not data then return end
-        guildState.message = data.message or "Guild error"
-        guildState.messageTimer = 3
+        game._guild.message = data.message or "Guild error"
+        game._guild.messageTimer = 3
     end)
 
     client:on("guild_list_result", function(data)
         if not data then return end
-        guildState.guildList = data.guilds or {}
+        game._guild.guildList = data.guilds or {}
     end)
 
     client:on("guild_updated", function(data)
         if not data then return end
-        guildState.guildId = data.guildId
-        guildState.members = data.members or guildState.members
-        guildState.message = data.event or "Guild updated"
-        guildState.messageTimer = 2
+        game._guild.guildId = data.guildId
+        game._guild.members = data.members or game._guild.members
+        game._guild.message = data.event or "Guild updated"
+        game._guild.messageTimer = 2
     end)
 
     client:on("guild_left", function(data)
-        guildState.guildId = nil
-        guildState.guildName = nil
-        guildState.members = {}
-        guildState.vault = nil
-        guildState.messages = {}
-        guildState.tab = "browse"
-        guildState.message = "Left guild"
-        guildState.messageTimer = 3
+        game._guild.guildId = nil
+        game._guild.guildName = nil
+        game._guild.members = {}
+        game._guild.vault = nil
+        game._guild.messages = {}
+        game._guild.tab = "browse"
+        game._guild.message = "Left guild"
+        game._guild.messageTimer = 3
     end)
 
     client:on("guild_message", function(data)
         if not data then return end
-        table.insert(guildState.messages, {
+        table.insert(game._guild.messages, {
             authorName = data.authorName or "???",
             content = data.content or "",
             timestamp = data.timestamp or 0,
         })
-        if #guildState.messages > 100 then table.remove(guildState.messages, 1) end
+        if #game._guild.messages > 100 then table.remove(game._guild.messages, 1) end
     end)
 
     client:on("guild_vault_contents", function(data)
         if not data then return end
-        guildState.vault = { cards = data.cards or {}, resources = data.resources or {} }
+        game._guild.vault = { cards = data.cards or {}, resources = data.resources or {} }
     end)
 
     client:on("guild_vault_updated", function(data)
         if not data then return end
-        if data.resources then guildState.vault = guildState.vault or {}; guildState.vault.resources = data.resources end
-        if data.cards then guildState.vault = guildState.vault or {}; guildState.vault.cards = data.cards end
-        guildState.message = data.event or "Vault updated"
-        guildState.messageTimer = 2
+        if data.resources then game._guild.vault = game._guild.vault or {}; game._guild.vault.resources = data.resources end
+        if data.cards then game._guild.vault = game._guild.vault or {}; game._guild.vault.cards = data.cards end
+        game._guild.message = data.event or "Vault updated"
+        game._guild.messageTimer = 2
     end)
 
     -- ===== Crafting Minigame =====
     client:on("craft_minigame", function(data)
         if not data then return end
-        minigameState.active = true
-        minigameState.recipeId = data.recipeId
-        minigameState.duration = data.duration or 3000
-        minigameState.windowStart = data.windowStart or 400
-        minigameState.windowEnd = data.windowEnd or 600
-        minigameState.expiresAt = love.timer.getTime() + (data.duration or 3000) / 1000
-        minigameState.barPos = 0
-        minigameState.barDir = 1
-        minigameState.startedAt = love.timer.getTime()
-        minigameState.result = nil
-        minigameState.resultTimer = 0
+        game._minigame.active = true
+        game._minigame.recipeId = data.recipeId
+        game._minigame.duration = data.duration or 3000
+        game._minigame.windowStart = data.windowStart or 400
+        game._minigame.windowEnd = data.windowEnd or 600
+        game._minigame.expiresAt = love.timer.getTime() + (data.duration or 3000) / 1000
+        game._minigame.barPos = 0
+        game._minigame.barDir = 1
+        game._minigame.startedAt = love.timer.getTime()
+        game._minigame.result = nil
+        game._minigame.resultTimer = 0
     end)
 
     -- -----------------------------------------------------------------------
@@ -5954,7 +6022,7 @@ function game.setupListeners()
         placedObjects = data.objects or {}
     end)
 
-    -- Portal crafted (personal portal created)
+    -- Portal crafted (personal game._portal created)
     client:on("portal_crafted", function(data)
         if not data then return end
         if data.success then
@@ -5963,7 +6031,7 @@ function game.setupListeners()
         end
     end)
 
-    -- Portal destroyed (personal portal removed)
+    -- Portal destroyed (personal game._portal removed)
     client:on("portal_destroyed", function(data)
         if not data then return end
         addChatMessage(data.message or "Portal destroyed", {0.8, 0.5, 0.3})
@@ -5995,8 +6063,8 @@ function game.setupListeners()
     -- ===== Guard Hostility Warning =====
     client:on("guard_hostile", function(data)
         if not data then return end
-        table.insert(notifications, { text = data.message or "Guards refuse to serve you!", color = {1, 0.3, 0.3}, timer = NOTIFICATION_DURATION, maxTimer = NOTIFICATION_DURATION })
-        karmaState.isGuardHostile = true
+        table.insert(game._notifications, { text = data.message or "Guards refuse to serve you!", color = {1, 0.3, 0.3}, timer = NOTIFICATION_DURATION, maxTimer = NOTIFICATION_DURATION })
+        game._karma.isGuardHostile = true
     end)
 end
 
@@ -6045,6 +6113,11 @@ end
 
 function game.update(dt)
     fadeIn = math.min(1, fadeIn + dt * 3)
+
+    -- Audio system tick (fades, music loops, weather layers)
+    game._audio.update(dt)
+    game._audio.setCamera(camera.x, camera.y)
+    game._audio.tickOtherFootsteps(dt)
 
     -- Update grid inventory (resets hover state each frame)
     if ui.showGridInventory then
@@ -6123,11 +6196,11 @@ function game.update(dt)
         doom.flashTimer = math.max(0, doom.flashTimer - dt)
     end
     -- Disease flash timers
-    if diseaseState.contractedFlash > 0 then
-        diseaseState.contractedFlash = math.max(0, diseaseState.contractedFlash - dt)
+    if game._disease.contractedFlash > 0 then
+        game._disease.contractedFlash = math.max(0, game._disease.contractedFlash - dt)
     end
-    if diseaseState.symptomTimer > 0 then
-        diseaseState.symptomTimer = math.max(0, diseaseState.symptomTimer - dt)
+    if game._disease.symptomTimer > 0 then
+        game._disease.symptomTimer = math.max(0, game._disease.symptomTimer - dt)
     end
     if doom.showEvent then
         doom.eventTimer = doom.eventTimer - dt
@@ -6139,12 +6212,12 @@ function game.update(dt)
     end
 
     -- Purification VFX update
-    if raid.purificationVfx then
-        raid.purificationVfx.timer = raid.purificationVfx.timer - dt
-        local progress = 1 - (raid.purificationVfx.timer / raid.purificationVfx.maxTimer)
-        raid.purificationVfx.radius = progress * 300  -- expand to 300px radius
-        if raid.purificationVfx.timer <= 0 then
-            raid.purificationVfx = nil
+    if game._raid.purificationVfx then
+        game._raid.purificationVfx.timer = game._raid.purificationVfx.timer - dt
+        local progress = 1 - (game._raid.purificationVfx.timer / game._raid.purificationVfx.maxTimer)
+        game._raid.purificationVfx.radius = progress * 300  -- expand to 300px radius
+        if game._raid.purificationVfx.timer <= 0 then
+            game._raid.purificationVfx = nil
         end
     end
 
@@ -6164,11 +6237,11 @@ function game.update(dt)
         end
     end
 
-    -- Lich raid corruption zone timers
-    for i = #raid.corruptionZones, 1, -1 do
-        raid.corruptionZones[i].timer = raid.corruptionZones[i].timer - dt
-        if raid.corruptionZones[i].timer <= 0 then
-            table.remove(raid.corruptionZones, i)
+    -- Lich game._raid corruption zone timers
+    for i = #game._raid.corruptionZones, 1, -1 do
+        game._raid.corruptionZones[i].timer = game._raid.corruptionZones[i].timer - dt
+        if game._raid.corruptionZones[i].timer <= 0 then
+            table.remove(game._raid.corruptionZones, i)
         end
     end
 
@@ -6226,15 +6299,15 @@ function game.update(dt)
         end
     end
 
-    -- Update portal message timer
-    if portal.message and portal.message.timer then
-        portal.message.timer = portal.message.timer - dt
-        if portal.message.timer <= 0 then
-            portal.message = nil
+    -- Update game._portal message timer
+    if game._portal.message and game._portal.message.timer then
+        game._portal.message.timer = game._portal.message.timer - dt
+        if game._portal.message.timer <= 0 then
+            game._portal.message = nil
         end
     end
 
-    -- Update knowledge notifications
+    -- Update knowledge game._notifications
     for i = #knowledge.notifications, 1, -1 do
         knowledge.notifications[i].timer = knowledge.notifications[i].timer - dt
         if knowledge.notifications[i].timer <= 0 then
@@ -6243,47 +6316,47 @@ function game.update(dt)
     end
 
     -- Update NPC shop message timer
-    if npcShop.message and npcShop.message.timer then
-        npcShop.message.timer = npcShop.message.timer - dt
-        if npcShop.message.timer <= 0 then
-            npcShop.message = nil
+    if game._npcShop.message and game._npcShop.message.timer then
+        game._npcShop.message.timer = game._npcShop.message.timer - dt
+        if game._npcShop.message.timer <= 0 then
+            game._npcShop.message = nil
         end
     end
 
-    -- Update bank message timer
-    if bank.message and bank.message.timer then
-        bank.message.timer = bank.message.timer - dt
-        if bank.message.timer <= 0 then
-            bank.message = nil
+    -- Update game._bank message timer
+    if game._bank.message and game._bank.message.timer then
+        game._bank.message.timer = game._bank.message.timer - dt
+        if game._bank.message.timer <= 0 then
+            game._bank.message = nil
         end
     end
 
-    -- Update trade message timer and pending request timer
-    if trade.message and trade.message.timer then
-        trade.message.timer = trade.message.timer - dt
-        if trade.message.timer <= 0 then
-            trade.message = nil
+    -- Update game._trade message timer and pending request timer
+    if game._trade.message and game._trade.message.timer then
+        game._trade.message.timer = game._trade.message.timer - dt
+        if game._trade.message.timer <= 0 then
+            game._trade.message = nil
         end
     end
-    if trade._pendingTimer then
-        trade._pendingTimer = trade._pendingTimer - dt
-        if trade._pendingTimer <= 0 then
-            trade.pendingRequest = nil
-            trade._pendingTimer = nil
+    if game._trade._pendingTimer then
+        game._trade._pendingTimer = game._trade._pendingTimer - dt
+        if game._trade._pendingTimer <= 0 then
+            game._trade.pendingRequest = nil
+            game._trade._pendingTimer = nil
         end
     end
 
-    -- Update admin panel timers
-    if admin.resultMsg then
-        admin.resultMsg.timer = admin.resultMsg.timer - dt
-        if admin.resultMsg.timer <= 0 then
-            admin.resultMsg = nil
+    -- Update game._admin panel timers
+    if game._admin.resultMsg then
+        game._admin.resultMsg.timer = game._admin.resultMsg.timer - dt
+        if game._admin.resultMsg.timer <= 0 then
+            game._admin.resultMsg = nil
         end
     end
-    if admin.shutdownWarning then
-        admin.shutdownWarning = admin.shutdownWarning - dt
-        if admin.shutdownWarning <= 0 then
-            admin.shutdownWarning = nil
+    if game._admin.shutdownWarning then
+        game._admin.shutdownWarning = game._admin.shutdownWarning - dt
+        if game._admin.shutdownWarning <= 0 then
+            game._admin.shutdownWarning = nil
         end
     end
 
@@ -6365,20 +6438,20 @@ function game.update(dt)
     end
 
     -- Update director event banners (fade in/out + expire)
-    for i = #directorEvents, 1, -1 do
-        local ev = directorEvents[i]
+    for i = #game._directorEvents, 1, -1 do
+        local ev = game._directorEvents[i]
         ev.fadeIn = math.min(1, (ev.fadeIn or 0) + dt * 3)
         ev.timer = ev.timer - dt
         if ev.timer <= 0 then
-            table.remove(directorEvents, i)
+            table.remove(game._directorEvents, i)
         end
     end
 
     -- Update zone ticker entries
-    for i = #zoneTicker, 1, -1 do
-        zoneTicker[i].timer = zoneTicker[i].timer - dt
-        if zoneTicker[i].timer <= 0 then
-            table.remove(zoneTicker, i)
+    for i = #game._zoneTicker, 1, -1 do
+        game._zoneTicker[i].timer = game._zoneTicker[i].timer - dt
+        if game._zoneTicker[i].timer <= 0 then
+            table.remove(game._zoneTicker, i)
         end
     end
 
@@ -6419,6 +6492,21 @@ function game.update(dt)
         end
     end
 
+    -- Update dungeon particle systems (flames, embers on light sources + magic auras)
+    if dungeon.inDungeon and dungeon.lightSources then
+        local pSources = dungeon.lightSources
+        -- Add magic aura particles when magic_sense vision is active
+        if dungeon.visionType == "magic_sense" and dungeon.magicAuras and #dungeon.magicAuras > 0 then
+            pSources = {}
+            for i = 1, #dungeon.lightSources do pSources[#pSources + 1] = dungeon.lightSources[i] end
+            for i = 1, #dungeon.magicAuras do
+                local a = dungeon.magicAuras[i]
+                pSources[#pSources + 1] = { x = a.x, y = a.y, r = 1.5, b = a.intensity or 0.5, t = "magic_aura" }
+            end
+        end
+        dungeonParticles.update(dt, pSources, -math.floor(camera.x), -math.floor(camera.y), 32)
+    end
+
     -- Dungeon grid movement (tile-by-tile, WASD) — disabled during combat or downed
     if dungeon.inDungeon and dungeon.grid and not tcState.inCombat and not permadeath.isDowned then
         dungeon.moveTimer = math.max(0, dungeon.moveTimer - dt)
@@ -6441,6 +6529,8 @@ function game.update(dt)
                         dungeon.playerTileX = newX
                         dungeon.playerTileY = newY
                         dungeon.moveTimer = dungeon.moveRate
+                        game._audio.playDungeonStep()
+                        game._audio.tryStinger()
 
                         -- Update pixel position for camera/rendering
                         local me = players[myId]
@@ -6690,6 +6780,10 @@ function game.update(dt)
                 me.targetX = newX
                 me.targetY = newY
                 if facing then me.facing = facing end
+
+                -- Self footstep audio (cadence varies with speed)
+                local surface = game._audio.getSurface(zone and zone.type, overworld.currentBiome)
+                game._audio.tickSelfFootstep(dt, true, speed, surface)
 
                 -- Send position to server (throttled)
                 moveTimer = moveTimer + dt
@@ -6942,14 +7036,14 @@ function game.update(dt)
     end
 
     -- NPC proximity detection (for guild master, quest board, etc.)
-    hoverNpc = nil
+    game._hoverNpc = nil
     dungeon.hoverEntrance = false
     if zone and zone.npcs and not overworld.chunkBased then
         for _, npc in ipairs(zone.npcs) do
             local ndx = me.x - npc.x
             local ndy = me.y - npc.y
             if math.sqrt(ndx * ndx + ndy * ndy) < 60 then
-                hoverNpc = npc
+                game._hoverNpc = npc
                 if npc.type == "dungeon_entrance" then
                     dungeon.hoverEntrance = true
                 end
@@ -6959,42 +7053,42 @@ function game.update(dt)
     end
 
     -- Update notification timers
-    for i = #notifications, 1, -1 do
-        notifications[i].timer = notifications[i].timer - dt
-        if notifications[i].timer <= 0 then table.remove(notifications, i) end
+    for i = #game._notifications, 1, -1 do
+        game._notifications[i].timer = game._notifications[i].timer - dt
+        if game._notifications[i].timer <= 0 then table.remove(game._notifications, i) end
     end
 
     -- Update message timers for panels
-    if companionState.messageTimer > 0 then companionState.messageTimer = companionState.messageTimer - dt end
-    if petState.messageTimer > 0 then petState.messageTimer = petState.messageTimer - dt end
-    if jailState.messageTimer > 0 then jailState.messageTimer = jailState.messageTimer - dt end
-    if ascensionState.messageTimer > 0 then ascensionState.messageTimer = ascensionState.messageTimer - dt end
-    if guildState.messageTimer > 0 then guildState.messageTimer = guildState.messageTimer - dt end
-    if karmaState.messageTimer > 0 then karmaState.messageTimer = karmaState.messageTimer - dt end
+    if game._companions.messageTimer > 0 then game._companions.messageTimer = game._companions.messageTimer - dt end
+    if game._pets.messageTimer > 0 then game._pets.messageTimer = game._pets.messageTimer - dt end
+    if game._jail.messageTimer > 0 then game._jail.messageTimer = game._jail.messageTimer - dt end
+    if game._ascension.messageTimer > 0 then game._ascension.messageTimer = game._ascension.messageTimer - dt end
+    if game._guild.messageTimer > 0 then game._guild.messageTimer = game._guild.messageTimer - dt end
+    if game._karma.messageTimer > 0 then game._karma.messageTimer = game._karma.messageTimer - dt end
 
     -- Update crafting minigame bar
-    if minigameState.active then
-        if minigameState.result then
-            minigameState.resultTimer = minigameState.resultTimer - dt
-            if minigameState.resultTimer <= 0 then
-                minigameState.active = false
-                minigameState.result = nil
+    if game._minigame.active then
+        if game._minigame.result then
+            game._minigame.resultTimer = game._minigame.resultTimer - dt
+            if game._minigame.resultTimer <= 0 then
+                game._minigame.active = false
+                game._minigame.result = nil
             end
         else
-            local elapsed = love.timer.getTime() - minigameState.startedAt
+            local elapsed = love.timer.getTime() - game._minigame.startedAt
             local speed = 800  -- pixels per second on 0-1000 bar
-            minigameState.barPos = minigameState.barPos + minigameState.barDir * speed * dt
-            if minigameState.barPos >= 1000 then
-                minigameState.barPos = 1000
-                minigameState.barDir = -1
-            elseif minigameState.barPos <= 0 then
-                minigameState.barPos = 0
-                minigameState.barDir = 1
+            game._minigame.barPos = game._minigame.barPos + game._minigame.barDir * speed * dt
+            if game._minigame.barPos >= 1000 then
+                game._minigame.barPos = 1000
+                game._minigame.barDir = -1
+            elseif game._minigame.barPos <= 0 then
+                game._minigame.barPos = 0
+                game._minigame.barDir = 1
             end
             -- Auto-fail if expired
-            if love.timer.getTime() >= minigameState.expiresAt then
-                minigameState.result = "miss"
-                minigameState.resultTimer = 1.5
+            if love.timer.getTime() >= game._minigame.expiresAt then
+                game._minigame.result = "miss"
+                game._minigame.resultTimer = 1.5
                 if client then client:emit("craft_minigame_result", { clickPos = -1 }) end
             end
         end
@@ -7090,6 +7184,22 @@ function game.draw()
 
         game.drawFloatingTexts()
         love.graphics.pop()
+
+        -- Lighting overlay (screen space, multiply blend darkens scene)
+        if dungeon.inDungeon then
+            lighting.render(
+                dungeon.lightSources, dungeon.ambientLight,
+                -math.floor(camera.x), -math.floor(camera.y),
+                dungeon.visionType, 32, dungeon.thermalEntities
+            )
+            lighting.apply()
+
+            -- Particle effects (world space, additive, on top of darkened scene)
+            love.graphics.push()
+            love.graphics.translate(-math.floor(camera.x), -math.floor(camera.y))
+            dungeonParticles.draw()
+            love.graphics.pop()
+        end
 
         -- Dungeon HUD (on top of everything)
         local W = love.graphics.getWidth()
@@ -7193,12 +7303,12 @@ function game.draw()
         end
 
         -- Party HUD (dungeon, always visible when in party)
-        if raid.partyData and raid.partyData.members and #raid.partyData.members > 0 and not ui.showPartyPanel then
+        if game._raid.partyData and game._raid.partyData.members and #game._raid.partyData.members > 0 and not ui.showPartyPanel then
             game.drawPartyHUD(W, H)
         end
 
         -- Party invite prompt (dungeon)
-        if raid.partyInvitePending and not ui.showPartyPanel then
+        if game._raid.partyInvitePending and not ui.showPartyPanel then
             game.drawPartyInvitePrompt(W, H)
         end
 
@@ -7341,7 +7451,7 @@ function game.draw()
 
             -- NPC type-specific drawing
             if npc.type == "dungeon_entrance" then
-                -- Draw as a swirling portal
+                -- Draw as a swirling game._portal
                 local t = love.timer.getTime()
                 love.graphics.setColor(0.5, 0.2, 0.8, 0.6 + math.sin(t * 2) * 0.2)
                 love.graphics.circle("fill", npc.x, npc.y, 20)
@@ -7453,8 +7563,8 @@ function game.draw()
     end
 
     -- Purification VFX: expanding white ring
-    if raid.purificationVfx then
-        local pfx = raid.purificationVfx
+    if game._raid.purificationVfx then
+        local pfx = game._raid.purificationVfx
         local progress = 1 - (pfx.timer / pfx.maxTimer)
         local alpha = (1 - progress) * 0.8
         love.graphics.setColor(0.9, 0.85, 1, alpha)
@@ -7580,7 +7690,7 @@ function game.draw()
     end
 
     -- Auction house overlay
-    if auction.show then
+    if game._auction.show then
         game.drawAuctionHouse(W, H)
     end
 
@@ -7615,12 +7725,17 @@ function game.draw()
     end
 
     -- Jail overlay (forced when jailed)
-    if ui.showJail and jailState.inJail then
+    if ui.showJail and game._jail.inJail then
         game.drawJailPanel(W, H)
     end
 
+    -- Audio settings panel overlay
+    if ui.showAudioSettings then
+        game.drawAudioSettingsPanel(W, H)
+    end
+
     -- Crafting minigame overlay
-    if minigameState.active then
+    if game._minigame.active then
         game.drawCraftingMinigame(W, H)
     end
 
@@ -7628,14 +7743,14 @@ function game.draw()
     game.drawKarmaHUD(W, H)
 
     -- Faction rep panel (toggle)
-    if karmaState.showFactions then
+    if game._karma.showFactions then
         game.drawFactionPanel(W, H)
     end
 
     -- Notifications (guard warnings, durability, etc.)
     game.drawNotifications(W, H)
 
-    -- Knowledge notifications (book/term discovery popups)
+    -- Knowledge game._notifications (book/term discovery popups)
     game.drawKnowledgeNotifications(W, H)
 
     -- Chat
@@ -7659,7 +7774,7 @@ function game.draw()
     -- Item tooltip (drawn on top of inventory/equipment panels)
     game.drawItemTooltip(W, H)
 
-    -- Loot drop notifications (bottom-right corner)
+    -- Loot drop game._notifications (bottom-right corner)
     game.drawLootNotifications(W, H)
 
     -- Party panel overlay
@@ -7668,12 +7783,12 @@ function game.draw()
     end
 
     -- Party HUD (always visible when in party, not covered by panel)
-    if raid.partyData and raid.partyData.members and #raid.partyData.members > 0 and not ui.showPartyPanel then
+    if game._raid.partyData and game._raid.partyData.members and #game._raid.partyData.members > 0 and not ui.showPartyPanel then
         game.drawPartyHUD(W, H)
     end
 
     -- Party invite prompt (always visible when pending, on top of everything)
-    if raid.partyInvitePending and not ui.showPartyPanel then
+    if game._raid.partyInvitePending and not ui.showPartyPanel then
         game.drawPartyInvitePrompt(W, H)
     end
 
@@ -7813,31 +7928,31 @@ function game.draw()
     end
 
     -- NPC interaction prompt
-    if hoverNpc and not dungeon.inDungeon and not hoverConnection and not hoverResource and not ui.showInventory then
+    if game._hoverNpc and not dungeon.inDungeon and not hoverConnection and not hoverResource and not ui.showInventory then
         love.graphics.setFont(fonts.ui)
-        if hoverNpc.type == "adventure_guild" then
+        if game._hoverNpc.type == "adventure_guild" then
             love.graphics.setColor(1, 0.85, 0.2, fadeIn * (0.7 + math.sin(love.timer.getTime() * 4) * 0.3))
             if dungeon.progress and dungeon.progress.guildMember then
                 love.graphics.printf("Guild Rank: " .. (dungeon.progress.guildRank or "Stone"), 0, H / 2 - 80, W, "center")
             else
                 love.graphics.printf("Press E to join the Adventure Guild", 0, H / 2 - 80, W, "center")
             end
-        elseif hoverNpc.type == "dungeon_quest_board" then
+        elseif game._hoverNpc.type == "dungeon_quest_board" then
             love.graphics.setColor(0.8, 0.7, 1, fadeIn * (0.7 + math.sin(love.timer.getTime() * 4) * 0.3))
             love.graphics.printf("Press E to view Dungeon Quests", 0, H / 2 - 80, W, "center")
-        elseif hoverNpc.type == "dungeon_leaderboard" then
+        elseif game._hoverNpc.type == "dungeon_leaderboard" then
             love.graphics.setColor(1, 0.85, 0.2, fadeIn * (0.7 + math.sin(love.timer.getTime() * 4) * 0.3))
             love.graphics.printf("Press E to view Hall of Heroes", 0, H / 2 - 80, W, "center")
-        elseif hoverNpc.type == "dungeon_entrance" then
+        elseif game._hoverNpc.type == "dungeon_entrance" then
             love.graphics.setColor(0.8, 0.4, 1, fadeIn * (0.7 + math.sin(love.timer.getTime() * 4) * 0.3))
             love.graphics.printf("Press E to enter The Rift", 0, H / 2 - 80, W, "center")
-        elseif hoverNpc.type == "npc_shop" or hoverNpc.type == "shopkeeper" then
+        elseif game._hoverNpc.type == "npc_shop" or game._hoverNpc.type == "shopkeeper" then
             love.graphics.setColor(0.2, 0.9, 0.4, fadeIn * (0.7 + math.sin(love.timer.getTime() * 4) * 0.3))
-            love.graphics.printf("Press E to browse " .. (hoverNpc.name or "Shop"), 0, H / 2 - 80, W, "center")
-        elseif hoverNpc.type == "portal_nexus" then
+            love.graphics.printf("Press E to browse " .. (game._hoverNpc.name or "Shop"), 0, H / 2 - 80, W, "center")
+        elseif game._hoverNpc.type == "portal_nexus" then
             love.graphics.setColor(0.5, 0.4, 1, fadeIn * (0.7 + math.sin(love.timer.getTime() * 4) * 0.3))
             love.graphics.printf("Press E to open Portal Nexus", 0, H / 2 - 80, W, "center")
-        elseif hoverNpc.type == "banker" then
+        elseif game._hoverNpc.type == "banker" then
             love.graphics.setColor(1, 0.85, 0.3, fadeIn * (0.7 + math.sin(love.timer.getTime() * 4) * 0.3))
             love.graphics.printf("Press E to open Bank Vault", 0, H / 2 - 80, W, "center")
         end
@@ -7895,7 +8010,7 @@ function game.draw()
     end
 
     -- Lich Raid gathering UI overlay
-    if raid.gathering and raid.gathering.phase == "gathering" then
+    if game._raid.gathering and game._raid.gathering.phase == "gathering" then
         love.graphics.setFont(fonts.ui)
         local panelW, panelH = 400, 300
         local px = (W - panelW) / 2
@@ -7913,16 +8028,16 @@ function game.draw()
         love.graphics.printf("Sanctum of Veranthos - Raid", px, py + 10, panelW, "center")
 
         -- Player count
-        local countColor = raid.gathering.totalPlayers >= raid.gathering.minRequired and {0.3, 1, 0.3} or {1, 0.8, 0.3}
+        local countColor = game._raid.gathering.totalPlayers >= game._raid.gathering.minRequired and {0.3, 1, 0.3} or {1, 0.8, 0.3}
         love.graphics.setColor(countColor[1], countColor[2], countColor[3])
-        love.graphics.printf("Players: " .. raid.gathering.totalPlayers .. " / " .. raid.gathering.minRequired .. " (recommended)  [max " .. raid.gathering.maxAllowed .. "]", px, py + 35, panelW, "center")
+        love.graphics.printf("Players: " .. game._raid.gathering.totalPlayers .. " / " .. game._raid.gathering.minRequired .. " (recommended)  [max " .. game._raid.gathering.maxAllowed .. "]", px, py + 35, panelW, "center")
 
         -- Party list
         love.graphics.setColor(0.8, 0.8, 0.9)
         local partyY = py + 60
-        if raid.gathering.parties then
-            for _, party in ipairs(raid.gathering.parties) do
-                local isMyParty = (party.partyId == raid.myParty)
+        if game._raid.gathering.parties then
+            for _, party in ipairs(game._raid.gathering.parties) do
+                local isMyParty = (party.partyId == game._raid.myParty)
                 if isMyParty then
                     love.graphics.setColor(0.5, 0.9, 1)
                 else
@@ -7936,8 +8051,8 @@ function game.draw()
         end
 
         -- Countdown
-        if raid.gathering.countdownStarted and raid.gathering.countdownEndsAt > 0 then
-            local remaining = math.max(0, math.ceil((raid.gathering.countdownEndsAt - os.time() * 1000) / 1000))
+        if game._raid.gathering.countdownStarted and game._raid.gathering.countdownEndsAt > 0 then
+            local remaining = math.max(0, math.ceil((game._raid.gathering.countdownEndsAt - os.time() * 1000) / 1000))
             love.graphics.setColor(1, 0.85, 0.2)
             love.graphics.printf("Raid starts in: " .. remaining .. "s", px, py + panelH - 70, panelW, "center")
         end
@@ -7973,27 +8088,27 @@ function game.draw()
     end
 
     -- Portal travel panel
-    if portal.show then
+    if game._portal.show then
         game.drawPortalPanel(W, H)
     end
 
     -- NPC Shop panel
-    if npcShop.show then
+    if game._npcShop.show then
         game.drawNpcShop(W, H)
     end
 
     -- Bank vault panel
-    if bank.show then
+    if game._bank.show then
         game.drawBank(W, H)
     end
 
     -- P2P Trade panel
-    if trade.show then
+    if game._trade.show then
         game.drawTradePanel(W, H)
     end
 
-    -- P2P Trade incoming request popup (always drawn even when trade panel is not open)
-    if trade.pendingRequest then
+    -- P2P Trade incoming request popup (always drawn even when game._trade panel is not open)
+    if game._trade.pendingRequest then
         game.drawTradeRequestPopup(W, H)
     end
 
@@ -8111,8 +8226,8 @@ function game.checkOnboardingTips()
     end
 
     -- Tip: near Portal Nexus NPC
-    if hoverNpc and hoverNpc.type == "portal_nexus" and not onboarding.tips["portal"] then
-        showTip("portal", "Press E to fast-travel between towns")
+    if game._hoverNpc and game._hoverNpc.type == "portal_nexus" and not onboarding.tips["game._portal"] then
+        showTip("game._portal", "Press E to fast-travel between towns")
         return
     end
 
@@ -9697,7 +9812,7 @@ function game.drawConnections()
             local label = (conn.ownerName or "Home")
             love.graphics.printf(label, conn.x - 60, conn.y - 44, 120, "center")
         elseif conn.targetZone == "rift_antechamber" then
-            -- Rift entrance: dark purple swirling portal
+            -- Rift entrance: dark purple swirling game._portal
             local riftPulse = 0.6 + math.sin(t * 4) * 0.4
             -- Outer glow
             love.graphics.setColor(0.3, 0.0, 0.4, riftPulse * 0.3)
@@ -9789,11 +9904,11 @@ local function executeContextMenuAction(action, targetId, targetName)
             color = { 0.4, 0.7, 1 },
             timer = 2.5,
         })
-    elseif action == "trade" then
+    elseif action == "game._trade" then
         client:emit("trade_request", { targetId = targetId })
         -- Store target info so trade_started can resolve the partner name
-        trade.partnerId = targetId
-        trade.partnerName = targetName or "???"
+        game._trade.partnerId = targetId
+        game._trade.partnerName = targetName or "???"
         addFloatingText({
             text = "Trade request sent to " .. targetName,
             x = players[myId] and players[myId].x or 0,
@@ -9948,7 +10063,7 @@ end
 
 -- NPC Dialogue Panel
 function game.drawDialoguePanel(W, H)
-    if not npcDialogue.show then return end
+    if not game._npcDialogue.show then return end
 
     local panelW = math.min(600, W - 40)
     local panelH = 200
@@ -9965,16 +10080,16 @@ function game.drawDialoguePanel(W, H)
     -- NPC Name
     love.graphics.setColor(1, 0.85, 0.3, 1)
     love.graphics.setFont(fonts.bold or love.graphics.getFont())
-    love.graphics.print(npcDialogue.npcName, panelX + 16, panelY + 10)
+    love.graphics.print(game._npcDialogue.npcName, panelX + 16, panelY + 10)
 
     -- Text
     love.graphics.setColor(0.9, 0.9, 0.95, 1)
     love.graphics.setFont(fonts.main or love.graphics.getFont())
-    love.graphics.printf(npcDialogue.text, panelX + 16, panelY + 35, panelW - 32, "left")
+    love.graphics.printf(game._npcDialogue.text, panelX + 16, panelY + 35, panelW - 32, "left")
 
     -- Choices
     local choiceY = panelY + 100
-    for i, choice in ipairs(npcDialogue.choices) do
+    for i, choice in ipairs(game._npcDialogue.choices) do
         local label = "[" .. i .. "] " .. (choice.label or "...")
         local mx, my = love.mouse.getPosition()
         local choiceX = panelX + 24
@@ -10266,7 +10381,7 @@ function game.drawHUD(W, H)
         end
     end
 
-    -- Base raid alert banner
+    -- Base game._raid alert banner
     if ui.baseRaidAlert then
         local alertAge = love.timer.getTime() - (ui.baseRaidAlert.receivedAt or 0)
         local alertDur = (ui.baseRaidAlert.alertDuration or 60000) / 1000
@@ -10295,7 +10410,7 @@ function game.drawWorldSystemsHUD(W, H)
     -- Disease indicators (top-right area, below minimap)
     local diseaseY = 120
     local diseaseCount = 0
-    for diseaseId, info in pairs(diseaseState.playerDiseases) do
+    for diseaseId, info in pairs(game._disease.playerDiseases) do
         diseaseCount = diseaseCount + 1
         local stateLabel = "?"
         if info.state == 1 then stateLabel = "Exposed"
@@ -10310,44 +10425,44 @@ function game.drawWorldSystemsHUD(W, H)
     end
 
     -- Disease contraction flash
-    if diseaseState.contractedFlash > 0 then
-        local alpha = math.min(1, diseaseState.contractedFlash)
+    if game._disease.contractedFlash > 0 then
+        local alpha = math.min(1, game._disease.contractedFlash)
         love.graphics.setColor(0.6, 0.0, 0.0, alpha * 0.3)
         love.graphics.rectangle("fill", 0, 0, W, H)
         love.graphics.setColor(1, 0.2, 0.2, alpha)
-        love.graphics.printf(diseaseState.contractedName or "Disease Contracted",
+        love.graphics.printf(game._disease.contractedName or "Disease Contracted",
             0, H * 0.3, W, "center")
     end
 
     -- Disease symptom flash
-    if diseaseState.symptomTimer > 0 and diseaseState.symptomMsg then
-        local alpha = math.min(1, diseaseState.symptomTimer)
+    if game._disease.symptomTimer > 0 and game._disease.symptomMsg then
+        local alpha = math.min(1, game._disease.symptomTimer)
         love.graphics.setColor(0.7, 0.1, 0.1, alpha)
-        love.graphics.printf(diseaseState.symptomMsg, 0, H * 0.4, W, "center")
+        love.graphics.printf(game._disease.symptomMsg, 0, H * 0.4, W, "center")
     end
 
     -- Faction territory indicator (top-left, below HUD)
-    if influenceState.controlling then
+    if game._influence.controlling then
         love.graphics.setColor(0.7, 0.7, 0.3, 0.8)
-        love.graphics.printf("Territory: " .. influenceState.controlling:gsub("_", " "),
+        love.graphics.printf("Territory: " .. game._influence.controlling:gsub("_", " "),
             10, 90, 250, "left")
     end
 
     -- Ecology indicator
-    if ecologyState.name ~= "unknown" then
+    if game._ecology.name ~= "unknown" then
         love.graphics.setColor(0.3, 0.7, 0.3, 0.6)
         local bonusStr = ""
-        if ecologyState.resourceBonus ~= 1.0 then
-            bonusStr = " (x" .. string.format("%.1f", ecologyState.resourceBonus) .. ")"
+        if game._ecology.resourceBonus ~= 1.0 then
+            bonusStr = " (x" .. string.format("%.1f", game._ecology.resourceBonus) .. ")"
         end
-        love.graphics.printf("Ecology: " .. ecologyState.name .. bonusStr,
+        love.graphics.printf("Ecology: " .. game._ecology.name .. bonusStr,
             10, 106, 250, "left")
     end
 
     -- Wind direction (subtle)
-    if weatherState.wind then
+    if game._weather.wind then
         love.graphics.setColor(0.6, 0.6, 0.8, 0.4)
-        love.graphics.printf("Wind: " .. weatherState.wind, W - 120, H - 34, 110, "right")
+        love.graphics.printf("Wind: " .. game._weather.wind, W - 120, H - 34, 110, "right")
     end
 
     love.graphics.setColor(1, 1, 1, 1)
@@ -11803,14 +11918,14 @@ end
 
 function game.keypressed(key)
     -- NPC Dialogue keyboard: number keys select choices
-    if npcDialogue.show then
+    if game._npcDialogue.show then
         local num = tonumber(key)
-        if num and num >= 1 and num <= #npcDialogue.choices then
-            client:emit("npc_dialogue_choice", { choiceIndex = npcDialogue.choices[num].index })
+        if num and num >= 1 and num <= #game._npcDialogue.choices then
+            client:emit("npc_dialogue_choice", { choiceIndex = game._npcDialogue.choices[num].index })
             return
         end
         if key == "escape" then
-            npcDialogue.show = false
+            game._npcDialogue.show = false
             return
         end
     end
@@ -11847,18 +11962,18 @@ function game.keypressed(key)
     end
 
     -- Crafting minigame: space to click
-    if minigameState.active and not minigameState.result then
+    if game._minigame.active and not game._minigame.result then
         if key == "space" then
-            local clickPos = math.floor(minigameState.barPos)
-            if clickPos >= minigameState.windowStart and clickPos <= minigameState.windowEnd then
-                local mid = (minigameState.windowStart + minigameState.windowEnd) / 2
+            local clickPos = math.floor(game._minigame.barPos)
+            if clickPos >= game._minigame.windowStart and clickPos <= game._minigame.windowEnd then
+                local mid = (game._minigame.windowStart + game._minigame.windowEnd) / 2
                 local dist = math.abs(clickPos - mid)
-                local range = (minigameState.windowEnd - minigameState.windowStart) / 2
-                minigameState.result = dist < range * 0.3 and "perfect" or "good"
+                local range = (game._minigame.windowEnd - game._minigame.windowStart) / 2
+                game._minigame.result = dist < range * 0.3 and "perfect" or "good"
             else
-                minigameState.result = "miss"
+                game._minigame.result = "miss"
             end
-            minigameState.resultTimer = 1.5
+            game._minigame.resultTimer = 1.5
             if client then client:emit("craft_minigame_result", { clickPos = clickPos }) end
             return
         end
@@ -11866,30 +11981,30 @@ function game.keypressed(key)
 
     -- Guild chat/create input handling
     if ui.showGuild then
-        if guildState.chatActive then
+        if game._guild.chatActive then
             if key == "return" or key == "kpenter" then
-                if #guildState.chatInput > 0 and client then
-                    client:emit("guild_chat", { message = guildState.chatInput })
-                    guildState.chatInput = ""
+                if #game._guild.chatInput > 0 and client then
+                    client:emit("guild_chat", { message = game._guild.chatInput })
+                    game._guild.chatInput = ""
                 end
                 return
             elseif key == "backspace" then
-                guildState.chatInput = guildState.chatInput:sub(1, -2)
+                game._guild.chatInput = game._guild.chatInput:sub(1, -2)
                 return
             elseif key == "escape" then
-                guildState.chatActive = false
+                game._guild.chatActive = false
                 return
             end
         end
-        if guildState.createActive then
+        if game._guild.createActive then
             if key == "return" or key == "kpenter" then
-                guildState.createActive = false
+                game._guild.createActive = false
                 return
             elseif key == "backspace" then
-                guildState.createName = guildState.createName:sub(1, -2)
+                game._guild.createName = game._guild.createName:sub(1, -2)
                 return
             elseif key == "escape" then
-                guildState.createActive = false
+                game._guild.createActive = false
                 return
             end
         end
@@ -11916,103 +12031,103 @@ function game.keypressed(key)
         return
     end
 
-    -- Trade panel: Escape cancels trade
-    if trade.show then
+    -- Trade panel: Escape cancels game._trade
+    if game._trade.show then
         if key == "escape" then
-            if trade.tradeId and client then
-                client:emit("trade_cancel", { tradeId = trade.tradeId })
+            if game._trade.tradeId and client then
+                client:emit("trade_cancel", { tradeId = game._trade.tradeId })
             end
             resetTradeState()
-        elseif key == "backspace" and trade.coinInputActive then
-            trade.coinInput = trade.coinInput:sub(1, -2)
+        elseif key == "backspace" and game._trade.coinInputActive then
+            game._trade.coinInput = game._trade.coinInput:sub(1, -2)
         end
-        return  -- block all other input while trade panel is open
+        return  -- block all other input while game._trade panel is open
     end
 
     -- Trade pending request: accept/decline with Y/N keys
-    if trade.pendingRequest then
+    if game._trade.pendingRequest then
         if key == "y" then
             if client then
-                client:emit("trade_accept", { tradeId = trade.pendingRequest.tradeId })
+                client:emit("trade_accept", { tradeId = game._trade.pendingRequest.tradeId })
             end
             -- Don't clear pendingRequest here; trade_started listener will do it
         elseif key == "n" then
             if client then
-                client:emit("trade_cancel", { tradeId = trade.pendingRequest.tradeId })
+                client:emit("trade_cancel", { tradeId = game._trade.pendingRequest.tradeId })
             end
-            trade.pendingRequest = nil
-            trade._pendingTimer = nil
+            game._trade.pendingRequest = nil
+            game._trade._pendingTimer = nil
         end
         -- Don't return — allow other input while request popup is showing
     end
 
     -- Lich Raid gathering: Enter = force start, Escape = leave
-    if raid.gathering and raid.gathering.phase == "gathering" then
+    if game._raid.gathering and game._raid.gathering.phase == "gathering" then
         if (key == "return" or key == "kpenter") and client then
             client:emit("raid_force_start", {})
             return
         elseif key == "escape" and client then
             client:emit("dungeon_exit", {})
-            raid.gathering = nil
-            raid.myParty = nil
+            game._raid.gathering = nil
+            game._raid.myParty = nil
             return
         end
     end
 
     -- Portal panel: Escape closes it
-    if portal.show then
+    if game._portal.show then
         if key == "escape" then
-            portal.show = false
-            portal.scroll = 0
+            game._portal.show = false
+            game._portal.scroll = 0
         end
-        return  -- block all other input while portal panel is open
+        return  -- block all other input while game._portal panel is open
     end
 
     -- Auction panel: Escape closes it
-    if auction.show then
+    if game._auction.show then
         if key == "escape" then
-            auction.show = false
-            auction.selected = nil
-            auction.scroll = 0
-            auction.searchActive = false
-            auction.priceActive = false
+            game._auction.show = false
+            game._auction.selected = nil
+            game._auction.scroll = 0
+            game._auction.searchActive = false
+            game._auction.priceActive = false
         elseif key == "backspace" then
-            if auction.searchActive then
-                auction.filters.search = auction.filters.search:sub(1, -2)
-            elseif auction.priceActive then
-                auction.sellPrice = auction.sellPrice:sub(1, -2)
+            if game._auction.searchActive then
+                game._auction.filters.search = game._auction.filters.search:sub(1, -2)
+            elseif game._auction.priceActive then
+                game._auction.sellPrice = game._auction.sellPrice:sub(1, -2)
             end
         elseif key == "return" or key == "kpenter" then
-            if auction.searchActive and client then
+            if game._auction.searchActive and client then
                 client:emit("mmo_auction_browse", {
-                    search = auction.filters.search,
-                    rarity = auction.filters.rarity,
+                    search = game._auction.filters.search,
+                    rarity = game._auction.filters.rarity,
                     page = 1,
                 })
-                auction.searchActive = false
+                game._auction.searchActive = false
             end
         end
         return
     end
 
     -- NPC Shop panel: Escape closes it
-    if npcShop.show then
+    if game._npcShop.show then
         if key == "escape" then
-            npcShop.show = false
-            npcShop.selected = nil
-            npcShop.amount = 1
-            npcShop.scroll = 0
+            game._npcShop.show = false
+            game._npcShop.selected = nil
+            game._npcShop.amount = 1
+            game._npcShop.scroll = 0
         end
         return  -- block all other input while shop is open
     end
 
     -- Bank vault panel: Escape closes it
-    if bank.show then
+    if game._bank.show then
         if key == "escape" then
-            bank.show = false
-            bank.selected = nil
-            bank.amount = 1
-            bank.scroll = 0
+            game._bank.show = false
+            game._bank.selected = nil
+            game._bank.amount = 1
+            game._bank.scroll = 0
         end
         return
     end
@@ -12076,9 +12191,9 @@ function game.keypressed(key)
         if key == "escape" then
             if ui.selectedCard then
                 ui.selectedCard = nil
-            elseif fusionMode.active then
-                fusionMode.active = false
-                fusionMode.card1 = nil
+            elseif game._fusionMode.active then
+                game._fusionMode.active = false
+                game._fusionMode.card1 = nil
             else
                 ui.showCardCollection = false
                 ui.cardTab = "collection"
@@ -12087,27 +12202,27 @@ function game.keypressed(key)
             ui.showCardCollection = false
             ui.selectedCard = nil
             ui.cardTab = "collection"
-            fusionMode.active = false
-            fusionMode.card1 = nil
+            game._fusionMode.active = false
+            game._fusionMode.card1 = nil
         end
         return
     end
 
     if ui.showPartyPanel then
-        if raid.partyInviteActive then
+        if game._raid.partyInviteActive then
             if key == "escape" then
-                raid.partyInviteActive = false
-                raid.partyInviteInput = ""
+                game._raid.partyInviteActive = false
+                game._raid.partyInviteInput = ""
             elseif key == "return" or key == "kpenter" then
                 -- Send invite on Enter
-                if client and #raid.partyInviteInput > 0 and raid.partyData then
+                if client and #game._raid.partyInviteInput > 0 and game._raid.partyData then
                     local targetId = nil
                     for id, p in pairs(players) do
-                        if id ~= myId and p.name and p.name:lower() == raid.partyInviteInput:lower() then
+                        if id ~= myId and p.name and p.name:lower() == game._raid.partyInviteInput:lower() then
                             targetId = id
                             break
                         end
-                        if id ~= myId and p.username and p.username:lower() == raid.partyInviteInput:lower() then
+                        if id ~= myId and p.username and p.username:lower() == game._raid.partyInviteInput:lower() then
                             targetId = id
                             break
                         end
@@ -12115,7 +12230,7 @@ function game.keypressed(key)
                     if targetId then
                         client:emit("party_invite", { targetId = targetId })
                         addFloatingText({
-                            text = "Invite sent to " .. raid.partyInviteInput,
+                            text = "Invite sent to " .. game._raid.partyInviteInput,
                             x = players[myId] and players[myId].x or 0,
                             y = players[myId] and (players[myId].y - 40) or 0,
                             color = {0.4, 0.7, 1},
@@ -12123,25 +12238,25 @@ function game.keypressed(key)
                         })
                     else
                         addFloatingText({
-                            text = "Player '" .. raid.partyInviteInput .. "' not found in zone",
+                            text = "Player '" .. game._raid.partyInviteInput .. "' not found in zone",
                             x = players[myId] and players[myId].x or 0,
                             y = players[myId] and (players[myId].y - 40) or 0,
                             color = {1, 0.3, 0.3},
                             timer = 2.5,
                         })
                     end
-                    raid.partyInviteInput = ""
+                    game._raid.partyInviteInput = ""
                 end
-                raid.partyInviteActive = false
+                game._raid.partyInviteActive = false
             elseif key == "backspace" then
-                raid.partyInviteInput = raid.partyInviteInput:sub(1, -2)
+                game._raid.partyInviteInput = game._raid.partyInviteInput:sub(1, -2)
             end
             return
         end
         if key == "y" or key == "escape" then
             ui.showPartyPanel = false
-            raid.partyInviteActive = false
-            raid.partyInviteInput = ""
+            game._raid.partyInviteActive = false
+            game._raid.partyInviteInput = ""
         end
         return
     end
@@ -12189,7 +12304,7 @@ function game.keypressed(key)
             if #chat.input > 0 then
                 -- Check for /party or /p prefix for party chat
                 local partyMsg = chat.input:match("^/party%s+(.+)") or chat.input:match("^/p%s+(.+)")
-                if partyMsg and raid.partyData then
+                if partyMsg and game._raid.partyData then
                     client:emit("party_chat", { message = partyMsg })
                 else
                     client:emit("zone_chat", { message = chat.input })
@@ -12518,57 +12633,57 @@ function game.keypressed(key)
             end
         end
         -- NPC interactions (town)
-        if hoverNpc then
-            if hoverNpc.type == "adventure_guild" then
+        if game._hoverNpc then
+            if game._hoverNpc.type == "adventure_guild" then
                 client:emit("dungeon_guild_signup", {})
-            elseif hoverNpc.type == "dungeon_quest_board" then
+            elseif game._hoverNpc.type == "dungeon_quest_board" then
                 client:emit("dungeon_quest_list", {})
-            elseif hoverNpc.type == "dungeon_leaderboard" then
+            elseif game._hoverNpc.type == "dungeon_leaderboard" then
                 client:emit("dungeon_leaderboard", {})
-            elseif hoverNpc.type == "dungeon_entrance" then
+            elseif game._hoverNpc.type == "dungeon_entrance" then
                 client:emit("dungeon_enter", { dungeonId = "rift" })
-            elseif hoverNpc.type == "portal_nexus" then
+            elseif game._hoverNpc.type == "portal_nexus" then
                 game.closeAllPanels()
-                portal.show = false  -- will be opened by portal_list listener
-                portal.destinations = {}
-                portal.scroll = 0
-                portal.message = nil
+                game._portal.show = false  -- will be opened by portal_list listener
+                game._portal.destinations = {}
+                game._portal.scroll = 0
+                game._portal.message = nil
                 if client then
                     client:emit("portal_list")
                 end
-            elseif hoverNpc.type == "npc_shop" or hoverNpc.type == "shopkeeper" then
+            elseif game._hoverNpc.type == "npc_shop" or game._hoverNpc.type == "shopkeeper" then
                 game.closeAllPanels()
-                npcShop.show = true
-                npcShop.tab = "buy"
-                npcShop.selected = nil
-                npcShop.amount = 1
-                npcShop.scroll = 0
-                npcShop.prices = nil
-                npcShop.shopList = nil
-                npcShop.message = nil
-                npcShop.transactionLock = false
+                game._npcShop.show = true
+                game._npcShop.tab = "buy"
+                game._npcShop.selected = nil
+                game._npcShop.amount = 1
+                game._npcShop.scroll = 0
+                game._npcShop.prices = nil
+                game._npcShop.shopList = nil
+                game._npcShop.message = nil
+                game._npcShop.transactionLock = false
                 -- Use shopId from NPC data if available, otherwise fetch shop list
-                local npcShopId = hoverNpc.shopId
+                local npcShopId = game._hoverNpc.shopId
                 if npcShopId then
-                    npcShop.shopId = npcShopId
-                    npcShop.shopName = hoverNpc.name or "Shop"
+                    game._npcShop.shopId = npcShopId
+                    game._npcShop.shopName = game._hoverNpc.name or "Shop"
                     client:emit("npc_shop_prices", { shopId = npcShopId })
                 else
                     -- Default to general, but also fetch shop list for switching
-                    npcShop.shopId = "general"
-                    npcShop.shopName = hoverNpc.name or "General Store"
+                    game._npcShop.shopId = "general"
+                    game._npcShop.shopName = game._hoverNpc.name or "General Store"
                     client:emit("npc_shop_browse", {})
                     client:emit("npc_shop_prices", { shopId = "general" })
                 end
-            elseif hoverNpc.type == "banker" then
+            elseif game._hoverNpc.type == "banker" then
                 game.closeAllPanels()
-                bank.show = true
-                bank.tab = "gold"
-                bank.selected = nil
-                bank.amount = 1
-                bank.scroll = 0
-                bank.data = nil
-                bank.transactionLock = false
+                game._bank.show = true
+                game._bank.tab = "gold"
+                game._bank.selected = nil
+                game._bank.amount = 1
+                game._bank.scroll = 0
+                game._bank.data = nil
+                game._bank.transactionLock = false
                 if client then
                     client:emit("bank_open", {})
                 end
@@ -12585,10 +12700,12 @@ function game.keypressed(key)
     elseif key == "i" then
         if ui.showGridInventory then
             ui.showGridInventory = false
+            game._audio.playInventoryClose()
             return
         end
         game.closeAllPanels()
         ui.showGridInventory = true
+        game._audio.playInventoryOpen()
         if client then
             client:emit("grid_sync", {})
         end
@@ -12614,8 +12731,8 @@ function game.keypressed(key)
         ui.showCardCollection = not wasOpen
         ui.cardTab = "collection"
         ui.selectedCard = nil
-        fusionMode.active = false
-        fusionMode.card1 = nil
+        game._fusionMode.active = false
+        game._fusionMode.card1 = nil
         if ui.showCardCollection and client then
             client:emit("get_cards", {})
             client:emit("get_card_vendor_catalog", {})
@@ -12670,7 +12787,7 @@ function game.keypressed(key)
             client:emit("dungeon_toggle_vision", {})
         end
     elseif key == "j" then
-        -- Toggle dungeon quests (when in dungeon) OR auction house (when in town)
+        -- Toggle dungeon quests (when in dungeon) OR game._auction house (when in town)
         if dungeon.inDungeon or (zone and zone.id == "starter_town") then
             ui.showDungeonQuests = not ui.showDungeonQuests
             if ui.showDungeonQuests then
@@ -12678,11 +12795,11 @@ function game.keypressed(key)
             end
         else
             -- Auction house toggle
-            local wasOpen = auction.show
+            local wasOpen = game._auction.show
             game.closeAllPanels()
-            auction.show = not wasOpen
-            if auction.show and client then
-                client:emit("mmo_auction_browse", auction.filters or {})
+            game._auction.show = not wasOpen
+            if game._auction.show and client then
+                client:emit("mmo_auction_browse", game._auction.filters or {})
             end
         end
     elseif key == "l" then
@@ -12718,7 +12835,7 @@ function game.keypressed(key)
         game.closeAllPanels()
         ui.showGuild = not wasOpen
         if ui.showGuild and client then
-            if guildState.guildId then
+            if game._guild.guildId then
                 client:emit("guild_vault_browse", {})
             else
                 client:emit("guild_list", {})
@@ -12734,15 +12851,20 @@ function game.keypressed(key)
         end
     elseif key == "/" and not chat.active then
         -- Toggle faction rep panel
-        karmaState.showFactions = not karmaState.showFactions
-        if karmaState.showFactions and client then
+        game._karma.showFactions = not game._karma.showFactions
+        if game._karma.showFactions and client then
             client:emit("faction_status", {})
             client:emit("faction_list", {})
         end
+    elseif key == "f9" and not chat.active then
+        -- Toggle audio settings panel
+        local wasOpen = ui.showAudioSettings
+        game.closeAllPanels()
+        ui.showAudioSettings = not wasOpen
     elseif key == "f10" then
-        -- Toggle admin panel (server hosts only)
+        -- Toggle game._admin panel (server hosts only)
         if _G.isServerHost then
-            admin.showPanel = not admin.showPanel
+            game._admin.showPanel = not game._admin.showPanel
         end
     elseif key == "escape" then
         if ui.showKnowledge then
@@ -12752,8 +12874,8 @@ function game.keypressed(key)
             else
                 ui.showKnowledge = false
             end
-        elseif admin.showPanel then
-            admin.showPanel = false
+        elseif game._admin.showPanel then
+            game._admin.showPanel = false
         elseif ui.showDungeonQuests then
             ui.showDungeonQuests = false
         elseif ui.showLeaderboard then
@@ -12772,10 +12894,10 @@ function game.keypressed(key)
             ui.showAscension = false
         elseif ui.showJail then
             -- Can't close jail if still jailed
-            if not jailState.inJail then ui.showJail = false end
-        elseif karmaState.showFactions then
-            karmaState.showFactions = false
-        elseif minigameState.active then
+            if not game._jail.inJail then ui.showJail = false end
+        elseif game._karma.showFactions then
+            game._karma.showFactions = false
+        elseif game._minigame.active then
             -- Can't escape minigame — must click or timeout
         else
             -- Go to character select (switch characters) instead of disconnecting
@@ -12786,37 +12908,37 @@ end
 
 function game.textinput(text)
     -- Trade coin input takes priority when active
-    if trade.show and trade.coinInputActive then
+    if game._trade.show and game._trade.coinInputActive then
         -- Only accept digits
-        if text:match("^%d$") and #trade.coinInput < 10 then
-            trade.coinInput = trade.coinInput .. text
+        if text:match("^%d$") and #game._trade.coinInput < 10 then
+            game._trade.coinInput = game._trade.coinInput .. text
         end
         return
     end
     -- Guild chat/create input
     if ui.showGuild then
-        if guildState.chatActive then
-            if #guildState.chatInput < 200 then
-                guildState.chatInput = guildState.chatInput .. text
+        if game._guild.chatActive then
+            if #game._guild.chatInput < 200 then
+                game._guild.chatInput = game._guild.chatInput .. text
             end
             return
-        elseif guildState.createActive then
-            if #guildState.createName < 30 then
-                guildState.createName = guildState.createName .. text
+        elseif game._guild.createActive then
+            if #game._guild.createName < 30 then
+                game._guild.createName = game._guild.createName .. text
             end
             return
         end
     end
     -- Auction inputs
-    if auction.show then
-        if auction.searchActive then
-            if #auction.filters.search < 50 then
-                auction.filters.search = auction.filters.search .. text
+    if game._auction.show then
+        if game._auction.searchActive then
+            if #game._auction.filters.search < 50 then
+                game._auction.filters.search = game._auction.filters.search .. text
             end
             return
-        elseif auction.priceActive then
-            if text:match("^%d$") and #auction.sellPrice < 10 then
-                auction.sellPrice = auction.sellPrice .. text
+        elseif game._auction.priceActive then
+            if text:match("^%d$") and #game._auction.sellPrice < 10 then
+                game._auction.sellPrice = game._auction.sellPrice .. text
             end
             return
         end
@@ -12825,9 +12947,9 @@ function game.textinput(text)
         if #chat.input < 200 then
             chat.input = chat.input .. text
         end
-    elseif raid.partyInviteActive then
-        if #raid.partyInviteInput < 30 then
-            raid.partyInviteInput = raid.partyInviteInput .. text
+    elseif game._raid.partyInviteActive then
+        if #game._raid.partyInviteInput < 30 then
+            game._raid.partyInviteInput = game._raid.partyInviteInput .. text
         end
     end
 end
@@ -12839,17 +12961,17 @@ function game.mousepressed(x, y, button)
     end
 
     -- Crafting minigame click
-    if minigameState.active and not minigameState.result and button == 1 then
-        local clickPos = math.floor(minigameState.barPos)
-        if clickPos >= minigameState.windowStart and clickPos <= minigameState.windowEnd then
-            local mid = (minigameState.windowStart + minigameState.windowEnd) / 2
+    if game._minigame.active and not game._minigame.result and button == 1 then
+        local clickPos = math.floor(game._minigame.barPos)
+        if clickPos >= game._minigame.windowStart and clickPos <= game._minigame.windowEnd then
+            local mid = (game._minigame.windowStart + game._minigame.windowEnd) / 2
             local dist = math.abs(clickPos - mid)
-            local range = (minigameState.windowEnd - minigameState.windowStart) / 2
-            minigameState.result = dist < range * 0.3 and "perfect" or "good"
+            local range = (game._minigame.windowEnd - game._minigame.windowStart) / 2
+            game._minigame.result = dist < range * 0.3 and "perfect" or "good"
         else
-            minigameState.result = "miss"
+            game._minigame.result = "miss"
         end
-        minigameState.resultTimer = 1.5
+        game._minigame.resultTimer = 1.5
         if client then client:emit("craft_minigame_result", { clickPos = clickPos }) end
         return
     end
@@ -12873,7 +12995,7 @@ function game.mousepressed(x, y, button)
         end
         cy = cy + 34
         -- Dismiss buttons
-        for _, c in ipairs(companionState.companions) do
+        for _, c in ipairs(game._companions.companions) do
             local dBx = px + panelW - 70
             if x >= dBx and x <= dBx + 50 and y >= cy + 20 and y <= cy + 38 then
                 if client then client:emit("companion_dismiss", { companionId = c.id }) end
@@ -12890,7 +13012,7 @@ function game.mousepressed(x, y, button)
         local px = (love.graphics.getWidth() - panelW) / 2
         local py = (love.graphics.getHeight() - panelH) / 2
         local cy = py + 36
-        for _, p in ipairs(petState.pets) do
+        for _, p in ipairs(game._pets.pets) do
             local feedX = px + panelW - 120
             if x >= feedX and x <= feedX + 50 and y >= cy + 4 and y <= cy + 22 then
                 if client then client:emit("pet_feed", { petId = p.id }) end
@@ -12898,7 +13020,7 @@ function game.mousepressed(x, y, button)
             end
             local actX = px + panelW - 60
             if x >= actX and x <= actX + 46 and y >= cy + 4 and y <= cy + 22 then
-                local newId = (petState.activePetId == p.id) and nil or p.id
+                local newId = (game._pets.activePetId == p.id) and nil or p.id
                 if client then client:emit("pet_set_active", { petId = newId }) end
                 return
             end
@@ -12907,7 +13029,7 @@ function game.mousepressed(x, y, button)
     end
 
     -- Jail panel clicks
-    if ui.showJail and jailState.inJail and button == 1 then
+    if ui.showJail and game._jail.inJail and button == 1 then
         local panelW = 340
         local panelH = 260
         local px = (love.graphics.getWidth() - panelW) / 2
@@ -12925,6 +13047,46 @@ function game.mousepressed(x, y, button)
         end
     end
 
+    -- Audio settings panel clicks
+    if ui.showAudioSettings and button == 1 then
+        local panelW = 360
+        local panelH = 400
+        local px = (love.graphics.getWidth() - panelW) / 2
+        local py = (love.graphics.getHeight() - panelH) / 2
+        local categories = {"master", "music", "sfx", "ambient", "ui", "footsteps"}
+        local sliderX = px + 130
+        local sliderW = panelW - 160
+        local cy = py + 52
+        for _, cat in ipairs(categories) do
+            if y >= cy and y <= cy + 22 then
+                local t = (x - sliderX) / sliderW
+                if t >= -0.02 and t <= 1.02 then
+                    t = math.max(0, math.min(1, t))
+                    game._audio.setVolume(cat, t)
+                    game._audioSliderDrag = cat
+                    return
+                end
+            end
+            cy = cy + 34
+        end
+        -- Lighting quality buttons
+        if game._settingsQualBtns then
+            for _, btn in ipairs(game._settingsQualBtns) do
+                if x >= btn.x and x <= btn.x + btn.w and y >= btn.y and y <= btn.y + btn.h then
+                    lighting.setQuality(btn.quality)
+                    return
+                end
+            end
+        end
+        -- Close button
+        local closeY = py + panelH - 42
+        local closeX = px + panelW / 2 - 50
+        if x >= closeX and x <= closeX + 100 and y >= closeY and y <= closeY + 30 then
+            ui.showAudioSettings = false
+            return
+        end
+    end
+
     -- Ascension panel clicks
     if ui.showAscension and button == 1 then
         local panelW = 500
@@ -12933,7 +13095,7 @@ function game.mousepressed(x, y, button)
         local py = (love.graphics.getHeight() - panelH) / 2
 
         -- Ascend button
-        if ascensionState.canAscend then
+        if game._ascension.canAscend then
             local bx = px + panelW / 2 - 60
             local by = py + 54
             if x >= bx and x <= bx + 120 and y >= by and y <= by + 28 then
@@ -12944,16 +13106,16 @@ function game.mousepressed(x, y, button)
 
         -- Tree node clicks
         local cy = py + 90
-        if ascensionState.tree then
-            for nodeId, nodeData in pairs(ascensionState.tree) do
+        if game._ascension.tree then
+            for nodeId, nodeData in pairs(game._ascension.tree) do
                 if cy + 38 > py + panelH - 30 then break end
                 local nx = px + 12
                 local nw = panelW - 24
                 if x >= nx and x <= nx + nw and y >= cy and y <= cy + 34 then
-                    local rank = (ascensionState.ascensionTree and ascensionState.ascensionTree[nodeId]) or 0
+                    local rank = (game._ascension.ascensionTree and game._ascension.ascensionTree[nodeId]) or 0
                     local maxRank = nodeData.maxRank or 3
                     local cost = nodeData.cost or 1
-                    if rank < maxRank and (ascensionState.ascensionPoints or 0) >= cost then
+                    if rank < maxRank and (game._ascension.ascensionPoints or 0) >= cost then
                         if client then client:emit("ascension_spend_ap", { nodeId = nodeId }) end
                     end
                     return
@@ -12972,7 +13134,7 @@ function game.mousepressed(x, y, button)
 
         -- Tab clicks
         local tabs
-        if guildState.guildId then
+        if game._guild.guildId then
             tabs = {"info", "members", "chat", "vault"}
         else
             tabs = {"browse", "create"}
@@ -12983,7 +13145,7 @@ function game.mousepressed(x, y, button)
         for i, tab in ipairs(tabs) do
             local tx = tabStartX + (i - 1) * (tabW + 4)
             if x >= tx and x <= tx + tabW and y >= tabY and y <= tabY + 22 then
-                guildState.tab = tab
+                game._guild.tab = tab
                 if tab == "vault" and client then client:emit("guild_vault_browse", {}) end
                 if tab == "browse" and client then client:emit("guild_list", {}) end
                 return
@@ -12993,9 +13155,9 @@ function game.mousepressed(x, y, button)
         local contentY = tabY + 28
 
         -- Browse: join guild
-        if guildState.tab == "browse" then
+        if game._guild.tab == "browse" then
             local cy = contentY
-            for _, g in ipairs(guildState.guildList) do
+            for _, g in ipairs(game._guild.guildList) do
                 if x >= px + 10 and x <= px + panelW - 10 and y >= cy and y <= cy + 32 then
                     if client then client:emit("guild_join", { guildId = g.id }) end
                     return
@@ -13005,35 +13167,35 @@ function game.mousepressed(x, y, button)
         end
 
         -- Create: activate name input + create button
-        if guildState.tab == "create" then
+        if game._guild.tab == "create" then
             if x >= px + 20 and x <= px + panelW - 20 and y >= contentY + 28 and y <= contentY + 52 then
-                guildState.createActive = true
-                guildState.chatActive = false
+                game._guild.createActive = true
+                game._guild.chatActive = false
                 return
             end
             local createBx = px + panelW / 2 - 50
             local createBy = contentY + 70
             if x >= createBx and x <= createBx + 100 and y >= createBy and y <= createBy + 28 then
-                if client and #guildState.createName > 0 then
-                    client:emit("guild_create", { name = guildState.createName })
+                if client and #game._guild.createName > 0 then
+                    client:emit("guild_create", { name = game._guild.createName })
                 end
                 return
             end
         end
 
         -- Chat: activate input
-        if guildState.tab == "chat" then
+        if game._guild.tab == "chat" then
             local contentH = panelH - (contentY - py) - 24
             local inputY = contentY + contentH - 24
             if x >= px + 14 and x <= px + panelW - 14 and y >= inputY and y <= inputY + 22 then
-                guildState.chatActive = true
-                guildState.createActive = false
+                game._guild.chatActive = true
+                game._guild.createActive = false
                 return
             end
         end
 
         -- Leave button (info/members tab)
-        if guildState.tab == "info" or guildState.tab == "members" then
+        if game._guild.tab == "info" or game._guild.tab == "members" then
             local lx = px + panelW - 80
             local ly = py + panelH - 40
             if x >= lx and x <= lx + 60 and y >= ly and y <= ly + 22 then
@@ -13092,7 +13254,7 @@ function game.mousepressed(x, y, button)
     end
 
     -- NPC Dialogue click handling
-    if npcDialogue.show and button == 1 then
+    if game._npcDialogue.show and button == 1 then
         local W = love.graphics.getWidth()
         local H = love.graphics.getHeight()
         local panelW = math.min(600, W - 40)
@@ -13100,7 +13262,7 @@ function game.mousepressed(x, y, button)
         local panelX = (W - panelW) / 2
         local panelY = H - panelH - 20
         local choiceY = panelY + 100
-        for i, choice in ipairs(npcDialogue.choices) do
+        for i, choice in ipairs(game._npcDialogue.choices) do
             local choiceX = panelX + 24
             local choiceW = panelW - 48
             local choiceH = 22
@@ -13112,7 +13274,7 @@ function game.mousepressed(x, y, button)
         end
         -- Click outside choices closes dialogue
         if x < panelX or x > panelX + panelW or y < panelY or y > panelY + panelH then
-            npcDialogue.show = false
+            game._npcDialogue.show = false
         end
         return
     end
@@ -13134,43 +13296,43 @@ function game.mousepressed(x, y, button)
         return
     end
 
-    -- Trade panel click handling (highest priority when trade is open)
-    if trade.show and button == 1 then
+    -- Trade panel click handling (highest priority when game._trade is open)
+    if game._trade.show and button == 1 then
         if game.handleTradeClick(x, y) then
             return
         end
     end
 
     -- Trade pending request popup click handling
-    if trade.pendingRequest and button == 1 then
+    if game._trade.pendingRequest and button == 1 then
         if game.handleTradeRequestClick(x, y) then
             return
         end
     end
 
     -- Portal panel click handling (highest priority when open)
-    if portal.show and button == 1 then
+    if game._portal.show and button == 1 then
         if game.handlePortalClick(x, y) then
             return
         end
     end
 
     -- NPC Shop click handling (highest priority when shop is open)
-    if npcShop.show and button == 1 then
+    if game._npcShop.show and button == 1 then
         if game.handleNpcShopClick(x, y) then
             return
         end
     end
 
     -- Bank vault click handling
-    if bank.show and button == 1 then
+    if game._bank.show and button == 1 then
         if game.handleBankClick(x, y) then
             return
         end
     end
 
     -- Admin panel click handling (highest priority when open)
-    if admin.showPanel and button == 1 then
+    if game._admin.showPanel and button == 1 then
         if game.handleAdminPanelClick(x, y) then
             return
         end
@@ -13321,23 +13483,23 @@ function game.mousepressed(x, y, button)
                             ui.selectedCard = nil
                         end
                     elseif btn.id == "fuse" then
-                        fusionMode.active = true
-                        fusionMode.card1 = ui.selectedCard
+                        game._fusionMode.active = true
+                        game._fusionMode.card1 = ui.selectedCard
                         ui.selectedCard = nil
                     elseif btn.id == "sell" then
                         if client then
                             client:emit("card_vendor_sell", { cardInstanceId = ui.selectedCard.instanceId })
                             ui.selectedCard = nil
                         end
-                    elseif btn.id == "auction" then
-                        -- Switch to auction sell tab with this card pre-selected
-                        auction.sellCard = ui.selectedCard
-                        auction.sellPrice = ""
-                        auction.priceActive = true
+                    elseif btn.id == "game._auction" then
+                        -- Switch to game._auction sell tab with this card pre-selected
+                        game._auction.sellCard = ui.selectedCard
+                        game._auction.sellPrice = ""
+                        game._auction.priceActive = true
                         ui.selectedCard = nil
                         ui.showCardCollection = false
-                        auction.show = true
-                        auction.tab = "sell"
+                        game._auction.show = true
+                        game._auction.tab = "sell"
                         if client then client:emit("mmo_auction_browse", {}) end
                     end
                     return
@@ -13354,9 +13516,9 @@ function game.mousepressed(x, y, button)
                 if x >= btn.x and x < btn.x + btn.w and y >= btn.y and y < btn.y + btn.h then
                     ui.cardTab = btn.tab
                     ui.cardScrollY = 0
-                    cardVendor.scroll = 0
-                    cardVendor.filterArch = "all"
-                    cardVendor.filterType = "all"
+                    game._cardVendor.scroll = 0
+                    game._cardVendor.filterArch = "all"
+                    game._cardVendor.filterType = "all"
                     return
                 end
             end
@@ -13390,19 +13552,19 @@ function game.mousepressed(x, y, button)
                 if rect and x >= rect.x and x < rect.x + rect.w and y >= rect.y and y < rect.y + rect.h then
                     local card = cardGridCards[i]
                     if card then
-                        if fusionMode.active and fusionMode.card1 then
+                        if game._fusionMode.active and game._fusionMode.card1 then
                             -- Fusion mode: select second card
-                            if card.rarity == fusionMode.card1.rarity and
-                               card.instanceId ~= fusionMode.card1.instanceId and
+                            if card.rarity == game._fusionMode.card1.rarity and
+                               card.instanceId ~= game._fusionMode.card1.instanceId and
                                not getCardEquipSlot(card) then
                                 if client then
                                     client:emit("card_fuse", {
-                                        card1Id = fusionMode.card1.instanceId,
+                                        card1Id = game._fusionMode.card1.instanceId,
                                         card2Id = card.instanceId,
                                     })
                                 end
-                                fusionMode.active = false
-                                fusionMode.card1 = nil
+                                game._fusionMode.active = false
+                                game._fusionMode.card1 = nil
                             end
                         else
                             -- Normal click: open detail view
@@ -13417,8 +13579,8 @@ function game.mousepressed(x, y, button)
             if ui._vendorSubTabs then
                 for _, btn in ipairs(ui._vendorSubTabs) do
                     if x >= btn.x and x < btn.x + btn.w and y >= btn.y and y < btn.y + btn.h then
-                        cardVendor.tab = btn.tab
-                        cardVendor.scroll = 0
+                        game._cardVendor.tab = btn.tab
+                        game._cardVendor.scroll = 0
                         return
                     end
                 end
@@ -13428,8 +13590,8 @@ function game.mousepressed(x, y, button)
             if ui._vendorTypeFilters then
                 for _, btn in ipairs(ui._vendorTypeFilters) do
                     if x >= btn.x and x < btn.x + btn.w and y >= btn.y and y < btn.y + btn.h then
-                        cardVendor.filterType = btn.filter
-                        cardVendor.scroll = 0
+                        game._cardVendor.filterType = btn.filter
+                        game._cardVendor.scroll = 0
                         return
                     end
                 end
@@ -13439,8 +13601,8 @@ function game.mousepressed(x, y, button)
             if ui._vendorArchFilters then
                 for _, btn in ipairs(ui._vendorArchFilters) do
                     if x >= btn.x and x < btn.x + btn.w and y >= btn.y and y < btn.y + btn.h then
-                        cardVendor.filterArch = btn.filter
-                        cardVendor.scroll = 0
+                        game._cardVendor.filterArch = btn.filter
+                        game._cardVendor.scroll = 0
                         return
                     end
                 end
@@ -13539,26 +13701,26 @@ function game.mousepressed(x, y, button)
     end
 
     -- Auction house click handling
-    if auction.show and button == 1 then
+    if game._auction.show and button == 1 then
         -- Close button
-        if auction._closeBtn then
-            local btn = auction._closeBtn
+        if game._auction._closeBtn then
+            local btn = game._auction._closeBtn
             if x >= btn.x and x < btn.x + btn.w and y >= btn.y and y < btn.y + btn.h then
-                auction.show = false
+                game._auction.show = false
                 return
             end
         end
 
         -- Tab buttons
-        if auction._tabBtns then
-            for _, btn in ipairs(auction._tabBtns) do
+        if game._auction._tabBtns then
+            for _, btn in ipairs(game._auction._tabBtns) do
                 if x >= btn.x and x < btn.x + btn.w and y >= btn.y and y < btn.y + btn.h then
-                    auction.tab = btn.tab
-                    auction.scroll = 0
+                    game._auction.tab = btn.tab
+                    game._auction.scroll = 0
                     if btn.tab == "browse" and client then
                         client:emit("mmo_auction_browse", {
-                            search = auction.filters.search,
-                            rarity = auction.filters.rarity,
+                            search = game._auction.filters.search,
+                            rarity = game._auction.filters.rarity,
                         })
                     elseif btn.tab == "my_listings" and client then
                         client:emit("mmo_auction_my_listings", {})
@@ -13568,22 +13730,22 @@ function game.mousepressed(x, y, button)
             end
         end
 
-        if auction.tab == "browse" then
+        if game._auction.tab == "browse" then
             -- Search bar click
-            if auction._searchBar then
-                local sb = auction._searchBar
-                auction.searchActive = x >= sb.x and x < sb.x + sb.w and y >= sb.y and y < sb.y + sb.h
-                auction.priceActive = false
+            if game._auction._searchBar then
+                local sb = game._auction._searchBar
+                game._auction.searchActive = x >= sb.x and x < sb.x + sb.w and y >= sb.y and y < sb.y + sb.h
+                game._auction.priceActive = false
             end
 
             -- Search button
-            if auction._searchBtn then
-                local btn = auction._searchBtn
+            if game._auction._searchBtn then
+                local btn = game._auction._searchBtn
                 if x >= btn.x and x < btn.x + btn.w and y >= btn.y and y < btn.y + btn.h then
                     if client then
                         client:emit("mmo_auction_browse", {
-                            search = auction.filters.search,
-                            rarity = auction.filters.rarity,
+                            search = game._auction.filters.search,
+                            rarity = game._auction.filters.rarity,
                             page = 1,
                         })
                     end
@@ -13592,15 +13754,15 @@ function game.mousepressed(x, y, button)
             end
 
             -- Rarity filter buttons
-            if auction._rarityBtns then
-                for _, btn in ipairs(auction._rarityBtns) do
+            if game._auction._rarityBtns then
+                for _, btn in ipairs(game._auction._rarityBtns) do
                     if x >= btn.x and x < btn.x + btn.w and y >= btn.y and y < btn.y + btn.h then
-                        auction.filters.rarity = btn.rarity
-                        auction.page = 1
+                        game._auction.filters.rarity = btn.rarity
+                        game._auction.page = 1
                         if client then
                             client:emit("mmo_auction_browse", {
-                                search = auction.filters.search,
-                                rarity = auction.filters.rarity,
+                                search = game._auction.filters.search,
+                                rarity = game._auction.filters.rarity,
                                 page = 1,
                             })
                         end
@@ -13610,8 +13772,8 @@ function game.mousepressed(x, y, button)
             end
 
             -- Listing buy buttons
-            if auction._listingBtns then
-                for _, btn in pairs(auction._listingBtns) do
+            if game._auction._listingBtns then
+                for _, btn in pairs(game._auction._listingBtns) do
                     if btn and x >= btn.x and x < btn.x + btn.w and y >= btn.y and y < btn.y + btn.h then
                         if client then
                             client:emit("mmo_auction_buy", { listingId = btn.listingId })
@@ -13622,74 +13784,74 @@ function game.mousepressed(x, y, button)
             end
 
             -- Pagination
-            if auction._prevPageBtn then
-                local btn = auction._prevPageBtn
+            if game._auction._prevPageBtn then
+                local btn = game._auction._prevPageBtn
                 if x >= btn.x and x < btn.x + btn.w and y >= btn.y and y < btn.y + btn.h then
-                    auction.page = math.max(1, auction.page - 1)
+                    game._auction.page = math.max(1, game._auction.page - 1)
                     if client then
                         client:emit("mmo_auction_browse", {
-                            search = auction.filters.search,
-                            rarity = auction.filters.rarity,
-                            page = auction.page,
+                            search = game._auction.filters.search,
+                            rarity = game._auction.filters.rarity,
+                            page = game._auction.page,
                         })
                     end
                     return
                 end
             end
-            if auction._nextPageBtn then
-                local btn = auction._nextPageBtn
+            if game._auction._nextPageBtn then
+                local btn = game._auction._nextPageBtn
                 if x >= btn.x and x < btn.x + btn.w and y >= btn.y and y < btn.y + btn.h then
-                    auction.page = auction.page + 1
+                    game._auction.page = game._auction.page + 1
                     if client then
                         client:emit("mmo_auction_browse", {
-                            search = auction.filters.search,
-                            rarity = auction.filters.rarity,
-                            page = auction.page,
+                            search = game._auction.filters.search,
+                            rarity = game._auction.filters.rarity,
+                            page = game._auction.page,
                         })
                     end
                     return
                 end
             end
 
-        elseif auction.tab == "sell" then
+        elseif game._auction.tab == "sell" then
             -- Price input click
-            if auction._priceInput then
-                local pi = auction._priceInput
-                auction.priceActive = x >= pi.x and x < pi.x + pi.w and y >= pi.y and y < pi.y + pi.h
-                auction.searchActive = false
+            if game._auction._priceInput then
+                local pi = game._auction._priceInput
+                game._auction.priceActive = x >= pi.x and x < pi.x + pi.w and y >= pi.y and y < pi.y + pi.h
+                game._auction.searchActive = false
             end
 
             -- List button
-            if auction._listBtn and auction.sellCard and #auction.sellPrice > 0 then
-                local btn = auction._listBtn
+            if game._auction._listBtn and game._auction.sellCard and #game._auction.sellPrice > 0 then
+                local btn = game._auction._listBtn
                 if x >= btn.x and x < btn.x + btn.w and y >= btn.y and y < btn.y + btn.h then
-                    local price = tonumber(auction.sellPrice)
+                    local price = tonumber(game._auction.sellPrice)
                     if price and price > 0 and client then
                         client:emit("mmo_auction_list_card", {
-                            cardInstanceId = auction.sellCard.instanceId,
+                            cardInstanceId = game._auction.sellCard.instanceId,
                             price = price,
                         })
-                        auction.sellCard = nil
-                        auction.sellPrice = ""
+                        game._auction.sellCard = nil
+                        game._auction.sellPrice = ""
                     end
                     return
                 end
             end
 
             -- Sell card selection
-            if auction._sellCardBtns then
-                for _, btn in pairs(auction._sellCardBtns) do
+            if game._auction._sellCardBtns then
+                for _, btn in pairs(game._auction._sellCardBtns) do
                     if btn and x >= btn.x and x < btn.x + btn.w and y >= btn.y and y < btn.y + btn.h then
-                        auction.sellCard = btn.card
+                        game._auction.sellCard = btn.card
                         return
                     end
                 end
             end
 
-        elseif auction.tab == "my_listings" then
+        elseif game._auction.tab == "my_listings" then
             -- Cancel buttons
-            if auction._cancelBtns then
-                for _, btn in pairs(auction._cancelBtns) do
+            if game._auction._cancelBtns then
+                for _, btn in pairs(game._auction._cancelBtns) do
                     if btn and x >= btn.x and x < btn.x + btn.w and y >= btn.y and y < btn.y + btn.h then
                         if client then
                             client:emit("mmo_auction_cancel", { listingId = btn.listingId })
@@ -13753,7 +13915,7 @@ function game.mousepressed(x, y, button)
     -- Party panel click handling
     if ui.showPartyPanel and button == 1 then
         -- Create Party button
-        if not raid.partyData and ui._partyCreateBtn then
+        if not game._raid.partyData and ui._partyCreateBtn then
             local btn = ui._partyCreateBtn
             if x >= btn.x and x <= btn.x + btn.w and y >= btn.y and y <= btn.y + btn.h then
                 if client then client:emit("party_create", {}) end
@@ -13762,50 +13924,50 @@ function game.mousepressed(x, y, button)
         end
 
         -- Accept invite button
-        if not raid.partyData and raid.partyInvitePending and ui._partyAcceptBtn then
+        if not game._raid.partyData and game._raid.partyInvitePending and ui._partyAcceptBtn then
             local btn = ui._partyAcceptBtn
             if x >= btn.x and x <= btn.x + btn.w and y >= btn.y and y <= btn.y + btn.h then
                 if client then
-                    client:emit("party_accept", { partyId = raid.partyInvitePending.partyId })
+                    client:emit("party_accept", { partyId = game._raid.partyInvitePending.partyId })
                 end
-                raid.partyInvitePending = nil
+                game._raid.partyInvitePending = nil
                 return
             end
         end
 
         -- Decline invite button
-        if not raid.partyData and raid.partyInvitePending and ui._partyDeclineBtn then
+        if not game._raid.partyData and game._raid.partyInvitePending and ui._partyDeclineBtn then
             local btn = ui._partyDeclineBtn
             if x >= btn.x and x <= btn.x + btn.w and y >= btn.y and y <= btn.y + btn.h then
-                raid.partyInvitePending = nil
+                game._raid.partyInvitePending = nil
                 return
             end
         end
 
         -- Invite input focus
-        if raid.partyData and ui._raid.partyInviteInput then
+        if game._raid.partyData and ui._raid.partyInviteInput then
             local inp = ui._raid.partyInviteInput
             if x >= inp.x and x <= inp.x + inp.w and y >= inp.y and y <= inp.y + inp.h then
-                raid.partyInviteActive = true
+                game._raid.partyInviteActive = true
                 return
             else
-                raid.partyInviteActive = false
+                game._raid.partyInviteActive = false
             end
         end
 
         -- Send invite button
-        if raid.partyData and ui._partyInviteSendBtn then
+        if game._raid.partyData and ui._partyInviteSendBtn then
             local btn = ui._partyInviteSendBtn
             if x >= btn.x and x <= btn.x + btn.w and y >= btn.y and y <= btn.y + btn.h then
-                if client and #raid.partyInviteInput > 0 then
+                if client and #game._raid.partyInviteInput > 0 then
                     -- Find player by name in current zone
                     local targetId = nil
                     for id, p in pairs(players) do
-                        if id ~= myId and p.name and p.name:lower() == raid.partyInviteInput:lower() then
+                        if id ~= myId and p.name and p.name:lower() == game._raid.partyInviteInput:lower() then
                             targetId = id
                             break
                         end
-                        if id ~= myId and p.username and p.username:lower() == raid.partyInviteInput:lower() then
+                        if id ~= myId and p.username and p.username:lower() == game._raid.partyInviteInput:lower() then
                             targetId = id
                             break
                         end
@@ -13813,7 +13975,7 @@ function game.mousepressed(x, y, button)
                     if targetId then
                         client:emit("party_invite", { targetId = targetId })
                         addFloatingText({
-                            text = "Invite sent to " .. raid.partyInviteInput,
+                            text = "Invite sent to " .. game._raid.partyInviteInput,
                             x = players[myId] and players[myId].x or 0,
                             y = players[myId] and (players[myId].y - 40) or 0,
                             color = {0.4, 0.7, 1},
@@ -13821,22 +13983,22 @@ function game.mousepressed(x, y, button)
                         })
                     else
                         addFloatingText({
-                            text = "Player '" .. raid.partyInviteInput .. "' not found in zone",
+                            text = "Player '" .. game._raid.partyInviteInput .. "' not found in zone",
                             x = players[myId] and players[myId].x or 0,
                             y = players[myId] and (players[myId].y - 40) or 0,
                             color = {1, 0.3, 0.3},
                             timer = 2.5,
                         })
                     end
-                    raid.partyInviteInput = ""
-                    raid.partyInviteActive = false
+                    game._raid.partyInviteInput = ""
+                    game._raid.partyInviteActive = false
                 end
                 return
             end
         end
 
         -- Leave/Disband button
-        if raid.partyData and ui._partyLeaveBtn then
+        if game._raid.partyData and ui._partyLeaveBtn then
             local btn = ui._partyLeaveBtn
             if x >= btn.x and x <= btn.x + btn.w and y >= btn.y and y <= btn.y + btn.h then
                 if client then
@@ -13944,6 +14106,15 @@ function game.mousepressed(x, y, button)
 end
 
 function game.mousemoved(x, y)
+    -- Audio slider drag
+    if game._audioSliderDrag then
+        local panelW = 360
+        local px = (love.graphics.getWidth() - panelW) / 2
+        local sliderX = px + 130
+        local sliderW = panelW - 160
+        local t = math.max(0, math.min(1, (x - sliderX) / sliderW))
+        game._audio.setVolume(game._audioSliderDrag, t)
+    end
     -- Forward to combat UI for tile hover / path preview
     if tcState.inCombat and combatUI then
         combatUI.handleMouseMove(x, y, camera.x, camera.y)
@@ -13958,30 +14129,30 @@ function game.wheelmoved(x, y)
         ui.equipmentScroll = math.max(0, ui.equipmentScroll - y * 30)
         return
     end
-    if portal.show then
-        portal.scroll = math.max(0, portal.scroll - y * 30)
+    if game._portal.show then
+        game._portal.scroll = math.max(0, game._portal.scroll - y * 30)
         return
     end
-    if trade.show then
-        -- Scroll the inventory list in the trade panel
-        trade.myScroll = math.max(0, trade.myScroll - y * 30)
+    if game._trade.show then
+        -- Scroll the inventory list in the game._trade panel
+        game._trade.myScroll = math.max(0, game._trade.myScroll - y * 30)
         return
     end
-    if npcShop.show then
-        npcShop.scroll = math.max(0, npcShop.scroll - y * 30)
+    if game._npcShop.show then
+        game._npcShop.scroll = math.max(0, game._npcShop.scroll - y * 30)
         return
     end
-    if bank.show then
-        bank.scroll = math.max(0, bank.scroll - y * 30)
+    if game._bank.show then
+        game._bank.scroll = math.max(0, game._bank.scroll - y * 30)
         return
     end
-    if auction.show then
-        auction.scroll = math.max(0, auction.scroll - y * 30)
+    if game._auction.show then
+        game._auction.scroll = math.max(0, game._auction.scroll - y * 30)
         return
     end
     if ui.showCardCollection then
         if ui.cardTab == "vendor" then
-            cardVendor.scroll = math.max(0, cardVendor.scroll - y * 30)
+            game._cardVendor.scroll = math.max(0, game._cardVendor.scroll - y * 30)
         else
             ui.cardScrollY = math.max(0, ui.cardScrollY - y * 30)
         end
@@ -14883,9 +15054,9 @@ function game.drawCardCollectionTab(px, py, pw, ph)
     end
 
     -- Fusion mode indicator
-    if fusionMode.active and fusionMode.card1 then
+    if game._fusionMode.active and game._fusionMode.card1 then
         love.graphics.setColor(0.9, 0.5, 1, 0.8 + 0.2 * math.sin(love.timer.getTime() * 4))
-        love.graphics.printf("FUSION: Select a second card of same rarity (" .. (fusionMode.card1.rarity or "?"):gsub("_"," ") .. ") — ESC to cancel", px + 10, sortY, pw - 20, "right")
+        love.graphics.printf("FUSION: Select a second card of same rarity (" .. (game._fusionMode.card1.rarity or "?"):gsub("_"," ") .. ") — ESC to cancel", px + 10, sortY, pw - 20, "right")
     end
 
     -- Card grid
@@ -14915,8 +15086,8 @@ function game.drawCardCollectionTab(px, py, pw, ph)
             local rc = RARITY_COLORS[card.rarity] or {0.5, 0.5, 0.5}
             local isHovered = mx >= cx and mx < cx + cardW and my >= cy and my < cy + cardH
             local isEquipped = getCardEquipSlot(card) ~= nil
-            local isFusionTarget = fusionMode.active and fusionMode.card1 and
-                card.rarity == fusionMode.card1.rarity and card.instanceId ~= fusionMode.card1.instanceId and
+            local isFusionTarget = game._fusionMode.active and game._fusionMode.card1 and
+                card.rarity == game._fusionMode.card1.rarity and card.instanceId ~= game._fusionMode.card1.instanceId and
                 not getCardEquipSlot(card)
 
             if isHovered then _hoveredCardData = card end
@@ -15149,7 +15320,7 @@ function game.drawCardDetailView(W, H)
     if not equipSlot then
         table.insert(buttons, { id = "fuse", label = "Fuse", color = {0.4, 0.2, 0.5} })
         table.insert(buttons, { id = "sell", label = "Sell", color = {0.5, 0.4, 0.15} })
-        table.insert(buttons, { id = "auction", label = "Auction", color = {0.3, 0.3, 0.5} })
+        table.insert(buttons, { id = "game._auction", label = "Auction", color = {0.3, 0.3, 0.5} })
     end
     table.insert(buttons, { id = "close", label = "Close", color = {0.3, 0.3, 0.35} })
 
@@ -15188,7 +15359,7 @@ function game.drawCardVendorTab(px, py, pw, ph)
 
     for ti, tname in ipairs({"buy", "sell"}) do
         local tx = px + 10 + (ti - 1) * subTabW
-        local active = (cardVendor.tab == tname)
+        local active = (game._cardVendor.tab == tname)
         if active then
             love.graphics.setColor(0.15, 0.3, 0.2, 0.95)
         else
@@ -15206,7 +15377,7 @@ function game.drawCardVendorTab(px, py, pw, ph)
     love.graphics.printf("Coins: " .. (account and account.coins or 0), px + 10, py + ph - 6, pw - 20, "right")
 
     local filterH = 0
-    if cardVendor.tab == "buy" then
+    if game._cardVendor.tab == "buy" then
         -- ── Filter row: Type filter (All / Active / Passive / Stats) ──
         local typeFilterY = subTabY + 24
         local typeNames = {"all", "active", "passive", "stat"}
@@ -15215,7 +15386,7 @@ function game.drawCardVendorTab(px, py, pw, ph)
         ui._vendorTypeFilters = {}
         for ti, tkey in ipairs(typeNames) do
             local tx = px + 10 + (ti - 1) * typeBtnW
-            local active = (cardVendor.filterType == tkey)
+            local active = (game._cardVendor.filterType == tkey)
             if active then
                 love.graphics.setColor(0.2, 0.35, 0.5, 0.95)
             else
@@ -15232,7 +15403,7 @@ function game.drawCardVendorTab(px, py, pw, ph)
         -- Collect unique archetypes from catalog
         local archSet = {}
         local archOrder = {}
-        for _, item in ipairs(cardVendor.catalog) do
+        for _, item in ipairs(game._cardVendor.catalog) do
             local a = item.archetype or "utility"
             if not archSet[a] then
                 archSet[a] = true
@@ -15255,7 +15426,7 @@ function game.drawCardVendorTab(px, py, pw, ph)
         for ai, akey in ipairs(archNames) do
             local label = archLabels[akey] or akey:gsub("_", " ")
             local lblW = fonts.small:getWidth(label) + 12
-            local active = (cardVendor.filterArch == akey)
+            local active = (game._cardVendor.filterArch == akey)
             if active then
                 love.graphics.setColor(0.25, 0.4, 0.3, 0.95)
             else
@@ -15277,17 +15448,17 @@ function game.drawCardVendorTab(px, py, pw, ph)
     love.graphics.setScissor(px + 4, listY, pw - 8, listH)
     ui._vendorItemBtns = {}
 
-    if cardVendor.tab == "buy" then
+    if game._cardVendor.tab == "buy" then
         -- Filter catalog
         local filtered = {}
-        for _, item in ipairs(cardVendor.catalog) do
-            local passArch = (cardVendor.filterArch == "all") or (item.archetype == cardVendor.filterArch)
+        for _, item in ipairs(game._cardVendor.catalog) do
+            local passArch = (game._cardVendor.filterArch == "all") or (item.archetype == game._cardVendor.filterArch)
             local passType = true
-            if cardVendor.filterType == "active" then
+            if game._cardVendor.filterType == "active" then
                 passType = (item.type == "active_ability")
-            elseif cardVendor.filterType == "passive" then
+            elseif game._cardVendor.filterType == "passive" then
                 passType = (item.type == "passive_perk")
-            elseif cardVendor.filterType == "stat" then
+            elseif game._cardVendor.filterType == "stat" then
                 passType = (item.type == "stat_boost" or item.type == "skill_boost")
             end
             if passArch and passType then
@@ -15295,7 +15466,7 @@ function game.drawCardVendorTab(px, py, pw, ph)
             end
         end
 
-        if #cardVendor.catalog == 0 then
+        if #game._cardVendor.catalog == 0 then
             love.graphics.setFont(fonts.ui)
             love.graphics.setColor(0.5, 0.5, 0.6, 0.8)
             love.graphics.printf("Loading catalog...", px, listY + 30, pw, "center")
@@ -15306,7 +15477,7 @@ function game.drawCardVendorTab(px, py, pw, ph)
         else
             love.graphics.setFont(fonts.small)
             for i, item in ipairs(filtered) do
-                local iy = listY + (i - 1) * itemH - cardVendor.scroll
+                local iy = listY + (i - 1) * itemH - game._cardVendor.scroll
                 if iy + itemH >= listY and iy < listY + listH then
                     local rc = RARITY_COLORS[item.rarity] or {0.5, 0.5, 0.5}
                     local hovered = mx >= px + 10 and mx < px + pw - 10 and my >= iy and my < iy + itemH - 2
@@ -15363,7 +15534,7 @@ function game.drawCardVendorTab(px, py, pw, ph)
         else
             love.graphics.setFont(fonts.small)
             for i, card in ipairs(sellCards) do
-                local iy = listY + (i - 1) * itemH - cardVendor.scroll
+                local iy = listY + (i - 1) * itemH - game._cardVendor.scroll
                 if iy + itemH >= listY and iy < listY + listH then
                     local rc = RARITY_COLORS[card.rarity] or {0.5, 0.5, 0.5}
                     local hovered = mx >= px + 10 and mx < px + pw - 10 and my >= iy and my < iy + itemH - 2
@@ -15425,7 +15596,7 @@ function game.drawCardLoadoutsTab(px, py, pw, ph)
 
     for i = 1, 5 do
         local ly = startY + (i - 1) * (slotH + 6)
-        local loadout = cardLoadouts.loadouts[i]
+        local loadout = game._cardLoadouts.loadouts[i]
 
         -- Background
         love.graphics.setColor(0.1, 0.12, 0.16, 0.8)
@@ -15497,10 +15668,10 @@ function game.drawAuctionHouse(W, H)
     local py = math.floor((H - ph) / 2)
     local mx, my = love.mouse.getPosition()
 
-    auction._panelX = px
-    auction._panelY = py
-    auction._panelW = pw
-    auction._panelH = ph
+    game._auction._panelX = px
+    game._auction._panelY = py
+    game._auction._panelW = pw
+    game._auction._panelH = ph
 
     -- Dim background
     love.graphics.setColor(0, 0, 0, 0.6)
@@ -15535,18 +15706,18 @@ function game.drawAuctionHouse(W, H)
     love.graphics.setFont(fonts.hud)
     love.graphics.setColor(1, 1, 1, 0.9)
     love.graphics.printf("X", closeX, closeY + 2, closeW, "center")
-    auction._closeBtn = { x = closeX, y = closeY, w = closeW, h = closeH }
+    game._auction._closeBtn = { x = closeX, y = closeY, w = closeW, h = closeH }
 
     -- Tab bar: Browse | Sell | My Listings
     local tabY = py + 34
     local tabNames = { "browse", "sell", "my_listings" }
     local tabLabels = { "Browse", "Sell", "My Listings" }
     local tabW = math.floor((pw - 20) / #tabNames)
-    auction._tabBtns = {}
+    game._auction._tabBtns = {}
     love.graphics.setFont(fonts.hud)
     for ti, tname in ipairs(tabNames) do
         local tx = px + 10 + (ti - 1) * tabW
-        local active = (auction.tab == tname)
+        local active = (game._auction.tab == tname)
         if active then
             love.graphics.setColor(0.15, 0.15, 0.3, 0.95)
         else
@@ -15555,15 +15726,15 @@ function game.drawAuctionHouse(W, H)
         love.graphics.rectangle("fill", tx, tabY, tabW - 2, 22, 3, 3)
         love.graphics.setColor(active and 0.7 or 0.4, active and 0.6 or 0.4, active and 1 or 0.5, 1)
         love.graphics.printf(tabLabels[ti], tx, tabY + 2, tabW - 2, "center")
-        auction._tabBtns[ti] = { x = tx, y = tabY, w = tabW - 2, h = 22, tab = tname }
+        game._auction._tabBtns[ti] = { x = tx, y = tabY, w = tabW - 2, h = 22, tab = tname }
     end
 
     local contentY = tabY + 28
     local contentH = ph - (contentY - py) - 20
 
-    if auction.tab == "browse" then
+    if game._auction.tab == "browse" then
         game.drawAuctionBrowse(px, contentY, pw, contentH)
-    elseif auction.tab == "sell" then
+    elseif game._auction.tab == "sell" then
         game.drawAuctionSell(px, contentY, pw, contentH)
     else
         game.drawAuctionMyListings(px, contentY, pw, contentH)
@@ -15583,17 +15754,17 @@ function game.drawAuctionBrowse(px, py, pw, ph)
     local searchW = pw - 120
     love.graphics.setColor(0.1, 0.1, 0.15, 0.9)
     love.graphics.rectangle("fill", px + 10, searchY, searchW, 20, 3, 3)
-    love.graphics.setColor(auction.searchActive and 0.5 or 0.3, auction.searchActive and 0.5 or 0.3, auction.searchActive and 0.7 or 0.4, 0.8)
+    love.graphics.setColor(game._auction.searchActive and 0.5 or 0.3, game._auction.searchActive and 0.5 or 0.3, game._auction.searchActive and 0.7 or 0.4, 0.8)
     love.graphics.rectangle("line", px + 10, searchY, searchW, 20, 3, 3)
     love.graphics.setFont(fonts.small)
-    if #auction.filters.search > 0 then
+    if #game._auction.filters.search > 0 then
         love.graphics.setColor(1, 1, 1, 0.9)
-        love.graphics.print(auction.filters.search, px + 14, searchY + 3)
+        love.graphics.print(game._auction.filters.search, px + 14, searchY + 3)
     else
         love.graphics.setColor(0.4, 0.4, 0.5, 0.5)
         love.graphics.print("Search cards...", px + 14, searchY + 3)
     end
-    auction._searchBar = { x = px + 10, y = searchY, w = searchW, h = 20 }
+    game._auction._searchBar = { x = px + 10, y = searchY, w = searchW, h = 20 }
 
     -- Search button
     local searchBtnX = px + 10 + searchW + 4
@@ -15603,18 +15774,18 @@ function game.drawAuctionBrowse(px, py, pw, ph)
     love.graphics.rectangle("fill", searchBtnX, searchY, searchBtnW, 20, 3, 3)
     love.graphics.setColor(1, 1, 1, searchHovered and 1 or 0.8)
     love.graphics.printf("Search", searchBtnX, searchY + 3, searchBtnW, "center")
-    auction._searchBtn = { x = searchBtnX, y = searchY, w = searchBtnW, h = 20 }
+    game._auction._searchBtn = { x = searchBtnX, y = searchY, w = searchBtnW, h = 20 }
 
     -- Rarity filter buttons
     local filterY = searchY + 24
     local rarities = { "all", "common", "uncommon", "rare", "ultra_rare", "mythic_rare", "legendary" }
     local rarityLabels = { "All", "C", "UC", "R", "UR", "MR", "L" }
     local rBtnW = math.floor((pw - 20) / #rarities)
-    auction._rarityBtns = {}
+    game._auction._rarityBtns = {}
     love.graphics.setFont(fonts.small)
     for ri, r in ipairs(rarities) do
         local rx = px + 10 + (ri - 1) * rBtnW
-        local active = (auction.filters.rarity == r) or (r == "all" and not auction.filters.rarity)
+        local active = (game._auction.filters.rarity == r) or (r == "all" and not game._auction.filters.rarity)
         local rc = RARITY_COLORS[r] or {0.5, 0.5, 0.6}
         if active then
             love.graphics.setColor(rc[1] * 0.4, rc[2] * 0.4, rc[3] * 0.4, 0.9)
@@ -15624,7 +15795,7 @@ function game.drawAuctionBrowse(px, py, pw, ph)
         love.graphics.rectangle("fill", rx, filterY, rBtnW - 2, 16, 2, 2)
         love.graphics.setColor(active and rc[1] or 0.5, active and rc[2] or 0.5, active and rc[3] or 0.5, active and 1 or 0.6)
         love.graphics.printf(rarityLabels[ri], rx, filterY + 1, rBtnW - 2, "center")
-        auction._rarityBtns[ri] = { x = rx, y = filterY, w = rBtnW - 2, h = 16, rarity = r == "all" and nil or r }
+        game._auction._rarityBtns[ri] = { x = rx, y = filterY, w = rBtnW - 2, h = 16, rarity = r == "all" and nil or r }
     end
 
     -- Listings
@@ -15633,16 +15804,16 @@ function game.drawAuctionBrowse(px, py, pw, ph)
     local itemH = 30
 
     love.graphics.setScissor(px + 4, listY, pw - 8, listH)
-    auction._listingBtns = {}
+    game._auction._listingBtns = {}
 
-    if #auction.listings == 0 then
+    if #game._auction.listings == 0 then
         love.graphics.setFont(fonts.ui)
         love.graphics.setColor(0.5, 0.5, 0.6, 0.8)
         love.graphics.printf("No listings found.", px, listY + 30, pw, "center")
     else
         love.graphics.setFont(fonts.small)
-        for i, listing in ipairs(auction.listings) do
-            local iy = listY + (i - 1) * itemH - auction.scroll
+        for i, listing in ipairs(game._auction.listings) do
+            local iy = listY + (i - 1) * itemH - game._auction.scroll
             if iy + itemH >= listY and iy < listY + listH then
                 local rc = RARITY_COLORS[listing.rarity] or {0.5, 0.5, 0.5}
                 local hovered = mx >= px + 10 and mx < px + pw - 10 and my >= iy and my < iy + itemH
@@ -15677,7 +15848,7 @@ function game.drawAuctionBrowse(px, py, pw, ph)
                 love.graphics.setColor(1, 1, 1, buyHovered and 1 or 0.8)
                 love.graphics.printf("Buy", buyX, iy + 6, buyW, "center")
 
-                auction._listingBtns[i] = { x = buyX, y = iy + 3, w = buyW, h = 22, listingId = listing.id }
+                game._auction._listingBtns[i] = { x = buyX, y = iy + 3, w = buyW, h = 22, listingId = listing.id }
             end
         end
     end
@@ -15688,26 +15859,26 @@ function game.drawAuctionBrowse(px, py, pw, ph)
     local pageY = listY + listH + 2
     love.graphics.setFont(fonts.small)
     love.graphics.setColor(0.6, 0.6, 0.7, 0.8)
-    love.graphics.printf("Page " .. auction.page .. "/" .. math.max(1, auction.totalPages) .. " (" .. auction.totalResults .. " results)", px + 10, pageY, pw - 20, "center")
+    love.graphics.printf("Page " .. game._auction.page .. "/" .. math.max(1, game._auction.totalPages) .. " (" .. game._auction.totalResults .. " results)", px + 10, pageY, pw - 20, "center")
 
     -- Prev/Next page buttons
-    if auction.page > 1 then
+    if game._auction.page > 1 then
         local prevX = px + 10
         local prevHovered = mx >= prevX and mx < prevX + 30 and my >= pageY and my < pageY + 14
         love.graphics.setColor(0.3, 0.3, 0.5, prevHovered and 1 or 0.7)
         love.graphics.print("< Prev", prevX, pageY)
-        auction._prevPageBtn = { x = prevX, y = pageY, w = 40, h = 14 }
+        game._auction._prevPageBtn = { x = prevX, y = pageY, w = 40, h = 14 }
     else
-        auction._prevPageBtn = nil
+        game._auction._prevPageBtn = nil
     end
-    if auction.page < auction.totalPages then
+    if game._auction.page < game._auction.totalPages then
         local nextX = px + pw - 50
         local nextHovered = mx >= nextX and mx < nextX + 40 and my >= pageY and my < pageY + 14
         love.graphics.setColor(0.3, 0.3, 0.5, nextHovered and 1 or 0.7)
         love.graphics.printf("Next >", nextX, pageY, 40, "right")
-        auction._nextPageBtn = { x = nextX, y = pageY, w = 40, h = 14 }
+        game._auction._nextPageBtn = { x = nextX, y = pageY, w = 40, h = 14 }
     else
-        auction._nextPageBtn = nil
+        game._auction._nextPageBtn = nil
     end
 end
 
@@ -15723,28 +15894,28 @@ function game.drawAuctionSell(px, py, pw, ph)
     local priceY = py
     love.graphics.setColor(0.1, 0.1, 0.15, 0.9)
     love.graphics.rectangle("fill", px + pw - 180, priceY, 100, 20, 3, 3)
-    love.graphics.setColor(auction.priceActive and 0.5 or 0.3, auction.priceActive and 0.5 or 0.3, auction.priceActive and 0.7 or 0.4, 0.8)
+    love.graphics.setColor(game._auction.priceActive and 0.5 or 0.3, game._auction.priceActive and 0.5 or 0.3, game._auction.priceActive and 0.7 or 0.4, 0.8)
     love.graphics.rectangle("line", px + pw - 180, priceY, 100, 20, 3, 3)
     love.graphics.setFont(fonts.small)
-    if #auction.sellPrice > 0 then
+    if #game._auction.sellPrice > 0 then
         love.graphics.setColor(1, 0.85, 0.2, 0.9)
-        love.graphics.print(auction.sellPrice .. "c", px + pw - 176, priceY + 3)
+        love.graphics.print(game._auction.sellPrice .. "c", px + pw - 176, priceY + 3)
     else
         love.graphics.setColor(0.4, 0.4, 0.5, 0.5)
         love.graphics.print("Price...", px + pw - 176, priceY + 3)
     end
-    auction._priceInput = { x = px + pw - 180, y = priceY, w = 100, h = 20 }
+    game._auction._priceInput = { x = px + pw - 180, y = priceY, w = 100, h = 20 }
 
     -- List button
     local listBtnX = px + pw - 72
     local listBtnW = 60
-    local canList = auction.sellCard and #auction.sellPrice > 0
+    local canList = game._auction.sellCard and #game._auction.sellPrice > 0
     local listHovered = canList and mx >= listBtnX and mx < listBtnX + listBtnW and my >= priceY and my < priceY + 20
     love.graphics.setColor(canList and 0.2 or 0.15, canList and 0.4 or 0.15, canList and 0.3 or 0.2, listHovered and 0.95 or 0.7)
     love.graphics.rectangle("fill", listBtnX, priceY, listBtnW, 20, 3, 3)
     love.graphics.setColor(1, 1, 1, canList and (listHovered and 1 or 0.8) or 0.4)
     love.graphics.printf("List", listBtnX, priceY + 3, listBtnW, "center")
-    auction._listBtn = { x = listBtnX, y = priceY, w = listBtnW, h = 20 }
+    game._auction._listBtn = { x = listBtnX, y = priceY, w = listBtnW, h = 20 }
 
     -- Card grid for selling
     local listY = py + 26
@@ -15752,7 +15923,7 @@ function game.drawAuctionSell(px, py, pw, ph)
     local itemH = 30
 
     love.graphics.setScissor(px + 4, listY, pw - 8, listH)
-    auction._sellCardBtns = {}
+    game._auction._sellCardBtns = {}
 
     local sellCards = {}
     for _, card in ipairs(rpg.cards) do
@@ -15768,10 +15939,10 @@ function game.drawAuctionSell(px, py, pw, ph)
     else
         love.graphics.setFont(fonts.small)
         for i, card in ipairs(sellCards) do
-            local iy = listY + (i - 1) * itemH - auction.scroll
+            local iy = listY + (i - 1) * itemH - game._auction.scroll
             if iy + itemH >= listY and iy < listY + listH then
                 local rc = RARITY_COLORS[card.rarity] or {0.5, 0.5, 0.5}
-                local isSelected = auction.sellCard and auction.sellCard.instanceId == card.instanceId
+                local isSelected = game._auction.sellCard and game._auction.sellCard.instanceId == card.instanceId
                 local hovered = mx >= px + 10 and mx < px + pw - 10 and my >= iy and my < iy + itemH
 
                 if isSelected then
@@ -15795,7 +15966,7 @@ function game.drawAuctionSell(px, py, pw, ph)
                 love.graphics.setColor(0.6, 0.6, 0.7, 0.7)
                 love.graphics.print(((card.rarity or "?"):gsub("_"," ")) .. " | " .. ((card.type or "?"):gsub("_"," ")), px + 14, iy + 15)
 
-                auction._sellCardBtns[i] = { x = px + 8, y = iy, w = pw - 16, h = itemH - 2, card = card }
+                game._auction._sellCardBtns[i] = { x = px + 8, y = iy, w = pw - 16, h = itemH - 2, card = card }
             end
         end
     end
@@ -15808,16 +15979,16 @@ function game.drawAuctionMyListings(px, py, pw, ph)
     local itemH = 30
 
     love.graphics.setScissor(px + 4, py, pw - 8, ph)
-    auction._cancelBtns = {}
+    game._auction._cancelBtns = {}
 
-    if #auction.myListings == 0 then
+    if #game._auction.myListings == 0 then
         love.graphics.setFont(fonts.ui)
         love.graphics.setColor(0.5, 0.5, 0.6, 0.8)
         love.graphics.printf("You have no active listings.", px, py + 30, pw, "center")
     else
         love.graphics.setFont(fonts.small)
-        for i, listing in ipairs(auction.myListings) do
-            local iy = py + (i - 1) * itemH - auction.scroll
+        for i, listing in ipairs(game._auction.myListings) do
+            local iy = py + (i - 1) * itemH - game._auction.scroll
             if iy + itemH >= py and iy < py + ph then
                 local rc = RARITY_COLORS[listing.rarity] or {0.5, 0.5, 0.5}
                 local hovered = mx >= px + 10 and mx < px + pw - 10 and my >= iy and my < iy + itemH
@@ -15846,7 +16017,7 @@ function game.drawAuctionMyListings(px, py, pw, ph)
                 love.graphics.setColor(1, 1, 1, cancelHovered and 1 or 0.8)
                 love.graphics.printf("Cancel", cancelX, iy + 6, cancelW, "center")
 
-                auction._cancelBtns[i] = { x = cancelX, y = iy + 3, w = cancelW, h = 22, listingId = listing.id }
+                game._auction._cancelBtns[i] = { x = cancelX, y = iy + 3, w = cancelW, h = 22, listingId = listing.id }
             end
         end
     end
@@ -15931,18 +16102,9 @@ function game.drawDungeonFloor()
             local fogVal = dungeon.fogState[fogIdx] or 0
             -- Fallback: if fogState not set, use legacy fog table
             if fogVal == 0 and dungeon.fog[fogKey] then fogVal = 2 end
-            local dimFactor = 1.0  -- 1.0 = full brightness, 0.25 = remembered dimming
-            if fogVal == 1 then dimFactor = 0.25 end
 
             if fogVal >= 1 then
-                -- Revealed or remembered tile
-                -- Apply darkness based on ambient light (for visible tiles)
-                local darkOverlay = 0 -- 0 = no darkness, higher = darker
-                if fogVal == 2 then
-                    -- Visible: darken based on how low the light level is
-                    darkOverlay = math.max(0, 1 - (dungeon.lightLevel or 0.4)) * 0.5
-                end
-
+                -- Revealed or remembered tile (darkness now handled by lighting canvas)
                 if tile == DTILE.WALL then
                     -- Base wall color
                     love.graphics.setColor(wallColor[1], wallColor[2], wallColor[3])
@@ -16044,10 +16206,6 @@ function game.drawDungeonFloor()
                 -- Apply remembered dimming overlay (darken remembered tiles)
                 if fogVal == 1 then
                     love.graphics.setColor(0, 0, 0, 0.75)
-                    love.graphics.rectangle("fill", px, py, ts, ts)
-                elseif darkOverlay > 0 then
-                    -- Apply darkness gradient based on ambient light level
-                    love.graphics.setColor(0, 0, 0, darkOverlay)
                     love.graphics.rectangle("fill", px, py, ts, ts)
                 end
             else
@@ -16353,114 +16511,34 @@ function game.drawDungeonEntities()
         end
     end
 
-    -- Draw torch/lantern glow around player
-    local me = players[myId]
-    if me and (dungeon.hasTorch or dungeon.hasLantern) then
-        local glowRadius = dungeon.hasTorch and 80 or 112
-        local glowR = dungeon.hasLantern and 1.0 or 1.0
-        local glowG = dungeon.hasLantern and 0.9 or 0.7
-        local glowB = dungeon.hasLantern and 0.7 or 0.2
-        local pulse = math.sin(love.timer.getTime() * 3) * 0.05 + 0.95
-
-        -- Warm additive glow circle (simulated with multiple transparent circles)
-        for r = glowRadius, 10, -10 do
-            local a = (1 - r / glowRadius) * 0.08 * pulse
-            love.graphics.setColor(glowR, glowG, glowB, a)
-            love.graphics.circle("fill", me.x, me.y, r)
-        end
-    end
-
-    -- Thermal vision warm tint overlay on visible tiles
-    if dungeon.visionType == "thermal" and dungeon.fogState then
-        for y = 1, #(dungeon.grid or {}) do
-            for x = 1, #(dungeon.grid[y] or {}) do
-                local idx = (y - 1) * dungeon.fogWidth + (x - 1)
-                if dungeon.fogState[idx] == 2 then
-                    love.graphics.setColor(1, 0.3, 0.0, 0.03)
-                    love.graphics.rectangle("fill", (x - 1) * ts, (y - 1) * ts, ts, ts)
-                end
-            end
-        end
-    end
-
-    -- Night vision green tint overlay on visible tiles
-    if dungeon.visionType == "night" and dungeon.fogState then
-        for y = 1, #(dungeon.grid or {}) do
-            for x = 1, #(dungeon.grid[y] or {}) do
-                local idx = (y - 1) * dungeon.fogWidth + (x - 1)
-                if dungeon.fogState[idx] == 2 then
-                    love.graphics.setColor(0, 0.4, 0, 0.12)
-                    love.graphics.rectangle("fill", (x - 1) * ts, (y - 1) * ts, ts, ts)
-                end
-            end
-        end
-    end
-
-    -- Tremor sense sepia tint overlay on visible tiles
-    if dungeon.visionType == "tremor" and dungeon.fogState then
-        for y = 1, #(dungeon.grid or {}) do
-            for x = 1, #(dungeon.grid[y] or {}) do
-                local idx = (y - 1) * dungeon.fogWidth + (x - 1)
-                if dungeon.fogState[idx] == 2 then
-                    love.graphics.setColor(0.6, 0.5, 0.3, 0.08)
-                    love.graphics.rectangle("fill", (x - 1) * ts, (y - 1) * ts, ts, ts)
-                end
-            end
-        end
-    end
-
-    -- Echolocation pulse overlay (expanding sonar ring from player)
+    -- Echolocation sonar ring (kept as distinct world-space mechanic)
     if dungeon.visionType == "echolocation" then
         local time = love.timer.getTime()
         local pulsePhase = (time * 0.5) % 1
         local px = dungeon.playerTileX or 0
         local py = dungeon.playerTileY or 0
-        -- Draw expanding ring from player position
         local ringRadius = pulsePhase * 8 * ts
         local ringAlpha = 1 - pulsePhase
         love.graphics.setColor(0.3, 0.6, 1, ringAlpha * 0.4)
         love.graphics.setLineWidth(2)
         love.graphics.circle("line", px * ts + ts / 2, py * ts + ts / 2, ringRadius)
         love.graphics.setLineWidth(1)
-
-        -- Tint visible area with blue sonar tone
-        if dungeon.fogState then
-            for y = 1, #(dungeon.grid or {}) do
-                for x = 1, #(dungeon.grid[y] or {}) do
-                    local idx = (y - 1) * dungeon.fogWidth + (x - 1)
-                    if dungeon.fogState[idx] == 2 then
-                        love.graphics.setColor(0.1, 0.2, 0.5, 0.1)
-                        love.graphics.rectangle("fill", (x - 1) * ts, (y - 1) * ts, ts, ts)
-                    end
-                end
-            end
-        end
     end
 
-    -- Magic Sense purple aura overlay on visible tiles
-    if dungeon.visionType == "magic_sense" and dungeon.fogState then
-        for y = 1, #(dungeon.grid or {}) do
-            for x = 1, #(dungeon.grid[y] or {}) do
-                local idx = (y - 1) * dungeon.fogWidth + (x - 1)
-                if dungeon.fogState[idx] == 2 then
-                    love.graphics.setColor(0.5, 0.1, 0.8, 0.08)
-                    love.graphics.rectangle("fill", (x - 1) * ts, (y - 1) * ts, ts, ts)
-                end
+    -- True Seeing golden pulsing outline circles around visible enemies
+    if dungeon.visionType == "true_seeing" and dungeon.enemies then
+        local time = love.timer.getTime()
+        local pulse = math.sin(time * 3) * 0.15 + 0.55
+        love.graphics.setColor(1, 0.85, 0.2, pulse)
+        love.graphics.setLineWidth(2)
+        for _, enemy in ipairs(dungeon.enemies) do
+            if enemy.alive ~= false then
+                local ex = (enemy.x or 0) * ts + ts / 2
+                local ey = (enemy.y or 0) * ts + ts / 2
+                love.graphics.circle("line", ex, ey, 14)
             end
         end
-    end
-
-    -- True Seeing golden overlay on visible tiles
-    if dungeon.visionType == "true_seeing" and dungeon.fogState then
-        for y = 1, #(dungeon.grid or {}) do
-            for x = 1, #(dungeon.grid[y] or {}) do
-                local idx = (y - 1) * dungeon.fogWidth + (x - 1)
-                if dungeon.fogState[idx] == 2 then
-                    love.graphics.setColor(1, 0.85, 0.2, 0.06)
-                    love.graphics.rectangle("fill", (x - 1) * ts, (y - 1) * ts, ts, ts)
-                end
-            end
-        end
+        love.graphics.setLineWidth(1)
     end
 
     -- Draw magic auras (visible when magic_sense or true_seeing is active)
@@ -16819,7 +16897,7 @@ end
 
 function game.drawDirectorUI(W, H)
     -- World event banners (center-top, gold/amber, fade in/out)
-    for i, ev in ipairs(directorEvents) do
+    for i, ev in ipairs(game._directorEvents) do
         local alpha = ev.fadeIn or 1
         -- Fade out in last 1 second
         if ev.timer < 1 then
@@ -16866,8 +16944,8 @@ function game.drawDirectorUI(W, H)
     -- Zone ticker (bottom-right, small messages)
     local tickerX = W - 260
     local tickerY = H - 30
-    for i = #zoneTicker, 1, -1 do
-        local zt = zoneTicker[i]
+    for i = #game._zoneTicker, 1, -1 do
+        local zt = game._zoneTicker[i]
         local alpha = 1
         if zt.timer < 1 then alpha = zt.timer end
 
@@ -16879,9 +16957,9 @@ function game.drawDirectorUI(W, H)
 end
 
 function game.drawRaidUI(W, H)
-    if not raid.state then return end
+    if not game._raid.state then return end
 
-    if raid.state.state == "waiting" and raid.state.barrierActive then
+    if game._raid.state.state == "waiting" and game._raid.state.barrierActive then
         -- Waiting room: player counter + atmospheric text
         local boxW = 320
         local boxH = 80
@@ -16897,8 +16975,8 @@ function game.drawRaidUI(W, H)
 
         -- Player count
         love.graphics.setFont(fonts.hud)
-        local countText = raid.state.playerCount .. " / " .. raid.state.minPlayers .. " Players Ready"
-        local countColor = raid.state.playerCount >= raid.state.minPlayers and {0.2, 1, 0.3} or {1, 0.85, 0.3}
+        local countText = game._raid.state.playerCount .. " / " .. game._raid.state.minPlayers .. " Players Ready"
+        local countColor = game._raid.state.playerCount >= game._raid.state.minPlayers and {0.2, 1, 0.3} or {1, 0.85, 0.3}
         love.graphics.setColor(countColor[1], countColor[2], countColor[3], 1)
         love.graphics.printf(countText, boxX, boxY + 10, boxW, "center")
 
@@ -16911,11 +16989,11 @@ function game.drawRaidUI(W, H)
         -- Boss name
         love.graphics.setFont(fonts.small)
         love.graphics.setColor(0.9, 0.5, 0.2, 0.8)
-        love.graphics.printf(raid.state.bossName, boxX, boxY + 58, boxW, "center")
+        love.graphics.printf(game._raid.state.bossName, boxX, boxY + 58, boxW, "center")
     end
 
     -- Raid boss health bar (full-width bar at top)
-    if raid.bossHp and raid.state and raid.state.state == "active" then
+    if game._raid.bossHp and game._raid.state and game._raid.state.state == "active" then
         local barH = 28
         local barPad = 40
         local barW = W - barPad * 2
@@ -16929,10 +17007,10 @@ function game.drawRaidUI(W, H)
         love.graphics.setColor(0.3, 0, 0, 0.9)
         love.graphics.rectangle("fill", barPad, barY, barW, barH, 3, 3)
 
-        local hpRatio = raid.bossHp.maxHp > 0 and (raid.bossHp.hp / raid.bossHp.maxHp) or 0
+        local hpRatio = game._raid.bossHp.maxHp > 0 and (game._raid.bossHp.hp / game._raid.bossHp.maxHp) or 0
         -- Color shifts: purple for lich, red->orange for others
         local r, g, b
-        if raid.phase then
+        if game._raid.phase then
             r = 0.5 + 0.3 * (1 - hpRatio)
             g = 0.1
             b = 0.6 + 0.2 * hpRatio
@@ -16956,25 +17034,25 @@ function game.drawRaidUI(W, H)
         -- Boss name + phase
         love.graphics.setFont(fonts.hud)
         love.graphics.setColor(1, 1, 1, 1)
-        local bossLabel = raid.bossHp.name
-        if raid.phase then
-            bossLabel = bossLabel .. " - " .. (raid.phase.phaseName or "Phase " .. raid.phase.phase)
-        elseif raid.bossHp.phase and raid.bossHp.phase > 1 then
-            bossLabel = bossLabel .. " (Phase " .. raid.bossHp.phase .. ")"
+        local bossLabel = game._raid.bossHp.name
+        if game._raid.phase then
+            bossLabel = bossLabel .. " - " .. (game._raid.phase.phaseName or "Phase " .. game._raid.phase.phase)
+        elseif game._raid.bossHp.phase and game._raid.bossHp.phase > 1 then
+            bossLabel = bossLabel .. " (Phase " .. game._raid.bossHp.phase .. ")"
         end
         love.graphics.printf(bossLabel, barPad, barY + 2, barW, "center")
 
         -- HP numbers
         love.graphics.setFont(fonts.small)
         love.graphics.setColor(1, 1, 1, 0.8)
-        local hpText = math.floor(raid.bossHp.hp) .. " / " .. math.floor(raid.bossHp.maxHp)
+        local hpText = math.floor(game._raid.bossHp.hp) .. " / " .. math.floor(game._raid.bossHp.maxHp)
         love.graphics.printf(hpText, barPad, barY + 16, barW, "center")
 
         -- Phylactery HP bars (phase 2)
-        if #raid.phylacteries > 0 then
+        if #game._raid.phylacteries > 0 then
             local phylY = barY + barH + 6
             local phylBarW = (barW - 20) / 4
-            for pi, phyl in ipairs(raid.phylacteries) do
+            for pi, phyl in ipairs(game._raid.phylacteries) do
                 local phylX = barPad + (pi - 1) * (phylBarW + 5)
                 local phylRatio = phyl.maxHp > 0 and (phyl.hp / phyl.maxHp) or 0
 
@@ -16994,9 +17072,9 @@ function game.drawRaidUI(W, H)
         end
     end
 
-    -- Lich raid corruption zones on dungeon floor (pulsing purple squares)
-    if dungeon.inDungeon and #raid.corruptionZones > 0 then
-        for _, zone in ipairs(raid.corruptionZones) do
+    -- Lich game._raid corruption zones on dungeon floor (pulsing purple squares)
+    if dungeon.inDungeon and #game._raid.corruptionZones > 0 then
+        for _, zone in ipairs(game._raid.corruptionZones) do
             local zoneAlpha = 0.3 + math.sin(corruption.animTimer * 4) * 0.15
             love.graphics.setColor(0.5, 0.1, 0.6, zoneAlpha)
             local tileSize = 32
@@ -17218,7 +17296,7 @@ function game.drawPartyPanel(W, H)
 
     local contentY = py + 42
 
-    if not raid.partyData then
+    if not game._raid.partyData then
         -- Not in a party
         love.graphics.setFont(fonts.chat)
         love.graphics.setColor(0.6, 0.6, 0.7, 0.8)
@@ -17243,14 +17321,14 @@ function game.drawPartyPanel(W, H)
         contentY = btnY + btnH + 15
 
         -- Pending invite section
-        if raid.partyInvitePending then
+        if game._raid.partyInvitePending then
             love.graphics.setColor(0.3, 0.3, 0.5, 0.6)
             love.graphics.line(px + 15, contentY, px + panelW - 15, contentY)
             contentY = contentY + 8
 
             love.graphics.setFont(fonts.chat)
             love.graphics.setColor(0.4, 0.7, 1, 1)
-            love.graphics.printf("Invite from: " .. (raid.partyInvitePending.fromName or "?"), px + 10, contentY, panelW - 20, "center")
+            love.graphics.printf("Invite from: " .. (game._raid.partyInvitePending.fromName or "?"), px + 10, contentY, panelW - 20, "center")
             contentY = contentY + 22
 
             -- Accept / Decline buttons
@@ -17287,15 +17365,15 @@ function game.drawPartyPanel(W, H)
         -- In a party: member list
         love.graphics.setFont(fonts.hud)
         love.graphics.setColor(0.6, 0.7, 0.8, 0.7)
-        love.graphics.printf("Members (" .. #raid.partyData.members .. ")", px + 10, contentY, panelW - 20, "left")
+        love.graphics.printf("Members (" .. #game._raid.partyData.members .. ")", px + 10, contentY, panelW - 20, "left")
         contentY = contentY + 22
 
-        for i, member in ipairs(raid.partyData.members) do
+        for i, member in ipairs(game._raid.partyData.members) do
             local my = contentY + (i - 1) * 38
             if my + 38 > py + panelH - 80 then break end
 
             -- Member row background
-            local isLeader = (member.id == raid.partyData.leader)
+            local isLeader = (member.id == game._raid.partyData.leader)
             local isSelf = (member.id == myId)
             if isSelf then
                 love.graphics.setColor(0.12, 0.18, 0.25, 0.8)
@@ -17340,7 +17418,7 @@ function game.drawPartyPanel(W, H)
             end
         end
 
-        contentY = contentY + #raid.partyData.members * 38 + 8
+        contentY = contentY + #game._raid.partyData.members * 38 + 8
 
         -- Separator
         love.graphics.setColor(0.3, 0.3, 0.5, 0.4)
@@ -17358,13 +17436,13 @@ function game.drawPartyPanel(W, H)
         local inputH = 22
         local inputX = px + 10
         local inputY = contentY
-        if raid.partyInviteActive then
+        if game._raid.partyInviteActive then
             love.graphics.setColor(0.12, 0.12, 0.2, 0.9)
         else
             love.graphics.setColor(0.08, 0.08, 0.12, 0.7)
         end
         love.graphics.rectangle("fill", inputX, inputY, inputW, inputH, 3, 3)
-        if raid.partyInviteActive then
+        if game._raid.partyInviteActive then
             love.graphics.setColor(0.3, 0.5, 0.8, 0.7)
         else
             love.graphics.setColor(0.2, 0.3, 0.4, 0.5)
@@ -17372,12 +17450,12 @@ function game.drawPartyPanel(W, H)
         love.graphics.rectangle("line", inputX, inputY, inputW, inputH, 3, 3)
 
         love.graphics.setFont(fonts.npc)
-        if raid.partyInviteActive then
+        if game._raid.partyInviteActive then
             love.graphics.setColor(1, 1, 1, 0.95)
-            love.graphics.print(raid.partyInviteInput .. (math.floor(love.timer.getTime() * 2) % 2 == 0 and "|" or ""), inputX + 4, inputY + 4)
-        elseif #raid.partyInviteInput > 0 then
+            love.graphics.print(game._raid.partyInviteInput .. (math.floor(love.timer.getTime() * 2) % 2 == 0 and "|" or ""), inputX + 4, inputY + 4)
+        elseif #game._raid.partyInviteInput > 0 then
             love.graphics.setColor(0.8, 0.8, 0.8, 0.8)
-            love.graphics.print(raid.partyInviteInput, inputX + 4, inputY + 4)
+            love.graphics.print(game._raid.partyInviteInput, inputX + 4, inputY + 4)
         else
             love.graphics.setColor(0.4, 0.4, 0.5, 0.5)
             love.graphics.print("Username...", inputX + 4, inputY + 4)
@@ -17399,7 +17477,7 @@ function game.drawPartyPanel(W, H)
         contentY = inputY + inputH + 12
 
         -- Leave / Disband button
-        local isLeader = (raid.partyData.leader == myId)
+        local isLeader = (game._raid.partyData.leader == myId)
         local leaveBtnW = 120
         local leaveBtnH = 28
         local leaveBtnX = px + (panelW - leaveBtnW) / 2
@@ -17433,8 +17511,8 @@ function game.drawPartyPanel(W, H)
 end
 
 function game.drawPartyHUD(W, H)
-    if not raid.partyData or not raid.partyData.members then return end
-    if #raid.partyData.members <= 1 then return end  -- don't show if solo
+    if not game._raid.partyData or not game._raid.partyData.members then return end
+    if #game._raid.partyData.members <= 1 then return end  -- don't show if solo
 
     -- Compact member list (top-right, below minimap or compass area)
     local hudX = W - 170
@@ -17447,7 +17525,7 @@ function game.drawPartyHUD(W, H)
     end
 
     -- Background
-    local memberCount = #raid.partyData.members
+    local memberCount = #game._raid.partyData.members
     local hudH = 12 + memberCount * 18
     love.graphics.setColor(0, 0, 0, 0.45)
     love.graphics.rectangle("fill", hudX - 4, hudY - 2, 164, hudH, 4, 4)
@@ -17458,10 +17536,10 @@ function game.drawPartyHUD(W, H)
     love.graphics.print("Party (" .. memberCount .. ")", hudX, hudY)
 
     -- Members
-    for i, member in ipairs(raid.partyData.members) do
+    for i, member in ipairs(game._raid.partyData.members) do
         local my = hudY + 12 + (i - 1) * 18
         local isSelf = (member.id == myId)
-        local isLeader = (member.id == raid.partyData.leader)
+        local isLeader = (member.id == game._raid.partyData.leader)
 
         -- Leader indicator
         if isLeader then
@@ -17497,7 +17575,7 @@ function game.drawPartyHUD(W, H)
 end
 
 function game.drawPartyInvitePrompt(W, H)
-    if not raid.partyInvitePending then return end
+    if not game._raid.partyInvitePending then return end
 
     -- Floating prompt at top-center
     local promptW = 300
@@ -17514,7 +17592,7 @@ function game.drawPartyInvitePrompt(W, H)
     -- Text
     love.graphics.setFont(fonts.chat)
     love.graphics.setColor(0.4, 0.7, 1, 1)
-    love.graphics.printf((raid.partyInvitePending.fromName or "?") .. " invited you to a party!", promptX + 8, promptY + 6, promptW - 16, "center")
+    love.graphics.printf((game._raid.partyInvitePending.fromName or "?") .. " invited you to a party!", promptX + 8, promptY + 6, promptW - 16, "center")
 
     -- Accept/Decline hints
     love.graphics.setFont(fonts.small)
@@ -17596,7 +17674,7 @@ function game.drawContextMenu()
             love.graphics.setColor(0.4, 0.9, 0.4, 1)
         elseif item.action == "party" then
             love.graphics.setColor(0.4, 0.7, 1, 1)
-        elseif item.action == "trade" then
+        elseif item.action == "game._trade" then
             love.graphics.setColor(1, 0.85, 0.2, 1)
         elseif item.action == "duel" then
             love.graphics.setColor(1, 0.35, 0.35, 1)
@@ -17639,10 +17717,10 @@ function game.drawPortalPanel(W, H)
     local py = math.floor((H - ph) / 2)
 
     -- Store panel rect for click handling
-    portal._panelX = px
-    portal._panelY = py
-    portal._panelW = pw
-    portal._panelH = ph
+    game._portal._panelX = px
+    game._portal._panelY = py
+    game._portal._panelW = pw
+    game._portal._panelH = ph
 
     -- Dim background
     love.graphics.setColor(0, 0, 0, 0.6)
@@ -17677,7 +17755,7 @@ function game.drawPortalPanel(W, H)
     love.graphics.setFont(fonts.hud)
     love.graphics.setColor(1, 1, 1, 0.9)
     love.graphics.printf("X", closeX, closeY + 2, closeW, "center")
-    portal._closeBtn = { x = closeX, y = closeY, w = closeW, h = closeH }
+    game._portal._closeBtn = { x = closeX, y = closeY, w = closeW, h = closeH }
 
     -- Current zone indicator
     love.graphics.setFont(fonts.npc)
@@ -17687,7 +17765,7 @@ function game.drawPortalPanel(W, H)
 
     -- Cooldown timer display
     local now = love.timer.getTime()
-    local cooldownRemaining = portal.cooldownEnd - now
+    local cooldownRemaining = game._portal.cooldownEnd - now
     local onCooldown = cooldownRemaining > 0
     if onCooldown then
         love.graphics.setFont(fonts.hud)
@@ -17711,8 +17789,8 @@ function game.drawPortalPanel(W, H)
     -- Scissor clip for scrollable list
     love.graphics.setScissor(listX, listY, listW, listH)
 
-    portal._rowBtns = {}
-    local destinations = portal.destinations or {}
+    game._portal._rowBtns = {}
+    local destinations = game._portal.destinations or {}
     local currentZoneId = zone and zone.id
 
     if #destinations == 0 then
@@ -17722,7 +17800,7 @@ function game.drawPortalPanel(W, H)
     else
         local mx, my = love.mouse.getPosition()
         for i, dest in ipairs(destinations) do
-            local ry = listY + (i - 1) * rowH - portal.scroll
+            local ry = listY + (i - 1) * rowH - game._portal.scroll
             -- Skip offscreen rows for performance
             if ry + rowH > listY and ry < listY + listH then
                 local isCurrent = currentZoneId and (dest.zoneId == currentZoneId)
@@ -17786,7 +17864,7 @@ function game.drawPortalPanel(W, H)
                 love.graphics.print(flavor, listX + 24, ry + 20)
 
                 -- Store row hit rect for click handling
-                portal._rowBtns[i] = {
+                game._portal._rowBtns[i] = {
                     x = listX, y = ry, w = listW, h = rowH - 2,
                     destId = dest.id,
                     destName = dest.name,
@@ -17805,58 +17883,58 @@ function game.drawPortalPanel(W, H)
     local totalContentH = #destinations * rowH
     if totalContentH > listH then
         local barH = math.max(20, listH * (listH / totalContentH))
-        local barY = listY + (portal.scroll / (totalContentH - listH)) * (listH - barH)
+        local barY = listY + (game._portal.scroll / (totalContentH - listH)) * (listH - barH)
         love.graphics.setColor(0.4, 0.35, 0.7, 0.4)
         love.graphics.rectangle("fill", px + pw - 10, barY, 4, barH, 2, 2)
     end
 
     -- Message / error text area
-    if portal.message then
+    if game._portal.message then
         love.graphics.setFont(fonts.npc)
-        local mc = portal.message.color or {1, 0.7, 0.3}
+        local mc = game._portal.message.color or {1, 0.7, 0.3}
         love.graphics.setColor(mc[1], mc[2], mc[3], 0.9)
-        love.graphics.printf(portal.message.text or "", px + 10, py + ph - 42, pw - 20, "center")
+        love.graphics.printf(game._portal.message.text or "", px + 10, py + ph - 42, pw - 20, "center")
     end
 end
 
 function game.handlePortalClick(mx, my)
-    if not portal.show then return false end
+    if not game._portal.show then return false end
 
-    local px = portal._panelX or 0
-    local py = portal._panelY or 0
-    local pw = portal._panelW or PORTAL_W
-    local ph = portal._panelH or PORTAL_H
+    local px = game._portal._panelX or 0
+    local py = game._portal._panelY or 0
+    local pw = game._portal._panelW or PORTAL_W
+    local ph = game._portal._panelH or PORTAL_H
 
     -- Click outside panel: close
     if mx < px or mx > px + pw or my < py or my > py + ph then
-        portal.show = false
+        game._portal.show = false
         return true
     end
 
     -- Close button
-    if portal._closeBtn then
-        local btn = portal._closeBtn
+    if game._portal._closeBtn then
+        local btn = game._portal._closeBtn
         if mx >= btn.x and mx <= btn.x + btn.w and my >= btn.y and my <= btn.y + btn.h then
-            portal.show = false
+            game._portal.show = false
             return true
         end
     end
 
     -- Destination row clicks
-    if portal._rowBtns then
+    if game._portal._rowBtns then
         local listY = py + PORTAL_LIST_TOP
         local listH = ph - PORTAL_LIST_TOP - PORTAL_LIST_BOT
-        for _, btn in pairs(portal._rowBtns) do
+        for _, btn in pairs(game._portal._rowBtns) do
             if btn.visible and not btn.isDisabled
                 and mx >= btn.x and mx <= btn.x + btn.w
                 and my >= btn.y and my <= btn.y + btn.h
                 and my >= listY and my < listY + listH then
-                -- Send portal travel request
+                -- Send game._portal travel request
                 if client then
                     client:emit("portal_travel", { destinationId = btn.destId })
                 end
                 -- Show "Teleporting..." message while we wait for server response
-                portal.message = {
+                game._portal.message = {
                     text = "Teleporting to " .. (btn.destName or "destination") .. "...",
                     color = {0.6, 0.6, 1},
                     timer = 10,
@@ -17895,8 +17973,8 @@ local function getNpcShopSellItems()
             local sellPrice = nil
             local trend = "stable"
             -- Look up sell price from loaded prices
-            if npcShop.prices then
-                for _, p in ipairs(npcShop.prices) do
+            if game._npcShop.prices then
+                for _, p in ipairs(game._npcShop.prices) do
                     if p.resource == key then
                         sellPrice = p.sellPrice
                         trend = p.trend or "stable"
@@ -17929,10 +18007,10 @@ function game.drawNpcShop(W, H)
     local py = math.floor((H - ph) / 2)
 
     -- Store panel rect for click handling
-    npcShop._panelX = px
-    npcShop._panelY = py
-    npcShop._panelW = pw
-    npcShop._panelH = ph
+    game._npcShop._panelX = px
+    game._npcShop._panelY = py
+    game._npcShop._panelW = pw
+    game._npcShop._panelH = ph
 
     -- Dim background
     love.graphics.setColor(0, 0, 0, 0.6)
@@ -17951,7 +18029,7 @@ function game.drawNpcShop(W, H)
     love.graphics.rectangle("fill", px, py + 20, pw, 10)
     love.graphics.setFont(fonts.title)
     love.graphics.setColor(0.3, 0.95, 0.5, 1)
-    love.graphics.printf(npcShop.shopName or "Shop", px + 10, py + 4, pw - 50, "left")
+    love.graphics.printf(game._npcShop.shopName or "Shop", px + 10, py + 4, pw - 50, "left")
 
     -- Close button (X)
     local closeX = px + pw - 30
@@ -17965,26 +18043,26 @@ function game.drawNpcShop(W, H)
     love.graphics.setFont(fonts.hud)
     love.graphics.setColor(1, 1, 1, 0.9)
     love.graphics.printf("X", closeX, closeY + 2, closeW, "center")
-    npcShop._closeBtn = { x = closeX, y = closeY, w = closeW, h = closeH }
+    game._npcShop._closeBtn = { x = closeX, y = closeY, w = closeW, h = closeH }
 
     -- Shop description
-    if npcShop.shopDesc and npcShop.shopDesc ~= "" then
+    if game._npcShop.shopDesc and game._npcShop.shopDesc ~= "" then
         love.graphics.setFont(fonts.npc)
         love.graphics.setColor(0.6, 0.7, 0.6, 0.7)
-        love.graphics.printf(npcShop.shopDesc, px + 10, py + 32, pw - 20, "left")
+        love.graphics.printf(game._npcShop.shopDesc, px + 10, py + 32, pw - 20, "left")
     end
 
     -- Shop selector (dropdown-like row of shop names if shopList is available)
     local shopSelectorY = py + 46
-    if npcShop.shopList and #npcShop.shopList > 1 then
+    if game._npcShop.shopList and #game._npcShop.shopList > 1 then
         love.graphics.setFont(fonts.small)
-        local shopBtnW = math.floor((pw - 20) / math.min(#npcShop.shopList, 7))
-        npcShop._shopBtns = {}
-        for i, shop in ipairs(npcShop.shopList) do
+        local shopBtnW = math.floor((pw - 20) / math.min(#game._npcShop.shopList, 7))
+        game._npcShop._shopBtns = {}
+        for i, shop in ipairs(game._npcShop.shopList) do
             if i > 7 then break end  -- max 7 shop buttons
             local sx = px + 10 + (i - 1) * shopBtnW
             local sy = shopSelectorY
-            local active = (shop.id == npcShop.shopId)
+            local active = (shop.id == game._npcShop.shopId)
             if active then
                 love.graphics.setColor(0.15, 0.35, 0.2, 0.95)
             else
@@ -18003,38 +18081,38 @@ function game.drawNpcShop(W, H)
             end
             love.graphics.setColor(active and 0.9 or 0.6, active and 1 or 0.7, active and 0.9 or 0.6, active and 1 or 0.7)
             love.graphics.printf(label, sx, sy + 2, shopBtnW - 2, "center")
-            npcShop._shopBtns[i] = { x = sx, y = sy, w = shopBtnW - 2, h = 18, shopId = shop.id, shopName = shop.name, shopDesc = shop.description or "" }
+            game._npcShop._shopBtns[i] = { x = sx, y = sy, w = shopBtnW - 2, h = 18, shopId = shop.id, shopName = shop.name, shopDesc = shop.description or "" }
         end
     else
-        npcShop._shopBtns = nil
+        game._npcShop._shopBtns = nil
     end
 
     -- Buy/Sell tabs
     local tabY = py + 68
     local tabW = math.floor((pw - 20) / 2)
-    npcShop._buyTabBtn = { x = px + 10, y = tabY, w = tabW - 2, h = 22 }
-    npcShop._sellTabBtn = { x = px + 10 + tabW, y = tabY, w = tabW - 2, h = 22 }
+    game._npcShop._buyTabBtn = { x = px + 10, y = tabY, w = tabW - 2, h = 22 }
+    game._npcShop._sellTabBtn = { x = px + 10 + tabW, y = tabY, w = tabW - 2, h = 22 }
 
     love.graphics.setFont(fonts.hud)
     -- Buy tab
-    if npcShop.tab == "buy" then
+    if game._npcShop.tab == "buy" then
         love.graphics.setColor(0.15, 0.3, 0.2, 0.95)
     else
         love.graphics.setColor(0.08, 0.1, 0.14, 0.7)
     end
-    love.graphics.rectangle("fill", npcShop._buyTabBtn.x, tabY, npcShop._buyTabBtn.w, 22, 4, 4)
-    love.graphics.setColor(npcShop.tab == "buy" and 0.4 or 0.25, npcShop.tab == "buy" and 0.9 or 0.5, npcShop.tab == "buy" and 0.5 or 0.35, 1)
-    love.graphics.printf("Buy", npcShop._buyTabBtn.x, tabY + 2, npcShop._buyTabBtn.w, "center")
+    love.graphics.rectangle("fill", game._npcShop._buyTabBtn.x, tabY, game._npcShop._buyTabBtn.w, 22, 4, 4)
+    love.graphics.setColor(game._npcShop.tab == "buy" and 0.4 or 0.25, game._npcShop.tab == "buy" and 0.9 or 0.5, game._npcShop.tab == "buy" and 0.5 or 0.35, 1)
+    love.graphics.printf("Buy", game._npcShop._buyTabBtn.x, tabY + 2, game._npcShop._buyTabBtn.w, "center")
 
     -- Sell tab
-    if npcShop.tab == "sell" then
+    if game._npcShop.tab == "sell" then
         love.graphics.setColor(0.3, 0.2, 0.1, 0.95)
     else
         love.graphics.setColor(0.08, 0.1, 0.14, 0.7)
     end
-    love.graphics.rectangle("fill", npcShop._sellTabBtn.x, tabY, npcShop._sellTabBtn.w, 22, 4, 4)
-    love.graphics.setColor(npcShop.tab == "sell" and 0.95 or 0.5, npcShop.tab == "sell" and 0.75 or 0.45, npcShop.tab == "sell" and 0.3 or 0.25, 1)
-    love.graphics.printf("Sell", npcShop._sellTabBtn.x, tabY + 2, npcShop._sellTabBtn.w, "center")
+    love.graphics.rectangle("fill", game._npcShop._sellTabBtn.x, tabY, game._npcShop._sellTabBtn.w, 22, 4, 4)
+    love.graphics.setColor(game._npcShop.tab == "sell" and 0.95 or 0.5, game._npcShop.tab == "sell" and 0.75 or 0.45, game._npcShop.tab == "sell" and 0.3 or 0.25, 1)
+    love.graphics.printf("Sell", game._npcShop._sellTabBtn.x, tabY + 2, game._npcShop._sellTabBtn.w, "center")
 
     -- Item list area
     local listX = px + 8
@@ -18048,19 +18126,19 @@ function game.drawNpcShop(W, H)
 
     local items = {}
     local sellItems = nil
-    if npcShop.tab == "buy" then
-        items = npcShop.prices or {}
+    if game._npcShop.tab == "buy" then
+        items = game._npcShop.prices or {}
     else
         sellItems = getNpcShopSellItems()
         items = sellItems
     end
 
     -- Column headers
-    local headerY = listY - npcShop.scroll
+    local headerY = listY - game._npcShop.scroll
     love.graphics.setFont(fonts.npc)
     love.graphics.setColor(0.5, 0.6, 0.55, 0.8)
     love.graphics.print("Item", listX + 6, headerY)
-    if npcShop.tab == "buy" then
+    if game._npcShop.tab == "buy" then
         love.graphics.printf("Price", listX, headerY, listW - 60, "right")
         love.graphics.printf("Trend", listX, headerY, listW - 6, "right")
     else
@@ -18074,13 +18152,13 @@ function game.drawNpcShop(W, H)
     love.graphics.line(listX, headerY + 14, listX + listW, headerY + 14)
 
     -- Item rows
-    npcShop._itemRects = {}
+    game._npcShop._itemRects = {}
     local startRow = headerY + 16
     for i, item in ipairs(items) do
         local iy = startRow + (i - 1) * itemH
         -- Skip if fully above or below visible area
         if iy + itemH >= listY and iy < listY + listH then
-            local isSelected = (npcShop.selected == i)
+            local isSelected = (game._npcShop.selected == i)
 
             -- Row background
             if isSelected then
@@ -18106,7 +18184,7 @@ function game.drawNpcShop(W, H)
             -- Price
             love.graphics.setFont(fonts.hud)
             local price
-            if npcShop.tab == "buy" then
+            if game._npcShop.tab == "buy" then
                 price = item.buyPrice
             else
                 price = item.sellPrice
@@ -18120,7 +18198,7 @@ function game.drawNpcShop(W, H)
             end
 
             -- Quantity (sell tab)
-            if npcShop.tab == "sell" and item.quantity then
+            if game._npcShop.tab == "sell" and item.quantity then
                 love.graphics.setFont(fonts.npc)
                 love.graphics.setColor(0.7, 0.8, 0.7, 0.9)
                 love.graphics.printf(tostring(item.quantity), listX + listW * 0.45, iy + (itemH - fonts.npc:getHeight()) / 2, 40, "center")
@@ -18141,7 +18219,7 @@ function game.drawNpcShop(W, H)
             end
         end
         -- Store rect for click detection (absolute screen coords)
-        npcShop._itemRects[i] = { x = listX, y = iy, w = listW, h = itemH - 2 }
+        game._npcShop._itemRects[i] = { x = listX, y = iy, w = listW, h = itemH - 2 }
     end
 
     love.graphics.setScissor()
@@ -18158,8 +18236,8 @@ function game.drawNpcShop(W, H)
     love.graphics.print(coinText, px + 14, ctrlY)
 
     -- Selected item info + amount controls
-    if npcShop.selected and npcShop.selected >= 1 and npcShop.selected <= #items then
-        local sel = items[npcShop.selected]
+    if game._npcShop.selected and game._npcShop.selected >= 1 and game._npcShop.selected <= #items then
+        local sel = items[game._npcShop.selected]
         local selName = sel.name or formatResourceName(sel.resource)
 
         -- Selected item name
@@ -18185,7 +18263,7 @@ function game.drawNpcShop(W, H)
         love.graphics.setColor(1, 1, 1, 1)
         love.graphics.setFont(fonts.ui)
         love.graphics.printf("-", minusBtnX, amtY + 1, minusBtnW, "center")
-        npcShop._minusBtn = { x = minusBtnX, y = amtY, w = minusBtnW, h = btnH }
+        game._npcShop._minusBtn = { x = minusBtnX, y = amtY, w = minusBtnW, h = btnH }
 
         -- Amount label
         love.graphics.setColor(0.1, 0.12, 0.16, 0.9)
@@ -18194,7 +18272,7 @@ function game.drawNpcShop(W, H)
         love.graphics.rectangle("line", amtLabelX, amtY, amtLabelW, btnH, 4, 4)
         love.graphics.setFont(fonts.hud)
         love.graphics.setColor(1, 1, 1, 1)
-        love.graphics.printf(tostring(npcShop.amount), amtLabelX, amtY + 3, amtLabelW, "center")
+        love.graphics.printf(tostring(game._npcShop.amount), amtLabelX, amtY + 3, amtLabelW, "center")
 
         -- Plus button
         love.graphics.setColor(0.15, 0.2, 0.15, 0.9)
@@ -18204,7 +18282,7 @@ function game.drawNpcShop(W, H)
         love.graphics.setColor(1, 1, 1, 1)
         love.graphics.setFont(fonts.ui)
         love.graphics.printf("+", plusBtnX, amtY + 1, plusBtnW, "center")
-        npcShop._plusBtn = { x = plusBtnX, y = amtY, w = plusBtnW, h = btnH }
+        game._npcShop._plusBtn = { x = plusBtnX, y = amtY, w = plusBtnW, h = btnH }
 
         -- Max button (quick set to max affordable or max owned)
         local maxBtnX = plusBtnX + plusBtnW + 8
@@ -18216,15 +18294,15 @@ function game.drawNpcShop(W, H)
         love.graphics.setFont(fonts.npc)
         love.graphics.setColor(0.8, 0.85, 1, 1)
         love.graphics.printf("Max", maxBtnX, amtY + 5, maxBtnW, "center")
-        npcShop._maxBtn = { x = maxBtnX, y = amtY, w = maxBtnW, h = btnH }
+        game._npcShop._maxBtn = { x = maxBtnX, y = amtY, w = maxBtnW, h = btnH }
 
         -- Total cost / earnings
-        local price = npcShop.tab == "buy" and sel.buyPrice or sel.sellPrice
+        local price = game._npcShop.tab == "buy" and sel.buyPrice or sel.sellPrice
         if price then
-            local total = price * npcShop.amount
+            local total = price * game._npcShop.amount
             love.graphics.setFont(fonts.hud)
             love.graphics.setColor(0.6, 0.7, 0.65, 0.8)
-            local totalLabel = npcShop.tab == "buy" and "Total: " or "Earn: "
+            local totalLabel = game._npcShop.tab == "buy" and "Total: " or "Earn: "
             love.graphics.printf(totalLabel, px + pw * 0.5, amtY + 3, pw * 0.2, "right")
             love.graphics.setColor(1, 0.85, 0.2, 1)
             love.graphics.printf(tostring(total) .. "c", px + pw * 0.7, amtY + 3, pw * 0.25, "left")
@@ -18235,8 +18313,8 @@ function game.drawNpcShop(W, H)
         local confirmBtnH = 28
         local confirmBtnX = px + pw - confirmBtnW - 14
         local confirmBtnY = ctrlY + 65
-        local canTransact = not npcShop.transactionLock
-        if npcShop.tab == "buy" then
+        local canTransact = not game._npcShop.transactionLock
+        if game._npcShop.tab == "buy" then
             local bgR, bgG, bgB = 0.12, 0.3, 0.18
             local brR, brG, brB = 0.3, 0.7, 0.4
             if not canTransact then bgR, bgG, bgB = 0.15, 0.15, 0.15; brR, brG, brB = 0.3, 0.3, 0.3 end
@@ -18259,24 +18337,24 @@ function game.drawNpcShop(W, H)
             love.graphics.setColor(1, 1, 1, canTransact and 1 or 0.4)
             love.graphics.printf("Sell", confirmBtnX, confirmBtnY + 5, confirmBtnW, "center")
         end
-        npcShop._confirmBtn = { x = confirmBtnX, y = confirmBtnY, w = confirmBtnW, h = confirmBtnH }
+        game._npcShop._confirmBtn = { x = confirmBtnX, y = confirmBtnY, w = confirmBtnW, h = confirmBtnH }
     else
-        npcShop._minusBtn = nil
-        npcShop._plusBtn = nil
-        npcShop._maxBtn = nil
-        npcShop._confirmBtn = nil
+        game._npcShop._minusBtn = nil
+        game._npcShop._plusBtn = nil
+        game._npcShop._maxBtn = nil
+        game._npcShop._confirmBtn = nil
     end
 
     -- Feedback message
-    if npcShop.message and npcShop.message.timer and npcShop.message.timer > 0 then
+    if game._npcShop.message and game._npcShop.message.timer and game._npcShop.message.timer > 0 then
         love.graphics.setFont(fonts.chat)
-        local alpha = math.min(1, npcShop.message.timer)
-        love.graphics.setColor(npcShop.message.color[1], npcShop.message.color[2], npcShop.message.color[3], alpha)
-        love.graphics.printf(npcShop.message.text, px + 14, ctrlY + 68, pw - 28, "left")
+        local alpha = math.min(1, game._npcShop.message.timer)
+        love.graphics.setColor(game._npcShop.message.color[1], game._npcShop.message.color[2], game._npcShop.message.color[3], alpha)
+        love.graphics.printf(game._npcShop.message.text, px + 14, ctrlY + 68, pw - 28, "left")
     end
 
     -- Loading state
-    if not npcShop.prices and npcShop.tab == "buy" then
+    if not game._npcShop.prices and game._npcShop.tab == "buy" then
         love.graphics.setFont(fonts.ui)
         love.graphics.setColor(0.6, 0.6, 0.7, 0.7 + 0.3 * math.sin(love.timer.getTime() * 3))
         love.graphics.printf("Loading prices...", px, py + ph / 2 - 20, pw, "center")
@@ -18290,40 +18368,40 @@ end
 
 -- NPC Shop: handle click, returns true if click was consumed
 function game.handleNpcShopClick(mx, my)
-    if not npcShop.show then return false end
+    if not game._npcShop.show then return false end
 
-    local px = npcShop._panelX or 0
-    local py = npcShop._panelY or 0
-    local pw = npcShop._panelW or NPC_SHOP_W
-    local ph = npcShop._panelH or NPC_SHOP_H
+    local px = game._npcShop._panelX or 0
+    local py = game._npcShop._panelY or 0
+    local pw = game._npcShop._panelW or NPC_SHOP_W
+    local ph = game._npcShop._panelH or NPC_SHOP_H
 
     -- Click outside panel: close shop
     if mx < px or mx > px + pw or my < py or my > py + ph then
-        npcShop.show = false
+        game._npcShop.show = false
         return true
     end
 
     -- Close button
-    if npcShop._closeBtn then
-        local btn = npcShop._closeBtn
+    if game._npcShop._closeBtn then
+        local btn = game._npcShop._closeBtn
         if mx >= btn.x and mx <= btn.x + btn.w and my >= btn.y and my <= btn.y + btn.h then
-            npcShop.show = false
+            game._npcShop.show = false
             return true
         end
     end
 
     -- Shop selector buttons
-    if npcShop._shopBtns then
-        for _, btn in ipairs(npcShop._shopBtns) do
+    if game._npcShop._shopBtns then
+        for _, btn in ipairs(game._npcShop._shopBtns) do
             if mx >= btn.x and mx <= btn.x + btn.w and my >= btn.y and my <= btn.y + btn.h then
-                if btn.shopId ~= npcShop.shopId then
-                    npcShop.shopId = btn.shopId
-                    npcShop.shopName = btn.shopName or btn.shopId
-                    npcShop.shopDesc = btn.shopDesc or ""
-                    npcShop.prices = nil
-                    npcShop.selected = nil
-                    npcShop.amount = 1
-                    npcShop.scroll = 0
+                if btn.shopId ~= game._npcShop.shopId then
+                    game._npcShop.shopId = btn.shopId
+                    game._npcShop.shopName = btn.shopName or btn.shopId
+                    game._npcShop.shopDesc = btn.shopDesc or ""
+                    game._npcShop.prices = nil
+                    game._npcShop.selected = nil
+                    game._npcShop.amount = 1
+                    game._npcShop.scroll = 0
                     if client then
                         client:emit("npc_shop_prices", { shopId = btn.shopId })
                     end
@@ -18334,37 +18412,37 @@ function game.handleNpcShopClick(mx, my)
     end
 
     -- Buy/Sell tab buttons
-    if npcShop._buyTabBtn then
-        local btn = npcShop._buyTabBtn
+    if game._npcShop._buyTabBtn then
+        local btn = game._npcShop._buyTabBtn
         if mx >= btn.x and mx <= btn.x + btn.w and my >= btn.y and my <= btn.y + btn.h then
-            npcShop.tab = "buy"
-            npcShop.selected = nil
-            npcShop.amount = 1
-            npcShop.scroll = 0
+            game._npcShop.tab = "buy"
+            game._npcShop.selected = nil
+            game._npcShop.amount = 1
+            game._npcShop.scroll = 0
             return true
         end
     end
-    if npcShop._sellTabBtn then
-        local btn = npcShop._sellTabBtn
+    if game._npcShop._sellTabBtn then
+        local btn = game._npcShop._sellTabBtn
         if mx >= btn.x and mx <= btn.x + btn.w and my >= btn.y and my <= btn.y + btn.h then
-            npcShop.tab = "sell"
-            npcShop.selected = nil
-            npcShop.amount = 1
-            npcShop.scroll = 0
+            game._npcShop.tab = "sell"
+            game._npcShop.selected = nil
+            game._npcShop.amount = 1
+            game._npcShop.scroll = 0
             return true
         end
     end
 
     -- Item list clicks
-    if npcShop._itemRects then
+    if game._npcShop._itemRects then
         local listY = py + NPC_SHOP_LIST_TOP + 4
         local listH = ph - NPC_SHOP_LIST_TOP - NPC_SHOP_LIST_BOT
-        for i, rect in ipairs(npcShop._itemRects) do
+        for i, rect in ipairs(game._npcShop._itemRects) do
             if mx >= rect.x and mx <= rect.x + rect.w and my >= rect.y and my <= rect.y + rect.h then
                 -- Make sure click is within visible list area
                 if my >= listY and my < listY + listH then
-                    npcShop.selected = i
-                    npcShop.amount = 1
+                    game._npcShop.selected = i
+                    game._npcShop.amount = 1
                     return true
                 end
             end
@@ -18372,46 +18450,46 @@ function game.handleNpcShopClick(mx, my)
     end
 
     -- Amount minus button
-    if npcShop._minusBtn then
-        local btn = npcShop._minusBtn
+    if game._npcShop._minusBtn then
+        local btn = game._npcShop._minusBtn
         if mx >= btn.x and mx <= btn.x + btn.w and my >= btn.y and my <= btn.y + btn.h then
-            npcShop.amount = math.max(1, npcShop.amount - 1)
+            game._npcShop.amount = math.max(1, game._npcShop.amount - 1)
             return true
         end
     end
 
     -- Amount plus button
-    if npcShop._plusBtn then
-        local btn = npcShop._plusBtn
+    if game._npcShop._plusBtn then
+        local btn = game._npcShop._plusBtn
         if mx >= btn.x and mx <= btn.x + btn.w and my >= btn.y and my <= btn.y + btn.h then
-            npcShop.amount = math.min(100, npcShop.amount + 1)
+            game._npcShop.amount = math.min(100, game._npcShop.amount + 1)
             return true
         end
     end
 
     -- Max button
-    if npcShop._maxBtn then
-        local btn = npcShop._maxBtn
+    if game._npcShop._maxBtn then
+        local btn = game._npcShop._maxBtn
         if mx >= btn.x and mx <= btn.x + btn.w and my >= btn.y and my <= btn.y + btn.h then
             local items = {}
-            if npcShop.tab == "buy" then
-                items = npcShop.prices or {}
+            if game._npcShop.tab == "buy" then
+                items = game._npcShop.prices or {}
             else
                 items = getNpcShopSellItems()
             end
-            if npcShop.selected and npcShop.selected >= 1 and npcShop.selected <= #items then
-                local sel = items[npcShop.selected]
-                if npcShop.tab == "buy" then
+            if game._npcShop.selected and game._npcShop.selected >= 1 and game._npcShop.selected <= #items then
+                local sel = items[game._npcShop.selected]
+                if game._npcShop.tab == "buy" then
                     -- Max affordable
                     local coins = (account and account.coins) or 0
                     local price = sel.buyPrice or 0
                     if price > 0 then
-                        npcShop.amount = math.min(100, math.max(1, math.floor(coins / price)))
+                        game._npcShop.amount = math.min(100, math.max(1, math.floor(coins / price)))
                     end
                 else
                     -- Max owned
                     local qty = sel.quantity or 0
-                    npcShop.amount = math.min(100, math.max(1, qty))
+                    game._npcShop.amount = math.min(100, math.max(1, qty))
                 end
             end
             return true
@@ -18419,29 +18497,29 @@ function game.handleNpcShopClick(mx, my)
     end
 
     -- Confirm button (Buy / Sell)
-    if npcShop._confirmBtn then
-        local btn = npcShop._confirmBtn
+    if game._npcShop._confirmBtn then
+        local btn = game._npcShop._confirmBtn
         if mx >= btn.x and mx <= btn.x + btn.w and my >= btn.y and my <= btn.y + btn.h then
-            if not npcShop.transactionLock and client then
+            if not game._npcShop.transactionLock and client then
                 local items = {}
-                if npcShop.tab == "buy" then
-                    items = npcShop.prices or {}
+                if game._npcShop.tab == "buy" then
+                    items = game._npcShop.prices or {}
                 else
                     items = getNpcShopSellItems()
                 end
-                if npcShop.selected and npcShop.selected >= 1 and npcShop.selected <= #items then
-                    local sel = items[npcShop.selected]
-                    npcShop.transactionLock = true
-                    if npcShop.tab == "buy" then
+                if game._npcShop.selected and game._npcShop.selected >= 1 and game._npcShop.selected <= #items then
+                    local sel = items[game._npcShop.selected]
+                    game._npcShop.transactionLock = true
+                    if game._npcShop.tab == "buy" then
                         client:emit("npc_shop_buy", {
-                            shopId = npcShop.shopId,
+                            shopId = game._npcShop.shopId,
                             resource = sel.resource,
-                            amount = npcShop.amount,
+                            amount = game._npcShop.amount,
                         })
                     else
                         client:emit("npc_shop_sell", {
                             resource = sel.resource,
-                            amount = npcShop.amount,
+                            amount = game._npcShop.amount,
                         })
                     end
                 end
@@ -18474,7 +18552,7 @@ local function getTradableInventory()
             if type(qty) == "number" and qty > 0 and key ~= "items" then
                 -- Subtract any already-offered amount of this resource
                 local offeredAmt = 0
-                for _, oi in ipairs(trade.myOffer.items) do
+                for _, oi in ipairs(game._trade.myOffer.items) do
                     if oi.type == "resource" and oi.resource == key then
                         offeredAmt = offeredAmt + (oi.amount or 0)
                     end
@@ -18498,7 +18576,7 @@ local function getTradableInventory()
         for _, card in ipairs(rpg.cards) do
             -- Check card is not already in our offer
             local alreadyOffered = false
-            for _, oi in ipairs(trade.myOffer.items) do
+            for _, oi in ipairs(game._trade.myOffer.items) do
                 if oi.type == "card" and oi.cardInstanceId == card.instanceId then
                     alreadyOffered = true
                     break
@@ -18519,20 +18597,20 @@ end
 
 -- Helper: send current offer to server
 local function emitTradeOffer()
-    if not client or not trade.tradeId then return end
+    if not client or not game._trade.tradeId then return end
     client:emit("trade_offer", {
-        tradeId = trade.tradeId,
-        items = trade.myOffer.items,
-        chips = trade.myOffer.chips,
+        tradeId = game._trade.tradeId,
+        items = game._trade.myOffer.items,
+        chips = game._trade.myOffer.chips,
     })
     -- Reset confirmations locally (server resets them too)
-    trade.myConfirmed = false
-    trade.theirConfirmed = false
+    game._trade.myConfirmed = false
+    game._trade.theirConfirmed = false
 end
 
 -- Helper: check if our offer has at least one item or coins
 local function hasOfferContent()
-    return #trade.myOffer.items > 0 or trade.myOffer.chips > 0
+    return #game._trade.myOffer.items > 0 or game._trade.myOffer.chips > 0
 end
 
 -- Rarity color lookup for card items
@@ -18555,7 +18633,7 @@ local BANK_H = 480
 local BANK_ITEM_H = 30
 
 function game.drawBank(W, H)
-    if not bank.data then
+    if not game._bank.data then
         -- Still loading
         love.graphics.setColor(0, 0, 0, 0.6)
         love.graphics.rectangle("fill", 0, 0, W, H)
@@ -18570,10 +18648,10 @@ function game.drawBank(W, H)
     local px = math.floor((W - pw) / 2)
     local py = math.floor((H - ph) / 2)
 
-    bank._panelX = px
-    bank._panelY = py
-    bank._panelW = pw
-    bank._panelH = ph
+    game._bank._panelX = px
+    game._bank._panelY = py
+    game._bank._panelW = pw
+    game._bank._panelH = ph
 
     -- Dim background
     love.graphics.setColor(0, 0, 0, 0.6)
@@ -18603,18 +18681,18 @@ function game.drawBank(W, H)
     love.graphics.setFont(fonts.hud)
     love.graphics.setColor(1, 1, 1, 0.9)
     love.graphics.printf("X", closeX, closeY + 2, 24, "center")
-    bank._closeBtn = { x = closeX, y = closeY, w = 24, h = 22 }
+    game._bank._closeBtn = { x = closeX, y = closeY, w = 24, h = 22 }
 
     -- Tab row
     local tabs = { "gold", "resources", "items" }
     local tabLabels = { gold = "Gold", resources = "Resources", items = "Items" }
     local tabW = math.floor((pw - 20) / #tabs)
     local tabY = py + 34
-    bank._tabBtns = {}
+    game._bank._tabBtns = {}
     love.graphics.setFont(fonts.hud)
     for i, tabId in ipairs(tabs) do
         local tx = px + 10 + (i - 1) * tabW
-        local active = (bank.tab == tabId)
+        local active = (game._bank.tab == tabId)
         if active then
             love.graphics.setColor(0.2, 0.18, 0.08, 0.95)
         else
@@ -18627,13 +18705,13 @@ function game.drawBank(W, H)
             love.graphics.setColor(0.6, 0.55, 0.4, 0.8)
         end
         love.graphics.printf(tabLabels[tabId], tx, tabY + 3, tabW - 2, "center")
-        bank._tabBtns[i] = { x = tx, y = tabY, w = tabW - 2, h = 22, tab = tabId }
+        game._bank._tabBtns[i] = { x = tx, y = tabY, w = tabW - 2, h = 22, tab = tabId }
     end
 
     -- Slot info
     love.graphics.setFont(fonts.small)
     love.graphics.setColor(0.6, 0.55, 0.4, 0.7)
-    local slotText = "Vault: " .. #bank.data.items .. "/" .. bank.data.maxSlots .. " items"
+    local slotText = "Vault: " .. #game._bank.data.items .. "/" .. game._bank.data.maxSlots .. " items"
     love.graphics.printf(slotText, px + 10, tabY + 26, pw - 20, "right")
 
     -- Wallet display
@@ -18647,24 +18725,24 @@ function game.drawBank(W, H)
     local contentH = ph - (contentY - py) - 40
 
     -- Feedback message
-    if bank.message and bank.message.timer and bank.message.timer > 0 then
+    if game._bank.message and game._bank.message.timer and game._bank.message.timer > 0 then
         love.graphics.setFont(fonts.chat)
-        love.graphics.setColor(bank.message.color[1], bank.message.color[2], bank.message.color[3], math.min(1, bank.message.timer))
-        love.graphics.printf(bank.message.text, px + 10, py + ph - 36, pw - 20, "center")
+        love.graphics.setColor(game._bank.message.color[1], game._bank.message.color[2], game._bank.message.color[3], math.min(1, game._bank.message.timer))
+        love.graphics.printf(game._bank.message.text, px + 10, py + ph - 36, pw - 20, "center")
     end
 
-    if bank.tab == "gold" then
+    if game._bank.tab == "gold" then
         game.drawBankGoldTab(px, py, pw, ph, contentY, contentH)
-    elseif bank.tab == "resources" then
+    elseif game._bank.tab == "resources" then
         game.drawBankResourcesTab(px, py, pw, ph, contentY, contentH)
-    elseif bank.tab == "items" then
+    elseif game._bank.tab == "items" then
         game.drawBankItemsTab(px, py, pw, ph, contentY, contentH)
     end
 end
 
 function game.drawBankGoldTab(px, py, pw, ph, contentY, contentH)
     local midX = px + pw / 2
-    local bankGold = bank.data.gold or 0
+    local bankGold = game._bank.data.gold or 0
     local walletGold = 0
     if identity and identity.account then walletGold = identity.account.chips or 0 end
 
@@ -18689,11 +18767,11 @@ function game.drawBankGoldTab(px, py, pw, ph, contentY, contentH)
     love.graphics.setColor(0.8, 0.7, 0.3, 1)
     love.graphics.rectangle("line", minBtnX, amountY, 30, 24, 4, 4)
     love.graphics.printf("-", minBtnX, amountY + 3, 30, "center")
-    bank._goldMinusBtn = { x = minBtnX, y = amountY, w = 30, h = 24 }
+    game._bank._goldMinusBtn = { x = minBtnX, y = amountY, w = 30, h = 24 }
 
     -- Amount display
     love.graphics.setColor(1, 1, 1, 1)
-    love.graphics.printf(tostring(bank.amount), minBtnX + 34, amountY + 3, 80, "center")
+    love.graphics.printf(tostring(game._bank.amount), minBtnX + 34, amountY + 3, 80, "center")
 
     -- Plus button
     local plusBtnX = minBtnX + 118
@@ -18702,7 +18780,7 @@ function game.drawBankGoldTab(px, py, pw, ph, contentY, contentH)
     love.graphics.setColor(0.8, 0.7, 0.3, 1)
     love.graphics.rectangle("line", plusBtnX, amountY, 30, 24, 4, 4)
     love.graphics.printf("+", plusBtnX, amountY + 3, 30, "center")
-    bank._goldPlusBtn = { x = plusBtnX, y = amountY, w = 30, h = 24 }
+    game._bank._goldPlusBtn = { x = plusBtnX, y = amountY, w = 30, h = 24 }
 
     -- Max button
     local maxBtnX = plusBtnX + 36
@@ -18711,12 +18789,12 @@ function game.drawBankGoldTab(px, py, pw, ph, contentY, contentH)
     love.graphics.setColor(0.8, 0.7, 0.3, 1)
     love.graphics.rectangle("line", maxBtnX, amountY, 40, 24, 4, 4)
     love.graphics.printf("Max", maxBtnX, amountY + 3, 40, "center")
-    bank._goldMaxBtn = { x = maxBtnX, y = amountY, w = 40, h = 24 }
+    game._bank._goldMaxBtn = { x = maxBtnX, y = amountY, w = 40, h = 24 }
 
     -- Deposit / Withdraw buttons
     local btnY = amountY + 40
     local btnW = math.floor((pw - 60) / 2)
-    local canAct = not bank.transactionLock
+    local canAct = not game._bank.transactionLock
 
     -- Deposit
     local depX = px + 20
@@ -18729,7 +18807,7 @@ function game.drawBankGoldTab(px, py, pw, ph, contentY, contentH)
     love.graphics.setColor(0.3, 0.8, 0.4, canAct and 1 or 0.4)
     love.graphics.rectangle("line", depX, btnY, btnW, 30, 4, 4)
     love.graphics.printf("Deposit", depX, btnY + 6, btnW, "center")
-    bank._depositGoldBtn = { x = depX, y = btnY, w = btnW, h = 30 }
+    game._bank._depositGoldBtn = { x = depX, y = btnY, w = btnW, h = 30 }
 
     -- Withdraw
     local witX = px + 40 + btnW
@@ -18742,10 +18820,10 @@ function game.drawBankGoldTab(px, py, pw, ph, contentY, contentH)
     love.graphics.setColor(0.8, 0.5, 0.3, canAct and 1 or 0.4)
     love.graphics.rectangle("line", witX, btnY, btnW, 30, 4, 4)
     love.graphics.printf("Withdraw", witX, btnY + 6, btnW, "center")
-    bank._withdrawGoldBtn = { x = witX, y = btnY, w = btnW, h = 30 }
+    game._bank._withdrawGoldBtn = { x = witX, y = btnY, w = btnW, h = 30 }
 
     -- Expand vault button
-    if bank.data.nextExpansionCost then
+    if game._bank.data.nextExpansionCost then
         local expY = btnY + 50
         local expW = pw - 40
         love.graphics.setColor(0.08, 0.08, 0.18, 0.9)
@@ -18754,21 +18832,21 @@ function game.drawBankGoldTab(px, py, pw, ph, contentY, contentH)
         love.graphics.rectangle("line", px + 20, expY, expW, 30, 4, 4)
         love.graphics.setFont(fonts.hud)
         love.graphics.setColor(0.7, 0.65, 1, canAct and 1 or 0.4)
-        love.graphics.printf("Expand Vault (+10 slots) — " .. bank.data.nextExpansionCost .. "g", px + 20, expY + 6, expW, "center")
-        bank._expandBtn = { x = px + 20, y = expY, w = expW, h = 30 }
+        love.graphics.printf("Expand Vault (+10 slots) — " .. game._bank.data.nextExpansionCost .. "g", px + 20, expY + 6, expW, "center")
+        game._bank._expandBtn = { x = px + 20, y = expY, w = expW, h = 30 }
     else
-        bank._expandBtn = nil
+        game._bank._expandBtn = nil
     end
 end
 
 function game.drawBankResourcesTab(px, py, pw, ph, contentY, contentH)
-    -- Build combined resource list: bank resources + inventory resources
+    -- Build combined resource list: game._bank resources + inventory resources
     local allResources = {}
     local seen = {}
 
     -- Bank resources
-    if bank.data.resources then
-        for res, qty in pairs(bank.data.resources) do
+    if game._bank.data.resources then
+        for res, qty in pairs(game._bank.data.resources) do
             if qty > 0 then
                 allResources[#allResources + 1] = { resource = res, bankQty = qty, invQty = 0 }
                 seen[res] = #allResources
@@ -18803,12 +18881,12 @@ function game.drawBankResourcesTab(px, py, pw, ph, contentY, contentH)
     local listY = contentY + 16
     local listH = contentH - 50
     love.graphics.setScissor(px + 5, listY, pw - 10, listH)
-    bank._resourceRows = {}
+    game._bank._resourceRows = {}
 
     for i, entry in ipairs(allResources) do
-        local rowY = listY + (i - 1) * BANK_ITEM_H - bank.scroll
+        local rowY = listY + (i - 1) * BANK_ITEM_H - game._bank.scroll
         if rowY + BANK_ITEM_H > listY and rowY < listY + listH then
-            local isSelected = (bank.selected == i)
+            local isSelected = (game._bank.selected == i)
             if isSelected then
                 love.graphics.setColor(0.2, 0.18, 0.08, 0.8)
             elseif i % 2 == 0 then
@@ -18848,7 +18926,7 @@ function game.drawBankResourcesTab(px, py, pw, ph, contentY, contentH)
                 love.graphics.printf("Wit", witX2, rowY + 6, 56, "center")
             end
 
-            bank._resourceRows[i] = {
+            game._bank._resourceRows[i] = {
                 y = rowY, resource = entry.resource,
                 bankQty = entry.bankQty, invQty = entry.invQty,
                 depBtn = entry.invQty > 0 and { x = px + pw - 140, y = rowY + 2, w = 56, h = BANK_ITEM_H - 6 } or nil,
@@ -18862,38 +18940,38 @@ function game.drawBankResourcesTab(px, py, pw, ph, contentY, contentH)
     local amountY = contentY + contentH - 30
     love.graphics.setFont(fonts.hud)
     love.graphics.setColor(0.7, 0.65, 0.4, 0.9)
-    love.graphics.printf("Qty: " .. bank.amount, px + 10, amountY + 4, 80, "left")
+    love.graphics.printf("Qty: " .. game._bank.amount, px + 10, amountY + 4, 80, "left")
 
     local minBtnX = px + 95
     love.graphics.setColor(0.2, 0.15, 0.08, 0.9)
     love.graphics.rectangle("fill", minBtnX, amountY, 26, 22, 3, 3)
     love.graphics.setColor(0.8, 0.7, 0.3, 1)
     love.graphics.printf("-", minBtnX, amountY + 2, 26, "center")
-    bank._resMinusBtn = { x = minBtnX, y = amountY, w = 26, h = 22 }
+    game._bank._resMinusBtn = { x = minBtnX, y = amountY, w = 26, h = 22 }
 
     local plusBtnX = minBtnX + 30
     love.graphics.setColor(0.2, 0.15, 0.08, 0.9)
     love.graphics.rectangle("fill", plusBtnX, amountY, 26, 22, 3, 3)
     love.graphics.setColor(0.8, 0.7, 0.3, 1)
     love.graphics.printf("+", plusBtnX, amountY + 2, 26, "center")
-    bank._resPlusBtn = { x = plusBtnX, y = amountY, w = 26, h = 22 }
+    game._bank._resPlusBtn = { x = plusBtnX, y = amountY, w = 26, h = 22 }
 
     local maxBtnX = plusBtnX + 30
     love.graphics.setColor(0.2, 0.15, 0.08, 0.9)
     love.graphics.rectangle("fill", maxBtnX, amountY, 36, 22, 3, 3)
     love.graphics.setColor(0.8, 0.7, 0.3, 1)
     love.graphics.printf("Max", maxBtnX, amountY + 2, 36, "center")
-    bank._resMaxBtn = { x = maxBtnX, y = amountY, w = 36, h = 22 }
+    game._bank._resMaxBtn = { x = maxBtnX, y = amountY, w = 36, h = 22 }
 end
 
 function game.drawBankItemsTab(px, py, pw, ph, contentY, contentH)
-    local bankItems = bank.data.items or {}
+    local bankItems = game._bank.data.items or {}
     local invItems = (mmoInventory and mmoInventory.items) or {}
 
     -- Column headers
     love.graphics.setFont(fonts.small)
     love.graphics.setColor(0.6, 0.55, 0.4, 0.7)
-    love.graphics.printf("Bank Items (" .. #bankItems .. "/" .. bank.data.maxSlots .. ")", px + 12, contentY, (pw / 2) - 20, "left")
+    love.graphics.printf("Bank Items (" .. #bankItems .. "/" .. game._bank.data.maxSlots .. ")", px + 12, contentY, (pw / 2) - 20, "left")
     love.graphics.printf("Inventory (" .. #invItems .. "/100)", px + pw / 2 + 8, contentY, (pw / 2) - 20, "left")
 
     local listY = contentY + 16
@@ -18902,9 +18980,9 @@ function game.drawBankItemsTab(px, py, pw, ph, contentY, contentH)
 
     -- Bank items column
     love.graphics.setScissor(px + 5, listY, colW, listH)
-    bank._bankItemRows = {}
+    game._bank._bankItemRows = {}
     for i, item in ipairs(bankItems) do
-        local rowY = listY + (i - 1) * BANK_ITEM_H - bank.scroll
+        local rowY = listY + (i - 1) * BANK_ITEM_H - game._bank.scroll
         if rowY + BANK_ITEM_H > listY and rowY < listY + listH then
             if i % 2 == 0 then
                 love.graphics.setColor(0.08, 0.08, 0.12, 0.4)
@@ -18923,7 +19001,7 @@ function game.drawBankItemsTab(px, py, pw, ph, contentY, contentH)
             love.graphics.setColor(0.7, 0.5, 0.3, 1)
             love.graphics.printf(">", px + colW - 20, rowY + 4, 16, "center")
 
-            bank._bankItemRows[i] = { y = rowY, item = item, index = i - 1, btn = { x = px + 6, y = rowY, w = colW - 2, h = BANK_ITEM_H - 2 } }
+            game._bank._bankItemRows[i] = { y = rowY, item = item, index = i - 1, btn = { x = px + 6, y = rowY, w = colW - 2, h = BANK_ITEM_H - 2 } }
         end
     end
     love.graphics.setScissor()
@@ -18935,9 +19013,9 @@ function game.drawBankItemsTab(px, py, pw, ph, contentY, contentH)
     -- Inventory items column
     local invX = px + colW + 12
     love.graphics.setScissor(invX, listY, colW, listH)
-    bank._invItemRows = {}
+    game._bank._invItemRows = {}
     for i, item in ipairs(invItems) do
-        local rowY = listY + (i - 1) * BANK_ITEM_H - bank.scroll
+        local rowY = listY + (i - 1) * BANK_ITEM_H - game._bank.scroll
         if rowY + BANK_ITEM_H > listY and rowY < listY + listH then
             if i % 2 == 0 then
                 love.graphics.setColor(0.08, 0.08, 0.12, 0.4)
@@ -18956,7 +19034,7 @@ function game.drawBankItemsTab(px, py, pw, ph, contentY, contentH)
             love.graphics.setColor(0.9, 0.85, 0.7, 1)
             love.graphics.printf(itemName, invX + 24, rowY + 4, colW - 34, "left")
 
-            bank._invItemRows[i] = { y = rowY, item = item, btn = { x = invX, y = rowY, w = colW - 6, h = BANK_ITEM_H - 2 } }
+            game._bank._invItemRows[i] = { y = rowY, item = item, btn = { x = invX, y = rowY, w = colW - 6, h = BANK_ITEM_H - 2 } }
         end
     end
     love.graphics.setScissor()
@@ -18969,66 +19047,66 @@ local function _hitTest(btn, mx, my)
 end
 
 function game.handleBankClick(mx, my)
-    if not bank.show then return false end
-    if not bank._panelX then return false end
+    if not game._bank.show then return false end
+    if not game._bank._panelX then return false end
 
     -- Click outside panel closes it
-    if mx < bank._panelX or mx > bank._panelX + bank._panelW
-       or my < bank._panelY or my > bank._panelY + bank._panelH then
-        bank.show = false
+    if mx < game._bank._panelX or mx > game._bank._panelX + game._bank._panelW
+       or my < game._bank._panelY or my > game._bank._panelY + game._bank._panelH then
+        game._bank.show = false
         return true
     end
 
     -- Close button
-    if _hitTest(bank._closeBtn, mx, my) then
-        bank.show = false
+    if _hitTest(game._bank._closeBtn, mx, my) then
+        game._bank.show = false
         return true
     end
 
     -- Tabs
-    if bank._tabBtns then
-        for _, btn in ipairs(bank._tabBtns) do
+    if game._bank._tabBtns then
+        for _, btn in ipairs(game._bank._tabBtns) do
             if _hitTest(btn, mx, my) then
-                bank.tab = btn.tab
-                bank.selected = nil
-                bank.scroll = 0
-                bank.amount = 1
+                game._bank.tab = btn.tab
+                game._bank.selected = nil
+                game._bank.scroll = 0
+                game._bank.amount = 1
                 return true
             end
         end
     end
 
-    if bank.transactionLock then return true end
+    if game._bank.transactionLock then return true end
 
     -- Gold tab controls
-    if bank.tab == "gold" then
-        if _hitTest(bank._goldMinusBtn, mx, my) then
-            bank.amount = math.max(1, bank.amount - (love.keyboard.isDown("lshift") and 100 or 10))
+    if game._bank.tab == "gold" then
+        if _hitTest(game._bank._goldMinusBtn, mx, my) then
+            game._bank.amount = math.max(1, game._bank.amount - (love.keyboard.isDown("lshift") and 100 or 10))
             return true
         end
-        if _hitTest(bank._goldPlusBtn, mx, my) then
-            bank.amount = bank.amount + (love.keyboard.isDown("lshift") and 100 or 10)
+        if _hitTest(game._bank._goldPlusBtn, mx, my) then
+            game._bank.amount = game._bank.amount + (love.keyboard.isDown("lshift") and 100 or 10)
             return true
         end
-        if _hitTest(bank._goldMaxBtn, mx, my) then
+        if _hitTest(game._bank._goldMaxBtn, mx, my) then
             -- Set to max available for the likely action
             local walletGold = identity and identity.account and identity.account.chips or 0
-            local bankGold = bank.data and bank.data.gold or 0
-            bank.amount = math.max(walletGold, bankGold)
+            local bankGold = game._bank.data and game._bank.data.gold or 0
+            game._bank.amount = math.max(walletGold, bankGold)
             return true
         end
-        if _hitTest(bank._depositGoldBtn, mx, my) and client then
-            bank.transactionLock = true
-            client:emit("bank_deposit_gold", { amount = bank.amount })
+        if _hitTest(game._bank._depositGoldBtn, mx, my) and client then
+            game._bank.transactionLock = true
+            client:emit("bank_deposit_gold", { amount = game._bank.amount })
             return true
         end
-        if _hitTest(bank._withdrawGoldBtn, mx, my) and client then
-            bank.transactionLock = true
-            client:emit("bank_withdraw_gold", { amount = bank.amount })
+        if _hitTest(game._bank._withdrawGoldBtn, mx, my) and client then
+            game._bank.transactionLock = true
+            client:emit("bank_withdraw_gold", { amount = game._bank.amount })
             return true
         end
-        if _hitTest(bank._expandBtn, mx, my) and client then
-            bank.transactionLock = true
+        if _hitTest(game._bank._expandBtn, mx, my) and client then
+            game._bank.transactionLock = true
             client:emit("bank_buy_slots", {})
             return true
         end
@@ -19036,30 +19114,30 @@ function game.handleBankClick(mx, my)
     end
 
     -- Resources tab controls
-    if bank.tab == "resources" then
-        if _hitTest(bank._resMinusBtn, mx, my) then
-            bank.amount = math.max(1, bank.amount - (love.keyboard.isDown("lshift") and 10 or 1))
+    if game._bank.tab == "resources" then
+        if _hitTest(game._bank._resMinusBtn, mx, my) then
+            game._bank.amount = math.max(1, game._bank.amount - (love.keyboard.isDown("lshift") and 10 or 1))
             return true
         end
-        if _hitTest(bank._resPlusBtn, mx, my) then
-            bank.amount = bank.amount + (love.keyboard.isDown("lshift") and 10 or 1)
+        if _hitTest(game._bank._resPlusBtn, mx, my) then
+            game._bank.amount = game._bank.amount + (love.keyboard.isDown("lshift") and 10 or 1)
             return true
         end
-        if _hitTest(bank._resMaxBtn, mx, my) then
-            bank.amount = 999
+        if _hitTest(game._bank._resMaxBtn, mx, my) then
+            game._bank.amount = 999
             return true
         end
         -- Resource row deposit/withdraw buttons
-        if bank._resourceRows then
-            for _, row in pairs(bank._resourceRows) do
+        if game._bank._resourceRows then
+            for _, row in pairs(game._bank._resourceRows) do
                 if row.depBtn and _hitTest(row.depBtn, mx, my) and client then
-                    bank.transactionLock = true
-                    client:emit("bank_deposit_resource", { resource = row.resource, amount = math.min(bank.amount, row.invQty) })
+                    game._bank.transactionLock = true
+                    client:emit("bank_deposit_resource", { resource = row.resource, amount = math.min(game._bank.amount, row.invQty) })
                     return true
                 end
                 if row.witBtn and _hitTest(row.witBtn, mx, my) and client then
-                    bank.transactionLock = true
-                    client:emit("bank_withdraw_resource", { resource = row.resource, amount = math.min(bank.amount, row.bankQty) })
+                    game._bank.transactionLock = true
+                    client:emit("bank_withdraw_resource", { resource = row.resource, amount = math.min(game._bank.amount, row.bankQty) })
                     return true
                 end
             end
@@ -19068,22 +19146,22 @@ function game.handleBankClick(mx, my)
     end
 
     -- Items tab controls
-    if bank.tab == "items" then
+    if game._bank.tab == "items" then
         -- Bank item rows (click to withdraw)
-        if bank._bankItemRows then
-            for _, row in pairs(bank._bankItemRows) do
+        if game._bank._bankItemRows then
+            for _, row in pairs(game._bank._bankItemRows) do
                 if _hitTest(row.btn, mx, my) and client then
-                    bank.transactionLock = true
+                    game._bank.transactionLock = true
                     client:emit("bank_withdraw_item", { itemIndex = row.index })
                     return true
                 end
             end
         end
         -- Inventory item rows (click to deposit)
-        if bank._invItemRows then
-            for _, row in pairs(bank._invItemRows) do
+        if game._bank._invItemRows then
+            for _, row in pairs(game._bank._invItemRows) do
                 if _hitTest(row.btn, mx, my) and client then
-                    bank.transactionLock = true
+                    game._bank.transactionLock = true
                     client:emit("bank_deposit_item", { itemId = row.item.id })
                     return true
                 end
@@ -19095,7 +19173,7 @@ function game.handleBankClick(mx, my)
     return true
 end
 
--- Draw the trade panel
+-- Draw the game._trade panel
 function game.drawTradePanel(W, H)
     local pw = math.min(TRADE_W, W - 40)
     local ph = math.min(TRADE_H, H - 60)
@@ -19103,10 +19181,10 @@ function game.drawTradePanel(W, H)
     local py = math.floor((H - ph) / 2)
 
     -- Store panel rect for click handling
-    trade._panelX = px
-    trade._panelY = py
-    trade._panelW = pw
-    trade._panelH = ph
+    game._trade._panelX = px
+    game._trade._panelY = py
+    game._trade._panelW = pw
+    game._trade._panelH = ph
 
     -- Dim background
     love.graphics.setColor(0, 0, 0, 0.6)
@@ -19124,7 +19202,7 @@ function game.drawTradePanel(W, H)
     -- Title
     love.graphics.setFont(fonts.ui)
     love.graphics.setColor(1, 0.85, 0.3, 1)
-    love.graphics.printf("Trade with " .. trade.partnerName, px + 10, py + 8, pw - 60, "left")
+    love.graphics.printf("Trade with " .. game._trade.partnerName, px + 10, py + 8, pw - 60, "left")
 
     -- Close / Cancel button (top right)
     local closeW, closeH = 22, 22
@@ -19135,7 +19213,7 @@ function game.drawTradePanel(W, H)
     love.graphics.setColor(1, 1, 1, 0.9)
     love.graphics.setFont(fonts.name)
     love.graphics.printf("X", closeX, closeY + 3, closeW, "center")
-    trade._closeBtn = { x = closeX, y = closeY, w = closeW, h = closeH }
+    game._trade._closeBtn = { x = closeX, y = closeY, w = closeW, h = closeH }
 
     -- Divider line under title
     love.graphics.setColor(0.75, 0.6, 0.2, 0.3)
@@ -19144,13 +19222,13 @@ function game.drawTradePanel(W, H)
     -- Status line
     love.graphics.setFont(fonts.npc)
     local statusText, statusColor
-    if trade.myConfirmed and trade.theirConfirmed then
+    if game._trade.myConfirmed and game._trade.theirConfirmed then
         statusText = "Both confirmed! Completing trade..."
         statusColor = {0.3, 1, 0.4, 1}
-    elseif trade.myConfirmed then
+    elseif game._trade.myConfirmed then
         statusText = "Waiting for partner to confirm..."
         statusColor = {1, 0.85, 0.3, 1}
-    elseif trade.theirConfirmed then
+    elseif game._trade.theirConfirmed then
         statusText = "Partner confirmed. Review and confirm your offer."
         statusColor = {0.4, 0.8, 1, 1}
     else
@@ -19172,7 +19250,7 @@ function game.drawTradePanel(W, H)
     love.graphics.setFont(fonts.chat)
     love.graphics.setColor(0.9, 0.8, 0.4, 1)
     love.graphics.printf("Your Offer", leftX, colTop, colW, "center")
-    if trade.myConfirmed then
+    if game._trade.myConfirmed then
         love.graphics.setFont(fonts.small)
         love.graphics.setColor(0.2, 1, 0.3, 1)
         love.graphics.printf("CONFIRMED", leftX, colTop + 1, colW - 4, "right")
@@ -19187,14 +19265,14 @@ function game.drawTradePanel(W, H)
     love.graphics.rectangle("line", leftX, offeredTop, colW, offeredH, 4, 4)
 
     love.graphics.setFont(fonts.npc)
-    trade._offeredRects = {}
-    if #trade.myOffer.items == 0 and trade.myOffer.chips == 0 then
+    game._trade._offeredRects = {}
+    if #game._trade.myOffer.items == 0 and game._trade.myOffer.chips == 0 then
         love.graphics.setColor(0.5, 0.5, 0.55, 0.6)
         love.graphics.printf("(empty)", leftX, offeredTop + offeredH / 2 - 6, colW, "center")
     else
         local oy = offeredTop + 2
         -- Draw offered items
-        for i, item in ipairs(trade.myOffer.items) do
+        for i, item in ipairs(game._trade.myOffer.items) do
             if oy + TRADE_ITEM_H > offeredTop + offeredH then break end
             local label
             if item.type == "resource" then
@@ -19210,14 +19288,14 @@ function game.drawTradePanel(W, H)
             -- Remove [x] button
             love.graphics.setColor(1, 0.35, 0.35, 0.9)
             love.graphics.printf("x", leftX + colW - 20, oy + 4, 16, "center")
-            trade._offeredRects[i] = { x = leftX + colW - 24, y = oy, w = 22, h = TRADE_ITEM_H }
+            game._trade._offeredRects[i] = { x = leftX + colW - 24, y = oy, w = 22, h = TRADE_ITEM_H }
             oy = oy + TRADE_ITEM_H
         end
         -- Show offered coins line
-        if trade.myOffer.chips > 0 then
+        if game._trade.myOffer.chips > 0 then
             if oy + TRADE_ITEM_H <= offeredTop + offeredH then
                 love.graphics.setColor(1, 0.85, 0.3, 1)
-                love.graphics.printf("Coins: " .. trade.myOffer.chips, leftX + 4, oy + 4, colW - 8, "left")
+                love.graphics.printf("Coins: " .. game._trade.myOffer.chips, leftX + 4, oy + 4, colW - 8, "left")
             end
         end
     end
@@ -19236,14 +19314,14 @@ function game.drawTradePanel(W, H)
     love.graphics.rectangle("line", leftX, invTop, colW, invH, 4, 4)
 
     -- Store region for scroll clipping
-    trade._invRegion = { x = leftX, y = invTop, w = colW, h = invH }
+    game._trade._invRegion = { x = leftX, y = invTop, w = colW, h = invH }
 
     local invItems = getTradableInventory()
-    trade._invItems = invItems  -- cache for click handler
-    trade._invRects = {}
+    game._trade._invItems = invItems  -- cache for click handler
+    game._trade._invRects = {}
 
     love.graphics.setScissor(leftX, invTop, colW, invH)
-    local iy = invTop + 2 - trade.myScroll
+    local iy = invTop + 2 - game._trade.myScroll
     for i, item in ipairs(invItems) do
         if iy + TRADE_ITEM_H > invTop and iy < invTop + invH then
             local label
@@ -19260,19 +19338,19 @@ function game.drawTradePanel(W, H)
             love.graphics.setColor(0.3, 0.9, 0.3, 0.8)
             love.graphics.printf("+", leftX + colW - 20, iy + 4, 16, "center")
         end
-        trade._invRects[i] = { x = leftX, y = iy, w = colW, h = TRADE_ITEM_H }
+        game._trade._invRects[i] = { x = leftX, y = iy, w = colW, h = TRADE_ITEM_H }
         iy = iy + TRADE_ITEM_H
     end
     -- Track max scroll
     local maxScroll = math.max(0, #invItems * TRADE_ITEM_H - invH + 4)
-    if trade.myScroll > maxScroll then trade.myScroll = maxScroll end
+    if game._trade.myScroll > maxScroll then game._trade.myScroll = maxScroll end
     love.graphics.setScissor()
 
     -- ===================== RIGHT COLUMN: Their Offer =====================
     love.graphics.setFont(fonts.chat)
     love.graphics.setColor(0.6, 0.8, 1, 1)
     love.graphics.printf("Their Offer", rightX, colTop, colW, "center")
-    if trade.theirConfirmed then
+    if game._trade.theirConfirmed then
         love.graphics.setFont(fonts.small)
         love.graphics.setColor(0.2, 1, 0.3, 1)
         love.graphics.printf("CONFIRMED", rightX, colTop + 1, colW - 4, "right")
@@ -19286,12 +19364,12 @@ function game.drawTradePanel(W, H)
     love.graphics.rectangle("line", rightX, theirTop, colW, theirH, 4, 4)
 
     love.graphics.setFont(fonts.npc)
-    if #trade.theirOffer.items == 0 and trade.theirOffer.chips == 0 then
+    if #game._trade.theirOffer.items == 0 and game._trade.theirOffer.chips == 0 then
         love.graphics.setColor(0.5, 0.5, 0.55, 0.6)
         love.graphics.printf("(waiting for offer...)", rightX, theirTop + theirH / 2 - 6, colW, "center")
     else
         local ty = theirTop + 2
-        for _, item in ipairs(trade.theirOffer.items) do
+        for _, item in ipairs(game._trade.theirOffer.items) do
             if ty + TRADE_ITEM_H > theirTop + theirH then break end
             local label
             if item.type == "resource" then
@@ -19308,10 +19386,10 @@ function game.drawTradePanel(W, H)
             ty = ty + TRADE_ITEM_H
         end
         -- Their coins
-        if trade.theirOffer.chips > 0 then
+        if game._trade.theirOffer.chips > 0 then
             if ty + TRADE_ITEM_H <= theirTop + theirH then
                 love.graphics.setColor(1, 0.85, 0.3, 1)
-                love.graphics.printf("Coins: " .. trade.theirOffer.chips, rightX + 4, ty + 4, colW - 8, "left")
+                love.graphics.printf("Coins: " .. game._trade.theirOffer.chips, rightX + 4, ty + 4, colW - 8, "left")
             end
         end
     end
@@ -19328,30 +19406,30 @@ function game.drawTradePanel(W, H)
     local inputW = colW - 78
     local inputH = 20
     -- Input box background
-    if trade.coinInputActive then
+    if game._trade.coinInputActive then
         love.graphics.setColor(0.12, 0.11, 0.18, 1)
     else
         love.graphics.setColor(0.06, 0.06, 0.1, 0.8)
     end
     love.graphics.rectangle("fill", inputX, ctrlY - 2, inputW, inputH, 3, 3)
-    love.graphics.setColor(trade.coinInputActive and {0.75, 0.6, 0.2, 0.9} or {0.4, 0.35, 0.25, 0.5})
+    love.graphics.setColor(game._trade.coinInputActive and {0.75, 0.6, 0.2, 0.9} or {0.4, 0.35, 0.25, 0.5})
     love.graphics.rectangle("line", inputX, ctrlY - 2, inputW, inputH, 3, 3)
     -- Input text / placeholder
     love.graphics.setColor(1, 0.9, 0.5, 1)
-    local displayText = trade.coinInput
+    local displayText = game._trade.coinInput
     if displayText == "" then
         love.graphics.setColor(0.5, 0.5, 0.55, 0.5)
         displayText = "0"
     end
     -- Blinking cursor when active
-    if trade.coinInputActive then
+    if game._trade.coinInputActive then
         local cursorBlink = math.floor(love.timer.getTime() * 2) % 2 == 0
         if cursorBlink then
             displayText = displayText .. "|"
         end
     end
     love.graphics.printf(displayText, inputX + 4, ctrlY, inputW - 8, "left")
-    trade._coinInputRect = { x = inputX, y = ctrlY - 2, w = inputW, h = inputH }
+    game._trade._coinInputRect = { x = inputX, y = ctrlY - 2, w = inputW, h = inputH }
 
     -- "Set" button next to coin input to apply coins to offer
     local setBtnW = 36
@@ -19361,7 +19439,7 @@ function game.drawTradePanel(W, H)
     love.graphics.rectangle("fill", setBtnX, setBtnY, setBtnW, 18, 3, 3)
     love.graphics.setColor(1, 0.9, 0.5, 1)
     love.graphics.printf("Set", setBtnX, setBtnY + 1, setBtnW, "center")
-    trade._coinSetBtn = { x = setBtnX, y = setBtnY, w = setBtnW, h = 18 }
+    game._trade._coinSetBtn = { x = setBtnX, y = setBtnY, w = setBtnW, h = 18 }
 
     -- Current coin balance label
     love.graphics.setColor(0.55, 0.55, 0.6, 0.7)
@@ -19372,8 +19450,8 @@ function game.drawTradePanel(W, H)
     local confirmH = 28
     local confirmX = rightX
     local confirmY = ctrlY + 4
-    local canConfirm = hasOfferContent() and not trade.myConfirmed
-    if trade.myConfirmed then
+    local canConfirm = hasOfferContent() and not game._trade.myConfirmed
+    if game._trade.myConfirmed then
         love.graphics.setColor(0.15, 0.5, 0.2, 0.9)
     elseif canConfirm then
         love.graphics.setColor(0.2, 0.6, 0.3, 0.9)
@@ -19382,7 +19460,7 @@ function game.drawTradePanel(W, H)
     end
     love.graphics.rectangle("fill", confirmX, confirmY, confirmW, confirmH, 4, 4)
     love.graphics.setFont(fonts.chat)
-    if trade.myConfirmed then
+    if game._trade.myConfirmed then
         love.graphics.setColor(0.4, 1, 0.5, 1)
         love.graphics.printf("CONFIRMED", confirmX, confirmY + 5, confirmW, "center")
     elseif canConfirm then
@@ -19392,7 +19470,7 @@ function game.drawTradePanel(W, H)
         love.graphics.setColor(0.5, 0.5, 0.55, 0.6)
         love.graphics.printf("Confirm Trade", confirmX, confirmY + 5, confirmW, "center")
     end
-    trade._confirmBtn = { x = confirmX, y = confirmY, w = confirmW, h = confirmH }
+    game._trade._confirmBtn = { x = confirmX, y = confirmY, w = confirmW, h = confirmH }
 
     -- Cancel button (below confirm)
     local cancelW = colW
@@ -19404,14 +19482,14 @@ function game.drawTradePanel(W, H)
     love.graphics.setFont(fonts.npc)
     love.graphics.setColor(1, 0.7, 0.7, 1)
     love.graphics.printf("Cancel Trade", cancelX, cancelY + 3, cancelW, "center")
-    trade._cancelBtn = { x = cancelX, y = cancelY, w = cancelW, h = cancelH }
+    game._trade._cancelBtn = { x = cancelX, y = cancelY, w = cancelW, h = cancelH }
 
     -- Message feedback (bottom center)
-    if trade.message and trade.message.timer and trade.message.timer > 0 then
-        local alpha = math.min(1, trade.message.timer)
+    if game._trade.message and game._trade.message.timer and game._trade.message.timer > 0 then
+        local alpha = math.min(1, game._trade.message.timer)
         love.graphics.setFont(fonts.npc)
-        love.graphics.setColor(trade.message.color[1], trade.message.color[2], trade.message.color[3], alpha)
-        love.graphics.printf(trade.message.text, px + 14, py + ph - 16, pw - 28, "center")
+        love.graphics.setColor(game._trade.message.color[1], game._trade.message.color[2], game._trade.message.color[3], alpha)
+        love.graphics.printf(game._trade.message.text, px + 14, py + ph - 16, pw - 28, "center")
     end
 
     -- Escape hint
@@ -19420,9 +19498,9 @@ function game.drawTradePanel(W, H)
     love.graphics.printf("Esc to cancel", px, py + ph - 16, pw - 10, "right")
 end
 
--- Draw the incoming trade request popup (small overlay near top of screen)
+-- Draw the incoming game._trade request popup (small overlay near top of screen)
 function game.drawTradeRequestPopup(W, H)
-    if not trade.pendingRequest then return end
+    if not game._trade.pendingRequest then return end
 
     local popW = 340
     local popH = 60
@@ -19441,13 +19519,13 @@ function game.drawTradeRequestPopup(W, H)
     -- Text
     love.graphics.setFont(fonts.npc)
     love.graphics.setColor(1, 0.9, 0.5, 1)
-    local msg = (trade.pendingRequest.fromName or "???") .. " wants to trade"
+    local msg = (game._trade.pendingRequest.fromName or "???") .. " wants to trade"
     love.graphics.printf(msg, popX + 10, popY + 6, popW - 20, "center")
 
     -- Timer text
-    if trade._pendingTimer then
+    if game._trade._pendingTimer then
         love.graphics.setColor(0.6, 0.6, 0.65, 0.6)
-        love.graphics.printf(math.ceil(trade._pendingTimer) .. "s", popX + popW - 40, popY + 6, 30, "right")
+        love.graphics.printf(math.ceil(game._trade._pendingTimer) .. "s", popX + popW - 40, popY + 6, 30, "right")
     end
 
     -- Accept button
@@ -19459,7 +19537,7 @@ function game.drawTradeRequestPopup(W, H)
     love.graphics.rectangle("fill", acceptX, btnY, btnW, btnH, 4, 4)
     love.graphics.setColor(1, 1, 1, 1)
     love.graphics.printf("Accept (Y)", acceptX, btnY + 3, btnW, "center")
-    trade._acceptBtn = { x = acceptX, y = btnY, w = btnW, h = btnH }
+    game._trade._acceptBtn = { x = acceptX, y = btnY, w = btnW, h = btnH }
 
     -- Decline button
     local declineX = popX + popW / 2 + 10
@@ -19467,33 +19545,33 @@ function game.drawTradeRequestPopup(W, H)
     love.graphics.rectangle("fill", declineX, btnY, btnW, btnH, 4, 4)
     love.graphics.setColor(1, 0.7, 0.7, 1)
     love.graphics.printf("Decline (N)", declineX, btnY + 3, btnW, "center")
-    trade._declineBtn = { x = declineX, y = btnY, w = btnW, h = btnH }
+    game._trade._declineBtn = { x = declineX, y = btnY, w = btnW, h = btnH }
 end
 
 -- Trade panel: handle click, returns true if click was consumed
 function game.handleTradeClick(mx, my)
-    if not trade.show then return false end
+    if not game._trade.show then return false end
 
-    local px = trade._panelX or 0
-    local py = trade._panelY or 0
-    local pw = trade._panelW or TRADE_W
-    local ph = trade._panelH or TRADE_H
+    local px = game._trade._panelX or 0
+    local py = game._trade._panelY or 0
+    local pw = game._trade._panelW or TRADE_W
+    local ph = game._trade._panelH or TRADE_H
 
-    -- Click outside panel: cancel trade
+    -- Click outside panel: cancel game._trade
     if mx < px or mx > px + pw or my < py or my > py + ph then
-        if trade.tradeId and client then
-            client:emit("trade_cancel", { tradeId = trade.tradeId })
+        if game._trade.tradeId and client then
+            client:emit("trade_cancel", { tradeId = game._trade.tradeId })
         end
         resetTradeState()
         return true
     end
 
     -- Close button
-    if trade._closeBtn then
-        local btn = trade._closeBtn
+    if game._trade._closeBtn then
+        local btn = game._trade._closeBtn
         if mx >= btn.x and mx <= btn.x + btn.w and my >= btn.y and my <= btn.y + btn.h then
-            if trade.tradeId and client then
-                client:emit("trade_cancel", { tradeId = trade.tradeId })
+            if game._trade.tradeId and client then
+                client:emit("trade_cancel", { tradeId = game._trade.tradeId })
             end
             resetTradeState()
             return true
@@ -19501,11 +19579,11 @@ function game.handleTradeClick(mx, my)
     end
 
     -- Cancel button
-    if trade._cancelBtn then
-        local btn = trade._cancelBtn
+    if game._trade._cancelBtn then
+        local btn = game._trade._cancelBtn
         if mx >= btn.x and mx <= btn.x + btn.w and my >= btn.y and my <= btn.y + btn.h then
-            if trade.tradeId and client then
-                client:emit("trade_cancel", { tradeId = trade.tradeId })
+            if game._trade.tradeId and client then
+                client:emit("trade_cancel", { tradeId = game._trade.tradeId })
             end
             resetTradeState()
             return true
@@ -19513,51 +19591,51 @@ function game.handleTradeClick(mx, my)
     end
 
     -- Confirm button
-    if trade._confirmBtn then
-        local btn = trade._confirmBtn
+    if game._trade._confirmBtn then
+        local btn = game._trade._confirmBtn
         if mx >= btn.x and mx <= btn.x + btn.w and my >= btn.y and my <= btn.y + btn.h then
-            if hasOfferContent() and not trade.myConfirmed and client and trade.tradeId then
-                client:emit("trade_confirm", { tradeId = trade.tradeId })
-                trade.myConfirmed = true
+            if hasOfferContent() and not game._trade.myConfirmed and client and game._trade.tradeId then
+                client:emit("trade_confirm", { tradeId = game._trade.tradeId })
+                game._trade.myConfirmed = true
             end
             return true
         end
     end
 
     -- Coin input field click (activate/deactivate)
-    if trade._coinInputRect then
-        local btn = trade._coinInputRect
+    if game._trade._coinInputRect then
+        local btn = game._trade._coinInputRect
         if mx >= btn.x and mx <= btn.x + btn.w and my >= btn.y and my <= btn.y + btn.h then
-            trade.coinInputActive = true
+            game._trade.coinInputActive = true
             return true
         else
             -- Clicking elsewhere deactivates coin input
-            trade.coinInputActive = false
+            game._trade.coinInputActive = false
         end
     end
 
     -- Coin "Set" button
-    if trade._coinSetBtn then
-        local btn = trade._coinSetBtn
+    if game._trade._coinSetBtn then
+        local btn = game._trade._coinSetBtn
         if mx >= btn.x and mx <= btn.x + btn.w and my >= btn.y and my <= btn.y + btn.h then
-            local amount = tonumber(trade.coinInput) or 0
+            local amount = tonumber(game._trade.coinInput) or 0
             amount = math.floor(amount)
             local maxCoins = (account and account.coins) or 0
             amount = math.max(0, math.min(amount, maxCoins))
-            trade.myOffer.chips = amount
-            trade.coinInput = amount > 0 and tostring(amount) or ""
+            game._trade.myOffer.chips = amount
+            game._trade.coinInput = amount > 0 and tostring(amount) or ""
             emitTradeOffer()
             return true
         end
     end
 
     -- Remove offered item [x] buttons
-    if trade._offeredRects then
-        for i, rect in pairs(trade._offeredRects) do
+    if game._trade._offeredRects then
+        for i, rect in pairs(game._trade._offeredRects) do
             if mx >= rect.x and mx <= rect.x + rect.w and my >= rect.y and my <= rect.y + rect.h then
                 -- Remove item from offer
-                if trade.myOffer.items[i] then
-                    table.remove(trade.myOffer.items, i)
+                if game._trade.myOffer.items[i] then
+                    table.remove(game._trade.myOffer.items, i)
                     emitTradeOffer()
                 end
                 return true
@@ -19566,18 +19644,18 @@ function game.handleTradeClick(mx, my)
     end
 
     -- Inventory item clicks (add to offer)
-    if trade._invRects and trade._invItems then
-        local region = trade._invRegion
-        for i, rect in pairs(trade._invRects) do
+    if game._trade._invRects and game._trade._invItems then
+        local region = game._trade._invRegion
+        for i, rect in pairs(game._trade._invRects) do
             if mx >= rect.x and mx <= rect.x + rect.w and my >= rect.y and my <= rect.y + rect.h then
                 -- Must be in visible region
                 if region and my >= region.y and my < region.y + region.h then
-                    local item = trade._invItems[i]
+                    local item = game._trade._invItems[i]
                     if item then
                         if item.type == "resource" then
                             -- Check if this resource is already in the offer; if so, increment
                             local found = false
-                            for _, oi in ipairs(trade.myOffer.items) do
+                            for _, oi in ipairs(game._trade.myOffer.items) do
                                 if oi.type == "resource" and oi.resource == item.resource then
                                     oi.amount = (oi.amount or 0) + 1
                                     found = true
@@ -19586,8 +19664,8 @@ function game.handleTradeClick(mx, my)
                             end
                             if not found then
                                 -- Max 10 item slots (server limit)
-                                if #trade.myOffer.items < 10 then
-                                    table.insert(trade.myOffer.items, {
+                                if #game._trade.myOffer.items < 10 then
+                                    table.insert(game._trade.myOffer.items, {
                                         type = "resource",
                                         resource = item.resource,
                                         amount = 1,
@@ -19596,8 +19674,8 @@ function game.handleTradeClick(mx, my)
                             end
                         elseif item.type == "card" then
                             -- Add card (one per slot)
-                            if #trade.myOffer.items < 10 then
-                                table.insert(trade.myOffer.items, {
+                            if #game._trade.myOffer.items < 10 then
+                                table.insert(game._trade.myOffer.items, {
                                     type = "card",
                                     cardInstanceId = item.cardInstanceId,
                                     name = item.name,
@@ -19619,28 +19697,28 @@ end
 
 -- Trade request popup: handle click, returns true if consumed
 function game.handleTradeRequestClick(mx, my)
-    if not trade.pendingRequest then return false end
+    if not game._trade.pendingRequest then return false end
 
     -- Accept button
-    if trade._acceptBtn then
-        local btn = trade._acceptBtn
+    if game._trade._acceptBtn then
+        local btn = game._trade._acceptBtn
         if mx >= btn.x and mx <= btn.x + btn.w and my >= btn.y and my <= btn.y + btn.h then
             if client then
-                client:emit("trade_accept", { tradeId = trade.pendingRequest.tradeId })
+                client:emit("trade_accept", { tradeId = game._trade.pendingRequest.tradeId })
             end
             return true
         end
     end
 
     -- Decline button
-    if trade._declineBtn then
-        local btn = trade._declineBtn
+    if game._trade._declineBtn then
+        local btn = game._trade._declineBtn
         if mx >= btn.x and mx <= btn.x + btn.w and my >= btn.y and my <= btn.y + btn.h then
             if client then
-                client:emit("trade_cancel", { tradeId = trade.pendingRequest.tradeId })
+                client:emit("trade_cancel", { tradeId = game._trade.pendingRequest.tradeId })
             end
-            trade.pendingRequest = nil
-            trade._pendingTimer = nil
+            game._trade.pendingRequest = nil
+            game._trade._pendingTimer = nil
             return true
         end
     end
@@ -19650,7 +19728,7 @@ end
 
 -- Admin panel overlay (F10 for server hosts)
 function game.drawAdminPanel(W, H)
-    if not admin.showPanel then return end
+    if not game._admin.showPanel then return end
 
     local panelW = 300
     local panelX = W - panelW
@@ -19748,7 +19826,7 @@ function game.drawAdminPanel(W, H)
     -- XP Rate control
     love.graphics.setFont(smallFont)
     love.graphics.setColor(0.8, 0.8, 1, 1)
-    love.graphics.printf("XP Rate: " .. string.format("%.1fx", admin.xpRate), padX, y, contentW - 80, "left")
+    love.graphics.printf("XP Rate: " .. string.format("%.1fx", game._admin.xpRate), padX, y, contentW - 80, "left")
 
     -- - button
     local btnMX = padX + contentW - 75
@@ -19774,7 +19852,7 @@ function game.drawAdminPanel(W, H)
 
     -- Drop Rate control
     love.graphics.setColor(0.8, 0.8, 1, 1)
-    love.graphics.printf("Drop Rate: " .. string.format("%.1fx", admin.dropRate), padX, y, contentW - 80, "left")
+    love.graphics.printf("Drop Rate: " .. string.format("%.1fx", game._admin.dropRate), padX, y, contentW - 80, "left")
 
     -- - button
     love.graphics.setColor(0.3, 0.3, 0.5, 0.9)
@@ -19795,17 +19873,17 @@ function game.drawAdminPanel(W, H)
     y = y + btnSize + 12
 
     -- Admin result message
-    if admin.resultMsg and admin.resultMsg.timer > 0 then
-        local alpha = math.min(1, admin.resultMsg.timer)
-        love.graphics.setColor(admin.resultMsg.color[1], admin.resultMsg.color[2], admin.resultMsg.color[3], alpha)
-        love.graphics.printf(admin.resultMsg.text, padX, y, contentW, "center")
+    if game._admin.resultMsg and game._admin.resultMsg.timer > 0 then
+        local alpha = math.min(1, game._admin.resultMsg.timer)
+        love.graphics.setColor(game._admin.resultMsg.color[1], game._admin.resultMsg.color[2], game._admin.resultMsg.color[3], alpha)
+        love.graphics.printf(game._admin.resultMsg.text, padX, y, contentW, "center")
         y = y + smallLineH + 4
     end
 
     -- Shutdown warning
-    if admin.shutdownWarning and admin.shutdownWarning > 0 then
+    if game._admin.shutdownWarning and game._admin.shutdownWarning > 0 then
         love.graphics.setColor(1, 0.2, 0.2, 1)
-        love.graphics.printf("SHUTDOWN IN " .. math.ceil(admin.shutdownWarning) .. "s", padX, y, contentW, "center")
+        love.graphics.printf("SHUTDOWN IN " .. math.ceil(game._admin.shutdownWarning) .. "s", padX, y, contentW, "center")
         y = y + smallLineH + 4
     end
 
@@ -19833,9 +19911,9 @@ function game.drawAdminPanel(W, H)
     love.graphics.printf("F10 or Esc to close", padX, panelH - smallLineH - 4, contentW, "center")
 end
 
--- Handle admin panel mouse clicks
+-- Handle game._admin panel mouse clicks
 function game.handleAdminPanelClick(mx, my)
-    if not admin.showPanel or not client then return false end
+    if not game._admin.showPanel or not client then return false end
 
     local W = love.graphics.getWidth()
     local H = love.graphics.getHeight()
@@ -19865,7 +19943,7 @@ function game.handleAdminPanelClick(mx, my)
             local btnH = smallLineH - 2
             if mx >= btnX and mx <= btnX + btnW and my >= btnY and my <= btnY + btnH then
                 client:emit("admin_kick_player", { targetId = id })
-                admin.resultMsg = { text = "Kick sent...", color = {1, 0.8, 0.3}, timer = 3 }
+                game._admin.resultMsg = { text = "Kick sent...", color = {1, 0.8, 0.3}, timer = 3 }
                 return true
             end
         end
@@ -19886,14 +19964,14 @@ function game.handleAdminPanelClick(mx, my)
 
     -- XP Rate - button (clamped to server-valid range 0.5-5.0)
     if mx >= btnMX and mx <= btnMX + btnSize and my >= y - 2 and my <= y - 2 + btnSize then
-        admin.xpRate = math.max(0.5, admin.xpRate - 0.5)
-        client:emit("admin_update_rules", { xpRate = admin.xpRate, dropRate = admin.dropRate })
+        game._admin.xpRate = math.max(0.5, game._admin.xpRate - 0.5)
+        client:emit("admin_update_rules", { xpRate = game._admin.xpRate, dropRate = game._admin.dropRate })
         return true
     end
     -- XP Rate + button
     if mx >= btnPX and mx <= btnPX + btnSize and my >= y - 2 and my <= y - 2 + btnSize then
-        admin.xpRate = math.min(5.0, admin.xpRate + 0.5)
-        client:emit("admin_update_rules", { xpRate = admin.xpRate, dropRate = admin.dropRate })
+        game._admin.xpRate = math.min(5.0, game._admin.xpRate + 0.5)
+        client:emit("admin_update_rules", { xpRate = game._admin.xpRate, dropRate = game._admin.dropRate })
         return true
     end
 
@@ -19901,14 +19979,14 @@ function game.handleAdminPanelClick(mx, my)
 
     -- Drop Rate - button (clamped to server-valid range 0.5-5.0)
     if mx >= btnMX and mx <= btnMX + btnSize and my >= y - 2 and my <= y - 2 + btnSize then
-        admin.dropRate = math.max(0.5, admin.dropRate - 0.5)
-        client:emit("admin_update_rules", { xpRate = admin.xpRate, dropRate = admin.dropRate })
+        game._admin.dropRate = math.max(0.5, game._admin.dropRate - 0.5)
+        client:emit("admin_update_rules", { xpRate = game._admin.xpRate, dropRate = game._admin.dropRate })
         return true
     end
     -- Drop Rate + button
     if mx >= btnPX and mx <= btnPX + btnSize and my >= y - 2 and my <= y - 2 + btnSize then
-        admin.dropRate = math.min(5.0, admin.dropRate + 0.5)
-        client:emit("admin_update_rules", { xpRate = admin.xpRate, dropRate = admin.dropRate })
+        game._admin.dropRate = math.min(5.0, game._admin.dropRate + 0.5)
+        client:emit("admin_update_rules", { xpRate = game._admin.xpRate, dropRate = game._admin.dropRate })
         return true
     end
 
@@ -19916,10 +19994,10 @@ function game.handleAdminPanelClick(mx, my)
     local shutBtnW = contentW - 20
     local shutBtnH = 30
     local shutBtnX = padX + 10
-    local shutBtnY = math.max(y + btnSize + 12 + (admin.resultMsg and admin.resultMsg.timer and admin.resultMsg.timer > 0 and (smallLineH + 4) or 0) + (admin.shutdownWarning and admin.shutdownWarning > 0 and (smallLineH + 4) or 0), H - 50)
+    local shutBtnY = math.max(y + btnSize + 12 + (game._admin.resultMsg and game._admin.resultMsg.timer and game._admin.resultMsg.timer > 0 and (smallLineH + 4) or 0) + (game._admin.shutdownWarning and game._admin.shutdownWarning > 0 and (smallLineH + 4) or 0), H - 50)
     if mx >= shutBtnX and mx <= shutBtnX + shutBtnW and my >= shutBtnY and my <= shutBtnY + shutBtnH then
         client:emit("admin_shutdown", {})
-        admin.resultMsg = { text = "Shutdown command sent", color = {1, 0.5, 0.2}, timer = 5 }
+        game._admin.resultMsg = { text = "Shutdown command sent", color = {1, 0.5, 0.2}, timer = 5 }
         return true
     end
 
@@ -19929,6 +20007,10 @@ end
 
 -- Unload: clean up listeners to prevent accumulation on scene re-entry
 function game.unload()
+    game._audio.cleanup()
+    game._audioSliderDrag = nil
+    lighting.cleanup()
+    dungeonParticles.cleanup()
     if not client then return end
     -- Remove all event listeners registered by this scene
     for _, evt in ipairs(SCENE_EVENTS) do
@@ -19947,45 +20029,45 @@ function game.unload()
     doom.flashTimer = 0
 
     -- Clear world systems state
-    diseaseState.playerDiseases = {}
-    diseaseState.chunkDiseases = {}
-    diseaseState.contractedFlash = 0
-    diseaseState.symptomTimer = 0
-    influenceState.controlling = nil
-    influenceState.area = {}
-    ecologyState.state = -1
-    ecologyState.name = "unknown"
+    game._disease.playerDiseases = {}
+    game._disease.chunkDiseases = {}
+    game._disease.contractedFlash = 0
+    game._disease.symptomTimer = 0
+    game._influence.controlling = nil
+    game._influence.area = {}
+    game._ecology.state = -1
+    game._ecology.name = "unknown"
 
-    -- Clear portal state
-    portal.show = false
-    portal.destinations = {}
-    portal.scroll = 0
-    portal.message = nil
-    portal.cooldownEnd = 0
+    -- Clear game._portal state
+    game._portal.show = false
+    game._portal.destinations = {}
+    game._portal.scroll = 0
+    game._portal.message = nil
+    game._portal.cooldownEnd = 0
 
     -- Clear NPC shop state
-    npcShop.show = false
-    npcShop.prices = nil
-    npcShop.shopList = nil
-    npcShop.message = nil
-    npcShop.transactionLock = false
+    game._npcShop.show = false
+    game._npcShop.prices = nil
+    game._npcShop.shopList = nil
+    game._npcShop.message = nil
+    game._npcShop.transactionLock = false
 
-    -- Clear trade state
-    if trade.show and trade.tradeId and client then
-        client:emit("trade_cancel", { tradeId = trade.tradeId })
+    -- Clear game._trade state
+    if game._trade.show and game._trade.tradeId and client then
+        client:emit("trade_cancel", { tradeId = game._trade.tradeId })
     end
     resetTradeState()
 
-    -- Clear admin state
-    admin.showPanel = false
-    admin.resultMsg = nil
-    admin.shutdownWarning = nil
+    -- Clear game._admin state
+    game._admin.showPanel = false
+    game._admin.resultMsg = nil
+    game._admin.shutdownWarning = nil
 
     -- Clear director state
-    directorEvents = {}
-    zoneTicker = {}
-    raid.state = nil
-    raid.bossHp = nil
+    game._directorEvents = {}
+    game._zoneTicker = {}
+    game._raid.state = nil
+    game._raid.bossHp = nil
 
     -- Clear leviathan state
     overworld.leviathans = {}
@@ -20000,10 +20082,10 @@ function game.unload()
     overworld.leviathanEnraged = false
 
     -- Clear party state
-    raid.partyData = nil
-    raid.partyInvitePending = nil
-    raid.partyInviteInput = ""
-    raid.partyInviteActive = false
+    game._raid.partyData = nil
+    game._raid.partyInvitePending = nil
+    game._raid.partyInviteInput = ""
+    game._raid.partyInviteActive = false
 
     -- Clear mastery state
     mastery.skillName = nil
@@ -20034,6 +20116,7 @@ function game.resize(w, h)
     fonts.small = _G.getFont(sf(10))
     fonts.zone = _G.getFont(sf(15))
     fonts.levelUp = _G.getFont(sf(28))
+    lighting.resize(w, h)
 end
 
 -- ---------------------------------------------------------------------------
@@ -20849,7 +20932,7 @@ function game.drawKnowledgeCodex(px, cy, pw, ch)
     end
 end
 
--- Knowledge discovery notifications (floating popups)
+-- Knowledge discovery game._notifications (floating popups)
 function game.drawKnowledgeNotifications(W, H)
     if #knowledge.notifications == 0 then return end
 
@@ -21182,7 +21265,7 @@ function game.drawKarmaHUD(W, H)
     local barH = 8
 
     -- Karma label + value
-    local kVal = karmaState.karma or 0
+    local kVal = game._karma.karma or 0
     local kColor
     if kVal > 20 then kColor = {0.3, 0.9, 0.4}
     elseif kVal < -20 then kColor = {0.9, 0.3, 0.3}
@@ -21211,15 +21294,15 @@ function game.drawKarmaHUD(W, H)
     love.graphics.rectangle("fill", x + mid - 1, y, 2, barH)
 
     -- Guard hostile warning
-    if karmaState.isGuardHostile then
+    if game._karma.isGuardHostile then
         love.graphics.setColor(1, 0.2, 0.2, 0.7 + math.sin(love.timer.getTime() * 4) * 0.3)
         love.graphics.print("HOSTILE", x + barW + 8, y - 4)
     end
 
     -- Bounty indicator
-    if karmaState.activeBounty then
+    if game._karma.activeBounty then
         love.graphics.setColor(1, 0.6, 0.1, 0.8)
-        love.graphics.print("Bounty: " .. (karmaState.activeBounty.amount or 0) .. "g", x + barW + 8, y - 18)
+        love.graphics.print("Bounty: " .. (game._karma.activeBounty.amount or 0) .. "g", x + barW + 8, y - 18)
     end
 end
 
@@ -21250,8 +21333,8 @@ function game.drawFactionPanel(W, H)
     -- Faction list
     love.graphics.setFont(smallFont)
     local cy = py + 36
-    if karmaState.factions and next(karmaState.factions) then
-        for factionId, f in pairs(karmaState.factions) do
+    if game._karma.factions and next(game._karma.factions) then
+        for factionId, f in pairs(game._karma.factions) do
             if cy + 40 > py + panelH - 20 then break end
             -- Name + level
             love.graphics.setColor(0.9, 0.85, 0.7, 1)
@@ -21338,11 +21421,11 @@ function game.drawCompanionPanel(W, H)
     love.graphics.line(px + 12, cy, px + panelW - 12, cy)
     cy = cy + 6
 
-    if #companionState.companions == 0 then
+    if #game._companions.companions == 0 then
         love.graphics.setColor(0.5, 0.5, 0.5, 0.7)
         love.graphics.printf("No companions hired", px, cy + 10, panelW, "center")
     else
-        for _, c in ipairs(companionState.companions) do
+        for _, c in ipairs(game._companions.companions) do
             if cy + 50 > py + panelH - 30 then break end
             love.graphics.setColor(0.12, 0.14, 0.20, 0.8)
             love.graphics.rectangle("fill", px + 10, cy, panelW - 20, 46, 4, 4)
@@ -21379,9 +21462,9 @@ function game.drawCompanionPanel(W, H)
     end
 
     -- Message
-    if companionState.messageTimer > 0 and companionState.message then
-        love.graphics.setColor(0.9, 0.9, 0.5, math.min(1, companionState.messageTimer))
-        love.graphics.printf(companionState.message, px, py + panelH - 36, panelW, "center")
+    if game._companions.messageTimer > 0 and game._companions.message then
+        love.graphics.setColor(0.9, 0.9, 0.5, math.min(1, game._companions.messageTimer))
+        love.graphics.printf(game._companions.message, px, py + panelH - 36, panelW, "center")
     end
 
     love.graphics.setColor(0.5, 0.5, 0.5, 0.5)
@@ -21413,13 +21496,13 @@ function game.drawPetPanel(W, H)
     love.graphics.setFont(smallFont)
     local cy = py + 36
 
-    if #petState.pets == 0 then
+    if #game._pets.pets == 0 then
         love.graphics.setColor(0.5, 0.5, 0.5, 0.7)
         love.graphics.printf("No pets tamed. Find creatures in the wild!", px, cy + 20, panelW, "center")
     else
-        for _, p in ipairs(petState.pets) do
+        for _, p in ipairs(game._pets.pets) do
             if cy + 65 > py + panelH - 30 then break end
-            local isActive = (petState.activePetId == p.id)
+            local isActive = (game._pets.activePetId == p.id)
             love.graphics.setColor(isActive and {0.15, 0.22, 0.15, 0.9} or {0.12, 0.14, 0.18, 0.8})
             love.graphics.rectangle("fill", px + 10, cy, panelW - 20, 58, 4, 4)
             if isActive then
@@ -21473,9 +21556,9 @@ function game.drawPetPanel(W, H)
         end
     end
 
-    if petState.messageTimer > 0 and petState.message then
-        love.graphics.setColor(0.9, 0.9, 0.5, math.min(1, petState.messageTimer))
-        love.graphics.printf(petState.message, px, py + panelH - 36, panelW, "center")
+    if game._pets.messageTimer > 0 and game._pets.message then
+        love.graphics.setColor(0.9, 0.9, 0.5, math.min(1, game._pets.messageTimer))
+        love.graphics.printf(game._pets.message, px, py + panelH - 36, panelW, "center")
     end
 
     love.graphics.setColor(0.5, 0.5, 0.5, 0.5)
@@ -21510,11 +21593,11 @@ function game.drawJailPanel(W, H)
 
     love.graphics.setFont(smallFont)
     love.graphics.setColor(0.8, 0.7, 0.6, 1)
-    love.graphics.printf("Crime: " .. (jailState.crimeLabel or jailState.crime or "Unknown"), px + 12, py + 44, panelW - 24, "center")
+    love.graphics.printf("Crime: " .. (game._jail.crimeLabel or game._jail.crime or "Unknown"), px + 12, py + 44, panelW - 24, "center")
 
     -- Timer
-    local elapsed = love.timer.getTime() - jailState.lastUpdate
-    local remaining = math.max(0, (jailState.remainingMs or 0) / 1000 - elapsed)
+    local elapsed = love.timer.getTime() - game._jail.lastUpdate
+    local remaining = math.max(0, (game._jail.remainingMs or 0) / 1000 - elapsed)
     local mins = math.floor(remaining / 60)
     local secs = math.floor(remaining % 60)
     love.graphics.setColor(0.9, 0.8, 0.6, 1)
@@ -21528,7 +21611,7 @@ function game.drawJailPanel(W, H)
     love.graphics.setColor(bailHover and {0.5, 0.4, 0.15, 0.9} or {0.3, 0.25, 0.10, 0.8})
     love.graphics.rectangle("fill", bailX, bailY, 160, 36, 6, 6)
     love.graphics.setColor(0.9, 0.8, 0.5, 1)
-    love.graphics.printf("Pay Bail: " .. (jailState.bail or 0) .. "g", bailX, bailY + 8, 160, "center")
+    love.graphics.printf("Pay Bail: " .. (game._jail.bail or 0) .. "g", bailX, bailY + 8, 160, "center")
 
     -- Serve time button
     local serveY = bailY + 48
@@ -21538,9 +21621,9 @@ function game.drawJailPanel(W, H)
     love.graphics.setColor(0.7, 0.7, 0.8, 1)
     love.graphics.printf("Serve Time", bailX, serveY + 8, 160, "center")
 
-    if jailState.messageTimer > 0 and jailState.message then
-        love.graphics.setColor(0.9, 0.9, 0.5, math.min(1, jailState.messageTimer))
-        love.graphics.printf(jailState.message, px, py + panelH - 30, panelW, "center")
+    if game._jail.messageTimer > 0 and game._jail.message then
+        love.graphics.setColor(0.9, 0.9, 0.5, math.min(1, game._jail.messageTimer))
+        love.graphics.printf(game._jail.message, px, py + panelH - 30, panelW, "center")
     end
 end
 
@@ -21570,11 +21653,11 @@ function game.drawAscensionPanel(W, H)
     -- Stats bar
     love.graphics.setFont(smallFont)
     love.graphics.setColor(0.7, 0.7, 0.8, 0.9)
-    love.graphics.printf("Ascensions: " .. (ascensionState.ascensionCount or 0) ..
-        "   AP: " .. (ascensionState.ascensionPoints or 0), px, py + 32, panelW, "center")
+    love.graphics.printf("Ascensions: " .. (game._ascension.ascensionCount or 0) ..
+        "   AP: " .. (game._ascension.ascensionPoints or 0), px, py + 32, panelW, "center")
 
     -- Ascend button (if eligible)
-    if ascensionState.canAscend then
+    if game._ascension.canAscend then
         local mx, my = love.mouse.getPosition()
         local bx = px + panelW / 2 - 60
         local by = py + 54
@@ -21588,12 +21671,12 @@ function game.drawAscensionPanel(W, H)
     -- Ascension tree
     local cy = py + 90
     love.graphics.setFont(smallFont)
-    if ascensionState.tree then
+    if game._ascension.tree then
         local nodeI = 0
-        for nodeId, nodeData in pairs(ascensionState.tree) do
+        for nodeId, nodeData in pairs(game._ascension.tree) do
             if cy + 38 > py + panelH - 30 then break end
             nodeI = nodeI + 1
-            local rank = (ascensionState.ascensionTree and ascensionState.ascensionTree[nodeId]) or 0
+            local rank = (game._ascension.ascensionTree and game._ascension.ascensionTree[nodeId]) or 0
             local maxRank = nodeData.maxRank or 3
             local cost = nodeData.cost or 1
 
@@ -21620,7 +21703,7 @@ function game.drawAscensionPanel(W, H)
             end
 
             -- Invest indicator
-            if nHover and rank < maxRank and (ascensionState.ascensionPoints or 0) >= cost then
+            if nHover and rank < maxRank and (game._ascension.ascensionPoints or 0) >= cost then
                 love.graphics.setColor(0.9, 0.8, 0.3, 0.9)
                 love.graphics.printf("Click to invest", nx, cy + 8, nw - 8, "right")
             end
@@ -21632,9 +21715,9 @@ function game.drawAscensionPanel(W, H)
         love.graphics.printf("Reach level 100 to unlock ascension", px, cy + 20, panelW, "center")
     end
 
-    if ascensionState.messageTimer > 0 and ascensionState.message then
-        love.graphics.setColor(0.9, 0.9, 0.5, math.min(1, ascensionState.messageTimer))
-        love.graphics.printf(ascensionState.message, px, py + panelH - 36, panelW, "center")
+    if game._ascension.messageTimer > 0 and game._ascension.message then
+        love.graphics.setColor(0.9, 0.9, 0.5, math.min(1, game._ascension.messageTimer))
+        love.graphics.printf(game._ascension.message, px, py + panelH - 36, panelW, "center")
     end
 
     love.graphics.setColor(0.5, 0.5, 0.5, 0.5)
@@ -21661,12 +21744,12 @@ function game.drawGuildPanel(W, H)
 
     love.graphics.setFont(font)
     love.graphics.setColor(0.80, 0.80, 0.90, 1)
-    love.graphics.printf(guildState.guildName and ("Guild: " .. guildState.guildName) or "Guilds", px, py + 10, panelW, "center")
+    love.graphics.printf(game._guild.guildName and ("Guild: " .. game._guild.guildName) or "Guilds", px, py + 10, panelW, "center")
 
     -- Tabs
     love.graphics.setFont(smallFont)
     local tabs
-    if guildState.guildId then
+    if game._guild.guildId then
         tabs = {"info", "members", "chat", "vault"}
     else
         tabs = {"browse", "create"}
@@ -21678,7 +21761,7 @@ function game.drawGuildPanel(W, H)
     local mx, my = love.mouse.getPosition()
     for i, tab in ipairs(tabs) do
         local tx = tabStartX + (i - 1) * (tabW + 4)
-        local isActive = (guildState.tab == tab)
+        local isActive = (game._guild.tab == tab)
         local tHover = mx >= tx and mx <= tx + tabW and my >= tabY and my <= tabY + 22
         love.graphics.setColor(isActive and {0.25, 0.25, 0.40, 0.9} or tHover and {0.18, 0.18, 0.28, 0.8} or {0.12, 0.12, 0.18, 0.6})
         love.graphics.rectangle("fill", tx, tabY, tabW, 22, 4, 4)
@@ -21689,14 +21772,14 @@ function game.drawGuildPanel(W, H)
     local contentY = tabY + 28
     local contentH = panelH - (contentY - py) - 24
 
-    if guildState.tab == "browse" then
+    if game._guild.tab == "browse" then
         -- Browse available guilds
         local cy = contentY
-        if #guildState.guildList == 0 then
+        if #game._guild.guildList == 0 then
             love.graphics.setColor(0.5, 0.5, 0.5, 0.7)
             love.graphics.printf("No guilds found", px, cy + 20, panelW, "center")
         else
-            for _, g in ipairs(guildState.guildList) do
+            for _, g in ipairs(game._guild.guildList) do
                 if cy + 36 > contentY + contentH then break end
                 local gHover = mx >= px + 10 and mx <= px + panelW - 10 and my >= cy and my <= cy + 32
                 love.graphics.setColor(gHover and {0.18, 0.20, 0.30, 0.9} or {0.12, 0.14, 0.20, 0.7})
@@ -21713,14 +21796,14 @@ function game.drawGuildPanel(W, H)
             end
         end
 
-    elseif guildState.tab == "create" then
+    elseif game._guild.tab == "create" then
         -- Create guild form
         love.graphics.setColor(0.7, 0.7, 0.8, 0.8)
         love.graphics.print("Guild Name:", px + 20, contentY + 10)
         love.graphics.setColor(0.12, 0.12, 0.20, 0.9)
         love.graphics.rectangle("fill", px + 20, contentY + 28, panelW - 40, 24, 4, 4)
         love.graphics.setColor(0.9, 0.9, 0.9, 1)
-        love.graphics.print(guildState.createName .. (guildState.createActive and "_" or ""), px + 26, contentY + 32)
+        love.graphics.print(game._guild.createName .. (game._guild.createActive and "_" or ""), px + 26, contentY + 32)
 
         local createBx = px + panelW / 2 - 50
         local createBy = contentY + 70
@@ -21730,17 +21813,17 @@ function game.drawGuildPanel(W, H)
         love.graphics.setColor(0.9, 0.9, 0.7, 1)
         love.graphics.printf("Create", createBx, createBy + 5, 100, "center")
 
-    elseif guildState.tab == "members" or guildState.tab == "info" then
+    elseif game._guild.tab == "members" or game._guild.tab == "info" then
         -- Member list
         local cy = contentY
-        for _, m in ipairs(guildState.members) do
+        for _, m in ipairs(game._guild.members) do
             if cy + 22 > contentY + contentH then break end
             local roleColor = m.role == "leader" and {1, 0.85, 0.3} or m.role == "officer" and {0.5, 0.7, 1} or {0.7, 0.7, 0.7}
             love.graphics.setColor(roleColor[1], roleColor[2], roleColor[3], 1)
             love.graphics.print((m.name or "???") .. " [" .. (m.role or "member") .. "]", px + 20, cy)
             cy = cy + 20
         end
-        if #guildState.members == 0 then
+        if #game._guild.members == 0 then
             love.graphics.setColor(0.5, 0.5, 0.5, 0.7)
             love.graphics.printf("No members loaded", px, contentY + 20, panelW, "center")
         end
@@ -21754,10 +21837,10 @@ function game.drawGuildPanel(W, H)
         love.graphics.setColor(0.9, 0.6, 0.6, 1)
         love.graphics.printf("Leave", lx, ly + 3, 60, "center")
 
-    elseif guildState.tab == "chat" then
+    elseif game._guild.tab == "chat" then
         -- Chat messages
         local cy = contentY
-        for _, msg in ipairs(guildState.messages) do
+        for _, msg in ipairs(game._guild.messages) do
             if cy + 16 > contentY + contentH - 30 then break end
             love.graphics.setColor(0.6, 0.8, 1, 0.9)
             love.graphics.print(msg.authorName .. ": ", px + 16, cy)
@@ -21771,17 +21854,17 @@ function game.drawGuildPanel(W, H)
         love.graphics.setColor(0.12, 0.12, 0.18, 0.9)
         love.graphics.rectangle("fill", px + 14, inputY, panelW - 28, 22, 4, 4)
         love.graphics.setColor(0.8, 0.8, 0.8, 1)
-        love.graphics.print(guildState.chatInput .. (guildState.chatActive and "_" or ""), px + 20, inputY + 3)
+        love.graphics.print(game._guild.chatInput .. (game._guild.chatActive and "_" or ""), px + 20, inputY + 3)
 
-    elseif guildState.tab == "vault" then
+    elseif game._guild.tab == "vault" then
         -- Vault contents
         local cy = contentY
-        if guildState.vault then
+        if game._guild.vault then
             love.graphics.setColor(0.8, 0.75, 0.5, 0.9)
             love.graphics.print("Resources:", px + 16, cy)
             cy = cy + 18
-            if guildState.vault.resources then
-                for resName, amount in pairs(guildState.vault.resources) do
+            if game._guild.vault.resources then
+                for resName, amount in pairs(game._guild.vault.resources) do
                     if cy + 14 > contentY + contentH then break end
                     love.graphics.setColor(0.7, 0.7, 0.7, 0.9)
                     love.graphics.print("  " .. resName .. ": " .. amount, px + 20, cy)
@@ -21790,16 +21873,16 @@ function game.drawGuildPanel(W, H)
             end
             cy = cy + 8
             love.graphics.setColor(0.8, 0.75, 0.5, 0.9)
-            love.graphics.print("Cards: " .. (#(guildState.vault.cards or {})), px + 16, cy)
+            love.graphics.print("Cards: " .. (#(game._guild.vault.cards or {})), px + 16, cy)
         else
             love.graphics.setColor(0.5, 0.5, 0.5, 0.7)
             love.graphics.printf("Loading vault...", px, cy + 20, panelW, "center")
         end
     end
 
-    if guildState.messageTimer > 0 and guildState.message then
-        love.graphics.setColor(0.9, 0.9, 0.5, math.min(1, guildState.messageTimer))
-        love.graphics.printf(guildState.message, px, py + panelH - 36, panelW, "center")
+    if game._guild.messageTimer > 0 and game._guild.message then
+        love.graphics.setColor(0.9, 0.9, 0.5, math.min(1, game._guild.messageTimer))
+        love.graphics.printf(game._guild.message, px, py + panelH - 36, panelW, "center")
     end
 
     love.graphics.setColor(0.5, 0.5, 0.5, 0.5)
@@ -21842,8 +21925,8 @@ function game.drawCraftingMinigame(W, H)
     love.graphics.rectangle("fill", bx, by, barW, barH, 4, 4)
 
     -- Sweet spot zone (green)
-    local zoneStart = (minigameState.windowStart / 1000) * barW
-    local zoneEnd = (minigameState.windowEnd / 1000) * barW
+    local zoneStart = (game._minigame.windowStart / 1000) * barW
+    local zoneEnd = (game._minigame.windowEnd / 1000) * barW
     love.graphics.setColor(0.2, 0.6, 0.2, 0.5)
     love.graphics.rectangle("fill", bx + zoneStart, by, zoneEnd - zoneStart, barH)
 
@@ -21853,21 +21936,21 @@ function game.drawCraftingMinigame(W, H)
     love.graphics.rectangle("fill", perfectPos - 1, by, 2, barH)
 
     -- Moving indicator
-    if not minigameState.result then
-        local indicatorX = bx + (minigameState.barPos / 1000) * barW
+    if not game._minigame.result then
+        local indicatorX = bx + (game._minigame.barPos / 1000) * barW
         love.graphics.setColor(1, 0.9, 0.3, 1)
         love.graphics.rectangle("fill", indicatorX - 2, by - 4, 4, barH + 8, 2, 2)
     end
 
     -- Result text
-    if minigameState.result then
+    if game._minigame.result then
         local rColor
-        if minigameState.result == "perfect" then rColor = {0.3, 1, 0.3}
-        elseif minigameState.result == "good" then rColor = {0.7, 0.9, 0.3}
+        if game._minigame.result == "perfect" then rColor = {0.3, 1, 0.3}
+        elseif game._minigame.result == "good" then rColor = {0.7, 0.9, 0.3}
         else rColor = {0.9, 0.3, 0.3} end
         love.graphics.setFont(font)
         love.graphics.setColor(rColor[1], rColor[2], rColor[3], 1)
-        love.graphics.printf(minigameState.result:upper() .. "!", px, py + panelH - 34, panelW, "center")
+        love.graphics.printf(game._minigame.result:upper() .. "!", px, py + panelH - 34, panelW, "center")
     else
         love.graphics.setFont(smallFont)
         love.graphics.setColor(0.6, 0.6, 0.6, 0.7)
@@ -21881,7 +21964,7 @@ end
 function game.drawPatrolUnits()
     local smallFont = fonts.small or _G.getFont(10)
     love.graphics.setFont(smallFont)
-    for _, patrol in pairs(patrolUnits) do
+    for _, patrol in pairs(game._patrolUnits) do
         local px = patrol.x or 0
         local py = patrol.y or 0
         -- Shield icon (triangle + circle)
@@ -21899,11 +21982,11 @@ end
 -- Notifications (guard warnings, durability, dungeon events)
 -- =========================================================================
 function game.drawNotifications(W, H)
-    if #notifications == 0 then return end
+    if #game._notifications == 0 then return end
     local font = fonts.chat or fonts.main or _G.getFont(12)
     love.graphics.setFont(font)
     local cy = 60
-    for _, n in ipairs(notifications) do
+    for _, n in ipairs(game._notifications) do
         local alpha = math.min(1, n.timer / (n.maxTimer * 0.3))
         love.graphics.setColor(0, 0, 0, 0.6 * alpha)
         local tw = font:getWidth(n.text) + 20
@@ -21914,7 +21997,136 @@ function game.drawNotifications(W, H)
     end
 end
 
+function game.drawAudioSettingsPanel(W, H)
+    local font = fonts.ui or _G.getFont(14)
+    local smallFont = fonts.chat or _G.getFont(12)
+    local panelW = 360
+    local panelH = 400
+    local px = (W - panelW) / 2
+    local py = (H - panelH) / 2
+
+    -- Background
+    love.graphics.setColor(0.06, 0.06, 0.10, 0.95)
+    love.graphics.rectangle("fill", px, py, panelW, panelH, 8, 8)
+    love.graphics.setColor(0.30, 0.40, 0.50, 0.7)
+    love.graphics.setLineWidth(2)
+    love.graphics.rectangle("line", px, py, panelW, panelH, 8, 8)
+    love.graphics.setLineWidth(1)
+
+    -- Title
+    love.graphics.setFont(font)
+    love.graphics.setColor(0.85, 0.85, 0.70, 1)
+    love.graphics.printf("Settings", px, py + 10, panelW, "center")
+
+    -- Audio section header
+    love.graphics.setFont(smallFont)
+    love.graphics.setColor(0.55, 0.65, 0.75, 0.8)
+    love.graphics.print("AUDIO", px + 16, py + 36)
+    love.graphics.setColor(0.25, 0.30, 0.40, 0.5)
+    love.graphics.line(px + 60, py + 44, px + panelW - 16, py + 44)
+
+    -- Sliders
+    local categories = {"master", "music", "sfx", "ambient", "ui", "footsteps"}
+    local labels = {master="Master", music="Music", sfx="SFX", ambient="Ambient", ui="UI", footsteps="Footsteps"}
+    local sliderX = px + 130
+    local sliderW = panelW - 160
+    local cy = py + 52
+    local vols = game._audio.getVolumes()
+
+    for _, cat in ipairs(categories) do
+        local v = vols[cat] or 0
+        -- Label
+        love.graphics.setColor(0.75, 0.75, 0.85, 1)
+        love.graphics.print(labels[cat], px + 16, cy + 2)
+        -- Track background
+        love.graphics.setColor(0.15, 0.15, 0.22, 0.9)
+        love.graphics.rectangle("fill", sliderX, cy + 6, sliderW, 10, 4, 4)
+        -- Filled portion
+        local fillW = sliderW * v
+        if cat == "master" then
+            love.graphics.setColor(0.55, 0.75, 0.90, 0.9)
+        else
+            love.graphics.setColor(0.40, 0.60, 0.75, 0.9)
+        end
+        love.graphics.rectangle("fill", sliderX, cy + 6, fillW, 10, 4, 4)
+        -- Knob
+        local knobX = sliderX + fillW
+        love.graphics.setColor(0.90, 0.90, 0.95, 1)
+        love.graphics.circle("fill", knobX, cy + 11, 7)
+        love.graphics.setColor(0.50, 0.60, 0.70, 0.8)
+        love.graphics.circle("line", knobX, cy + 11, 7)
+        -- Percentage
+        love.graphics.setColor(0.60, 0.60, 0.70, 0.9)
+        love.graphics.printf(math.floor(v * 100) .. "%", sliderX + sliderW + 6, cy + 2, 40, "left")
+
+        cy = cy + 34
+    end
+
+    -- Graphics section header
+    cy = cy + 8
+    love.graphics.setColor(0.55, 0.65, 0.75, 0.8)
+    love.graphics.print("GRAPHICS", px + 16, cy)
+    love.graphics.setColor(0.25, 0.30, 0.40, 0.5)
+    love.graphics.line(px + 80, cy + 8, px + panelW - 16, cy + 8)
+    cy = cy + 18
+
+    -- Lighting quality toggle buttons
+    love.graphics.setColor(0.75, 0.75, 0.85, 1)
+    love.graphics.print("Lighting", px + 16, cy + 4)
+
+    local currentQ = lighting.getQuality()
+    local qualOpts = {"low", "medium", "high"}
+    local qualLabels = {low = "Low", medium = "Medium", high = "High"}
+    local mx, my = love.mouse.getPosition()
+    local btnW = 70
+    local btnSpacing = 8
+    local btnX = sliderX
+    game._settingsQualBtns = {}
+    for qi, qk in ipairs(qualOpts) do
+        local bx = btnX + (qi - 1) * (btnW + btnSpacing)
+        local by = cy
+        local bh = 26
+        local isActive = (currentQ == qk)
+        local isHover = mx >= bx and mx <= bx + btnW and my >= by and my <= by + bh
+
+        if isActive then
+            love.graphics.setColor(0.35, 0.55, 0.70, 0.95)
+        elseif isHover then
+            love.graphics.setColor(0.22, 0.32, 0.42, 0.85)
+        else
+            love.graphics.setColor(0.14, 0.18, 0.25, 0.8)
+        end
+        love.graphics.rectangle("fill", bx, by, btnW, bh, 4, 4)
+
+        if isActive then
+            love.graphics.setColor(0.50, 0.70, 0.85, 0.8)
+        else
+            love.graphics.setColor(0.30, 0.38, 0.48, 0.6)
+        end
+        love.graphics.rectangle("line", bx, by, btnW, bh, 4, 4)
+
+        love.graphics.setColor(isActive and {1, 1, 1, 1} or {0.65, 0.65, 0.75, 0.9})
+        love.graphics.printf(qualLabels[qk], bx, by + 5, btnW, "center")
+
+        game._settingsQualBtns[qi] = { x = bx, y = by, w = btnW, h = bh, quality = qk }
+    end
+
+    -- Close button
+    local closeY = py + panelH - 42
+    local closeX = px + panelW / 2 - 50
+    local hover = mx >= closeX and mx <= closeX + 100 and my >= closeY and my <= closeY + 30
+    love.graphics.setColor(hover and {0.30, 0.45, 0.60, 0.9} or {0.18, 0.22, 0.30, 0.8})
+    love.graphics.rectangle("fill", closeX, closeY, 100, 30, 5, 5)
+    love.graphics.setColor(0.80, 0.80, 0.90, 1)
+    love.graphics.printf("Close", closeX, closeY + 7, 100, "center")
+
+    -- Hint
+    love.graphics.setColor(0.45, 0.45, 0.55, 0.6)
+    love.graphics.printf("F9 to toggle", px, py + panelH - 16, panelW, "center")
+end
+
 function game.mousereleased(x, y, button)
+    game._audioSliderDrag = nil
     if ui.showGridInventory then
         if gridInv.mousereleased(x, y, button) then return end
     end

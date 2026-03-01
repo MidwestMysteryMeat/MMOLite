@@ -289,15 +289,11 @@ module.exports = {
           // All validations passed — proceed with atomic transfers
           // ---------------------------------------------------------------
 
-          // Swap coins
-          if (initOffer.chips > 0) {
-            accounts.updateChips(initKey, -initOffer.chips);
-            accounts.updateChips(targKey, initOffer.chips);
-          }
-          if (targOffer.chips > 0) {
-            accounts.updateChips(targKey, -targOffer.chips);
-            accounts.updateChips(initKey, targOffer.chips);
-          }
+          // Swap coins — compute net delta per party to avoid crash-window duplication
+          var initNetChips = (targOffer.chips || 0) - (initOffer.chips || 0);
+          var targNetChips = (initOffer.chips || 0) - (targOffer.chips || 0);
+          if (initNetChips !== 0) accounts.updateChips(initKey, initNetChips);
+          if (targNetChips !== 0) accounts.updateChips(targKey, targNetChips);
 
           // Swap resources: each offer.items can contain { type: 'resource', resource: 'wood', amount: 5 }
           // or { type: 'card', cardInstanceId: 'xxx' }

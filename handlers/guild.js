@@ -231,6 +231,11 @@ module.exports = {
           guild.leaderName = guild.members[0].name;
           saveGuild(guild);
         } else {
+          // Cancel any pending debounced save before deleting
+          if (_pendingGuildSaves.has(guild.id)) {
+            clearTimeout(_pendingGuildSaves.get(guild.id));
+            _pendingGuildSaves.delete(guild.id);
+          }
           state.guilds.delete(guild.id);
           deleteGuildFile(guild.id);
         }
@@ -443,9 +448,13 @@ module.exports = {
             socket.emit('guild_error', { message: 'Vault does not have enough ' + data.resource });
             return;
           }
+          var addResult = accounts.addResource(key, data.resource, amt);
+          if (!addResult || addResult.error) {
+            socket.emit('guild_error', { message: addResult && addResult.error ? addResult.error : 'Could not add resource' });
+            return;
+          }
           guild.vault.resources[data.resource] -= amt;
           if (guild.vault.resources[data.resource] <= 0) delete guild.vault.resources[data.resource];
-          accounts.addResource(key, data.resource, amt);
           saveGuild(guild);
 
           io.to('guild:' + guild.id).emit('guild_vault_updated', {

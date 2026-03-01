@@ -847,7 +847,10 @@ function applyQuality(baseValue, qualityMult) {
   if (typeof baseValue !== 'number') return baseValue;
   var min = Math.floor(baseValue * 0.85);
   var max = Math.ceil(baseValue * 1.15);
-  return Math.round((min + (max - min) * qualityMult) * 100) / 100;
+  var result = Math.round((min + (max - min) * qualityMult) * 100) / 100;
+  // Ensure small integer base values (range, hpRegen) never drop below 1
+  if (Number.isInteger(baseValue) && baseValue >= 1 && result < 1) result = 1;
+  return result;
 }
 
 // Build display name from components
@@ -884,7 +887,7 @@ function generateItem(baseType, baseDef, options) {
   var slot = baseDef.slot || null;
   var isWeapon = (slot === 'weapon' || slot === 'shield');
   var isArmor = ['head', 'chest', 'undershirt', 'arms', 'hands', 'legs', 'feet'].indexOf(slot) !== -1;
-  var isJewelry = (slot === 'ring1' || slot === 'necklace');
+  var isJewelry = (slot === 'ring1' || slot === 'ring2' || slot === 'ring3' || slot === 'ring4' || slot === 'ring5' || slot === 'ring6' || slot === 'necklace');
 
   // Choose affix pool
   var affixPool = isWeapon ? WEAPON_AFFIXES : isArmor ? ARMOR_AFFIXES : isJewelry ? JEWELRY_AFFIXES : null;

@@ -417,8 +417,11 @@ module.exports = {
           if (buyRepZoneId) {
             var buyRepFaction = factions.getFactionForZone(buyRepZoneId);
             if (buyRepFaction) {
-              factions.addRep(acc, buyRepFaction, 50);
-              accounts.saveAccount(acc);
+              var freshRepAcc = accounts.loadAccount(key);
+              if (freshRepAcc) {
+                factions.addRep(freshRepAcc, buyRepFaction, 50);
+                accounts.saveAccount(freshRepAcc);
+              }
             }
           }
         } catch (_repErr) { /* faction rep not critical */ }
@@ -520,8 +523,11 @@ module.exports = {
           if (sellRepZoneId && acc) {
             var sellRepFaction = factions.getFactionForZone(sellRepZoneId);
             if (sellRepFaction) {
-              factions.addRep(acc, sellRepFaction, 25);
-              accounts.saveAccount(acc);
+              var freshSellAcc = accounts.loadAccount(key);
+              if (freshSellAcc) {
+                factions.addRep(freshSellAcc, sellRepFaction, 25);
+                accounts.saveAccount(freshSellAcc);
+              }
             }
           }
         } catch (_repErr) { /* faction rep not critical */ }

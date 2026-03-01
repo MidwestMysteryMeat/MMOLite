@@ -1868,7 +1868,7 @@ function getBossRotationAbility(enemy, combat) {
   // Determine current phase based on HP
   var hpPct = enemy.maxHp > 0 ? enemy.hp / enemy.maxHp : 1;
   var currentPhase = rotProfile.phases[0];
-  for (var pi = rotProfile.phases.length - 1; pi >= 0; pi--) {
+  for (var pi = 0; pi < rotProfile.phases.length; pi++) {
     if (hpPct <= rotProfile.phases[pi].threshold) {
       currentPhase = rotProfile.phases[pi];
     }

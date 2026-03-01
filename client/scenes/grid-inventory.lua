@@ -2,6 +2,9 @@
 -- Drag-and-drop with ghost preview, rotation (R key), stack splitting,
 -- paperdoll equipment display, container sub-grids, pocket grid.
 
+local audio = require("lib.audio")
+local assets = require("lib.assets")
+
 local gridInventory = {}
 
 -- Grid cell size in pixels
@@ -356,15 +359,33 @@ function gridInventory.drawGrid(grid, gx, gy, label)
                 local rc = C.rarity[item.rarity] or C.rarity.common
                 love.graphics.setColor(rc[1], rc[2], rc[3], 0.25)
                 love.graphics.rectangle("fill", ix, iy, ipw, iph, 2, 2)
-                love.graphics.setColor(rc[1], rc[2], rc[3], 0.70)
-                love.graphics.rectangle("line", ix, iy, ipw, iph, 2, 2)
 
-                -- Item name (abbreviated)
-                if fonts and fonts.chat then love.graphics.setFont(fonts.chat) end
-                love.graphics.setColor(C.text)
-                local displayName = item.baseName or item.name or item.type or "?"
-                if #displayName > 8 and iw <= 1 then displayName = displayName:sub(1, 7) .. "." end
-                love.graphics.printf(displayName, ix + 2, iy + iph/2 - 6, ipw - 4, "center")
+                -- Rarity border glow
+                love.graphics.setColor(rc[1], rc[2], rc[3], 0.70)
+                love.graphics.setLineWidth(2)
+                love.graphics.rectangle("line", ix, iy, ipw, iph, 2, 2)
+                love.graphics.setLineWidth(1)
+
+                -- Try icon sprite, fall back to text
+                local icon = assets.getItemIcon(item)
+                if icon then
+                    love.graphics.setColor(1, 1, 1, 1)
+                    local iw2 = icon:getWidth()
+                    local ih2 = icon:getHeight()
+                    local sx = (ipw - 4) / iw2
+                    local sy = (iph - 4) / ih2
+                    local scale = math.min(sx, sy)
+                    local ox = ix + (ipw - iw2 * scale) / 2
+                    local oy = iy + (iph - ih2 * scale) / 2
+                    love.graphics.draw(icon, ox, oy, 0, scale, scale)
+                else
+                    -- Fallback: text name
+                    if fonts and fonts.chat then love.graphics.setFont(fonts.chat) end
+                    love.graphics.setColor(C.text)
+                    local displayName = item.baseName or item.name or item.type or "?"
+                    if #displayName > 8 and iw <= 1 then displayName = displayName:sub(1, 7) .. "." end
+                    love.graphics.printf(displayName, ix + 2, iy + iph/2 - 6, ipw - 4, "center")
+                end
 
                 -- Stack count
                 if item.stackSize and item.stackSize > 1 then
@@ -417,12 +438,28 @@ function gridInventory.drawEquipment(ex, ey)
                 love.graphics.setColor(rc[1], rc[2], rc[3], 0.30)
                 love.graphics.rectangle("fill", sx, sy, sw, sh, 2, 2)
                 love.graphics.setColor(rc[1], rc[2], rc[3], 0.70)
+                love.graphics.setLineWidth(2)
                 love.graphics.rectangle("line", sx, sy, sw, sh, 2, 2)
+                love.graphics.setLineWidth(1)
 
-                love.graphics.setColor(C.text)
-                local name = item.baseName or item.name or item.type or "?"
-                if #name > 6 then name = name:sub(1, 5) .. "." end
-                love.graphics.printf(name, sx + 1, sy + sh/2 - 6, sw - 2, "center")
+                -- Try icon sprite, fall back to text
+                local icon = assets.getItemIcon(item)
+                if icon then
+                    love.graphics.setColor(1, 1, 1, 1)
+                    local iw2 = icon:getWidth()
+                    local ih2 = icon:getHeight()
+                    local scx = (sw - 4) / iw2
+                    local scy = (sh - 4) / ih2
+                    local scale = math.min(scx, scy)
+                    local ox = sx + (sw - iw2 * scale) / 2
+                    local oy = sy + (sh - ih2 * scale) / 2
+                    love.graphics.draw(icon, ox, oy, 0, scale, scale)
+                else
+                    love.graphics.setColor(C.text)
+                    local name = item.baseName or item.name or item.type or "?"
+                    if #name > 6 then name = name:sub(1, 5) .. "." end
+                    love.graphics.printf(name, sx + 1, sy + sh/2 - 6, sw - 2, "center")
+                end
 
                 if isHovered then state.hoveredItem = item end
             end
@@ -706,6 +743,7 @@ function gridInventory.mousepressed(x, y, button)
         -- Try to start dragging from grid
         local gridItem, gridName, cellX, cellY = gridInventory.hitTestGrids(x, y)
         if gridItem then
+            audio.playClick()
             state.dragging = {
                 itemId = gridItem.id,
                 item = gridItem,
@@ -721,6 +759,7 @@ function gridInventory.mousepressed(x, y, button)
         -- Try to start dragging from equipment
         local eqSlot, eqItem = gridInventory.hitTestEquipment(x, y)
         if eqSlot and eqItem then
+            audio.playClick()
             state.dragging = {
                 itemId = eqItem.id,
                 item = eqItem,
@@ -735,6 +774,7 @@ function gridInventory.mousepressed(x, y, button)
         -- Right-click context menu
         local gridItem = gridInventory.hitTestGrids(x, y)
         if gridItem then
+            audio.playClick()
             gridInventory.openContextMenu(gridItem, x, y)
             return true
         end
@@ -783,6 +823,7 @@ function gridInventory.mousereleased(x, y, button)
         if drag.originGrid == "equipment" then
             -- Swap between equipment slots — not supported, just return
         else
+            audio.playEquip()
             client:emit("grid_equip", {
                 itemId = drag.itemId,
                 slot = eqSlot,
