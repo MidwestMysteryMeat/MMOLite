@@ -106,6 +106,8 @@ local INLINE_EVENTS = {
     "portal_crafted", "portal_destroyed", "pin_setup_required",
     "account_snapshot", "sync_import_result",
     "dungeon_mode_update", "dungeon_turn_start", "dungeon_turn_result", "dungeon_turn_update",
+    "interact_result", "door_toggled",
+    "rate_warning", "rate_cooldown",
 }
 
 -- Build SCENE_EVENTS dynamically from inline + handler modules
@@ -4570,6 +4572,57 @@ function game.setupListeners()
     client:on("pin_setup_required", function(data)
         if not data then return end
         addChatMessage(data.message or "Please set a PIN to secure your account", {1, 0.85, 0.3})
+    end)
+
+    -- Placed-object interaction results (chest open/close, lock/unlock, deposit/withdraw)
+    client:on("interact_result", function(data)
+        if not data then return end
+        if not data.success then
+            addChatMessage(data.message or "Interaction failed.", {1, 0.4, 0.4})
+            return
+        end
+        local d = data.data
+        if data.action == "open_chest" then
+            ui.chestPanel = d  -- { objectId, contents, maxSlots, locked, isOwner }
+        elseif data.action == "lock" then
+            addChatMessage("Object locked.", {0.6, 0.9, 0.6})
+            if d and d.objectId then
+                for _, obj in ipairs(placedObjects) do
+                    if obj.id == d.objectId then obj.locked = true; break end
+                end
+            end
+        elseif data.action == "unlock" then
+            addChatMessage("Object unlocked.", {0.6, 0.9, 0.6})
+            if d and d.objectId then
+                for _, obj in ipairs(placedObjects) do
+                    if obj.id == d.objectId then obj.locked = false; break end
+                end
+            end
+        elseif data.action == "deposit_chest" or data.action == "withdraw_chest" then
+            if d and d.inventory then mmoInventory = d.inventory end
+            if d and d.contents and ui.chestPanel then
+                ui.chestPanel.contents = d.contents
+            end
+        end
+    end)
+
+    -- Door state broadcast (sent to whole zone when someone toggles a door)
+    client:on("door_toggled", function(data)
+        if not data or not data.objectId then return end
+        for _, obj in ipairs(placedObjects) do
+            if obj.id == data.objectId then obj.open = data.open; break end
+        end
+    end)
+
+    -- Rate-limit feedback
+    client:on("rate_warning", function(data)
+        if not data then return end
+        addChatMessage(data.message or "Slow down!", {1, 0.8, 0.3})
+    end)
+
+    client:on("rate_cooldown", function(data)
+        if not data then return end
+        addChatMessage(data.message or "Action on cooldown.", {1, 0.4, 0.2})
     end)
 end
 
