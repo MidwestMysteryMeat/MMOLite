@@ -18,6 +18,12 @@ module.exports = {
         const disconnectingUser = state.users.get(socket.id);
         if (!disconnectingUser) {
           console.log(`[disconnect] Unknown socket ${socket.id} (${reason})`);
+          // Still clean up any auth state this socket may have acquired
+          if (sessionTokens && socket._mmoliteSessionToken) {
+            sessionTokens.delete(socket._mmoliteSessionToken);
+            socket._mmoliteSessionToken = null;
+          }
+          clearSocketCooldowns(socket.id);
           return;
         }
 
@@ -173,6 +179,16 @@ module.exports = {
       } catch (err) {
         console.error('[disconnect] Error during cleanup:', err.message);
         try { state.removeUser(socket.id); } catch (_) {}
+        try {
+          if (typeof _unlinkSocket === 'function') { _unlinkSocket(socket.id); }
+          else { socketAccountMap.delete(socket.id); }
+        } catch (_) {}
+        try {
+          if (sessionTokens && socket._mmoliteSessionToken) {
+            sessionTokens.delete(socket._mmoliteSessionToken);
+          }
+        } catch (_) {}
+        try { clearSocketCooldowns(socket.id); } catch (_) {}
       }
     });
   }
