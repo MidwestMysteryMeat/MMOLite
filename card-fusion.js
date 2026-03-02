@@ -118,7 +118,7 @@ function fuseCards(card1, card2, racialBonus) {
   var fusedStyle = STYLE_ORDER[Math.max(styleIdx1, styleIdx2)];
   var fusedBorderEffect = CARD_STYLES[fusedStyle] ? CARD_STYLES[fusedStyle].borderEffect : null;
 
-  // Stack affixes: same id increments stacks, new ids are appended
+  // Merge affixes: same id keeps highest tier, new ids are appended
   var mergedAffixes = JSON.parse(JSON.stringify(card1.affixes || []));
   var card2Affixes = card2.affixes || [];
   for (var _axi = 0; _axi < card2Affixes.length; _axi++) {
@@ -126,7 +126,9 @@ function fuseCards(card1, card2, racialBonus) {
     var _axFound = false;
     for (var _axj = 0; _axj < mergedAffixes.length; _axj++) {
       if (mergedAffixes[_axj].id === _ax2.id) {
-        mergedAffixes[_axj].stacks = (mergedAffixes[_axj].stacks || 1) + (_ax2.stacks || 1);
+        if (mergedAffixes[_axj].tier < _ax2.tier) {
+          mergedAffixes[_axj] = JSON.parse(JSON.stringify(_ax2));
+        }
         _axFound = true;
         break;
       }

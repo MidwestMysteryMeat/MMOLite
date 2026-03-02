@@ -6,8 +6,8 @@ local M = {}
 M.EVENTS = {
     "monster_capture_result", "monster_evolve_result",
     "zone_monsters", "zone_monster_spawned", "zone_monster_died",
-    "zone_monster_hit", "zone_monster_positions",
-    "zone_monster_attack", "zone_monster_killed", "zone_attack_error",
+    "zone_monster_positions",
+    "zone_monster_killed", "zone_attack_error",
     "zone_corpse_spawned", "zone_corpse_removed", "loot_corpse_result",
     "zone_container_spawned", "zone_container_looted", "loot_container_result",
     "monster_roster", "monster_party_updated",
@@ -77,16 +77,6 @@ function M.register(client, game, ctx)
         end
     end)
 
-    client:on("zone_monster_hit", function(data)
-        if not data or not data.id then return end
-        for _, m in ipairs(zoneMonsters) do
-            if m.id == data.id then
-                m.hp = data.remainingHp or m.hp
-                break
-            end
-        end
-    end)
-
     client:on("zone_monster_positions", function(data)
         if not data or not data.monsters then return end
         for _, upd in ipairs(data.monsters) do
@@ -100,21 +90,6 @@ function M.register(client, game, ctx)
                     break
                 end
             end
-        end
-    end)
-
-    client:on("zone_monster_attack", function(data)
-        if not data then return end
-        dungeon.hitFlashTimer = 0.25
-        local myId = getMyId()
-        local me = players[myId]
-        if me then
-            game.addFloatingText({
-                text = "-" .. (data.damage or 0) .. " (" .. (data.monsterName or "Monster") .. ")",
-                x = me.x, y = me.y - 30,
-                color = {1, 0.2, 0.2},
-                timer = 1.5,
-            })
         end
     end)
 
@@ -179,8 +154,7 @@ function M.register(client, game, ctx)
     client:on("loot_corpse_result", function(data)
         if not data then return end
         if data.error then
-            game._statusMsg = data.error
-            game._statusTimer = 3
+            game.addChatMessage(data.error, {1, 0.4, 0.4})
             return
         end
         setCorpseLootPanel(data)
@@ -208,8 +182,7 @@ function M.register(client, game, ctx)
     client:on("loot_container_result", function(data)
         if not data then return end
         if data.error then
-            game._statusMsg = data.error
-            game._statusTimer = 3
+            game.addChatMessage(data.error, {1, 0.4, 0.4})
             return
         end
         setContainerLootPanel(data)

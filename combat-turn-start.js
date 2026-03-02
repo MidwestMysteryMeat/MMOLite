@@ -207,6 +207,13 @@ function startPlayerTurn(combat, unitIds) {
             }
             if (paKilled) {
               handleUnitDeath(combat, paTarget.id, unit.id);
+              if (paTarget.alive && combat.callbacks.broadcastToFloor) {
+                combat.callbacks.broadcastToFloor('tc_combat_revive', {
+                  combatId: combat.id, unitId: paTarget.id, unitName: paTarget.name,
+                  unitType: paTarget.type, revivedHp: paTarget.hp, maxHp: paTarget.maxHp,
+                  passive: 'poison_aura',
+                });
+              }
             }
           }
         }
@@ -306,7 +313,18 @@ function startPlayerTurn(combat, unitIds) {
           if (bhTarget && bhTarget.alive) {
             var bhDmg = Math.max(1, Math.floor((unit.maxHp || 100) * (bearHugPassive.grappleTickDamageHpPercent || 0.05)));
             bhTarget.hp -= bhDmg;
-            if (bhTarget.hp <= 0) { bhTarget.alive = false; bhTarget.hp = 0; handleUnitDeath(combat, bhTarget.id, unitId); }
+            if (bhTarget.hp <= 0) {
+              bhTarget.alive = false;
+              bhTarget.hp = 0;
+              handleUnitDeath(combat, bhTarget.id, unitId);
+              if (bhTarget.alive && combat.callbacks.broadcastToFloor) {
+                combat.callbacks.broadcastToFloor('tc_combat_revive', {
+                  combatId: combat.id, unitId: bhTarget.id, unitName: bhTarget.name,
+                  unitType: bhTarget.type, revivedHp: bhTarget.hp, maxHp: bhTarget.maxHp,
+                  passive: 'bear_hug',
+                });
+              }
+            }
             if (combat.callbacks.broadcastToFloor) {
               combat.callbacks.broadcastToFloor('tc_combat_passive_damage', {
                 combatId: combat.id, sourceId: unitId, targetId: bhTarget.id,
@@ -522,7 +540,18 @@ function startPlayerTurn(combat, unitIds) {
           } else if (gz.type === 'fire_totem' && gzUnit.type !== gz.ownerType) {
             var gzFireDmg = gz.damagePerTurn || 8;
             gzUnit.hp -= gzFireDmg;
-            if (gzUnit.hp <= 0) { gzUnit.hp = 0; gzUnit.alive = false; handleUnitDeath(combat, gzUnit.id, gz.sourceId); }
+            if (gzUnit.hp <= 0) {
+              gzUnit.hp = 0;
+              gzUnit.alive = false;
+              handleUnitDeath(combat, gzUnit.id, gz.sourceId);
+              if (gzUnit.alive && combat.callbacks.broadcastToFloor) {
+                combat.callbacks.broadcastToFloor('tc_combat_revive', {
+                  combatId: combat.id, unitId: gzUnit.id, unitName: gzUnit.name,
+                  unitType: gzUnit.type, revivedHp: gzUnit.hp, maxHp: gzUnit.maxHp,
+                  passive: 'fire_totem',
+                });
+              }
+            }
           } else if (gz.type === 'earthen_ward_totem' && gzUnit.type === gz.ownerType) {
             if (!gzUnit.statusEffects) gzUnit.statusEffects = [];
             // Only apply if not already present
@@ -536,7 +565,18 @@ function startPlayerTurn(combat, unitIds) {
           } else if (gz.type === 'salted_earth' && gzUnit.type !== gz.ownerType) {
             var gzShadowDmg = gz.damagePerTurn || 6;
             gzUnit.hp -= gzShadowDmg;
-            if (gzUnit.hp <= 0) { gzUnit.hp = 0; gzUnit.alive = false; handleUnitDeath(combat, gzUnit.id, gz.sourceId); }
+            if (gzUnit.hp <= 0) {
+              gzUnit.hp = 0;
+              gzUnit.alive = false;
+              handleUnitDeath(combat, gzUnit.id, gz.sourceId);
+              if (gzUnit.alive && combat.callbacks.broadcastToFloor) {
+                combat.callbacks.broadcastToFloor('tc_combat_revive', {
+                  combatId: combat.id, unitId: gzUnit.id, unitName: gzUnit.name,
+                  unitType: gzUnit.type, revivedHp: gzUnit.hp, maxHp: gzUnit.maxHp,
+                  passive: 'salted_earth',
+                });
+              }
+            }
           }
         }
       }

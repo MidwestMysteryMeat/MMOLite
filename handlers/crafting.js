@@ -822,7 +822,6 @@ module.exports = {
           try {
             var qAcc = craftAccount;
             if (qAcc && qAcc.questProgress && qAcc.questProgress.active) {
-              var rpgData = require('../rpg-data');
               var qChanged = false;
               for (var qi = 0; qi < qAcc.questProgress.active.length; qi++) {
                 var quest = qAcc.questProgress.active[qi];

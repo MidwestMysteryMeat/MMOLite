@@ -115,9 +115,9 @@ function rollMutation(baseChance, luckBonus) {
 
 function applyMutation(card, mutation) {
   if (!card || !mutation) return;
-  card.effects.push(mutation.effect);
   if (!card.mutations) card.mutations = [];
   card.mutations.push({ id: mutation.mutationId, label: mutation.label, tier: mutation.tier });
+  require('./card-affixes').refreshCardEffects(card);
 }
 
 var CARD_CURSE_POOL = [
@@ -205,17 +205,17 @@ function rollCardCurse(baseCurseChance, luckBonus) {
   var cum = 0;
   for (var j = 0; j < pool.length; j++) {
     cum += pool[j].weight;
-    if (roll <= cum) return pool[j];
+    if (roll < cum) return pool[j];
   }
   return pool[pool.length - 1];
 }
 
 function applyCurse(card, curse) {
   if (!card || !curse) return;
-  card.effects.push(curse.effect);
   if (!card.curses) card.curses = [];
   card.curses.push({ id: curse.mutationId, label: curse.label, tier: curse.tier, cleansable: true });
   card.isCursed = true;
+  require('./card-affixes').refreshCardEffects(card);
 }
 
 function cleanseCardCurse(card, curseId) {
@@ -225,19 +225,9 @@ function cleanseCardCurse(card, curseId) {
     if (card.curses[i].id === curseId && card.curses[i].cleansable) { idx = i; break; }
   }
   if (idx === -1) return false;
-  var curse = card.curses.splice(idx, 1)[0];
-  for (var ei = 0; ei < card.effects.length; ei++) {
-    var ef = card.effects[ei];
-    var curseEntry = null;
-    for (var cp = 0; cp < CARD_CURSE_POOL.length; cp++) {
-      if (CARD_CURSE_POOL[cp].mutationId === curse.id) { curseEntry = CARD_CURSE_POOL[cp]; break; }
-    }
-    if (curseEntry && ef.type === curseEntry.effect.type && ef.value === curseEntry.effect.value) {
-      card.effects.splice(ei, 1);
-      break;
-    }
-  }
+  card.curses.splice(idx, 1);
   if (card.curses.length === 0) card.isCursed = false;
+  require('./card-affixes').refreshCardEffects(card);
   return true;
 }
 

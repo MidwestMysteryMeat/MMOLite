@@ -18,19 +18,16 @@ function init(io, socket, deps) {
     var key = socketAccountMap.get(socket.id);
     if (!key) return;
 
-    // Check affliction (memory first, then account for reconnect recovery)
-    var lycanStatus = werewolfDirector ? werewolfDirector.getLycanthropyStatus(key) : null;
-    if (!lycanStatus) {
-      var checkAcc = accounts.loadAccount(key);
-      if (!checkAcc || !checkAcc.lycanthropy) {
-        socket.emit('cure_error', { message: 'You are not afflicted with lycanthropy.' });
-        return;
-      }
-    }
-
-    // Cost check
     var acc = accounts.loadAccount(key);
     if (!acc) return;
+
+    // Check affliction (director memory first, then account for reconnect)
+    var lycanStatus = werewolfDirector ? werewolfDirector.getLycanthropyStatus(key) : null;
+    if (!lycanStatus && !acc.lycanthropy) {
+      socket.emit('cure_error', { message: 'You are not afflicted with lycanthropy.' });
+      return;
+    }
+
     if ((acc.chips || 0) < WOLFSBANE_CURE_COST) {
       socket.emit('cure_error', {
         message: 'Curing lycanthropy requires ' + WOLFSBANE_CURE_COST + ' coins (wolfsbane treatment).',
@@ -47,11 +44,10 @@ function init(io, socket, deps) {
     if (werewolfDirector && typeof werewolfDirector.cureLycanthropy === 'function') {
       werewolfDirector.cureLycanthropy(key, accounts);
     } else {
-      // Fallback: clear directly from account
-      var cureAcc = accounts.loadAccount(key);
-      if (cureAcc && cureAcc.lycanthropy) {
-        delete cureAcc.lycanthropy;
-        accounts.saveAccount(cureAcc);
+      // Fallback: clear directly from the already-loaded account
+      if (acc.lycanthropy) {
+        delete acc.lycanthropy;
+        accounts.saveAccount(acc);
       }
     }
 
@@ -68,21 +64,21 @@ function init(io, socket, deps) {
     var key = socketAccountMap.get(socket.id);
     if (!key) return;
 
-    var acc2 = accounts.loadAccount(key);
-    if (!acc2 || !acc2.vampireExposed) {
+    var acc = accounts.loadAccount(key);
+    if (!acc || !acc.vampireExposed) {
       socket.emit('cure_error', { message: 'You have not been bitten by a vampire.' });
       return;
     }
 
-    if ((acc2.chips || 0) < HOLY_WATER_CURE_COST) {
+    if ((acc.chips || 0) < HOLY_WATER_CURE_COST) {
       socket.emit('cure_error', {
         message: 'Curing vampire exposure requires ' + HOLY_WATER_CURE_COST + ' coins (holy water treatment).',
       });
       return;
     }
 
-    var newChips2 = accounts.updateChips(key, -HOLY_WATER_CURE_COST);
-    if (newChips2 === null) {
+    var newChips = accounts.updateChips(key, -HOLY_WATER_CURE_COST);
+    if (newChips === null) {
       socket.emit('cure_error', { message: 'Payment failed.' });
       return;
     }
@@ -91,17 +87,15 @@ function init(io, socket, deps) {
     if (vampireDirector && typeof vampireDirector.cureVampireExposure === 'function') {
       cured = vampireDirector.cureVampireExposure(key, accounts);
     } else {
-      // Fallback: clear directly
-      var vAcc = accounts.loadAccount(key);
-      if (vAcc && vAcc.vampireExposed) {
-        delete vAcc.vampireExposed;
-        accounts.saveAccount(vAcc);
+      // Fallback: clear directly from the already-loaded account
+      if (acc.vampireExposed) {
+        delete acc.vampireExposed;
+        accounts.saveAccount(acc);
         cured = true;
       }
     }
 
     if (!cured) {
-      // Refund — something went wrong
       accounts.updateChips(key, HOLY_WATER_CURE_COST);
       socket.emit('cure_error', { message: 'Treatment failed. Coins refunded.' });
       return;
@@ -111,7 +105,7 @@ function init(io, socket, deps) {
       type: 'vampire_exposure',
       message: 'The holy water purges the vampire corruption from your blood.',
       coinsSpent: HOLY_WATER_CURE_COST,
-      coinsRemaining: newChips2,
+      coinsRemaining: newChips,
     });
   });
 
@@ -120,15 +114,15 @@ function init(io, socket, deps) {
     var key = socketAccountMap.get(socket.id);
     if (!key) return;
 
-    var acc3 = accounts.loadAccount(key);
-    if (!acc3) return;
+    var acc = accounts.loadAccount(key);
+    if (!acc) return;
 
     var lycan = werewolfDirector ? werewolfDirector.getLycanthropyStatus(key) : null;
-    if (!lycan && acc3.lycanthropy) lycan = acc3.lycanthropy;
+    if (!lycan && acc.lycanthropy) lycan = acc.lycanthropy;
 
     socket.emit('affliction_status', {
       lycanthropy: lycan || null,
-      vampireExposed: acc3.vampireExposed || null,
+      vampireExposed: acc.vampireExposed || null,
     });
   });
 }

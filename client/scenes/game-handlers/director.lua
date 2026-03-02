@@ -3,7 +3,7 @@
 
 local M = {}
 
-M.EVENTS = { "world_event", "zone_director_update" }
+M.EVENTS = { "world_event", "zone_director_update", "vampire_sunlight" }
 
 function M.register(client, game)
     client:on("world_event", function(data)
@@ -23,6 +23,15 @@ function M.register(client, game)
             message = data.message or "",
             eventType = data.eventType or "info",
             timer = 5,
+        })
+    end)
+
+    client:on("vampire_sunlight", function(data)
+        if not data then return end
+        table.insert(game._zoneTicker, {
+            message = data.message or "Vampire infiltrators destroyed by sunlight.",
+            eventType = "vampire",
+            timer = 6,
         })
     end)
 end

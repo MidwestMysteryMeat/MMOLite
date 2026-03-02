@@ -723,6 +723,78 @@ function createAccount(username, color) {
   return account;
 }
 
+// Create an account using a specific key provided by the client.
+// Returns null on key collision (caller should fall back to createAccount).
+function createAccountWithKey(clientKey, username, color) {
+  if (!clientKey || typeof clientKey !== 'string') return null;
+  var clean = clientKey.replace(/[^a-zA-Z0-9]/g, '');
+  if (clean.length < 12) return null;
+
+  // Collision check: cache + disk
+  if (accountCache.has(clean)) return null;
+  if (_fileExistsSync(accountPath(clean))) return null;
+
+  var cleanUsername = sanitizeName(username || 'Anon').slice(0, 20) || 'Anon';
+  var now = Date.now();
+
+  var initialChar = {};
+  for (var fi = 0; fi < CHARACTER_FIELDS.length; fi++) {
+    initialChar[CHARACTER_FIELDS[fi]] = _getDefaultForField(CHARACTER_FIELDS[fi]);
+  }
+  initialChar.name = cleanUsername;
+  initialChar.createdAt = now;
+
+  var account = {
+    key: clean,
+    username: cleanUsername,
+    color: color || '#f0b232',
+    createdAt: now,
+    lastSeen: now,
+    stats: {
+      gamesPlayed: 0, wins: 0, losses: 0, highScore: 0, cordsPosted: 0,
+    },
+    slurFilter: false,
+    favoriteGifs: [],
+    uploads: [],
+    metadata: {},
+    characters: [initialChar],
+    activeCharacterIndex: 0,
+    maxCharacters: MAX_CHARACTERS_PER_ACCOUNT,
+    _characterName: cleanUsername,
+    _characterCreatedAt: now,
+    monsters: [],
+    activeParty: [],
+    level: 1,
+    xp: 0,
+    guildId: null,
+    questProgress: {},
+    craftingRecipes: [],
+    skills: rpgData.getDefaultSkills(),
+    mmoInventory: { wood: 0, stone: 0, iron_ore: 0, iron_bar: 0, items: [] },
+    equipment: { axe: null, pickaxe: null },
+    plotId: null,
+    race: null,
+    rpgStats: rpgData.getDefaultStats(),
+    rpgCards: [],
+    equippedCards: [],
+    cardSlots: 1,
+    activeCardSlots: 1,
+    passiveCardSlots: 0,
+    pendingPacks: 0,
+    pityPullsSinceLegendary: 0,
+    mount: null,
+    lastZone: null,
+    lastPosition: null,
+    chips: 0,
+    leviathanKills: {},
+    leviathanTotalKills: 0,
+    awakenings: [],
+  };
+
+  saveAccount(account);
+  return account;
+}
+
 function selectAwakening(key, awakeningId) {
   var account = loadAccount(key);
   if (!account) return { error: 'Account not found' };
@@ -1947,6 +2019,11 @@ module.exports = {
   incrementLeviathanKill,
   // Shard bridge: import account from master server into local cache
   importAccount,
+  // Account portability: unified key + snapshot
+  createAccountWithKey,
+  getExportableSnapshot,
+  importAccountFromSnapshot,
+  mergeSnapshotIntoAccount,
   // Async startup preload (call after server starts listening)
   preloadKeyIndex,
   // Weight / Encumbrance
@@ -1972,6 +2049,129 @@ function importAccount(accountData) {
   if (!accountData || !accountData.key) return null;
   accountCache.set(accountData.key, accountData);
   return accountData;
+}
+
+// Build a portable snapshot of an account for client-side storage.
+// Strips security/social fields so the snapshot is safe to hand to the client.
+function getExportableSnapshot(key) {
+  var acc = loadAccount(key);
+  if (!acc || acc.temp) return null;
+  var snap = JSON.parse(JSON.stringify(acc));
+  // Strip security and social fields the client should never store
+  delete snap.key;
+  delete snap.pinHash;
+  delete snap.friends;
+  delete snap.blocked;
+  delete snap.friendRequests;
+  delete snap.dms;
+  delete snap.metadata;
+  delete snap.favoriteGifs;
+  delete snap.uploads;
+  delete snap.temp;
+  delete snap.keyHash;
+  delete snap.tag;
+  return JSON.stringify(snap);
+}
+
+// Import account data from a client-provided snapshot string.
+// Only used for first-time imports to servers that don't have this key yet.
+function importAccountFromSnapshot(key, snapshotStr) {
+  if (!key || typeof key !== 'string' || !snapshotStr || typeof snapshotStr !== 'string') return null;
+  var clean = key.replace(/[^a-zA-Z0-9]/g, '');
+  if (clean.length < 12) return null;
+
+  // Don't overwrite existing accounts
+  if (accountCache.has(clean)) return null;
+  if (_fileExistsSync(accountPath(clean))) return null;
+
+  var snap;
+  try { snap = JSON.parse(snapshotStr); } catch (_) { return null; }
+  if (!snap || typeof snap !== 'object' || Array.isArray(snap)) return null;
+
+  // Key comes from auth, never from the snapshot
+  snap.key = clean;
+
+  // Strip any security/social fields that shouldn't carry over
+  delete snap.pinHash;
+  delete snap.friends;
+  delete snap.blocked;
+  delete snap.friendRequests;
+  delete snap.dms;
+  snap.friends = [];
+  snap.blocked = [];
+  snap.friendRequests = [];
+  snap.dms = {};
+
+  // Sanitize username
+  snap.username = sanitizeName(snap.username || 'Anon').slice(0, 20) || 'Anon';
+  if (snap._characterName) {
+    snap._characterName = sanitizeName(snap._characterName).slice(0, 20) || snap.username;
+  }
+
+  // Ensure multi-character format
+  _migrateToMultiCharacter(snap);
+
+  // Fill missing CHARACTER_FIELDS with defaults
+  for (var fi = 0; fi < CHARACTER_FIELDS.length; fi++) {
+    var field = CHARACTER_FIELDS[fi];
+    if (snap[field] === undefined) {
+      snap[field] = _getDefaultForField(field);
+    }
+  }
+
+  // Ensure required top-level fields
+  if (!snap.createdAt) snap.createdAt = Date.now();
+  snap.lastSeen = Date.now();
+  if (!snap.stats) snap.stats = { gamesPlayed: 0, wins: 0, losses: 0, highScore: 0, cordsPosted: 0 };
+  if (!snap.metadata) snap.metadata = {};
+  if (snap.maxCharacters === undefined) snap.maxCharacters = MAX_CHARACTERS_PER_ACCOUNT;
+
+  // Persist
+  accountCache.set(clean, snap);
+  keyHashMap.set(_keyHash(clean), clean);
+  _updateTagIndex(snap, clean);
+  _queueWrite(snap);
+
+  console.log('[accounts] Imported account from snapshot: ' + snap.username + ' (' + clean.slice(0, 4) + '...)');
+  return snap;
+}
+
+// Merge snapshot data into an existing (fresh) account.
+// Used when the client uploads a snapshot after account creation.
+function mergeSnapshotIntoAccount(key, snapshotStr) {
+  if (!key || typeof key !== 'string' || !snapshotStr || typeof snapshotStr !== 'string') return null;
+  var acc = loadAccount(key);
+  if (!acc) return null;
+
+  var snap;
+  try { snap = JSON.parse(snapshotStr); } catch (_) { return null; }
+  if (!snap || typeof snap !== 'object' || Array.isArray(snap)) return null;
+
+  // Merge character-related fields
+  for (var fi = 0; fi < CHARACTER_FIELDS.length; fi++) {
+    var field = CHARACTER_FIELDS[fi];
+    if (snap[field] !== undefined) {
+      acc[field] = snap[field];
+    }
+  }
+
+  // Merge account-level character data
+  if (snap.username) acc.username = sanitizeName(snap.username).slice(0, 20) || acc.username;
+  if (snap._characterName) acc._characterName = sanitizeName(snap._characterName).slice(0, 20) || acc._characterName;
+  if (snap.color) acc.color = snap.color;
+  if (snap.characters) {
+    acc.characters = snap.characters;
+    if (typeof snap.activeCharacterIndex === 'number') acc.activeCharacterIndex = snap.activeCharacterIndex;
+  }
+  if (snap.stats) acc.stats = snap.stats;
+  if (snap.createdAt) acc.createdAt = snap.createdAt;
+
+  // Ensure multi-character format
+  _migrateToMultiCharacter(acc);
+
+  saveAccount(acc);
+  console.log('[accounts] Merged snapshot into account: ' + acc.username + ' (' + key.slice(0, 4) + '...)');
+  return acc;
 }
 
 function getMemberCount() {

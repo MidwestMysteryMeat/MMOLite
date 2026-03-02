@@ -124,10 +124,11 @@ function init(io, socket, deps) {
     if (!account) return;
 
     if (!isJailed(account)) {
-      // Already released (time served naturally)
+      // Already released (time served naturally) — clear the flag so it persists correctly
+      if (account.jailState) account.jailState.inJail = false;
+      accounts.saveAccount(account);
       socket.emit('jail_serve_time', { ok: true, released: true, message: 'You have served your time.' });
       socket.emit('jail_status', { inJail: false });
-      accounts.saveAccount(account);
       return;
     }
 

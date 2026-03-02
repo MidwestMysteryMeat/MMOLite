@@ -2,6 +2,7 @@
 // Socket handler: disconnect (full cleanup including friend offline notifications)
 
 const { clearSocketCooldowns } = require('./helpers');
+var dungeonHandler = require('./dungeon');
 
 module.exports = {
   init(io, socket, deps) {
@@ -39,7 +40,7 @@ module.exports = {
                 }
               }
             }
-          } catch (_) {}
+          } catch (friendErr) { console.error('[disconnect] Friend notification error:', friendErr.message); }
         }
 
         if (accKey) {
@@ -51,6 +52,14 @@ module.exports = {
               acc.lastSeen = Date.now();
               if (acc.dms) acc.dms = { conversations: {} };
               accounts.saveAccount(acc);
+
+              // Best-effort: emit fresh snapshot so the client has end-of-session data.
+              // Arrives for graceful disconnects (client calls disconnect()); may not
+              // arrive for network failures, but the connect-time snapshot is the fallback.
+              try {
+                var snap = accounts.getExportableSnapshot(accKey);
+                if (snap) socket.emit('account_snapshot', snap);
+              } catch (_snapErr) { /* socket may already be closing */ }
             }
             // Checkin character back to master server
             if (shardBridge && shardBridge.isMasterMode) {
@@ -81,6 +90,13 @@ module.exports = {
         }
 
         const userName = disconnectingUser.name;
+
+        // Clean up dungeon state (TC combat, floor tracking, AI tick)
+        try {
+          dungeonHandler.cleanupDisconnectedPlayer(socket.id);
+        } catch (dungeonErr) {
+          console.error('[disconnect] Dungeon cleanup error:', dungeonErr.message);
+        }
 
         // Leave current zone and broadcast to zone members
         var currentZoneId = state.playerZones.get(socket.id);

@@ -101,16 +101,14 @@ module.exports = {
         var amount = Math.floor(data.amount);
         if (amount < 1) { socket.emit('bank_error', { message: 'Invalid amount' }); return; }
         if (acc.chips < amount) { socket.emit('bank_error', { message: 'Not enough gold' }); return; }
-        accounts.updateChips(key, -amount);
-        acc = accounts.loadAccount(key);
-        if (!acc) return;
+        var newChips = accounts.updateChips(key, -amount);
         _ensureVault(acc);
         acc.bankVault.gold += amount;
         accounts.saveAccount(acc);
         socket.emit('bank_result', {
           success: true, action: 'deposit_gold',
           bank: _bankContentsPayload(acc.bankVault),
-          chips: acc.chips,
+          chips: newChips,
         });
       } finally {
         bankLocks.delete(key);
@@ -138,12 +136,11 @@ module.exports = {
         if (acc.bankVault.gold < amount) { socket.emit('bank_error', { message: 'Not enough gold in bank' }); return; }
         acc.bankVault.gold -= amount;
         accounts.saveAccount(acc);
-        accounts.updateChips(key, amount);
-        acc = accounts.loadAccount(key);
+        var newChips = accounts.updateChips(key, amount);
         socket.emit('bank_result', {
           success: true, action: 'withdraw_gold',
           bank: _bankContentsPayload(acc.bankVault),
-          chips: acc.chips,
+          chips: newChips,
         });
       } finally {
         bankLocks.delete(key);
@@ -170,7 +167,6 @@ module.exports = {
         var result = accounts.removeResource(key, data.resource, amount);
         if (!result) { socket.emit('bank_error', { message: 'Not enough resources' }); return; }
         acc = accounts.loadAccount(key);
-        if (!acc) return;
         _ensureVault(acc);
         acc.bankVault.resources[data.resource] = (acc.bankVault.resources[data.resource] || 0) + amount;
         accounts.saveAccount(acc);
@@ -331,14 +327,14 @@ module.exports = {
           socket.emit('bank_error', { message: 'Not enough gold (need ' + cost + ')' });
           return;
         }
-        acc.chips -= cost;
+        var newChips = accounts.updateChips(key, -cost);
         acc.bankVault.expansionsPurchased += 1;
         acc.bankVault.maxSlots = BASE_SLOTS + (acc.bankVault.expansionsPurchased * SLOTS_PER_EXPANSION);
         accounts.saveAccount(acc);
         socket.emit('bank_result', {
           success: true, action: 'buy_slots',
           bank: _bankContentsPayload(acc.bankVault),
-          chips: acc.chips,
+          chips: newChips,
           message: 'Vault expanded to ' + acc.bankVault.maxSlots + ' slots',
         });
       } finally {

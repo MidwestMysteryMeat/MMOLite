@@ -16,32 +16,24 @@ function applyOverflow(account, vipStatus) {
   var pets = account.petData || [];
   if (pets.length > maxPets) {
     // Sort by evolution stage descending — keep highest-evolved active
-    var sorted = pets.slice().sort(function(a, b) {
+    pets.sort(function(a, b) {
       return (b.evolutionStage || 0) - (a.evolutionStage || 0);
     });
-    for (var pi = 0; pi < sorted.length; pi++) {
-      if (pi < maxPets) {
-        sorted[pi].dormant = false;
-      } else {
-        sorted[pi].dormant = true;
-      }
+    for (var pi = 0; pi < pets.length; pi++) {
+      pets[pi].dormant = (pi >= maxPets);
     }
   }
 
   // Companions: VIP allows 3, free allows 2
   var maxCompanions = vipPerks.getMaxCompanions(vipStatus);
-  var companions = account.companionData || [];
+  var companions = account.companions || [];
   if (companions.length > maxCompanions) {
     // Sort by damage output descending — keep strongest active
-    var sortedComp = companions.slice().sort(function(a, b) {
+    companions.sort(function(a, b) {
       return (b.damage || b.baseDamage || 0) - (a.damage || a.baseDamage || 0);
     });
-    for (var ci = 0; ci < sortedComp.length; ci++) {
-      if (ci < maxCompanions) {
-        sortedComp[ci].dormant = false;
-      } else {
-        sortedComp[ci].dormant = true;
-      }
+    for (var ci = 0; ci < companions.length; ci++) {
+      companions[ci].dormant = (ci >= maxCompanions);
     }
   }
 }
@@ -58,7 +50,7 @@ function clearOverflow(account) {
     if (pets[pi].dormant) pets[pi].dormant = false;
   }
 
-  var companions = account.companionData || [];
+  var companions = account.companions || [];
   for (var ci = 0; ci < companions.length; ci++) {
     if (companions[ci].dormant) companions[ci].dormant = false;
   }

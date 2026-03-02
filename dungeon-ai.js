@@ -933,6 +933,7 @@ function checkBossPhase(enemy) {
 
 function tickEnemy(enemy, floor, players, playerCombatStates, stealthLevels, enemies, noiseReachMaps) {
   if (enemy.alive === false) return null;
+  if (enemy.inTurnCombat) return null;
 
   enemy.changed = false;
   var grid = floor.grid;
@@ -1247,9 +1248,7 @@ function tickEnemy(enemy, floor, players, playerCombatStates, stealthLevels, ene
 
       enemy.windUpTimer--;
       if (enemy.windUpTimer <= 0) {
-        // Execute attack
         enemy.isAttacking = false;
-        var attackResult = executeEnemyAttack(enemy, players, playerCombatStates, enemies);
         enemy.attackCooldown = (enemy.windUpAbility && enemy.windUpAbility.cooldown) ?
           enemy.windUpAbility.cooldown : RECOVER_TICKS + ATTACK_WINDUP_TICKS;
 
@@ -1257,26 +1256,38 @@ function tickEnemy(enemy, floor, players, playerCombatStates, stealthLevels, ene
         if (enemy.windUpAbility && enemy.windUpAbility.id) {
           enemy.abilityCooldowns[enemy.windUpAbility.id] = enemy.windUpAbility.cooldown || 4;
         }
-        enemy.windUpAbility = null;
 
-        // Skirmisher hit-and-run: reposition after attack
-        if (arch.hitAndRun) {
-          enemy.aiState = 'reposition';
-        } else {
+        var firedAbility = enemy.windUpAbility;
+
+        // Heals resolve in real-time — no need to engage the player in tactical combat
+        if (firedAbility && firedAbility.heals) {
+          enemy.windUpAbility = null;
           enemy.aiState = 'recover';
+          enemy.aiTimer = 0;
+          enemy.changed = true;
+          for (var hi = 0; hi < enemies.length; hi++) {
+            var healAlly = enemies[hi];
+            if (healAlly === enemy || healAlly.alive === false) continue;
+            var healDist = manhattanDist(enemy.x, enemy.y, healAlly.x, healAlly.y);
+            if (healDist <= (firedAbility.range || 3)) {
+              healAlly.hp = Math.min(healAlly.maxHp, healAlly.hp + (firedAbility.healAmount || 10));
+              healAlly.changed = true;
+            }
+          }
+          return { type: 'enemy_attack', attack: {
+            attackerId: enemy.id, attackerName: enemy.name,
+            isHeal: true, healAmount: firedAbility.healAmount || 10,
+            abilityName: firedAbility.name || 'Heal',
+          }};
         }
+
+        // Offensive abilities: trigger tactical combat
+        var engageTargetId = enemy.targetId;
+        enemy.windUpAbility = null;
+        enemy.aiState = 'recover';
         enemy.aiTimer = 0;
         enemy.changed = true;
-
-        // Check boss phases
-        if (enemy.isBoss) {
-          var phaseResult = checkBossPhase(enemy);
-          if (phaseResult) {
-            return { type: 'enemy_attack', attack: attackResult, phaseChange: phaseResult };
-          }
-        }
-
-        return { type: 'enemy_attack', attack: attackResult };
+        return { type: 'engage_tactical', enemy: enemy, targetId: engageTargetId };
       }
       break;
 
@@ -1485,10 +1496,11 @@ function tickFloorAI(floor, playerList, playerCombatStates, stealthLevels) {
   // Returns: { updates: [...], attacks: [...], deaths: [...] }
 
   var results = {
-    updates: [],   // enemies that moved/changed state
-    attacks: [],   // enemy attacks on players
-    deaths: [],    // enemies that died from status effects
+    updates: [],      // enemies that moved/changed state
+    attacks: [],      // enemy heals (real-time, no player damage)
+    deaths: [],       // enemies that died from status effects
     phaseChanges: [], // boss phase transitions
+    engagements: [],  // tactical combat triggers from enemy attacks
   };
 
   if (!floor || !floor.enemies) return results;
@@ -1555,11 +1567,12 @@ function tickFloorAI(floor, playerList, playerCombatStates, stealthLevels) {
     var result = tickEnemy(enemy, floor, playerList, playerCombatStates, stealthLevels, enemies, noiseReachMaps);
 
     if (result) {
-      if (result.type === 'enemy_attack' && result.attack) {
+      if (result.type === 'engage_tactical') {
+        results.engagements.push(result);
+      } else if (result.type === 'enemy_attack' && result.attack) {
         results.attacks.push(result.attack);
         if (result.phaseChange) results.phaseChanges.push(result.phaseChange);
-      }
-      if (result.type === 'enemy_died') {
+      } else if (result.type === 'enemy_died') {
         results.deaths.push({ enemyIndex: ei, enemy: enemy, cause: result.cause });
       }
     }
@@ -1900,6 +1913,7 @@ function getBossRotationAbility(enemy, combat) {
 module.exports = {
   // Core
   tickFloorAI: tickFloorAI,
+  tickEnemy: tickEnemy,
   initEnemyAI: initEnemyAI,
   getFloorTickRate: getFloorTickRate,
   setWalkableTiles: setWalkableTiles,

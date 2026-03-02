@@ -438,6 +438,12 @@ function calculateDamage(attacker, target, combat) {
       }
       damage = Math.floor(damage * critMult);
     }
+
+    // Surprise round bonus: player deals +50% damage on first attack when they have surprise
+    if (attacker._surpriseBonus) {
+      damage = Math.floor(damage * 1.5);
+      attacker._surpriseBonus = false;
+    }
   } else {
     // Enemy attacking player
     var enemyAtk = (attacker.combat && attacker.combat.atk !== undefined) ? attacker.combat.atk : 0;

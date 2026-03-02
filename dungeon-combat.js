@@ -573,27 +573,35 @@ function initCombat(dungeonId, players, enemies, floor, callbacks) {
   var floorLayout = floor ? floor.layout : null;
   combat._isWaterFloor = !!(floorTheme && waterThemes[floorTheme]) || (floorLayout === 'lake');
 
-  // Surprise round: if enemy was invisible and player couldn't see it,
-  // enemies get a free first action with +50% damage.
-  // surpriseData is passed from dungeon.js initiateTurnCombat.
+  // Surprise round: one side gets boosted initiative + surprise bonus damage.
+  // surpriseData.side = 'enemy' (ambush) or 'player' (ranged/stealth opener).
   var surpriseData = (callbacks && callbacks.surpriseData) ? callbacks.surpriseData : null;
   combat._surpriseRound = false;
   if (surpriseData && surpriseData.isSurprise) {
     combat._surpriseRound = true;
-    combat._surpriseType = surpriseData.invisibilityType || 'unknown';
-    // Boost enemy CT so they act first in the surprise round
-    combat.units.forEach(function(unit) {
-      if (unit.type === 'enemy' && unit.alive) {
-        unit.ct = CT_THRESHOLD + 10; // Guarantee enemies act first
-        unit._surpriseBonus = true;  // +50% damage on first attack this combat
-      }
-    });
-    // Reduce player CT so they act after the surprise
-    combat.units.forEach(function(unit) {
-      if (unit.type === 'player' && unit.alive) {
-        unit.ct = 0; // Players start at 0 CT in a surprise round
-      }
-    });
+    combat._surpriseSide = surpriseData.side || 'enemy';
+
+    if (combat._surpriseSide === 'enemy') {
+      combat.units.forEach(function(unit) {
+        if (unit.type === 'enemy' && unit.alive) {
+          unit.ct = CT_THRESHOLD + 10;
+          unit._surpriseBonus = true;
+        }
+      });
+      combat.units.forEach(function(unit) {
+        if (unit.type === 'player' && unit.alive) { unit.ct = 0; }
+      });
+    } else if (combat._surpriseSide === 'player') {
+      combat.units.forEach(function(unit) {
+        if (unit.type === 'player' && unit.alive) {
+          unit.ct = CT_THRESHOLD + 10;
+          unit._surpriseBonus = true;
+        }
+      });
+      combat.units.forEach(function(unit) {
+        if (unit.type === 'enemy' && unit.alive) { unit.ct = 0; }
+      });
+    }
   }
 
   // Store original enemy templates for rally reinforcements
@@ -627,30 +635,38 @@ function initCombat(dungeonId, players, enemies, floor, callbacks) {
   // Build initiative order for the start broadcast
   var initiative = buildInitiativeOrder(combat);
 
-  // Broadcast combat start to all players
+  // Send combat start to each player with their personal myUnitId
   var playerIds = getPlayerSocketIds(combat);
   var enemyList = getEnemyList(combat);
   var playerList = getPlayerList(combat);
+  var serializedUnits = serializeUnits(combat);
+  var groupScalingPayload = combat.groupScaling ? {
+    tier: combat.groupScaling.tier,
+    hpMult: combat.groupScaling.hpMult,
+    atkMult: combat.groupScaling.atkMult,
+    offlineMode: combat.groupScaling.offlineMode || false,
+  } : null;
+  var surprisePayload = combat._surpriseRound ? {
+    side: combat._surpriseSide || 'enemy',
+    message: combat._surpriseSide === 'player' ? 'You catch them off guard!' : 'Ambushed!',
+  } : null;
 
-  if (combat.callbacks.broadcastToFloor) {
-    combat.callbacks.broadcastToFloor('tc_combat_start', {
-      combatId: combatId,
-      players: playerList,
-      enemies: enemyList,
-      units: serializeUnits(combat),
-      initiative: initiative,
-      turnNumber: 0,
-      groupScaling: combat.groupScaling ? {
-        tier: combat.groupScaling.tier,
-        hpMult: combat.groupScaling.hpMult,
-        atkMult: combat.groupScaling.atkMult,
-        offlineMode: combat.groupScaling.offlineMode || false,
-      } : null,
-      surpriseRound: combat._surpriseRound ? {
-        type: combat._surpriseType || 'unknown',
-        message: 'An invisible enemy ambushes you!',
-      } : null,
-    });
+  for (var psi = 0; psi < playerIds.length; psi++) {
+    var psSocketId = playerIds[psi];
+    var psUnitId = 'player_' + psSocketId;
+    if (combat.callbacks.emitToPlayer) {
+      combat.callbacks.emitToPlayer(psSocketId, 'tc_combat_start', {
+        combatId: combatId,
+        myUnitId: psUnitId,
+        players: playerList,
+        enemies: enemyList,
+        units: serializedUnits,
+        initiative: initiative,
+        turnNumber: 0,
+        groupScaling: groupScalingPayload,
+        surpriseRound: surprisePayload,
+      });
+    }
   }
 
   // Begin CT advancement after a short delay for the client to set up
@@ -1036,9 +1052,22 @@ function endCombat(combat, result) {
         xpGained += (unit.xp || 0);
         goldGained += (unit.gold || 0);
 
-        // Delegate reward distribution to dungeon handler via callback
+        // Delegate reward distribution to dungeon handler via callback — award per alive player
         if (combat.callbacks.awardKillRewards) {
-          combat.callbacks.awardKillRewards(unit);
+          var _rewardIter = combat.units.values();
+          var _rewardEntry = _rewardIter.next();
+          while (!_rewardEntry.done) {
+            var _rewardUnit = _rewardEntry.value;
+            _rewardEntry = _rewardIter.next();
+            if (_rewardUnit.type === 'player' && _rewardUnit.alive && _rewardUnit.socketId) {
+              combat.callbacks.awardKillRewards(
+                _rewardUnit.socketId,
+                unit,
+                combat.floor ? combat.floor.floorNum : 1,
+                combat.floor ? combat.floor.theme : null
+              );
+            }
+          }
         }
 
         // Necromancy XP: 5 XP per undead enemy killed, to all alive players

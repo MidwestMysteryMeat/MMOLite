@@ -55,7 +55,7 @@ module.exports = {
       socket.emit('trade_request_sent', { tradeId: tradeId, targetId: data.targetId });
 
       // Auto-expire after 30 seconds if not accepted
-      setTimeout(function() {
+      trade._expiryTimer = setTimeout(function() {
         var t = trades.get(tradeId);
         if (t && t.state === 'pending') {
           trades.delete(tradeId);
@@ -63,6 +63,7 @@ module.exports = {
           io.to(data.targetId).emit('trade_expired', { tradeId: tradeId });
         }
       }, 30000);
+      if (trade._expiryTimer && trade._expiryTimer.unref) trade._expiryTimer.unref();
     });
 
     // --- trade_accept: accept a trade request ---
@@ -76,6 +77,7 @@ module.exports = {
       }
 
       trade.state = 'active';
+      if (trade._expiryTimer) { clearTimeout(trade._expiryTimer); trade._expiryTimer = null; }
 
       io.to(trade.initiator).emit('trade_started', { tradeId: trade.id });
       socket.emit('trade_started', { tradeId: trade.id });
@@ -99,6 +101,10 @@ module.exports = {
         var offerAcc = accounts.loadAccount(offerKey);
         var offerInv = accounts.getMMOInventory(offerKey);
         if (!offerAcc || !offerInv) return;
+
+        var receiverId = (socket.id === trade.initiator) ? trade.target : trade.initiator;
+        var receiverKey = socketAccountMap.get(receiverId);
+        var receiverAcc = receiverKey ? accounts.loadAccount(receiverKey) : null;
 
         for (var vi = 0; vi < Math.min(data.items.length, 10); vi++) {
           var rawItem = data.items[vi];
@@ -124,10 +130,7 @@ module.exports = {
                 }
               }
               if (cardObj) {
-                // Validate card can be traded to the receiver's race
-                var receiverId = (socket.id === trade.initiator) ? trade.target : trade.initiator;
-                var receiverKey = socketAccountMap.get(receiverId);
-                var receiverAcc = receiverKey ? accounts.loadAccount(receiverKey) : null;
+                // Validate card can be traded to the receiver's race (receiverAcc loaded above the loop)
                 if (receiverAcc && receiverAcc.race && !rpgData.canTradeCardToRace(cardObj, receiverAcc.race)) {
                   socket.emit('trade_error', { message: 'That card cannot be traded to a ' + receiverAcc.race + ' character' });
                 } else {
@@ -151,9 +154,8 @@ module.exports = {
       trade.offers[socket.id].items = validatedItems;
 
       if (typeof data.chips === 'number' && data.chips >= 0) {
-        // Clamp coins to what the player actually has
-        var chipAcc = accounts.loadAccount(offerKey);
-        var maxChips = chipAcc ? (chipAcc.chips || 0) : 0;
+        // Clamp coins to what the player actually has (offerAcc already loaded above)
+        var maxChips = offerAcc ? (offerAcc.chips || 0) : 0;
         trade.offers[socket.id].chips = Math.min(Math.floor(data.chips), maxChips);
       }
 
@@ -307,8 +309,8 @@ module.exports = {
           // Swap coins — compute net delta per party to avoid crash-window duplication
           var initNetChips = (targOffer.chips || 0) - (initOffer.chips || 0);
           var targNetChips = (initOffer.chips || 0) - (targOffer.chips || 0);
-          if (initNetChips !== 0) accounts.updateChips(initKey, initNetChips);
-          if (targNetChips !== 0) accounts.updateChips(targKey, targNetChips);
+          var initFinalChips = initNetChips !== 0 ? accounts.updateChips(initKey, initNetChips) : ((initAcc || {}).chips || 0);
+          var targFinalChips = targNetChips !== 0 ? accounts.updateChips(targKey, targNetChips) : ((targAcc || {}).chips || 0);
 
           // Swap resources: each offer.items can contain { type: 'resource', resource: 'wood', amount: 5 }
           // or { type: 'card', cardInstanceId: 'xxx' }
@@ -385,12 +387,12 @@ module.exports = {
           io.to(trade.initiator).emit('trade_completed', {
             tradeId: trade.id,
             inventory: initInv,
-            coins: (accounts.loadAccount(initKey) || {}).chips || 0,
+            coins: initFinalChips,
           });
           io.to(trade.target).emit('trade_completed', {
             tradeId: trade.id,
             inventory: targInv,
-            coins: (accounts.loadAccount(targKey) || {}).chips || 0,
+            coins: targFinalChips,
           });
 
           // --- Track daily challenge & achievement progress for trades ---

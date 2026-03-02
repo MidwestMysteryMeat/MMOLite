@@ -119,7 +119,7 @@ function _saveLeaderboard() {
     try {
       var dir = path.dirname(_LEADERBOARD_FILE);
       if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-      fs.writeFileSync(_LEADERBOARD_FILE, JSON.stringify(leaderboard), 'utf8');
+      fs.promises.writeFile(_LEADERBOARD_FILE, JSON.stringify(leaderboard), 'utf8').catch(function(writeErr) { console.error('[dungeon] leaderboard save error:', writeErr.message); });
     } catch (e) { console.error('[dungeon] leaderboard save error:', e.message); }
   }, 2000);
   if (_leaderboardSaveTimer.unref) _leaderboardSaveTimer.unref();
@@ -152,6 +152,14 @@ var floorPlayerStealth = new Map(); // zoneId -> { socketId: stealthLevel }
 var floorRefs = new Map();          // zoneId -> floor object reference
 var wallShiftIntervals = new Map(); // zoneId -> intervalId (unstable_rift modifier)
 var playerTransitioning = new Set(); // socketId set — prevents double-descend/ascend
+
+// ---------------------------------------------------------------------------
+// BG3-style turn-based overworld mode
+// ---------------------------------------------------------------------------
+var turnModeState = new Map(); // zoneId -> { active, units: Map<unitId, {ct,speed,type,alive,socketId?,enemyIdx?}>, currentUnitId, turnTimer, movesRemaining, paused }
+var TURN_MODE_CT = 100;
+var TURN_MODE_MOVE_POINTS = 3;
+var TURN_MODE_TIMER_MS = 30000;
 
 // ---------------------------------------------------------------------------
 // Lich Raid State (Sanctum of Veranthos — multi-party 16-32 player raid)
@@ -504,12 +512,12 @@ function startFloorAI(zoneId, floor) {
       return;
     }
 
-    // Filter out players in turn-based combat from real-time AI
+    // Filter out players in turn-based combat or turn-based overworld mode from real-time AI
     var rtPlayers = [];
     for (var fpi = 0; fpi < players.length; fpi++) {
-      if (!players[fpi].inTurnCombat) rtPlayers.push(players[fpi]);
+      if (!players[fpi].inTurnCombat && !players[fpi].turnBasedMode) rtPlayers.push(players[fpi]);
     }
-    if (rtPlayers.length === 0) return; // All players in turn combat, skip AI tick
+    if (rtPlayers.length === 0) return; // All players in turn combat or turn mode, skip AI tick
 
     var combatStates = getFloorCombatStates(zoneId);
     var stealthLevels = getFloorStealthLevels(zoneId);
@@ -562,6 +570,38 @@ function startFloorAI(zoneId, floor) {
     }
 
     processAIResults(zoneId, results);
+
+    // Process tactical combat engagements from enemy AI
+    for (var ei = 0; ei < results.engagements.length; ei++) {
+      var engagement = results.engagements[ei];
+      if (!engagement || !engagement.targetId || !engagement.enemy) continue;
+
+      var targetSid = engagement.targetId;
+
+      // Guard: player already in tactical combat
+      var engPMap = floorPlayers.get(zoneId);
+      var engFp = engPMap ? engPMap.get(targetSid) : null;
+      if (!engFp || engFp.inTurnCombat) continue;
+
+      // Guard: enemy already in tactical combat
+      if (engagement.enemy.inTurnCombat) continue;
+
+      var engSocket = _io.sockets.sockets.get(targetSid);
+      if (!engSocket) continue;
+      var engUser = _state.users.get(targetSid);
+      if (!engUser) continue;
+      var engInfo = playerDungeons.get(targetSid);
+      if (!engInfo) continue;
+
+      // Find enemy index in floor.enemies
+      var engEnemyIdx = -1;
+      for (var eii = 0; eii < floor.enemies.length; eii++) {
+        if (floor.enemies[eii] === engagement.enemy) { engEnemyIdx = eii; break; }
+      }
+      if (engEnemyIdx === -1) continue;
+
+      initiateTurnCombat(engSocket, _io, _state, _accounts, _socketAccountMap, engUser, floor, engInfo, engagement.enemy, engEnemyIdx, 'enemy');
+    }
 
     // Micro director tick — adjusts pacing based on party stress
     // Disabled on boss floors and raid floors (hand-authored pacing)
@@ -805,6 +845,303 @@ function updateFloorPlayerPosition(zoneId, socketId, tileX, tileY) {
   if (p) {
     p.x = tileX;
     p.y = tileY;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// BG3-style turn-based overworld mode functions
+// ---------------------------------------------------------------------------
+
+// Add a single player to an existing (or new) turn mode state
+function addPlayerToTurnMode(socketId, zoneId) {
+  var floor = floorRefs.get(zoneId);
+  if (!floor) return;
+
+  var pMap = floorPlayers.get(zoneId);
+  var fp = pMap ? pMap.get(socketId) : null;
+  if (!fp) return;
+
+  fp.turnBasedMode = true;
+
+  var tms = turnModeState.get(zoneId);
+  if (!tms) {
+    tms = { active: true, units: new Map(), currentUnitId: null, turnTimer: null, movesRemaining: 0, paused: false, hasDashed: false };
+    turnModeState.set(zoneId, tms);
+  }
+  tms.active = true;
+
+  // Add player unit (skip if already present)
+  var playerId = 'player_' + socketId;
+  if (!tms.units.has(playerId)) {
+    var accKey = _socketAccountMap.get(socketId);
+    var acc = accKey ? _accounts.loadAccount(accKey) : null;
+    var playerInfo = playerDungeons.get(socketId);
+    var resolvedCards = (playerInfo && playerInfo.resolvedCards) ? playerInfo.resolvedCards : (acc ? resolveEquippedCards(acc) : []);
+    var pSpeed = rpgData.computeCombatSpeed(acc ? acc.race : 'human', acc ? (acc.rpgStats || {}).finesse || 5 : 5, resolvedCards);
+    tms.units.set(playerId, {
+      ct: 0, speed: pSpeed, type: 'player', alive: true, socketId: socketId, name: (acc ? acc.username : 'Player'),
+    });
+  }
+
+  // Add alive enemies on floor (only if not yet tracked)
+  for (var ei = 0; ei < floor.enemies.length; ei++) {
+    var enemy = floor.enemies[ei];
+    if (enemy.alive === false) continue;
+    if (enemy.inTurnCombat) continue;
+    var eid = 'enemy_' + ei;
+    if (!tms.units.has(eid)) {
+      tms.units.set(eid, {
+        ct: 0, speed: enemy.speed || 8, type: 'enemy', alive: true, enemyIdx: ei, name: enemy.name || 'Enemy',
+      });
+    }
+  }
+}
+
+// Enable turn mode for entire floor — all players join
+function enableFloorTurnMode(zoneId) {
+  var pMap = floorPlayers.get(zoneId);
+  if (!pMap) return;
+
+  // Add all players on this floor
+  pMap.forEach(function(fp, sid) {
+    if (fp.inTurnCombat) return; // skip players already in tactical combat
+    addPlayerToTurnMode(sid, zoneId);
+    var psock = _io.sockets.sockets.get(sid);
+    if (psock) psock.emit('dungeon_mode_update', { turnBased: true });
+  });
+
+  // Start CT advancement
+  advanceTurnMode(zoneId);
+}
+
+// Disable turn mode for entire floor — all players leave
+function disableFloorTurnMode(zoneId) {
+  var tms = turnModeState.get(zoneId);
+  if (tms) {
+    if (tms.turnTimer) { clearTimeout(tms.turnTimer); tms.turnTimer = null; }
+    tms.active = false;
+    turnModeState.delete(zoneId);
+  }
+
+  var pMap = floorPlayers.get(zoneId);
+  if (pMap) {
+    pMap.forEach(function(fp, sid) {
+      fp.turnBasedMode = false;
+      var psock = _io.sockets.sockets.get(sid);
+      if (psock) psock.emit('dungeon_mode_update', { turnBased: false });
+    });
+  }
+}
+
+function buildTurnModeInitiative(tms) {
+  var order = [];
+  tms.units.forEach(function(u, uid) {
+    if (!u.alive) return;
+    order.push({ id: uid, name: u.name || uid, ct: u.ct, speed: u.speed, type: u.type });
+  });
+  order.sort(function(a, b) { return b.ct - a.ct; });
+  return order;
+}
+
+function advanceTurnMode(zoneId) {
+  var tms = turnModeState.get(zoneId);
+  if (!tms || !tms.active || tms.paused) return;
+
+  // Remove dead units
+  tms.units.forEach(function(u, uid) {
+    if (u.type === 'enemy') {
+      var floor = floorRefs.get(zoneId);
+      if (floor && floor.enemies[u.enemyIdx] && floor.enemies[u.enemyIdx].alive === false) {
+        u.alive = false;
+      }
+    }
+  });
+
+  // Tick CT until someone is ready
+  var maxTicks = 200;
+  var readyUnit = null;
+  for (var t = 0; t < maxTicks && !readyUnit; t++) {
+    var foundThisTick = false;
+    tms.units.forEach(function(u, uid) {
+      if (!u.alive || foundThisTick) return;
+      u.ct += u.speed;
+      if (u.ct >= TURN_MODE_CT) {
+        readyUnit = { id: uid, unit: u };
+        foundThisTick = true;
+      }
+    });
+  }
+
+  if (!readyUnit) return;
+  readyUnit.unit.ct -= TURN_MODE_CT;
+  tms.currentUnitId = readyUnit.id;
+
+  if (readyUnit.unit.type === 'player') {
+    tms.movesRemaining = TURN_MODE_MOVE_POINTS;
+    tms.hasDashed = false;
+    var initiativeOrder = buildTurnModeInitiative(tms);
+    // Mark the acting unit
+    for (var ini = 0; ini < initiativeOrder.length; ini++) {
+      initiativeOrder[ini].isActive = (initiativeOrder[ini].id === readyUnit.id);
+    }
+    var psock = _io.sockets.sockets.get(readyUnit.unit.socketId);
+    if (psock) {
+      psock.emit('dungeon_turn_start', {
+        movementPoints: TURN_MODE_MOVE_POINTS,
+        initiative: initiativeOrder,
+      });
+    }
+    // Broadcast initiative to all other players on floor
+    var turnPMap = floorPlayers.get(zoneId);
+    if (turnPMap) {
+      turnPMap.forEach(function(pd, sid) {
+        if (sid === readyUnit.unit.socketId) return;
+        var otherSock = _io.sockets.sockets.get(sid);
+        if (otherSock) {
+          otherSock.emit('dungeon_turn_update', { initiative: initiativeOrder, activeUnit: readyUnit.id });
+        }
+      });
+    }
+    // 30s turn timer
+    if (tms.turnTimer) clearTimeout(tms.turnTimer);
+    var _zoneId = zoneId;
+    var _socketId = readyUnit.unit.socketId;
+    tms.turnTimer = setTimeout(function() { endPlayerTurnMode(_socketId, _zoneId); }, TURN_MODE_TIMER_MS);
+    if (tms.turnTimer.unref) tms.turnTimer.unref();
+  } else {
+    // Enemy turn
+    processEnemyTurnModeTick(zoneId, readyUnit.id, readyUnit.unit);
+  }
+}
+
+function processEnemyTurnModeTick(zoneId, unitId, unit) {
+  var floor = floorRefs.get(zoneId);
+  if (!floor) { advanceTurnMode(zoneId); return; }
+
+  var enemy = floor.enemies[unit.enemyIdx];
+  if (!enemy || enemy.alive === false) {
+    unit.alive = false;
+    advanceTurnMode(zoneId);
+    return;
+  }
+
+  // Build player list for AI tick
+  var pMap = floorPlayers.get(zoneId);
+  var playerList = [];
+  if (pMap) {
+    pMap.forEach(function(pd, sid) {
+      if (pd.turnBasedMode) {
+        playerList.push({ id: sid, x: pd.x, y: pd.y, inCombat: false });
+      }
+    });
+  }
+  if (playerList.length === 0) { advanceTurnMode(zoneId); return; }
+
+  var combatStates = getFloorCombatStates(zoneId);
+  var stealthLevels = getFloorStealthLevels(zoneId);
+
+  // Capture old position for lerp animation
+  var oldX = enemy.x;
+  var oldY = enemy.y;
+
+  // Single enemy tick
+  var result = dungeonAI.tickEnemy(enemy, floor, playerList, combatStates, stealthLevels, floor.enemies, []);
+
+  // Broadcast enemy position update if changed
+  if (enemy.changed) {
+    var updateData = {
+      enemies: [{
+        index: unit.enemyIdx, x: enemy.x, y: enemy.y, aiState: enemy.aiState,
+        hp: enemy.hp, maxHp: enemy.maxHp, facing: enemy.facing,
+        isAttacking: enemy.isAttacking, archetype: enemy.archetype,
+      }],
+    };
+    if (pMap) {
+      pMap.forEach(function(pd, sid) {
+        _io.to(sid).emit('dungeon_enemies_update', updateData);
+      });
+    }
+    // Emit turn result with old position for smooth lerp animation
+    if (pMap) {
+      pMap.forEach(function(pd, sid) {
+        _io.to(sid).emit('dungeon_turn_result', {
+          unitId: unitId, enemyIdx: unit.enemyIdx,
+          fromX: oldX, fromY: oldY, x: enemy.x, y: enemy.y, name: enemy.name,
+        });
+      });
+    }
+  }
+
+  // Check for tactical combat engagement
+  if (result && result.type === 'engage_tactical') {
+    var targetSid = result.targetId;
+    var engSocket = _io.sockets.sockets.get(targetSid);
+    if (engSocket) {
+      var engUser = _state.users.get(targetSid);
+      var engInfo = playerDungeons.get(targetSid);
+      if (engUser && engInfo) {
+        // Pause turn mode during tactical combat
+        var tms = turnModeState.get(zoneId);
+        if (tms) {
+          tms.paused = true;
+          if (tms.turnTimer) { clearTimeout(tms.turnTimer); tms.turnTimer = null; }
+        }
+        initiateTurnCombat(engSocket, _io, _state, _accounts, _socketAccountMap, engUser, floor, engInfo, enemy, unit.enemyIdx, 'enemy');
+        return; // Don't advance — combat will resume turn mode on end
+      }
+    }
+  }
+
+  // Clear noise events accumulated during turn mode to prevent backlog
+  if (floor._noiseEvents) floor._noiseEvents = [];
+
+  // Short delay before next unit acts (so client can see enemy movement)
+  setTimeout(function() { advanceTurnMode(zoneId); }, 250);
+}
+
+function endPlayerTurnMode(socketId, zoneId) {
+  var tms = turnModeState.get(zoneId);
+  if (!tms || !tms.active) return;
+  if (tms.turnTimer) { clearTimeout(tms.turnTimer); tms.turnTimer = null; }
+  tms.currentUnitId = null;
+  tms.movesRemaining = 0;
+
+  var psock = _io.sockets.sockets.get(socketId);
+  if (psock) {
+    psock.emit('dungeon_turn_update', { movesRemaining: 0, turnEnded: true });
+  }
+
+  // Advance to next unit
+  advanceTurnMode(zoneId);
+}
+
+function cleanupTurnMode(socketId, zoneId) {
+  var tms = turnModeState.get(zoneId);
+  if (!tms) return;
+
+  // If it was this player's turn, clear the timer
+  var wasCurrentUnit = (tms.currentUnitId === 'player_' + socketId);
+  if (wasCurrentUnit) {
+    if (tms.turnTimer) { clearTimeout(tms.turnTimer); tms.turnTimer = null; }
+    tms.currentUnitId = null;
+  }
+
+  // Remove this player's unit
+  tms.units.delete('player_' + socketId);
+
+  // Reset the floorPlayer flag
+  var pMap = floorPlayers.get(zoneId);
+  var fp = pMap ? pMap.get(socketId) : null;
+  if (fp) fp.turnBasedMode = false;
+
+  // If no player units remain, tear down entire floor's turn mode
+  var hasPlayers = false;
+  tms.units.forEach(function(u) { if (u.type === 'player' && u.alive) hasPlayers = true; });
+  if (!hasPlayers) {
+    disableFloorTurnMode(zoneId);
+  } else if (wasCurrentUnit) {
+    // Only advance if we just removed the active unit (avoids double-advance during enemy turns)
+    advanceTurnMode(zoneId);
   }
 }
 
@@ -1335,6 +1672,7 @@ function lichRaidCreateGathering() {
       lichRaidCancelGathering('Not enough players joined in time.');
     }
   }, LICH_RAID_GATHER_TIMEOUT_MS);
+  if (lichRaidState.gatherTimeout && lichRaidState.gatherTimeout.unref) lichRaidState.gatherTimeout.unref();
 }
 
 function lichRaidAddPlayer(socketId, accKey) {
@@ -1406,6 +1744,7 @@ function lichRaidStartCountdown() {
   lichRaidState.countdownTimer = setTimeout(function() {
     lichRaidActivate();
   }, LICH_RAID_COUNTDOWN_MS);
+  if (lichRaidState.countdownTimer && lichRaidState.countdownTimer.unref) lichRaidState.countdownTimer.unref();
 }
 
 function lichRaidActivate() {
@@ -1796,7 +2135,7 @@ function lichRaidComplete() {
   }
 
   // Teleport all players out after a short delay
-  setTimeout(function() {
+  var _lichTeleportTimer = setTimeout(function() {
     if (!lichRaidState) return;
     var playerIter = lichRaidState.players.keys();
     var pEntry = playerIter.next();
@@ -1806,6 +2145,7 @@ function lichRaidComplete() {
       lichRaidTeleportOut(sid);
     }
   }, 5000);
+  if (_lichTeleportTimer && _lichTeleportTimer.unref) _lichTeleportTimer.unref();
 }
 
 function lichRaidBroadcast(event, data) {
@@ -2936,6 +3276,7 @@ function findNearbyEnemies(floor, cx, cy, radius) {
   for (var i = 0; i < floor.enemies.length; i++) {
     var e = floor.enemies[i];
     if (e.alive === false) continue;
+    if (e.inTurnCombat) continue;
     var dist = Math.abs(e.x - cx) + Math.abs(e.y - cy);
     if (dist <= radius) nearby.push(e);
   }
@@ -3135,15 +3476,13 @@ function buildCombatCallbacks(io, state, accounts, socketAccountMap, dungeonId, 
       }
 
       // --- Pet evolution XP on kills ---
-      var petKillAcc = accounts.loadAccount(accKey);
-      if (petKillAcc && petKillAcc.activePet) {
+      if (killAcc && killAcc.activePet) {
         var petEvoXp = enemy.isBoss ? 50 : 10;
-        var petEvoResult = petsHandler.awardPetEvoXp(petKillAcc, petEvoXp);
-        accounts.saveAccount(petKillAcc);
+        var petEvoResult = petsHandler.awardPetEvoXp(killAcc, petEvoXp);
         if (petEvoResult && petEvoResult.evolved) {
           var killSocket = io.sockets.sockets.get(socketId);
           if (killSocket) {
-            killSocket.emit('pet_evolved', { petId: petKillAcc.activePet, newLevel: petEvoResult.newLevel, newName: petEvoResult.newName });
+            killSocket.emit('pet_evolved', { petId: killAcc.activePet, newLevel: petEvoResult.newLevel, newName: petEvoResult.newName });
           }
         }
       }
@@ -3197,7 +3536,6 @@ function buildCombatCallbacks(io, state, accounts, socketAccountMap, dungeonId, 
       }
 
       // Kill stats
-      var killAcc = accounts.loadAccount(accKey);
       if (killAcc) {
         var killDp = ensureDungeonProgress(killAcc);
         killDp.totalKills = (killDp.totalKills || 0) + 1;
@@ -3222,7 +3560,7 @@ function buildCombatCallbacks(io, state, accounts, socketAccountMap, dungeonId, 
               io.emit('structure_cleared', {
                 structureId: bossKillStructId,
                 name: bossKillStruct.name,
-                clearedBy: user.name,
+                clearedBy: (killAcc ? killAcc.username : 'Unknown'),
                 worldX: bossKillStruct.worldX,
                 worldY: bossKillStruct.worldY,
               });
@@ -3232,7 +3570,6 @@ function buildCombatCallbacks(io, state, accounts, socketAccountMap, dungeonId, 
           if (killInfo && deps.directorLich) {
             var cleanseResult = deps.directorLich.cleanseCorruption(killInfo.dungeonId);
             if (cleanseResult && cleanseResult.cleansed > 0) {
-              console.log('[dungeon] Lich corruption cleansed: ' + cleanseResult.cleansed + ' chunks near ' + cleanseResult.sourceName);
               io.emit('world_event', {
                 title: 'Corruption Recedes!',
                 description: 'The defeat of the lich boss weakens the corruption near ' + (cleanseResult.sourceName || 'the sanctum') + '!',
@@ -3246,7 +3583,7 @@ function buildCombatCallbacks(io, state, accounts, socketAccountMap, dungeonId, 
             var mrKillRift = overworldRifts.getRift(mrKillRiftId);
             if (mrKillRift && killInfo.floorNum === mrKillRift.totalFloors) {
               // This is the final floor boss — seal the rift
-              overworldRifts.destroyRift(mrKillRiftId, user.name);
+              overworldRifts.destroyRift(mrKillRiftId, (killAcc ? killAcc.username : 'Unknown'));
 
               var mrRewards = dungeonData.getMiniRiftBossRewards(mrKillRift.tier);
 
@@ -3260,7 +3597,7 @@ function buildCombatCallbacks(io, state, accounts, socketAccountMap, dungeonId, 
               // Broadcast world event
               io.emit('world_event', {
                 title: 'A Rift Sealed!',
-                description: user.name + ' has sealed ' + mrKillRift.name + '! The Soldier\'s desperate reach weakens as reality knits itself together. Corruption recedes from the land.',
+                description: (killAcc ? killAcc.username : 'Unknown') + ' has sealed ' + mrKillRift.name + '! The Soldier\'s desperate reach weakens as reality knits itself together. Corruption recedes from the land.',
                 type: 'rift_sealed',
               });
 
@@ -3270,7 +3607,8 @@ function buildCombatCallbacks(io, state, accounts, socketAccountMap, dungeonId, 
               }
 
               // Notify clearing player of rewards
-              socket.emit('rift_sealed_rewards', {
+              var sealSocket = io.sockets.sockets.get(socketId);
+              if (sealSocket) sealSocket.emit('rift_sealed_rewards', {
                 riftId: mrKillRiftId,
                 name: mrKillRift.name,
                 tier: mrKillRift.tier,
@@ -3287,11 +3625,10 @@ function buildCombatCallbacks(io, state, accounts, socketAccountMap, dungeonId, 
                 name: mrKillRift.name,
                 worldX: mrKillRift.worldX,
                 worldY: mrKillRift.worldY,
-                clearedBy: user.name,
+                clearedBy: (killAcc ? killAcc.username : 'Unknown'),
                 reason: 'sealed',
               });
 
-              console.log('[dungeon] Mini-rift sealed: ' + mrKillRift.name + ' (tier ' + mrKillRift.tier + ') by ' + user.name);
             }
           }
           // --- PROCEDURAL LOOT DROPS on boss kill ---
@@ -3369,7 +3706,6 @@ function buildCombatCallbacks(io, state, accounts, socketAccountMap, dungeonId, 
           // Award rift_wardens faction rep for boss kills
           factions.addRep(killAcc, 'rift_wardens', 150);
         }
-        safeSaveAccount(accounts, killAcc, 'tc_enemy_kill');
       }
 
       // Quest progress: track kills and boss kills, include floor object for clear_floor check
@@ -3470,16 +3806,14 @@ function buildCombatCallbacks(io, state, accounts, socketAccountMap, dungeonId, 
       }
 
       // --- Durability loss: weapon 0.5% per kill, armor 1% per kill ---
-      try {
-        var durAcc = accounts.loadAccount(accKey);
-        if (durAcc && durAcc.equipment) {
+      if (killAcc && killAcc.equipment) {
+        try {
           var durCardEffects = accounts.getEquippedCardEffects ? accounts.getEquippedCardEffects(accKey) : [];
           var durWarnings = [];
-          var wepDurResults = accounts.reduceWeaponDurability(durAcc, 0.005, durCardEffects);
+          var wepDurResults = accounts.reduceWeaponDurability(killAcc, 0.005, durCardEffects);
           if (wepDurResults) { for (var wdi = 0; wdi < wepDurResults.length; wdi++) durWarnings.push(wepDurResults[wdi]); }
-          var armorDurResults = accounts.reduceArmorDurability(durAcc, 0.01, durCardEffects);
+          var armorDurResults = accounts.reduceArmorDurability(killAcc, 0.01, durCardEffects);
           for (var adi = 0; adi < armorDurResults.length; adi++) durWarnings.push(armorDurResults[adi]);
-          accounts.saveAccount(durAcc);
           var durSocket = io.sockets.sockets.get(socketId);
           if (durSocket) {
             for (var dwi = 0; dwi < durWarnings.length; dwi++) {
@@ -3490,11 +3824,12 @@ function buildCombatCallbacks(io, state, accounts, socketAccountMap, dungeonId, 
               }
             }
           }
+        } catch (durCombatErr) {
+          console.error('[dungeon_combat] Durability error:', durCombatErr.message);
         }
-      } catch (durCombatErr) {
-        console.error('[dungeon_combat] Durability error:', durCombatErr.message);
       }
 
+      if (killAcc) safeSaveAccount(accounts, killAcc, 'awardKillRewards');
       return { xp: finalXp, gold: goldGained, loot: lootDrops, xpResult: xpResult };
     },
     broadcastToFloor: function(event, data) {
@@ -3542,7 +3877,7 @@ function buildCombatCallbacks(io, state, accounts, socketAccountMap, dungeonId, 
 }
 
 // Initiate turn-based combat from a player attacking an enemy
-function initiateTurnCombat(socket, io, state, accounts, socketAccountMap, user, floor, info, enemy, enemyIndex) {
+function initiateTurnCombat(socket, io, state, accounts, socketAccountMap, user, floor, info, enemy, enemyIndex, surpriseFor) {
   var accKey = socketAccountMap.get(socket.id);
   if (!accKey) return;
   var acc = accounts.loadAccount(accKey);
@@ -3657,16 +3992,19 @@ function initiateTurnCombat(socket, io, state, accounts, socketAccountMap, user,
 
   var callbacks = buildCombatCallbacks(io, state, accounts, socketAccountMap, info.dungeonId, info.floorNum);
 
-  // Detect surprise round: if the primary enemy is invisible and the player can't see it,
-  // the enemy gets a surprise round with bonus initiative and +50% first-hit damage.
-  var isSurprise = false;
-  var surpriseInvisType = null;
-  if (enemy.invisibility && !enemy._invisBroken) {
+  // Determine surprise round: explicit surpriseFor param, or invisible enemy fallback
+  var surprisePayload = null;
+  if (surpriseFor === 'enemy') {
+    surprisePayload = { isSurprise: true, side: 'enemy' };
+  } else if (surpriseFor === 'player') {
+    surprisePayload = { isSurprise: true, side: 'player' };
+  }
+  // Invisible enemy surprise as additional trigger
+  if (!surprisePayload && enemy.invisibility && !enemy._invisBroken) {
     var currentTurn = (floor._currentTurn || 0);
     var canSee = dungeonVision.canPlayerSeeEnemy(enemy, myVisionType, currentTurn);
     if (!canSee) {
-      isSurprise = true;
-      surpriseInvisType = enemy.invisibility;
+      surprisePayload = { isSurprise: true, side: 'enemy' };
     }
   }
 
@@ -3677,11 +4015,8 @@ function initiateTurnCombat(socket, io, state, accounts, socketAccountMap, user,
     }
   }
 
-  if (isSurprise) {
-    callbacks.surpriseData = {
-      isSurprise: true,
-      invisibilityType: surpriseInvisType,
-    };
+  if (surprisePayload) {
+    callbacks.surpriseData = surprisePayload;
   }
 
   // Mark all participating players as inTurnCombat
@@ -3692,8 +4027,14 @@ function initiateTurnCombat(socket, io, state, accounts, socketAccountMap, user,
     }
   }
 
-  // Clear inTurnCombat on combat end for all participating players
+  // Mark all participating enemies as inTurnCombat
+  for (var nei = 0; nei < nearbyEnemies.length; nei++) {
+    nearbyEnemies[nei].inTurnCombat = true;
+  }
+
+  // Clear inTurnCombat on combat end for all participants (players + enemies)
   var _combatPlayerSockets = players.map(function(p) { return p.socketId; });
+  var _combatEnemies = nearbyEnemies;
   var _combatZoneId = zoneId;
   var origOnCombatEnd = callbacks.onCombatEnd;
   callbacks.onCombatEnd = function(combatOrResult, resultOrUndef) {
@@ -3704,7 +4045,26 @@ function initiateTurnCombat(socket, io, state, accounts, socketAccountMap, user,
         if (cfp) cfp.inTurnCombat = false;
       }
     }
+    for (var cei = 0; cei < _combatEnemies.length; cei++) {
+      _combatEnemies[cei].inTurnCombat = false;
+    }
     if (origOnCombatEnd) origOnCombatEnd(combatOrResult, resultOrUndef);
+
+    // Resume BG3-style turn mode if any participant was in turn-based mode
+    var resumeTms = turnModeState.get(_combatZoneId);
+    if (resumeTms && resumeTms.paused) {
+      resumeTms.paused = false;
+      // Remove dead enemies from turn mode tracking
+      resumeTms.units.forEach(function(u, uid) {
+        if (u.type === 'enemy') {
+          var floor = floorRefs.get(_combatZoneId);
+          if (floor && floor.enemies[u.enemyIdx] && floor.enemies[u.enemyIdx].alive === false) {
+            u.alive = false;
+          }
+        }
+      });
+      advanceTurnMode(_combatZoneId);
+    }
   };
 
   // Start combat
@@ -3730,6 +4090,10 @@ function handlePlayerDeath(socket, io, state, accounts, accKey, info, causeOfDea
 }
 
 function handleNormalDeath(socket, io, state, accounts, accKey, info) {
+  // Clean up turn-based mode before removing from floor
+  var deathZoneId = getZoneIdForDungeon(info.dungeonId, info.floorNum);
+  cleanupTurnMode(socket.id, deathZoneId);
+
   // Remove from AI floor tracking
   removePlayerFromFloor(socket.id);
   // Clear dungeon tracking immediately to prevent stale combat state queries
@@ -3790,6 +4154,9 @@ function handleNormalDeath(socket, io, state, accounts, accKey, info) {
 function enterDownedState(socket, io, state, accounts, accKey, info, causeOfDeath) {
   var socketId = socket.id;
   var zoneId = getZoneIdForDungeon(info.dungeonId, info.floorNum);
+
+  // Clean up turn-based mode when player is downed
+  cleanupTurnMode(socketId, zoneId);
   var pMap = floorPlayers.get(zoneId);
   var playerData = pMap ? pMap.get(socketId) : null;
   var playerX = playerData ? playerData.x : 0;
@@ -3828,6 +4195,7 @@ function enterDownedState(socket, io, state, accounts, accKey, info, causeOfDeat
       triggerPermadeath(socketId, io, state, accounts, accKey, info, causeOfDeath);
     }
   }, 1000);
+  if (downedInfo.intervalId && downedInfo.intervalId.unref) downedInfo.intervalId.unref();
 
   downedPlayers.set(socketId, downedInfo);
 
@@ -4053,8 +4421,25 @@ if (ambushInterval && ambushInterval.unref) ambushInterval.unref();
 // Handler
 // ---------------------------------------------------------------------------
 
+// Called from disconnect handler to clean up dungeon state for a disconnected socket
+function cleanupDisconnectedPlayer(socketId) {
+  var info = playerDungeons.get(socketId);
+  if (!info) return;
+
+  // Clean up turn-based combat
+  var combat = dungeonCombat.getCombatBySocketId(socketId);
+  if (combat) {
+    dungeonCombat.handlePlayerDisconnect(combat.id, socketId);
+  }
+
+  // Remove from floor tracking (stops AI tick if floor empty)
+  removePlayerFromFloor(socketId);
+  playerDungeons.delete(socketId);
+}
+
 module.exports = {
   getPlayerCombat: getPlayerCombat,
+  cleanupDisconnectedPlayer: cleanupDisconnectedPlayer,
   init(io, socket, deps) {
     var { user, state, socketAccountMap, accounts, checkEventRate, applyRateGrace } = deps;
 
@@ -4404,6 +4789,13 @@ module.exports = {
           var fpEntry = fp.get(socket.id);
           if (fpEntry) fpEntry.fogRevealBonus = combat.skillBonuses.fogRevealBonus;
         }
+      }
+
+      // 10b. Floor-wide turn mode: auto-join if active on this floor
+      var existingTms = turnModeState.get(zoneId);
+      if (existingTms && existingTms.active) {
+        addPlayerToTurnMode(socket.id, zoneId);
+        socket.emit('dungeon_mode_update', { turnBased: true });
       }
 
       // 11. Start AI tick for this floor
@@ -4943,6 +5335,10 @@ module.exports = {
           return;
         }
 
+        // Clean up turn-based overworld mode
+        var exitZoneId = getZoneIdForDungeon(info.dungeonId, info.floorNum);
+        cleanupTurnMode(socket.id, exitZoneId);
+
         // Clean up active turn-based combat before exiting
         var exitCombat = dungeonCombat.getCombatBySocketId(socket.id);
         if (exitCombat) {
@@ -5102,6 +5498,22 @@ module.exports = {
           return;
         }
 
+        // Turn-based overworld mode: enforce turn order and movement points
+        var _turnMoveDeduct = false;
+        if (moveFPCheck && moveFPCheck.turnBasedMode) {
+          var moveTms = turnModeState.get(moveZoneCheck);
+          if (!moveTms || moveTms.currentUnitId !== 'player_' + socket.id) {
+            socket.emit('dungeon_error', { message: 'Not your turn' });
+            return;
+          }
+          if (!moveTms.movesRemaining || moveTms.movesRemaining <= 0) {
+            socket.emit('dungeon_error', { message: 'No movement points remaining' });
+            return;
+          }
+          _turnMoveDeduct = true;
+          // Decrement after validation passes (below)
+        }
+
         var floor = getFloorForPlayer(socket.id);
         if (!floor) return;
 
@@ -5138,6 +5550,12 @@ module.exports = {
 
         // Update position
         state.updatePlayerPosition(socket.id, x * 32, y * 32, facing);
+
+        // Deduct move point now that all validation passed
+        if (_turnMoveDeduct) {
+          var deductTms = turnModeState.get(moveZoneCheck);
+          if (deductTms) deductTms.movesRemaining--;
+        }
 
         var zoneId = getZoneIdForDungeon(info.dungeonId, info.floorNum);
         socket.to('zone:' + zoneId).emit('dungeon_player_moved', {
@@ -5256,7 +5674,7 @@ module.exports = {
                   : 'A hidden ' + invEnemy.name + ' ambushes you!',
               });
               // Initiate combat with this invisible enemy
-              initiateTurnCombat(socket, io, state, accounts, socketAccountMap, invUser, floor, info, invEnemy, invEi);
+              initiateTurnCombat(socket, io, state, accounts, socketAccountMap, invUser, floor, info, invEnemy, invEi, null);
             }
             break; // Only one ambush per move
           }
@@ -5302,7 +5720,6 @@ module.exports = {
                 socket.emit('dungeon_vision_changed', {
                   visionType: 'normal',
                   manaCostPerTurn: 0,
-                  colorFilter: 'none',
                   reason: 'mana_depleted',
                 });
               }
@@ -5322,6 +5739,15 @@ module.exports = {
           moveEchoFp._echolocationCurrentTurn++;
           if (moveEchoFp._echolocationCurrentTurn % dungeonVision.ECHOLOCATION_PULSE_INTERVAL === 0) {
             moveEchoFp._echolocationPulseTurn = moveEchoFp._echolocationCurrentTurn;
+          }
+        }
+
+        // Turn-based mode: send updated move points after move
+        var tbMoveFp = (floorPlayers.get(moveZoneId) || new Map()).get(socket.id);
+        if (tbMoveFp && tbMoveFp.turnBasedMode) {
+          var tbTms = turnModeState.get(moveZoneId);
+          if (tbTms) {
+            socket.emit('dungeon_turn_update', { movesRemaining: tbTms.movesRemaining });
           }
         }
 
@@ -5370,6 +5796,87 @@ module.exports = {
     });
 
     // ------------------------------------------------------------------
+    // dungeon_toggle_turn_mode — BG3-style real-time / turn-based toggle
+    // ------------------------------------------------------------------
+    socket.on('dungeon_toggle_turn_mode', function() {
+      try {
+        var info = playerDungeons.get(socket.id);
+        if (!info) return;
+        var zoneId = getZoneIdForDungeon(info.dungeonId, info.floorNum);
+        var pMap = floorPlayers.get(zoneId);
+        var fp = pMap ? pMap.get(socket.id) : null;
+        if (!fp) return;
+
+        // Cannot toggle during tactical combat
+        if (fp.inTurnCombat) {
+          socket.emit('dungeon_error', { message: 'Cannot toggle mode during tactical combat' });
+          return;
+        }
+
+        // Floor-wide: check if turn mode already active on this floor
+        var tms = turnModeState.get(zoneId);
+        var wasActive = !!(tms && tms.active);
+
+        if (wasActive) {
+          // Cannot toggle off while paused (someone is in tactical combat)
+          if (tms.paused) {
+            socket.emit('dungeon_error', { message: 'Cannot toggle mode while tactical combat is active' });
+            return;
+          }
+          // Toggling OFF: end turn mode for entire floor
+          disableFloorTurnMode(zoneId);
+        } else {
+          // Toggling ON: enable for entire floor
+          enableFloorTurnMode(zoneId);
+        }
+      } catch (err) {
+        console.error('[dungeon_toggle_turn_mode] Error:', err.message);
+      }
+    });
+
+    // ------------------------------------------------------------------
+    // dungeon_end_turn — player explicitly ends their overworld turn
+    // ------------------------------------------------------------------
+    socket.on('dungeon_end_turn', function() {
+      try {
+        var info = playerDungeons.get(socket.id);
+        if (!info) return;
+        var zoneId = getZoneIdForDungeon(info.dungeonId, info.floorNum);
+        var tms = turnModeState.get(zoneId);
+        if (!tms || tms.currentUnitId !== 'player_' + socket.id) return;
+        endPlayerTurnMode(socket.id, zoneId);
+      } catch (err) {
+        console.error('[dungeon_end_turn] Error:', err.message);
+      }
+    });
+
+    // ------------------------------------------------------------------
+    // dungeon_dash — spend action to gain extra movement (BG3 Dash)
+    // ------------------------------------------------------------------
+    socket.on('dungeon_dash', function() {
+      try {
+        var info = playerDungeons.get(socket.id);
+        if (!info) return;
+        var zoneId = getZoneIdForDungeon(info.dungeonId, info.floorNum);
+        var tms = turnModeState.get(zoneId);
+        if (!tms || !tms.active) return;
+        if (tms.currentUnitId !== 'player_' + socket.id) {
+          socket.emit('dungeon_error', { message: 'Not your turn' });
+          return;
+        }
+        if (tms.hasDashed) {
+          socket.emit('dungeon_error', { message: 'Already dashed this turn' });
+          return;
+        }
+        tms.hasDashed = true;
+        tms.movesRemaining += TURN_MODE_MOVE_POINTS;
+        socket.emit('dungeon_turn_update', { movesRemaining: tms.movesRemaining, dashed: true });
+      } catch (err) {
+        console.error('[dungeon_dash] Error:', err.message);
+      }
+    });
+
+    // ------------------------------------------------------------------
     // dungeon_descend
     // ------------------------------------------------------------------
     socket.on('dungeon_descend', function() {
@@ -5390,6 +5897,9 @@ module.exports = {
           socket.emit('dungeon_error', { message: 'Cannot descend during tactical combat' });
           return;
         }
+
+        // Clean up turn-based overworld mode before changing floors
+        cleanupTurnMode(socket.id, descZoneCheck);
 
         var floor = getFloorForPlayer(socket.id);
         if (!floor) {
@@ -5593,11 +6103,12 @@ module.exports = {
             });
 
             // Start grace period for other parties, then initiate boss combat
-            setTimeout(function() {
+            var _lichBossGraceTimer = setTimeout(function() {
               if (lichRaidState && lichRaidState.phase === 'boss') {
                 lichRaidStartBossCombat();
               }
             }, LICH_RAID_BOSS_GRACE_MS);
+            if (_lichBossGraceTimer && _lichBossGraceTimer.unref) _lichBossGraceTimer.unref();
           }
 
           // Override zone transition to use raid zone ID
@@ -5751,6 +6262,10 @@ module.exports = {
           return;
         }
 
+        // Clean up turn-based overworld mode before changing floors
+        var ascZoneCheck = getZoneIdForDungeon(info.dungeonId, info.floorNum);
+        cleanupTurnMode(socket.id, ascZoneCheck);
+
         var floor = getFloorForPlayer(socket.id);
         if (!floor) return;
 
@@ -5871,8 +6386,19 @@ module.exports = {
         // Inject attack noise event
         addNoiseEvent(floor, 'attack', ptx, pty, 0);
 
+        // Ranged weapon = player surprise (caught off guard)
+        var surpriseFor = (attackRange > 1.5) ? 'player' : null;
+
+        // Pause turn mode during tactical combat
+        var atkZoneId2 = getZoneIdForDungeon(info.dungeonId, info.floorNum);
+        var atkTms = turnModeState.get(atkZoneId2);
+        if (atkTms && atkTms.active) {
+          atkTms.paused = true;
+          if (atkTms.turnTimer) { clearTimeout(atkTms.turnTimer); atkTms.turnTimer = null; }
+        }
+
         // Initiate turn-based tactical combat
-        initiateTurnCombat(socket, io, state, accounts, socketAccountMap, user, floor, info, enemy, enemyIndex);
+        initiateTurnCombat(socket, io, state, accounts, socketAccountMap, user, floor, info, enemy, enemyIndex, surpriseFor);
       } catch (err) {
         console.error('[dungeon_attack] Error:', err.message);
         socket.emit('dungeon_error', { message: 'Internal server error' });
@@ -7351,7 +7877,6 @@ module.exports = {
           visionType: newVision,
           availableVisions: availableVisions,
           manaCostPerTurn: (visionDef && visionDef.manaCostPerTurn) || 0,
-          colorFilter: (visionDef && visionDef.colorFilter) || 'none',
         });
 
       } catch (err) {
@@ -7686,6 +8211,7 @@ module.exports = {
             downedDisconnectTimers.delete(_dcAccKey);
             triggerPermadeath(null, io, state, accounts, _dcAccKey, _dcInfo, _dcCause);
           }, 30000);
+          if (graceTimer && graceTimer.unref) graceTimer.unref();
           downedDisconnectTimers.set(dcAccKey, { timer: graceTimer, dcInfo: _dcInfo, causeOfDeath: _dcCause });
         }
       }
@@ -7707,6 +8233,11 @@ module.exports = {
       if (info && info.dungeonId && info.dungeonId.indexOf('minirift_') === 0) {
         var dcRiftId = info.riftId || info.dungeonId.slice(9);
         overworldRifts.removePlayer(dcRiftId, socket.id);
+      }
+      // Clean up turn-based overworld mode
+      if (info) {
+        var dcZoneId = getZoneIdForDungeon(info.dungeonId, info.floorNum);
+        cleanupTurnMode(socket.id, dcZoneId);
       }
       removePlayerFromFloor(socket.id);
       playerDungeons.delete(socket.id);

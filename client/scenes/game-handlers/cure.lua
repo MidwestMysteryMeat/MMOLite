@@ -20,7 +20,7 @@ function M.register(client, game, ctx)
         table.insert(chat.messages, {
             authorName = "System",
             authorColor = "#44FF88",
-            text = data.message or "Affliction cured.",
+            content = data.message or "Affliction cured.",
             isSystem = true,
         })
         local myId = getMyId()
@@ -35,7 +35,7 @@ function M.register(client, game, ctx)
         table.insert(chat.messages, {
             authorName = "System",
             authorColor = "#FF4444",
-            text = data.message or "Cure failed.",
+            content = data.message or "Cure failed.",
             isSystem = true,
         })
     end)

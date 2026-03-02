@@ -6,6 +6,7 @@ local M = {}
 M.EVENTS = {
     "disease_status", "disease_contracted", "disease_symptom",
     "weather_info", "influence_info", "ecology_info",
+    "lycanthropy_exposure", "lycanthropy_infected", "vampire_bite_exposure",
 }
 
 function M.register(client, game)
@@ -57,6 +58,39 @@ function M.register(client, game)
             game._ecology.name = data.name or "unknown"
             game._ecology.resourceBonus = data.resourceBonus or 1.0
         end
+    end)
+
+    client:on("lycanthropy_exposure", function(data)
+        if not data then return end
+        table.insert(game._directorEvents, {
+            title = "Lycanthropy Exposure",
+            description = data.message or "You have been exposed to lycanthropy.",
+            type = "lycanthropy",
+            timer = 8,
+            fadeIn = 0,
+        })
+    end)
+
+    client:on("lycanthropy_infected", function(data)
+        if not data then return end
+        table.insert(game._directorEvents, {
+            title = "Lycanthropy: Infected!",
+            description = data.message or "The wolf blood burns through your veins.",
+            type = "lycanthropy",
+            timer = 10,
+            fadeIn = 0,
+        })
+    end)
+
+    client:on("vampire_bite_exposure", function(data)
+        if not data then return end
+        table.insert(game._directorEvents, {
+            title = "Vampire Bite!",
+            description = data.message or "You feel a sharp pain in your neck...",
+            type = "vampire",
+            timer = 8,
+            fadeIn = 0,
+        })
     end)
 end
 
