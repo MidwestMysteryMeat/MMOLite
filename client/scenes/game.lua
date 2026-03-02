@@ -15,142 +15,103 @@ local game = {}
 game._audio = require("lib.audio")
 game._assets = require("lib.assets")
 
+local handlerModules = {
+    -- Phase B: pure (client, game) only
+    require("scenes.game-handlers.karma-factions"),
+    require("scenes.game-handlers.companions"),
+    require("scenes.game-handlers.pets"),
+    require("scenes.game-handlers.ascension"),
+    require("scenes.game-handlers.guild"),
+    require("scenes.game-handlers.minigame"),
+    require("scenes.game-handlers.npc-dialogue"),
+    require("scenes.game-handlers.environment"),
+    require("scenes.game-handlers.director"),
+    -- Phase C1: simple ctx
+    require("scenes.game-handlers.admin"),
+    require("scenes.game-handlers.portal"),
+    require("scenes.game-handlers.jail"),
+    require("scenes.game-handlers.quest"),
+    require("scenes.game-handlers.doom"),
+    require("scenes.game-handlers.patrol"),
+    require("scenes.game-handlers.base-raid"),
+    -- Phase C2: mmoInventory/account ctx
+    require("scenes.game-handlers.bank"),
+    require("scenes.game-handlers.npc-shop"),
+    require("scenes.game-handlers.auction"),
+    require("scenes.game-handlers.trade"),
+    require("scenes.game-handlers.cure"),
+    require("scenes.game-handlers.npc-action"),
+    require("scenes.game-handlers.crafting-advanced"),
+    -- Phase C3: complex ctx
+    require("scenes.game-handlers.cards"),
+    require("scenes.game-handlers.equipment"),
+    require("scenes.game-handlers.knowledge"),
+    require("scenes.game-handlers.mastery"),
+    require("scenes.game-handlers.farming"),
+    require("scenes.game-handlers.monster"),
+}
+
 -- Single source of truth for all client:on() event names registered by this scene.
 -- Both setupListeners() and unload() reference this list to prevent cleanup drift.
-local SCENE_EVENTS = {
+local INLINE_EVENTS = {
     "zone_state", "player_entered_zone", "player_left_zone", "player_moved",
-    "zone_move_corrected",
-    "zone_message", "zone_positions", "world_time", "server_stats",
-    "account_created", "chips_updated", "harvest_result", "harvest_error",
-    "resource_depleted", "resource_destroyed", "inventory_updated",
+    "zone_move_corrected", "zone_message", "zone_positions", "world_time",
+    "server_stats", "account_created", "chips_updated", "harvest_result",
+    "harvest_error", "resource_depleted", "resource_destroyed", "inventory_updated",
     "craft_result", "craft_error", "recipes_list", "object_placed",
-    "object_removed", "place_result", "chunk_data",
-    "plot_claimed", "plot_unclaimed", "claim_plot_result", "unclaim_plot_result",
-    "disconnect", "rpg_stats", "stat_updated", "stat_error",
-    "card_collection", "card_pack_opened", "card_equipped", "card_unequipped",
-    "card_fuse_result", "card_error", "mount_changed",
-    "portal_list", "portal_traveled", "portal_error",
-    "dungeon_floor_state", "dungeon_player_moved",
-    "dungeon_chest_result", "dungeon_trap_triggered", "dungeon_npc_result",
-    "dungeon_corpse_examined", "dungeon_corpse_result",
-    "dungeon_camp_placed", "dungeon_camp_result", "dungeon_camp_ambush",
-    "dungeon_guild_result", "dungeon_quest_list_result", "dungeon_quest_complete_result",
-    "dungeon_quest_completed",
-    "dungeon_leaderboard_result", "dungeon_enemy_updated", "dungeon_player_died",
-    "dungeon_combat_state", "dungeon_error", "cave_is_dungeon",
-    "dungeon_enemies_update", "dungeon_enemy_attack", "dungeon_enemy_attack_visual",
-    "dungeon_enemy_heal", "dungeon_boss_phase",
-    "dungeon_notification", "dungeon_ambush", "dungeon_mana_update",
-    "dungeon_heal", "dungeon_form_interact_result", "dungeon_animal_interact_result",
-    "dungeon_warning", "dungeon_combat_use_card_result",
-    "dungeon_visibility_update", "dungeon_torch_active", "dungeon_lantern_active",
-    "dungeon_torch_placed", "dungeon_chat_message", "dungeon_vision_changed",
-    "dungeon_harvest_result", "dungeon_trap_detected", "dungeon_shortcut_found",
-    "loot_dropped",
-    "player_downed", "player_downed_notification", "player_revived",
-    "permadeath_triggered", "hall_of_heroes_result",
-    "tc_combat_start", "tc_combat_turn",
-    "tc_combat_end", "tc_combat_initiative", "tc_combat_reaction",
-    "tc_combat_reaction_result", "tc_combat_error", "tc_combat_join_offer",
-    "equipment_updated", "equip_error", "durability_info",
-    "abilities_list", "ability_error", "ability_result", "cooldown_update",
-    "card_ability_result", "card_cooldown_update",
-    "food_consumed", "food_error", "repair_result", "repair_error",
-    "connection_added", "connection_removed", "zone_kicked",
-    "zone_error",
-    "world_event", "zone_director_update",
-    "raid_state_update", "raid_boss_ready", "raid_boss_hp",
-    "raid_boss_wipe", "raid_boss_mechanic",
-    "party_created", "party_updated", "party_disbanded",
-    "party_invite_received", "party_message", "party_error",
-    "party_left", "party_invite_sent", "party_kicked",
-    "server_rules_updated", "server_shutdown", "admin_kicked", "admin_result",
-    "leviathan_positions", "leviathan_warning", "leviathan_aggro",
-    "leviathan_combat_start", "leviathan_part_destroyed",
-    "leviathan_phase_change", "leviathan_enrage",
-    "leviathan_flee_success", "leviathan_flee_failed",
-    "leviathan_info_result",
-    "npc_dialogue", "npc_dialogue_end",
-    "npc_shop_list", "npc_shop_prices_result", "npc_shop_bought",
-    "npc_shop_sold", "npc_shop_error",
-    "trade_request_received", "trade_request_sent", "trade_started",
-    "trade_offer_updated", "trade_partner_confirmed", "trade_completed",
-    "trade_cancelled", "trade_expired", "trade_error",
-    "quest_accepted", "quest_progress", "quest_turnin_result", "quest_list_result",
-    "quest_error",
-    "monster_capture_result", "monster_evolve_result",
-    "zone_monsters", "zone_monster_spawned", "zone_monster_died",
-    "zone_monster_hit", "zone_monster_attack", "zone_monster_killed", "zone_monster_positions",
-    "zone_attack_error",
-    "biome_weather", "town_rumors", "town_rep_update", "cave_enter_error",
-    "zone_animal_interact_result", "bonus_drop", "item_broken", "durability_warning",
-    "batch_move",
-    "knowledge_data", "knowledge_book_content",
-    "knowledge_book_discovered", "knowledge_term_unlocked",
-    "corruption_update", "corruption_damage", "town_under_attack",
-    "raid_gathering_update", "raid_joined", "raid_activated", "raid_cancelled",
-    "raid_warning", "raid_boss_phase", "raid_boss_engage", "raid_complete",
-    "corruption_cleanse_result", "corruption_card_cleanse_result",
-    "tc_boss_phase_change", "tc_units_spawned", "tc_corruption_zones",
-    "tc_boss_soul_harvest", "tc_boss_attack",
-    "seed_planted", "crop_watered", "crop_harvested", "crop_cleared",
-    "crop_status", "farm_update", "farm_error",
-    "animal_bought", "animal_placed", "animals_fed", "products_collected", "animal_named",
-    "furniture_effect",
-    "base_raid_alert", "raid_wave", "raid_ended",
-    "unclaim_plot_confirm",
-    "mmo_auction_listings", "mmo_auction_listed", "mmo_auction_bought",
-    "mmo_auction_cancelled", "mmo_auction_my_results", "mmo_auction_error",
-    "mmo_auction_update",
-    "cure_success", "cure_error",
-    "rift_spawned", "rift_destroyed", "rift_sealed_rewards",
-    "card_vendor_bought", "card_vendor_sold", "card_vendor_catalog",
-    "card_loadout_saved", "card_loadouts",
-    "card_evolution_complete", "card_evolution_info", "card_curse_cleansed",
-    "dungeon_quest_update",
-    "mastery_tree_status", "mastery_invest_result", "mastery_reset_result",
-    "doom_status", "doom_countdown_started", "doom_countdown_paused",
-    "doom_countdown_resumed", "doom_ascension_event",
-    "season_visual_update",
-    "disease_status", "disease_contracted", "disease_symptom",
-    "weather_info", "influence_info", "ecology_info",
-    "patrol_spawned", "patrol_moved", "patrol_despawned", "patrol_arrived",
-    "bank_contents", "bank_result", "bank_error", "npc_action",
+    "object_removed", "place_result", "chunk_data", "plot_claimed",
+    "plot_unclaimed", "claim_plot_result", "unclaim_plot_result", "disconnect",
+    "rpg_stats", "stat_updated", "stat_error", "dungeon_floor_state",
+    "dungeon_player_moved", "dungeon_chest_result", "dungeon_trap_triggered", "dungeon_npc_result",
+    "dungeon_corpse_examined", "dungeon_corpse_result", "dungeon_camp_placed", "dungeon_camp_result",
+    "dungeon_camp_ambush", "dungeon_guild_result", "dungeon_quest_list_result", "dungeon_quest_complete_result",
+    "dungeon_quest_completed", "dungeon_leaderboard_result", "dungeon_enemy_updated", "dungeon_player_died",
+    "dungeon_combat_state", "dungeon_error", "cave_is_dungeon", "dungeon_enemies_update",
+    "dungeon_enemy_attack", "dungeon_enemy_attack_visual", "dungeon_enemy_heal", "dungeon_boss_phase",
+    "dungeon_notification", "dungeon_ambush", "dungeon_mana_update", "dungeon_heal",
+    "dungeon_form_interact_result", "dungeon_animal_interact_result", "dungeon_warning", "dungeon_combat_use_card_result",
+    "dungeon_visibility_update", "dungeon_torch_active", "dungeon_lantern_active", "dungeon_torch_placed",
+    "dungeon_chat_message", "dungeon_vision_changed", "dungeon_harvest_result", "dungeon_trap_detected",
+    "dungeon_shortcut_found", "loot_dropped", "player_downed", "player_downed_notification",
+    "player_revived", "permadeath_triggered", "hall_of_heroes_result", "tc_combat_start",
+    "tc_combat_turn", "tc_combat_end", "tc_combat_initiative", "tc_combat_reaction",
+    "tc_combat_reaction_result", "tc_combat_error", "tc_combat_join_offer", "connection_added",
+    "connection_removed", "zone_kicked", "zone_error", "raid_state_update",
+    "raid_boss_ready", "raid_boss_hp", "raid_boss_wipe", "raid_boss_mechanic",
+    "party_created", "party_updated", "party_disbanded", "party_invite_received",
+    "party_message", "party_error", "party_left", "party_invite_sent",
+    "party_kicked", "leviathan_positions", "leviathan_warning", "leviathan_aggro",
+    "leviathan_combat_start", "leviathan_part_destroyed", "leviathan_phase_change", "leviathan_enrage",
+    "leviathan_flee_success", "leviathan_flee_failed", "leviathan_info_result", "biome_weather",
+    "town_rumors", "town_rep_update", "cave_enter_error", "zone_animal_interact_result",
+    "bonus_drop", "item_broken", "durability_warning", "batch_move",
+    "corruption_update", "corruption_damage", "town_under_attack", "raid_gathering_update",
+    "raid_joined", "raid_activated", "raid_cancelled", "raid_warning",
+    "raid_boss_phase", "raid_boss_engage", "raid_complete", "corruption_cleanse_result",
+    "corruption_card_cleanse_result", "tc_boss_phase_change", "tc_units_spawned", "tc_corruption_zones",
+    "tc_boss_soul_harvest", "tc_boss_attack", "unclaim_plot_confirm", "rift_spawned",
+    "rift_destroyed", "rift_sealed_rewards", "dungeon_quest_update", "season_visual_update",
     "grid_state", "grid_update", "grid_reject", "grid_item_added",
-    "zone_corpse_spawned", "zone_corpse_removed",
-    "loot_corpse_result",
-    "zone_container_spawned", "zone_container_looted",
-    "loot_container_result",
-    -- Karma / factions
-    "karma_status", "bounty_list",
-    "faction_status", "faction_list",
-    -- Companions
-    "companion_hired", "companion_error", "companion_list",
-    "companion_dismissed", "companion_status",
-    -- Pets
-    "pet_tamed", "pet_error", "pet_list", "pet_fed", "pet_active_set",
-    -- Jail
-    "jail_status", "jail_bail", "jail_serve_time",
-    -- Ascension
-    "ascension_status", "ascension_result", "ascension_ap_result",
-    -- Guild
-    "guild_created", "guild_error", "guild_list_result", "guild_updated",
-    "guild_left", "guild_message", "guild_vault_contents", "guild_vault_updated",
-    -- Crafting minigame
-    "craft_minigame",
-    -- Crafting: advanced results
-    "gem_socket_result", "augment_result", "imbue_result", "inscribe_result",
-    -- Guard hostility
-    "guard_hostile",
-    -- Other
-    "affliction_status", "npc_interact_result", "wild_encounter_result",
-    "placed_objects", "portal_crafted", "portal_destroyed",
-    "pin_setup_required", "monster_roster", "monster_party_updated",
+    "affliction_status", "npc_interact_result", "wild_encounter_result", "placed_objects",
+    "portal_crafted", "portal_destroyed", "pin_setup_required",
 }
+
+-- Build SCENE_EVENTS dynamically from inline + handler modules
+local SCENE_EVENTS = {}
+for _, evt in ipairs(INLINE_EVENTS) do
+    SCENE_EVENTS[#SCENE_EVENTS + 1] = evt
+end
+for _, mod in ipairs(handlerModules) do
+    if mod.EVENTS then
+        for _, evt in ipairs(mod.EVENTS) do
+            SCENE_EVENTS[#SCENE_EVENTS + 1] = evt
+        end
+    end
+end
 
 -- Debug logger: writes to file so we can diagnose issues in fused exe (no console)
 local _debugLines = {}
-local function debugLog(msg)
+function game.debugLog(msg)
     local line = os.date("%H:%M:%S") .. " " .. tostring(msg)
     print("[dbg] " .. line)
     table.insert(_debugLines, line)
@@ -160,6 +121,7 @@ local function debugLog(msg)
         love.filesystem.append("debug.log", line .. "\n")
     end)
 end
+local debugLog = game.debugLog
 
 local fonts = {}
 local fadeIn = 0
@@ -216,7 +178,7 @@ local chat = {
 }
 
 -- Helper: insert a system chat message with RGB color table {r,g,b} (0-1 range)
-local function addChatMessage(text, rgbColor)
+function game.addChatMessage(text, rgbColor)
     local hex = "#CCCCCC"
     if rgbColor then
         hex = string.format("#%02X%02X%02X",
@@ -233,6 +195,7 @@ local function addChatMessage(text, rgbColor)
     })
     while #chat.messages > 50 do table.remove(chat.messages, 1) end
 end
+local addChatMessage = game.addChatMessage
 
 -- Resources
 local resources = {}     -- list from server zone state
@@ -419,7 +382,8 @@ game._minigame = {
 
 -- Notification/warning state
 game._notifications = {}     -- [{text, color, timer, maxTimer}]
-local NOTIFICATION_DURATION = 4.0
+game.NOTIFICATION_DURATION = 4.0
+local NOTIFICATION_DURATION = game.NOTIFICATION_DURATION
 
 -- Patrol units visible on overworld
 game._patrolUnits = {}       -- {id -> {x, y, name, members}}
@@ -429,7 +393,6 @@ game._abilityBar = {
     abilities = {},          -- [{name, manaCost, cooldown, maxCooldown, cardId, index}]
     hoverIndex = nil,
 }
-
 
 -- Context menu item definitions (label + action key)
 local CONTEXT_MENU_ITEMS_BASE = {
@@ -483,12 +446,13 @@ local skills = {}
 local floatingTexts = {}  -- { text, x, y, color, timer }
 local MAX_FLOATING_TEXTS = 50
 
-local function addFloatingText(entry)
+function game.addFloatingText(entry)
     if #floatingTexts >= MAX_FLOATING_TEXTS then
         table.remove(floatingTexts, 1)
     end
     table.insert(floatingTexts, entry)
 end
+local addFloatingText = game.addFloatingText
 
 -- MMO Inventory
 local mmoInventory = { wood = 0, stone = 0, iron_ore = 0, iron_bar = 0, items = {} }
@@ -799,7 +763,7 @@ game._trade = {
 }
 
 -- Helper: reset trade state to defaults
-local function resetTradeState()
+function game.resetTradeState()
     game._trade.show = false
     game._trade.tradeId = nil
     game._trade.partnerId = nil
@@ -815,6 +779,7 @@ local function resetTradeState()
     game._trade.myScroll = 0
     game._trade.offerScroll = 0
 end
+local resetTradeState = game.resetTradeState
 
 -- Portal travel panel state
 game._portal = {
@@ -986,7 +951,6 @@ local onboarding = {
     currentTip = nil,             -- { text, timer }
     dismissed = false,
 }
-
 
 -- UI scale factor (1.0 at 1024px width, scales proportionally for larger/smaller displays)
 local uiScale = 1
@@ -1301,6 +1265,34 @@ function game.setupListeners()
     gridInv.init(client, fonts, game)
     -- Request grid state on connect
     client:emit("grid_sync", {})
+
+    -- Build shared context for handler modules that need file-scope locals
+    local ctx = {
+        -- Tables (mutated in-place, never reassigned — direct refs work)
+        players = players, ui = ui, rpg = rpg, chat = chat,
+        dungeon = dungeon, overworld = overworld, sprint = sprint,
+        knowledge = knowledge, mastery = mastery, doom = doom,
+        activePatrols = activePatrols, corruption = corruption,
+        permadeath = permadeath, identity = identity,
+        zoneMonsters = zoneMonsters, zoneCorpses = zoneCorpses,
+        zoneWorldContainers = zoneWorldContainers,
+        -- Reassignable locals (need getter/setter)
+        getAccount = function() return account end,
+        getMmoInventory = function() return mmoInventory end,
+        setMmoInventory = function(inv) mmoInventory = inv end,
+        getMyId = function() return myId end,
+        getCorpseLootPanel = function() return corpseLootPanel end,
+        setCorpseLootPanel = function(p) corpseLootPanel = p end,
+        getContainerLootPanel = function() return containerLootPanel end,
+        setContainerLootPanel = function(p) containerLootPanel = p end,
+        setPackReveal = function(pr) packReveal = pr end,
+        setDurabilityData = function(d) durabilityData = d end,
+    }
+
+    -- Register all handler modules
+    for _, mod in ipairs(handlerModules) do
+        mod.register(client, game, ctx)
+    end
 
     -- Handle zone errors (e.g. expired dungeon floor) — fallback to starter_town
     client:on("zone_error", function(data)
@@ -1636,232 +1628,6 @@ function game.setupListeners()
                 type = "lich_attack",
                 timer = 15,
             })
-        end
-    end)
-
-    -- Doom ascension events
-    client:on("doom_status", function(data)
-        if data then
-            doom.active = data.active or false
-            doom.remainingMs = data.remainingMs or 0
-            doom.pushbackCount = data.pushbackCount or 0
-            doom.doomAscensionCount = data.doomAscensionCount or 0
-            doom.capitalCorrupted = data.capitalCorrupted or false
-            doom.lastUpdate = love.timer.getTime()
-        end
-    end)
-
-    client:on("doom_countdown_started", function(data)
-        if data then
-            doom.active = true
-            doom.remainingMs = 48 * 3600000
-            doom.lastUpdate = love.timer.getTime()
-            doom.capitalCorrupted = true
-            doom.flashTimer = 3.0  -- 3s capital breach warning flash
-            table.insert(game._directorEvents, {
-                title = "DOOM APPROACHES",
-                description = data.message or "The corruption has breached Solara.",
-                type = "doom_started",
-                timer = 10,
-            })
-        end
-    end)
-
-    client:on("doom_countdown_paused", function(data)
-        if data then
-            doom.active = false
-            doom.remainingMs = data.remainingMs or 0
-            doom.pushbackCount = data.pushbackCount or 0
-            doom.capitalCorrupted = false
-            doom.lastUpdate = love.timer.getTime()
-            table.insert(game._directorEvents, {
-                title = "Doom Paused",
-                description = data.message or "The corruption recedes from Solara.",
-                type = "doom_paused",
-                timer = 8,
-            })
-        end
-    end)
-
-    client:on("doom_countdown_resumed", function(data)
-        if data then
-            doom.active = true
-            doom.remainingMs = data.remainingMs or 0
-            doom.capitalCorrupted = true
-            doom.lastUpdate = love.timer.getTime()
-            table.insert(game._directorEvents, {
-                title = "DOOM RESUMES",
-                description = data.message or "The corruption reclaims Solara.",
-                type = "doom_resumed",
-                timer = 8,
-            })
-        end
-    end)
-
-    client:on("doom_ascension_event", function(data)
-        doom.showEvent = true
-        doom.eventTimer = 8.0
-        doom.eventMessage = data and data.message or "The world resets."
-        doom.doomAscensionCount = data and data.doomAscensionCount or 0
-    end)
-
-    -- ACO patrol system: visible NPC faction armies on overworld
-    client:on("patrol_spawned", function(data)
-        if data and data.id then
-            activePatrols[data.id] = {
-                factionId = data.factionId,
-                cx = data.cx, cy = data.cy,
-                strength = data.strength or 1,
-                description = data.description or "Patrol",
-                hostile = data.hostile or false,
-                color = data.color or "#ffffff",
-            }
-        end
-    end)
-
-    client:on("patrol_moved", function(data)
-        if data and data.id and activePatrols[data.id] then
-            activePatrols[data.id].cx = data.cx
-            activePatrols[data.id].cy = data.cy
-            activePatrols[data.id].strength = data.strength or activePatrols[data.id].strength
-        end
-    end)
-
-    client:on("patrol_despawned", function(data)
-        if data and data.id then
-            activePatrols[data.id] = nil
-        end
-    end)
-
-    client:on("patrol_arrived", function(data)
-        if data and data.id then
-            activePatrols[data.id] = nil
-            if data.hostile then
-                table.insert(game._directorEvents, {
-                    title = (data.description or "Hostile Force") .. " Arrives!",
-                    description = "A hostile force has reached its target.",
-                    type = "patrol_arrived",
-                    timer = 8,
-                })
-            end
-        end
-    end)
-
-    -- Bank vault events
-    client:on("bank_contents", function(data)
-        if data then
-            game._bank.data = data
-            game._bank.transactionLock = false
-        end
-    end)
-
-    client:on("bank_result", function(data)
-        if not data then return end
-        game._bank.transactionLock = false
-        if data.success then
-            if data.bank then game._bank.data = data.bank end
-            if data.chips ~= nil then
-                if identity and identity.account then identity.account.chips = data.chips end
-            end
-            if data.inventory then
-                mmoInventory = data.inventory
-                if identity and identity.account then identity.account.mmoInventory = data.inventory end
-            end
-            if data.message then
-                game._bank.message = { text = data.message, color = {1, 0.85, 0.2}, timer = 3 }
-            end
-        end
-    end)
-
-    client:on("bank_error", function(data)
-        game._bank.transactionLock = false
-        if data and data.message then
-            game._bank.message = { text = data.message, color = {1, 0.3, 0.3}, timer = 3 }
-        end
-    end)
-
-    -- NPC action dispatch (server sends after dialogue choice with an action)
-    client:on("npc_action", function(data)
-        if not data or not data.action then return end
-        if data.action == "open_bank" then
-            game.closeAllPanels()
-            game._bank.show = true
-            game._bank.tab = "gold"
-            game._bank.selected = nil
-            game._bank.amount = 1
-            game._bank.scroll = 0
-            game._bank.data = nil
-            game._bank.transactionLock = false
-            if client then client:emit("bank_open", {}) end
-        elseif data.action == "healed" then
-            local me = players[myId]
-            if me then
-                addFloatingText({ text = "Healed!", x = me.x, y = me.y - 40, color = {0.3, 1, 0.5}, timer = 2.5 })
-            end
-        elseif data.action == "reveal_rumors" then
-            if data.rumors then
-                for _, rumor in ipairs(data.rumors) do
-                    table.insert(chat.messages, { text = "[Rumor] " .. (rumor.text or rumor), color = "#CCAA66" })
-                end
-            end
-        elseif data.action == "faction_rep_gained" then
-            table.insert(chat.messages, { text = "[Faction] Reputation gained with " .. (data.factionId or "unknown"), color = "#88CCFF" })
-        elseif data.action == "karma_changed" then
-            table.insert(chat.messages, { text = "[Karma] Your karma is now " .. tostring(data.karma or 0), color = "#AAFFAA" })
-        end
-    end)
-
-    -- Disease system events
-    client:on("disease_status", function(data)
-        if data then
-            game._disease.playerDiseases = data.diseases or {}
-            game._disease.chunkDiseases = data.chunkDiseases or {}
-        end
-    end)
-
-    client:on("disease_contracted", function(data)
-        if data then
-            game._disease.contractedFlash = 3.0
-            game._disease.contractedName = data.name or "Unknown Disease"
-            table.insert(game._directorEvents, {
-                title = "Disease Contracted",
-                description = data.message or ("You have contracted " .. (data.name or "a disease")),
-                type = "disease",
-                timer = 8,
-            })
-        end
-    end)
-
-    client:on("disease_symptom", function(data)
-        if data then
-            game._disease.symptomMsg = (data.name or "Disease") .. ": " .. (data.damage or 0) .. " damage"
-            game._disease.symptomTimer = 2.0
-        end
-    end)
-
-    -- Weather propagation events
-    client:on("weather_info", function(data)
-        if data then
-            game._weather.weather = data.weather or "clear"
-            game._weather.intensity = data.intensity or 0.5
-            game._weather.wind = data.wind and data.wind.name or "east"
-        end
-    end)
-
-    -- Faction influence events
-    client:on("influence_info", function(data)
-        if data then
-            game._influence.controlling = data.controlling
-            game._influence.area = data.area or {}
-        end
-    end)
-
-    -- Ecology events
-    client:on("ecology_info", function(data)
-        if data then
-            game._ecology.state = data.state or -1
-            game._ecology.name = data.name or "unknown"
-            game._ecology.resourceBonus = data.resourceBonus or 1.0
         end
     end)
 
@@ -2442,223 +2208,6 @@ function game.setupListeners()
                 color = { 1, 0.3, 0.3 }, timer = 2.5,
             })
         end
-    end)
-
-    -- Card events
-    client:on("card_collection", function(data)
-        if data then
-            rpg.cards = data.cards or {}
-            rpg.equippedCards = data.equippedCards or {}
-            rpg.cardSlots = data.cardSlots or 4
-            rpg.pendingPacks = data.pendingPacks or 0
-            rpg.cardEffects = data.effects or {}
-            rpg.rarityInfo = data.rarityInfo or {}
-        end
-    end)
-
-    client:on("card_pack_opened", function(data)
-        if data then
-            game._audio.playPackOpen()
-            rpg.pendingPacks = data.pendingPacks or 0
-            if data.cards and #data.cards > 0 then
-                -- Start pack reveal animation instead of instant floating texts
-                packReveal = {
-                    cards = data.cards,
-                    currentIndex = 1,
-                    timer = 0,
-                    phase = "flip",       -- "flip" -> "show" -> "advance"
-                    flipProgress = 0,     -- 0..1 for flip animation
-                    done = false,
-                }
-            end
-            -- Refresh collection
-            if client then client:emit("get_cards", {}) end
-        end
-    end)
-
-    client:on("card_equipped", function(data)
-        if data then
-            rpg.equippedCards = data.equippedCards or {}
-            rpg.cardEffects = data.effects or {}
-        end
-    end)
-
-    client:on("card_unequipped", function(data)
-        if data then
-            rpg.equippedCards = data.equippedCards or {}
-            rpg.cardEffects = data.effects or {}
-        end
-    end)
-
-    client:on("card_fuse_result", function(data)
-        if data and data.success and data.newCard and myId and players[myId] then
-            addFloatingText({
-                text = "Fusion: " .. data.newCard.name .. " [" .. data.newCard.rarity .. "]!",
-                x = players[myId].x, y = players[myId].y - 40,
-                color = { 1, 0.6, 1 }, timer = 4,
-            })
-            if client then client:emit("get_cards", {}) end
-        end
-    end)
-
-    client:on("card_error", function(data)
-        if data and data.message and myId and players[myId] then
-            addFloatingText({
-                text = data.message,
-                x = players[myId].x, y = players[myId].y - 40,
-                color = { 1, 0.3, 0.3 }, timer = 2.5,
-            })
-        end
-    end)
-
-    -- Card vendor events
-    client:on("card_vendor_bought", function(data)
-        if data then
-            if account then account.coins = data.coins end
-            if myId and players[myId] then
-                addFloatingText({
-                    text = "Purchased card!",
-                    x = players[myId].x, y = players[myId].y - 40,
-                    color = { 0.3, 1, 0.5 }, timer = 2.5,
-                })
-            end
-            if client then client:emit("get_cards", {}) end
-        end
-    end)
-
-    client:on("card_vendor_sold", function(data)
-        if data then
-            if account then account.coins = data.coins end
-            if myId and players[myId] then
-                addFloatingText({
-                    text = "Sold for " .. (data.coinsReceived or 0) .. " coins",
-                    x = players[myId].x, y = players[myId].y - 40,
-                    color = { 1, 0.85, 0.2 }, timer = 2.5,
-                })
-            end
-            if client then client:emit("get_cards", {}) end
-            ui.selectedCard = nil
-        end
-    end)
-
-    client:on("card_vendor_catalog", function(data)
-        if data then
-            game._cardVendor.catalog = data.cards or {}
-        end
-    end)
-
-    -- Card loadout events
-    client:on("card_loadout_saved", function(data)
-        if data then
-            game._cardLoadouts.loadouts = data.loadouts or { nil, nil, nil, nil, nil }
-            if myId and players[myId] then
-                addFloatingText({
-                    text = "Loadout saved!",
-                    x = players[myId].x, y = players[myId].y - 40,
-                    color = { 0.5, 0.8, 1 }, timer = 2,
-                })
-            end
-        end
-    end)
-
-    client:on("card_loadouts", function(data)
-        if data then
-            game._cardLoadouts.loadouts = data.loadouts or { nil, nil, nil, nil, nil }
-        end
-    end)
-
-    -- Card evolution complete (path chosen, card evolved)
-    client:on("card_evolution_complete", function(data)
-        if not data then return end
-        local cardName = (data.card and data.card.name) or "Card"
-        addChatMessage("Evolution complete: " .. cardName .. " (Path " .. (data.path or "?") .. ")", {0.6, 0.3, 1})
-        if client then client:emit("get_cards", {}) end
-    end)
-
-    -- Card evolution info (evolution status query result)
-    client:on("card_evolution_info", function(data)
-        if not data then return end
-        if data.evolvable and data.paths then
-            addChatMessage("Card is ready to evolve! Paths available: " .. #data.paths, {0.7, 0.5, 1})
-        end
-    end)
-
-    -- Card curse cleansed
-    client:on("card_curse_cleansed", function(data)
-        if not data then return end
-        local cardName = (data.card and data.card.name) or "Card"
-        addChatMessage("Curse cleansed from " .. cardName .. "!", {0.3, 1, 0.3})
-        if client then client:emit("get_cards", {}) end
-    end)
-
-    -- Auction house events
-    client:on("mmo_auction_listings", function(data)
-        if data then
-            game._auction.listings = data.listings or {}
-            game._auction.page = data.page or 1
-            game._auction.totalPages = data.totalPages or 1
-            game._auction.totalResults = data.totalResults or 0
-        end
-    end)
-
-    client:on("mmo_auction_listed", function(data)
-        if data and myId and players[myId] then
-            addFloatingText({
-                text = "Listed: " .. (data.name or "item") .. " for " .. (data.price or 0) .. "c",
-                x = players[myId].x, y = players[myId].y - 40,
-                color = { 0.3, 1, 0.5 }, timer = 3,
-            })
-            if client then client:emit("get_cards", {}) end
-        end
-    end)
-
-    client:on("mmo_auction_bought", function(data)
-        if data and myId and players[myId] then
-            addFloatingText({
-                text = "Purchased: " .. (data.name or "item"),
-                x = players[myId].x, y = players[myId].y - 40,
-                color = { 0.3, 1, 0.5 }, timer = 3,
-            })
-            if account then account.coins = data.coins end
-            if client then client:emit("get_cards", {}) end
-        end
-    end)
-
-    client:on("mmo_auction_cancelled", function(data)
-        if data and myId and players[myId] then
-            addFloatingText({
-                text = "Listing cancelled",
-                x = players[myId].x, y = players[myId].y - 40,
-                color = { 0.7, 0.7, 0.8 }, timer = 2,
-            })
-            if client then client:emit("get_cards", {}) end
-        end
-    end)
-
-    client:on("mmo_auction_my_results", function(data)
-        if data then
-            game._auction.myListings = data.listings or {}
-        end
-    end)
-
-    client:on("mmo_auction_error", function(data)
-        if data and data.message and myId and players[myId] then
-            addFloatingText({
-                text = data.message,
-                x = players[myId].x, y = players[myId].y - 40,
-                color = { 1, 0.3, 0.3 }, timer = 2.5,
-            })
-        end
-    end)
-
-    client:on("mmo_auction_update", function()
-        if game._auction.show and client then
-            client:emit("mmo_auction_browse", game._auction.filters or {})
-        end
-    end)
-
-    client:on("mount_changed", function(data)
-        if data then rpg.mount = data.mount end
     end)
 
     -- Dungeon: floor state (entering a floor)
@@ -3652,145 +3201,9 @@ function game.setupListeners()
     -- End tactical combat listeners
     -- ================================================================
 
-    -- Equipment updated (also store durability and dual-wield combo if provided)
-    client:on("equipment_updated", function(data)
-        if not data or not data.equipment then return end
-        if rpg then
-            rpg.equipment = data.equipment
-            rpg.dualWieldCombo = data.dualWieldCombo or nil
-        end
-        if data.durability then durabilityData = data.durability end
-    end)
-
-    -- Equip error
-    client:on("equip_error", function(data)
-        if not data then return end
-        local me = players[myId]
-        if me then
-            addFloatingText({
-                text = data.message or "Equip error",
-                x = me.x, y = me.y - 40,
-                color = {1, 0.3, 0.3},
-                timer = 2,
-            })
-        end
-    end)
-
-    -- B4: Durability info response
-    client:on("durability_info", function(data)
-        if data and data.durability then
-            durabilityData = data.durability
-            -- Show game._notifications for broken/low durability items
-            for slot, info in pairs(data.durability) do
-                if info.broken then
-                    table.insert(game._notifications, { text = slot .. " item broke!", color = {1, 0.2, 0.2}, timer = NOTIFICATION_DURATION, maxTimer = NOTIFICATION_DURATION })
-                elseif info.low then
-                    table.insert(game._notifications, { text = slot .. " durability low!", color = {1, 0.7, 0.2}, timer = NOTIFICATION_DURATION, maxTimer = NOTIFICATION_DURATION })
-                end
-            end
-        end
-    end)
-
-    -- B4: Food consumed response
-    client:on("food_consumed", function(data)
-        if not data then return end
-        if data.inventory then mmoInventory = data.inventory end
-        local me = players[myId]
-        if me then
-            local msg = "+" .. (data.hpRestored or 0) .. " HP"
-            if data.buff then msg = msg .. " | " .. (data.buff.stat or "") .. " +" .. (data.buff.value or 0) end
-            addFloatingText({ text = msg, x = me.x, y = me.y - 40, color = {0.3, 1, 0.3}, timer = 2.5 })
-        end
-        -- Restore sprint stamina from food
-        sprint.stamina = math.min(sprint.MAX, sprint.stamina + sprint.FOOD_RESTORE)
-        -- Resync grid inventory (item was consumed)
-        if ui.showGridInventory then client:emit("grid_sync", {}) end
-    end)
-
-    -- B4: Food error response
-    client:on("food_error", function(data)
-        if not data then return end
-        local me = players[myId]
-        if me then
-            addFloatingText({ text = data.message or "Cannot eat that", x = me.x, y = me.y - 40, color = {1, 0.3, 0.3}, timer = 2 })
-        end
-    end)
-
-    -- B4: Repair result response
-    client:on("repair_result", function(data)
-        if not data then return end
-        if data.inventory then mmoInventory = data.inventory end
-        if data.durability then durabilityData = data.durability end
-        local me = players[myId]
-        if me then
-            addFloatingText({ text = data.message or "Item repaired!", x = me.x, y = me.y - 40, color = {0.3, 0.8, 1}, timer = 2 })
-        end
-    end)
-
-    -- B4: Repair error response
-    client:on("repair_error", function(data)
-        if not data then return end
-        local me = players[myId]
-        if me then
-            addFloatingText({ text = data.message or "Repair failed", x = me.x, y = me.y - 40, color = {1, 0.3, 0.3}, timer = 2 })
-        end
-    end)
-
     -- -----------------------------------------------------------------------
     -- Combat ability listeners (overworld weapon/card abilities)
     -- -----------------------------------------------------------------------
-
-    -- Abilities list (response to get_abilities — weapon-family abilities + cooldowns)
-    client:on("abilities_list", function(data)
-        if not data then return end
-        game._abilityBar.abilities = data.abilities or {}
-        game._abilityBar.weaponFamily = data.weaponFamily
-    end)
-
-    -- Ability error (cooldown, out of mana, out of range, etc.)
-    client:on("ability_error", function(data)
-        if not data then return end
-        addChatMessage(data.message or "Ability failed", {1, 0.3, 0.3})
-    end)
-
-    -- Ability result (weapon ability hit/miss/damage feedback)
-    client:on("ability_result", function(data)
-        if not data then return end
-        if data.success == false then
-            addChatMessage(data.error or "Ability missed", {1, 0.5, 0.3})
-        end
-    end)
-
-    -- Cooldown update (after using a weapon ability)
-    client:on("cooldown_update", function(data)
-        if not data then return end
-        if data.abilities then
-            game._abilityBar.abilities = data.abilities
-        end
-        if data.mana ~= nil then dungeon.playerMana = data.mana end
-        if data.maxMana ~= nil then dungeon.playerMaxMana = data.maxMana end
-        if data.cardAbilities then
-            game._abilityBar.cardAbilities = data.cardAbilities
-        end
-    end)
-
-    -- Card ability result (card-based ability used in overworld combat)
-    client:on("card_ability_result", function(data)
-        if not data then return end
-        if data.success == false then
-            addChatMessage(data.error or "Card ability failed", {1, 0.5, 0.3})
-        end
-    end)
-
-    -- Card cooldown update (after using a card ability)
-    client:on("card_cooldown_update", function(data)
-        if not data then return end
-        if data.cardAbilities then
-            game._abilityBar.cardAbilities = data.cardAbilities
-        end
-        if data.mana ~= nil then dungeon.playerMana = data.mana end
-        if data.maxMana ~= nil then dungeon.playerMaxMana = data.maxMana end
-    end)
 
     -- Dungeon: error message
     client:on("dungeon_error", function(data)
@@ -3812,28 +3225,6 @@ function game.setupListeners()
         -- Enter the dungeon
         client:emit("dungeon_enter", {
             dungeonId = data.dungeonId,
-        })
-    end)
-
-    -- Director: world event banner (gold banner, 5s fade)
-    client:on("world_event", function(data)
-        if not data then return end
-        table.insert(game._directorEvents, {
-            title = data.title or "World Event",
-            description = data.description or "",
-            type = data.type or "unknown",
-            timer = data.duration or 5,
-            fadeIn = 0,
-        })
-    end)
-
-    -- Director: zone ticker (bottom-right, 5s)
-    client:on("zone_director_update", function(data)
-        if not data then return end
-        table.insert(game._zoneTicker, {
-            message = data.message or "",
-            eventType = data.eventType or "info",
-            timer = 5,
         })
     end)
 
@@ -4730,626 +4121,25 @@ function game.setupListeners()
 
     -- ================================================================
     -- Admin panel event listeners (for server hosts)
-    -- ================================================================
-
-    client:on("server_rules_updated", function(data)
-        if not data then return end
-        if data.xpRate then game._admin.xpRate = data.xpRate end
-        if data.dropRate then game._admin.dropRate = data.dropRate end
-        game._admin.resultMsg = { text = "Rules updated", color = {0.3, 1, 0.3}, timer = 3 }
-    end)
-
-    client:on("server_shutdown", function(data)
-        game._admin.shutdownWarning = 10
-        addFloatingText({
-            text = "SERVER SHUTTING DOWN",
-            x = players[myId] and players[myId].x or 0,
-            y = players[myId] and (players[myId].y - 60) or 0,
-            color = {1, 0.2, 0.2},
-            timer = 10,
-        })
-    end)
-
-    client:on("admin_kicked", function(data)
-        addFloatingText({
-            text = data and data.message or "You have been kicked by an game._admin",
-            x = players[myId] and players[myId].x or 0,
-            y = players[myId] and (players[myId].y - 40) or 0,
-            color = {1, 0.3, 0.3},
-            timer = 5,
-        })
-        -- Disconnect and return to shards
-        if client and client.disconnect then
-            client:disconnect()
-        end
-        _G.switchScene("shards")
-    end)
-
-    client:on("admin_result", function(data)
-        if not data then return end
-        game._admin.resultMsg = {
-            text = data.message or "Action completed",
-            color = data.success and {0.3, 1, 0.3} or {1, 0.3, 0.3},
-            timer = 4,
-        }
-    end)
-
-    -- NPC Shop: shop list (response to npc_shop_browse)
-    client:on("npc_shop_list", function(data)
-        if not data or not data.shops then return end
-        game._npcShop.shopList = data.shops
-        -- Auto-select first shop and fetch prices
-        if #data.shops > 0 and not game._npcShop.prices then
-            local firstShop = data.shops[1]
-            game._npcShop.shopId = firstShop.id
-            game._npcShop.shopName = firstShop.name or "Shop"
-            game._npcShop.shopDesc = firstShop.description or ""
-            client:emit("npc_shop_prices", { shopId = firstShop.id })
-        end
-    end)
-
-    -- NPC Shop: price data for a specific shop
-    client:on("npc_shop_prices_result", function(data)
-        if not data or not data.prices then return end
-        game._npcShop.prices = data.prices
-        if data.shop then
-            game._npcShop.shopId = data.shop.id or game._npcShop.shopId
-            game._npcShop.shopName = data.shop.name or game._npcShop.shopName
-            game._npcShop.shopDesc = data.shop.description or ""
-        end
-        game._npcShop.selected = nil
-        game._npcShop.scroll = 0
-        game._npcShop.amount = 1
-    end)
-
-    -- NPC Shop: bought item
-    client:on("npc_shop_bought", function(data)
-        if not data then return end
-        game._npcShop.transactionLock = false
-        -- Update local coin balance
-        if data.coins ~= nil and account then
-            account.coins = data.coins
-        end
-        -- Update local inventory
-        if data.inventory then
-            for k, v in pairs(data.inventory) do
-                mmoInventory[k] = v
-            end
-        end
-        -- Feedback message
-        game._npcShop.message = {
-            text = data.message or "Purchase complete!",
-            color = {0.3, 1, 0.4},
-            timer = 3,
-        }
-        -- Floating text
-        if myId and players[myId] then
-            addFloatingText({
-                text = data.message or "Bought!",
-                x = players[myId].x, y = players[myId].y - 40,
-                color = {0.3, 1, 0.4},
-                timer = 2.5,
-            })
-        end
-        -- Refresh prices (they may have changed due to pressure)
-        if client then
-            client:emit("npc_shop_prices", { shopId = game._npcShop.shopId })
-        end
-    end)
-
-    -- NPC Shop: sold item
-    client:on("npc_shop_sold", function(data)
-        if not data then return end
-        game._npcShop.transactionLock = false
-        -- Update local coin balance
-        if data.coins ~= nil and account then
-            account.coins = data.coins
-        end
-        -- Update local inventory
-        if data.inventory then
-            for k, v in pairs(data.inventory) do
-                mmoInventory[k] = v
-            end
-        end
-        -- Feedback message
-        game._npcShop.message = {
-            text = data.message or "Sale complete!",
-            color = {0.3, 1, 0.4},
-            timer = 3,
-        }
-        -- Floating text
-        if myId and players[myId] then
-            addFloatingText({
-                text = data.message or "Sold!",
-                x = players[myId].x, y = players[myId].y - 40,
-                color = {1, 0.85, 0.3},
-                timer = 2.5,
-            })
-        end
-        -- Refresh prices
-        if client then
-            client:emit("npc_shop_prices", { shopId = game._npcShop.shopId })
-        end
-    end)
-
-    -- NPC Shop: error
-    client:on("npc_shop_error", function(data)
-        if not data then return end
-        game._npcShop.transactionLock = false
-        game._npcShop.message = {
-            text = data.message or "Transaction failed",
-            color = {1, 0.3, 0.3},
-            timer = 4,
-        }
-        if myId and players[myId] then
-            addFloatingText({
-                text = data.message or "Error",
-                x = players[myId].x, y = players[myId].y - 40,
-                color = {1, 0.3, 0.3},
-                timer = 2.5,
-            })
-        end
-    end)
 
     -- ========================================================================
     -- NPC Dialogue event listeners
-    -- ========================================================================
-
-    client:on("npc_dialogue", function(data)
-        if not data then return end
-        game._npcDialogue.show = true
-        game._npcDialogue.npcName = data.npcName or "NPC"
-        game._npcDialogue.text = data.text or "..."
-        game._npcDialogue.choices = data.choices or {}
-        game._npcDialogue.npcId = data.npcId or ""
-    end)
 
     -- ========================================================================
     -- Affliction cure events (lycanthropy, vampire exposure)
-    -- ========================================================================
-
-    client:on("cure_success", function(data)
-        if not data then return end
-        -- Update coin display with the authoritative remaining value from server
-        if data.coinsRemaining ~= nil and account then
-            account.coins = data.coinsRemaining
-        end
-        -- Show result in chat as a system message
-        table.insert(chat.messages, {
-            authorName = "System",
-            authorColor = "#44FF88",
-            text = data.message or "Affliction cured.",
-            isSystem = true,
-        })
-        -- Floating text on player
-        local me = players[myId]
-        if me then
-            addFloatingText({ text = "Cured!", x = me.x, y = me.y - 40, color = {0.3, 1, 0.5}, timer = 2.5 })
-        end
-    end)
-
-    client:on("cure_error", function(data)
-        if not data then return end
-        table.insert(chat.messages, {
-            authorName = "System",
-            authorColor = "#FF4444",
-            text = data.message or "Cure failed.",
-            isSystem = true,
-        })
-    end)
-
-    client:on("npc_dialogue_end", function(data)
-        game._npcDialogue.show = false
-        game._npcDialogue.text = ""
-        game._npcDialogue.choices = {}
-    end)
 
     -- ========================================================================
     -- Quest event listeners
-    -- ========================================================================
-
-    client:on("quest_accepted", function(data)
-        if not data then return end
-        local me = players[myId]
-        if me then
-            addFloatingText({ text = "Quest Accepted: " .. (data.name or data.questId), x = me.x, y = me.y - 60, color = {0.3, 1, 0.6}, timer = 3 })
-        end
-    end)
-
-    client:on("quest_progress", function(data)
-        if not data then return end
-        local me = players[myId]
-        if me then
-            local msg = "Quest: " .. data.questId .. " (" .. data.progress .. "/" .. data.targetCount .. ")"
-            if data.complete then msg = msg .. " COMPLETE!" end
-            addFloatingText({ text = msg, x = me.x, y = me.y - 60, color = data.complete and {1, 0.85, 0.2} or {0.7, 0.8, 1}, timer = 2.5 })
-        end
-    end)
-
-    client:on("quest_turnin_result", function(data)
-        if not data then return end
-        local me = players[myId]
-        if me then
-            if data.success and data.rewards then
-                local msg = "Quest Complete!"
-                if data.rewards.coins then msg = msg .. " +" .. data.rewards.coins .. " coins" end
-                if data.rewards.xp then msg = msg .. " +" .. data.rewards.xp .. " XP" end
-                addFloatingText({ text = msg, x = me.x, y = me.y - 60, color = {1, 0.85, 0.2}, timer = 3 })
-            end
-        end
-    end)
-
-    client:on("quest_list_result", function(data)
-        if not data then return end
-        game._questLog = { active = data.active or {}, completed = data.completed or {} }
-    end)
-
-    client:on("quest_error", function(data)
-        if not data then return end
-        local me = players[myId]
-        if me then
-            addFloatingText({
-                text = data.message or "Quest error",
-                x = me.x, y = me.y - 40,
-                color = {1, 0.3, 0.3},
-                timer = 2.5,
-            })
-        end
-    end)
 
     -- ========================================================================
     -- Monster capture/evolve event listeners
-    -- ========================================================================
-
-    client:on("monster_capture_result", function(data)
-        if not data then return end
-        local me = players[myId]
-        if me then
-            if data.success then
-                addFloatingText({ text = data.message or "Captured!", x = me.x, y = me.y - 60, color = {0.3, 1, 0.3}, timer = 3 })
-            else
-                addFloatingText({ text = data.message or "Capture failed!", x = me.x, y = me.y - 60, color = {1, 0.4, 0.4}, timer = 2.5 })
-            end
-        end
-    end)
-
-    client:on("monster_evolve_result", function(data)
-        if not data then return end
-        local me = players[myId]
-        if me then
-            if data.success then
-                addFloatingText({ text = (data.oldName or "Monster") .. " evolved into " .. (data.newName or "???") .. "!", x = me.x, y = me.y - 60, color = {1, 0.85, 0.2}, timer = 3 })
-            else
-                addFloatingText({ text = data.message or "Evolution failed!", x = me.x, y = me.y - 60, color = {1, 0.4, 0.4}, timer = 2.5 })
-            end
-        end
-    end)
 
     -- ========================================================================
     -- P2P Trade event listeners
     -- ========================================================================
 
-    -- Someone wants to game._trade with us
-    client:on("trade_request_received", function(data)
-        if not data then return end
-        game._trade.pendingRequest = {
-            tradeId = data.tradeId,
-            fromName = data.fromName or "???",
-            fromId = data.fromId,
-        }
-        -- Auto-dismiss after 25 seconds (server expires at 30s)
-        game._trade._pendingTimer = 25
-    end)
-
-    -- Our game._trade request was sent (acknowledgement)
-    client:on("trade_request_sent", function(data)
-        -- Already showed floating text from context menu action; nothing extra needed
-    end)
-
-    -- Trade accepted — session opened
-    client:on("trade_started", function(data)
-        if not data or not data.tradeId then return end
-        -- Clear pending request if this matches
-        if game._trade.pendingRequest and game._trade.pendingRequest.tradeId == data.tradeId then
-            -- We accepted: partner is the requester
-            game._trade.partnerId = game._trade.pendingRequest.fromId
-            game._trade.partnerName = game._trade.pendingRequest.fromName
-        else
-            -- We initiated: partner is whoever we sent the request to
-            -- partnerName/Id will be filled from players table if possible
-            -- (trade_request context menu already sent the request with targetId)
-        end
-        game._trade.pendingRequest = nil
-        game._trade._pendingTimer = nil
-        game._trade.tradeId = data.tradeId
-        game._trade.show = true
-        game._trade.myOffer = { items = {}, chips = 0 }
-        game._trade.theirOffer = { items = {}, chips = 0 }
-        game._trade.myConfirmed = false
-        game._trade.theirConfirmed = false
-        game._trade.coinInput = ""
-        game._trade.coinInputActive = false
-        game._trade.myScroll = 0
-        game._trade.offerScroll = 0
-        game._trade.message = nil
-
-        -- If we don't have a partner name yet (we initiated), try to resolve it
-        if (not game._trade.partnerName or game._trade.partnerName == "???") and game._trade.partnerId then
-            local p = players[game._trade.partnerId]
-            if p then
-                game._trade.partnerName = p.name or "???"
-            end
-        end
-    end)
-
-    -- Partner updated their offer
-    client:on("trade_offer_updated", function(data)
-        if not data or data.tradeId ~= game._trade.tradeId then return end
-        if data.offer then
-            game._trade.theirOffer = {
-                items = data.offer.items or {},
-                chips = data.offer.chips or 0,
-            }
-        end
-        -- Offer changed: both confirmations reset (server does this too)
-        game._trade.myConfirmed = false
-        game._trade.theirConfirmed = false
-    end)
-
-    -- Partner confirmed their side
-    client:on("trade_partner_confirmed", function(data)
-        if not data or data.tradeId ~= game._trade.tradeId then return end
-        game._trade.theirConfirmed = true
-    end)
-
-    -- Trade completed successfully
-    client:on("trade_completed", function(data)
-        if not data then return end
-        -- Update local inventory and coins from server response
-        if data.inventory then
-            for k, v in pairs(data.inventory) do
-                mmoInventory[k] = v
-            end
-        end
-        if data.coins ~= nil and account then
-            account.coins = data.coins
-        end
-        -- Refresh card collection from server
-        if client then
-            client:emit("get_cards", {})
-        end
-        -- Show success feedback
-        if myId and players[myId] then
-            addFloatingText({
-                text = "Trade completed!",
-                x = players[myId].x, y = players[myId].y - 40,
-                color = {0.3, 1, 0.4},
-                timer = 3,
-            })
-        end
-        resetTradeState()
-    end)
-
-    -- Trade cancelled (by partner or disconnect)
-    client:on("trade_cancelled", function(data)
-        if not data then return end
-        -- Only handle if this is our active game._trade
-        if game._trade.tradeId and data.tradeId == game._trade.tradeId then
-            if myId and players[myId] then
-                addFloatingText({
-                    text = "Trade cancelled",
-                    x = players[myId].x, y = players[myId].y - 40,
-                    color = {1, 0.7, 0.2},
-                    timer = 3,
-                })
-            end
-            resetTradeState()
-        end
-        -- Also clear pending request if it matches
-        if game._trade.pendingRequest and game._trade.pendingRequest.tradeId == data.tradeId then
-            game._trade.pendingRequest = nil
-            game._trade._pendingTimer = nil
-        end
-    end)
-
-    -- Trade request expired (30s timeout)
-    client:on("trade_expired", function(data)
-        if not data then return end
-        if game._trade.pendingRequest and game._trade.pendingRequest.tradeId == data.tradeId then
-            game._trade.pendingRequest = nil
-            game._trade._pendingTimer = nil
-        end
-        -- If our sent request expired while game._trade panel not yet open
-        if game._trade.tradeId == data.tradeId and not game._trade.show then
-            resetTradeState()
-        end
-    end)
-
-    -- Trade error
-    client:on("trade_error", function(data)
-        if not data then return end
-        local msg = data.message or "Trade error"
-        if game._trade.show then
-            game._trade.message = {
-                text = msg,
-                color = {1, 0.3, 0.3},
-                timer = 4,
-            }
-        end
-        if myId and players[myId] then
-            addFloatingText({
-                text = msg,
-                x = players[myId].x, y = players[myId].y - 40,
-                color = {1, 0.3, 0.3},
-                timer = 3,
-            })
-        end
-        -- Close panel on fatal errors
-        if msg:find("Trade failed") or msg:find("not found") then
-            resetTradeState()
-        end
-    end)
-
     -- ================================================================
     -- Overworld Monster event listeners
-    -- ================================================================
-
-    client:on("zone_monsters", function(data)
-        zoneMonsters = (data and data.monsters) or {}
-    end)
-
-    client:on("zone_monster_spawned", function(data)
-        if not data then return end
-        table.insert(zoneMonsters, data)
-    end)
-
-    client:on("zone_monster_died", function(data)
-        if not data or not data.id then return end
-        for i = #zoneMonsters, 1, -1 do
-            if zoneMonsters[i].id == data.id then
-                table.remove(zoneMonsters, i)
-                break
-            end
-        end
-    end)
-
-    -- ---- Corpse & World Container Events ----
-    client:on("zone_corpse_spawned", function(data)
-        if not data or not data.id then return end
-        table.insert(zoneCorpses, data)
-    end)
-
-    client:on("zone_corpse_removed", function(data)
-        if not data or not data.id then return end
-        for i = #zoneCorpses, 1, -1 do
-            if zoneCorpses[i].id == data.id then
-                table.remove(zoneCorpses, i)
-                break
-            end
-        end
-        -- Close loot panel if viewing this corpse
-        if corpseLootPanel and corpseLootPanel.corpseId == data.id then
-            corpseLootPanel = nil
-        end
-    end)
-
-    client:on("loot_corpse_result", function(data)
-        if not data then return end
-        if data.error then
-            game._statusMsg = data.error
-            game._statusTimer = 3
-            return
-        end
-        corpseLootPanel = data
-    end)
-
-    client:on("zone_container_spawned", function(data)
-        if not data or not data.id then return end
-        table.insert(zoneWorldContainers, data)
-    end)
-
-    client:on("zone_container_looted", function(data)
-        if not data or not data.id then return end
-        for i = #zoneWorldContainers, 1, -1 do
-            if zoneWorldContainers[i].id == data.id then
-                table.remove(zoneWorldContainers, i)
-                break
-            end
-        end
-        if containerLootPanel and containerLootPanel.containerId == data.id then
-            containerLootPanel = nil
-        end
-    end)
-
-    client:on("loot_container_result", function(data)
-        if not data then return end
-        if data.error then
-            game._statusMsg = data.error
-            game._statusTimer = 3
-            return
-        end
-        containerLootPanel = data
-    end)
-
-    client:on("zone_monster_hit", function(data)
-        if not data or not data.id then return end
-        for _, m in ipairs(zoneMonsters) do
-            if m.id == data.id then
-                m.hp = data.remainingHp or m.hp
-                break
-            end
-        end
-    end)
-
-    -- Monster position updates (patrol movement)
-    client:on("zone_monster_positions", function(data)
-        if not data or not data.monsters then return end
-        for _, upd in ipairs(data.monsters) do
-            for _, m in ipairs(zoneMonsters) do
-                if m.id == upd.id then
-                    -- Set target position for interpolation
-                    m.targetX = upd.x
-                    m.targetY = upd.y
-                    if upd.patrolMode then
-                        m.patrolMode = upd.patrolMode
-                    end
-                    break
-                end
-            end
-        end
-    end)
-
-    client:on("zone_monster_attack", function(data)
-        if not data then return end
-        -- Flash red vignette (reuse dungeon hit flash)
-        dungeon.hitFlashTimer = 0.25
-        -- Floating damage text at player
-        local me = players[myId]
-        if me then
-            addFloatingText({
-                text = "-" .. (data.damage or 0) .. " (" .. (data.monsterName or "Monster") .. ")",
-                x = me.x, y = me.y - 30,
-                color = {1, 0.2, 0.2},
-                timer = 1.5,
-            })
-        end
-    end)
-
-    client:on("zone_monster_killed", function(data)
-        if not data then return end
-        local me = players[myId]
-        if me then
-            if data.xp and data.xp > 0 then
-                addFloatingText({
-                    text = "+" .. data.xp .. " XP",
-                    x = me.x, y = me.y - 50,
-                    color = {0.5, 0.8, 1},
-                    timer = 2,
-                })
-            end
-            if data.gold and data.gold > 0 then
-                addFloatingText({
-                    text = "+" .. data.gold .. " gold",
-                    x = me.x, y = me.y - 66,
-                    color = {1, 0.85, 0.2},
-                    timer = 2,
-                })
-            end
-        end
-    end)
-
-    client:on("zone_attack_error", function(data)
-        if not data then return end
-        local me = players[myId]
-        if me then
-            addFloatingText({
-                text = data.message or "Attack failed",
-                x = me.x, y = me.y - 30,
-                color = {1, 0.3, 0.3},
-                timer = 2,
-            })
-        end
-    end)
 
     -- Biome weather update (pushed when biome weather changes)
     client:on("biome_weather", function(data)
@@ -5432,560 +4222,17 @@ function game.setupListeners()
     -- Portal travel listeners
     -- -----------------------------------------------------------------------
 
-    -- Server sends back list of available game._portal destinations
-    client:on("portal_list", function(data)
-        if not data then return end
-        game._portal.destinations = data.destinations or {}
-        game._portal.show = true
-        game._portal.scroll = 0
-        -- Preserve any existing error/cooldown message; it will auto-expire via timer
-    end)
-
-    -- Portal teleport succeeded — zone_state will follow from server
-    client:on("portal_traveled", function(data)
-        if not data then return end
-        game._audio.playPortal()
-        game._portal.show = false
-        -- Set cooldown: 30 seconds from now
-        game._portal.cooldownEnd = love.timer.getTime() + 30
-        -- Show success floating text
-        local destName = data.destinationName or "destination"
-        if myId and players[myId] then
-            addFloatingText({
-                text = "Teleported to " .. destName,
-                x = players[myId].x, y = players[myId].y - 40,
-                color = {0.5, 0.6, 1},
-                timer = 3.5,
-            })
-        end
-    end)
-
-    -- Portal error (cooldown, too far, etc.)
-    client:on("portal_error", function(data)
-        if not data then return end
-        local msg = data.message or "Portal error"
-        game._portal.message = {
-            text = msg,
-            color = {1, 0.35, 0.35},
-            timer = 5,
-        }
-        -- If the panel is not open, also show as floating text
-        if not game._portal.show and myId and players[myId] then
-            addFloatingText({
-                text = msg,
-                x = players[myId].x, y = players[myId].y - 40,
-                color = {1, 0.35, 0.35},
-                timer = 3,
-            })
-        end
-        -- Parse cooldown from error message (e.g. "Portal on cooldown (25s remaining)")
-        local remaining = msg:match("%((%d+)s remaining%)")
-        if remaining then
-            game._portal.cooldownEnd = love.timer.getTime() + tonumber(remaining)
-        end
-    end)
-
     -- -----------------------------------------------------------------------
     -- Knowledge system listeners
-    -- -----------------------------------------------------------------------
-    client:on("knowledge_data", function(data)
-        if not data then return end
-        local tab = data.tab or "glossary"
-        if tab == "glossary" then
-            knowledge.glossaryTerms = data.glossaryTerms
-            knowledge.glossaryUnlocked = data.glossaryUnlocked or {}
-        elseif tab == "lore" then
-            knowledge.loreData = data.loreData
-        elseif tab == "books" then
-            knowledge.books = data.books
-        elseif tab == "codex" then
-            knowledge.codex = data.codex
-        end
-    end)
-
-    client:on("knowledge_book_content", function(data)
-        if not data then return end
-        if data.error then
-            knowledge.bookContent = nil
-            return
-        end
-        knowledge.bookContent = data
-    end)
-
-    client:on("knowledge_book_discovered", function(data)
-        if not data then return end
-        table.insert(knowledge.notifications, {
-            type = "book",
-            title = data.title or "Unknown Book",
-            rarity = data.rarity or "common",
-            source = data.source or "unknown",
-            timer = 5,
-        })
-        -- Refresh books tab if knowledge panel is open
-        if ui.showKnowledge and knowledge.tab == "books" and client then
-            client:emit("knowledge_get", { tab = "books" })
-        end
-    end)
-
-    client:on("knowledge_term_unlocked", function(data)
-        if not data then return end
-        table.insert(knowledge.notifications, {
-            type = "term",
-            term = data.term or "Unknown",
-            category = data.category or "",
-            timer = 4,
-        })
-    end)
 
     -- -----------------------------------------------------------------------
     -- Farming system listeners
-    -- -----------------------------------------------------------------------
-    client:on("seed_planted", function(data)
-        if not data then return end
-        addChatMessage("[Farming] Planted " .. (data.seedType or "seed"):gsub("_", " "), {0.4, 0.8, 0.3})
-        if data.inventory then mmoInventory = data.inventory end
-    end)
-
-    client:on("crop_watered", function(data)
-        if not data then return end
-        addChatMessage("[Farming] Crop watered", {0.3, 0.7, 0.9})
-    end)
-
-    client:on("crop_harvested", function(data)
-        if not data then return end
-        local msg = "[Farming] Harvested " .. (data.amount or 1) .. "x " .. (data.output or "crop"):gsub("_", " ")
-        if data.seedBack then msg = msg .. " (+1 seed back!)" end
-        addChatMessage(msg, {0.4, 0.9, 0.3})
-        if data.inventory then mmoInventory = data.inventory end
-    end)
-
-    client:on("crop_cleared", function(data)
-        if not data then return end
-        addChatMessage("[Farming] " .. (data.message or "Crop cleared"), {0.6, 0.6, 0.4})
-    end)
-
-    client:on("crop_status", function(data)
-        if not data then return end
-        ui.farmCrops = data.crops or {}
-        ui.farmAnimals = data.animals or {}
-    end)
-
-    client:on("farm_update", function(data)
-        if not data then return end
-        if data.crops then ui.farmCrops = data.crops end
-        if data.animals then ui.farmAnimals = data.animals end
-    end)
-
-    client:on("farm_error", function(data)
-        if not data then return end
-        addChatMessage("[Farming] " .. (data.message or "Error"), {0.9, 0.3, 0.3})
-    end)
-
-    client:on("animal_bought", function(data)
-        if not data then return end
-        addChatMessage("[Farming] Bought " .. (data.animal and data.animal.name or "animal"), {0.4, 0.8, 0.3})
-    end)
-
-    client:on("animal_placed", function(data)
-        if not data then return end
-        addChatMessage("[Farming] Animal placed in pen", {0.4, 0.8, 0.3})
-    end)
-
-    client:on("animals_fed", function(data)
-        if not data then return end
-        addChatMessage("[Farming] Animals fed!", {0.4, 0.8, 0.3})
-        if data.inventory then mmoInventory = data.inventory end
-    end)
-
-    client:on("products_collected", function(data)
-        if not data then return end
-        local items = {}
-        if data.collected then
-            for k, v in pairs(data.collected) do
-                table.insert(items, v .. "x " .. k:gsub("_", " "))
-            end
-        end
-        addChatMessage("[Farming] Collected: " .. table.concat(items, ", "), {0.4, 0.9, 0.3})
-        if data.inventory then mmoInventory = data.inventory end
-    end)
-
-    client:on("animal_named", function(data)
-        if not data then return end
-        addChatMessage("[Farming] Animal renamed to " .. (data.name or ""), {0.5, 0.7, 0.9})
-    end)
-
-    client:on("furniture_effect", function(data)
-        if not data then return end
-        addChatMessage("[Home] " .. (data.message or "Effect applied"), {0.6, 0.8, 1.0})
-    end)
 
     -- -----------------------------------------------------------------------
     -- Base game._raid listeners
-    -- -----------------------------------------------------------------------
-    client:on("base_raid_alert", function(data)
-        if not data then return end
-        ui.baseRaidAlert = {
-            plotZoneId = data.plotZoneId,
-            message = data.message or "Your base is under attack!",
-            alertDuration = data.alertDuration or 60000,
-            receivedAt = love.timer.getTime(),
-        }
-        addChatMessage("[RAID ALERT] " .. (data.message or "Your base is under threat!"), {1.0, 0.2, 0.2})
-    end)
-
-    client:on("raid_wave", function(data)
-        if not data then return end
-        ui.baseRaidWaves = data.enemies or {}
-        addChatMessage("[RAID] " .. (data.message or "Wave incoming!"), {1.0, 0.4, 0.2})
-    end)
-
-    client:on("raid_ended", function(data)
-        if not data then return end
-        ui.baseRaidEnded = data
-        ui.baseRaidAlert = nil
-        ui.baseRaidWaves = {}
-        if data.result == "victory" then
-            addChatMessage("[RAID] Victory! " .. (data.message or ""), {0.3, 1.0, 0.3})
-        else
-            addChatMessage("[RAID] " .. (data.message or "Defeat"), {1.0, 0.3, 0.3})
-        end
-    end)
-
-    -- Mastery tree events
-    client:on("mastery_tree_status", function(data)
-        if not data then return end
-        if data.error then
-            mastery.message = data.error
-            mastery.messageTimer = 3
-            return
-        end
-        mastery.skillName = data.skillName
-        mastery.tree = data.tree
-        mastery.invested = data.invested or {}
-        mastery.points = data.points or 0
-        mastery.skillLevel = data.skillLevel or 1
-        mastery.hoverNode = nil
-    end)
-
-    client:on("mastery_invest_result", function(data)
-        if not data then return end
-        if data.ok then
-            mastery.invested[data.nodeId] = data.rank
-            mastery.points = data.pointsLeft
-            mastery.message = "Invested!"
-        else
-            mastery.message = data.error or "Failed"
-        end
-        mastery.messageTimer = 2
-    end)
-
-    client:on("mastery_reset_result", function(data)
-        if not data then return end
-        if data.ok then
-            mastery.message = "Reset! Refunded " .. data.refundedPoints .. " pts (cost: " .. data.goldCost .. "g)"
-            mastery.points = mastery.points + data.refundedPoints
-            mastery.invested = {}
-        else
-            mastery.message = data.error or "Failed"
-        end
-        mastery.messageTimer = 3
-    end)
-
-    -- ===== Karma / Factions =====
-    client:on("karma_status", function(data)
-        if not data then return end
-        game._karma.karma = data.karma or 0
-        game._karma.activeBounty = data.activeBounty
-        game._karma.isGuardHostile = data.isGuardHostile or false
-    end)
-
-    client:on("bounty_list", function(data)
-        if not data then return end
-        game._karma.bounties = data.bounties or {}
-    end)
-
-    client:on("faction_status", function(data)
-        if not data then return end
-        game._karma.factions = data.factions or {}
-    end)
-
-    client:on("faction_list", function(data)
-        if not data then return end
-        game._karma.factionList = data.factions or {}
-    end)
-
-    -- ===== Companions =====
-    client:on("companion_hired", function(data)
-        if not data then return end
-        game._companions.message = "Hired " .. (data.companion and data.companion.name or "companion") .. "!"
-        game._companions.messageTimer = 3
-        if client then client:emit("companion_list", {}) end
-    end)
-
-    client:on("companion_error", function(data)
-        if not data then return end
-        game._companions.message = data.message or "Error"
-        game._companions.messageTimer = 3
-    end)
-
-    client:on("companion_list", function(data)
-        if not data then return end
-        game._companions.companions = data.companions or {}
-    end)
-
-    client:on("companion_dismissed", function(data)
-        if not data then return end
-        game._companions.message = "Companion dismissed"
-        game._companions.messageTimer = 3
-        if client then client:emit("companion_list", {}) end
-    end)
-
-    client:on("companion_status", function(data)
-        if not data then return end
-        for i, c in ipairs(game._companions.companions) do
-            if c.id == data.id then
-                game._companions.companions[i] = data
-                break
-            end
-        end
-    end)
-
-    -- ===== Pets =====
-    client:on("pet_tamed", function(data)
-        if not data then return end
-        game._pets.message = "Tamed " .. (data.pet and data.pet.name or "pet") .. "!"
-        game._pets.messageTimer = 3
-        if client then client:emit("pet_list", {}) end
-    end)
-
-    client:on("pet_error", function(data)
-        if not data then return end
-        game._pets.message = data.message or "Error"
-        game._pets.messageTimer = 3
-    end)
-
-    client:on("pet_list", function(data)
-        if not data then return end
-        game._pets.pets = data.pets or {}
-        for _, p in ipairs(game._pets.pets) do
-            if p.isActive then game._pets.activePetId = p.id end
-        end
-    end)
-
-    client:on("pet_fed", function(data)
-        if not data then return end
-        for _, p in ipairs(game._pets.pets) do
-            if p.id == data.petId then
-                p.hunger = data.hunger
-                p.happiness = data.happiness
-                break
-            end
-        end
-        game._pets.message = "Pet fed!"
-        game._pets.messageTimer = 2
-    end)
-
-    client:on("pet_active_set", function(data)
-        if not data then return end
-        game._pets.activePetId = data.petId
-        game._pets.message = data.petId and "Pet set as active" or "Pet dismissed from active"
-        game._pets.messageTimer = 2
-    end)
-
-    -- ===== Jail =====
-    client:on("jail_status", function(data)
-        if not data then return end
-        game._jail.inJail = data.inJail or false
-        game._jail.crime = data.crime
-        game._jail.crimeLabel = data.crimeLabel
-        game._jail.remainingMs = data.remainingMs or 0
-        game._jail.bail = data.bail or 0
-        game._jail.jailZoneId = data.jailZoneId
-        game._jail.lastUpdate = love.timer.getTime()
-        if data.inJail and not ui.showJail then
-            ui.showJail = true
-        end
-    end)
-
-    client:on("jail_bail", function(data)
-        if not data then return end
-        if data.ok then
-            game._jail.inJail = false
-            game._jail.message = data.message or "Bail paid! You are free."
-            ui.showJail = false
-        else
-            game._jail.message = data.error or "Cannot pay bail"
-        end
-        game._jail.messageTimer = 3
-    end)
-
-    client:on("jail_serve_time", function(data)
-        if not data then return end
-        if data.released then
-            game._jail.inJail = false
-            game._jail.message = data.message or "Time served. You are free."
-            ui.showJail = false
-        else
-            game._jail.remainingMs = data.remainingMs or 0
-            game._jail.lastUpdate = love.timer.getTime()
-            game._jail.message = data.message or "Still serving time..."
-        end
-        game._jail.messageTimer = 3
-    end)
-
-    -- ===== Ascension =====
-    client:on("ascension_status", function(data)
-        if not data then return end
-        game._ascension.canAscend = data.canAscend or false
-        game._ascension.ascensionCount = data.ascensionCount or 0
-        game._ascension.ascensionPoints = data.ascensionPoints or 0
-        game._ascension.ascensionTree = data.ascensionTree or {}
-        game._ascension.tree = data.tree
-    end)
-
-    client:on("ascension_result", function(data)
-        if not data then return end
-        if data.ok then
-            game._ascension.ascensionCount = data.ascensionCount or game._ascension.ascensionCount
-            game._ascension.ascensionPoints = data.totalAp or game._ascension.ascensionPoints
-            game._ascension.message = "Ascended! +" .. (data.apGained or 0) .. " AP"
-            game._ascension.canAscend = false
-        else
-            game._ascension.message = data.error or "Cannot ascend"
-        end
-        game._ascension.messageTimer = 3
-    end)
-
-    client:on("ascension_ap_result", function(data)
-        if not data then return end
-        if data.ok then
-            game._ascension.ascensionTree[data.nodeId] = data.rank
-            game._ascension.ascensionPoints = data.apLeft
-            game._ascension.message = "Invested in " .. data.nodeId .. " (rank " .. data.rank .. ")"
-        else
-            game._ascension.message = data.error or "Cannot invest"
-        end
-        game._ascension.messageTimer = 3
-    end)
-
-    -- ===== Guild =====
-    client:on("guild_created", function(data)
-        if not data then return end
-        game._guild.guildId = data.guildId
-        game._guild.guildName = data.name
-        game._guild.members = data.members or {}
-        game._guild.tab = "info"
-        game._guild.message = "Guild created!"
-        game._guild.messageTimer = 3
-    end)
-
-    client:on("guild_error", function(data)
-        if not data then return end
-        game._guild.message = data.message or "Guild error"
-        game._guild.messageTimer = 3
-    end)
-
-    client:on("guild_list_result", function(data)
-        if not data then return end
-        game._guild.guildList = data.guilds or {}
-    end)
-
-    client:on("guild_updated", function(data)
-        if not data then return end
-        game._guild.guildId = data.guildId
-        game._guild.members = data.members or game._guild.members
-        game._guild.message = data.event or "Guild updated"
-        game._guild.messageTimer = 2
-    end)
-
-    client:on("guild_left", function(data)
-        game._guild.guildId = nil
-        game._guild.guildName = nil
-        game._guild.members = {}
-        game._guild.vault = nil
-        game._guild.messages = {}
-        game._guild.tab = "browse"
-        game._guild.message = "Left guild"
-        game._guild.messageTimer = 3
-    end)
-
-    client:on("guild_message", function(data)
-        if not data then return end
-        table.insert(game._guild.messages, {
-            authorName = data.authorName or "???",
-            content = data.content or "",
-            timestamp = data.timestamp or 0,
-        })
-        if #game._guild.messages > 100 then table.remove(game._guild.messages, 1) end
-    end)
-
-    client:on("guild_vault_contents", function(data)
-        if not data then return end
-        game._guild.vault = { cards = data.cards or {}, resources = data.resources or {} }
-    end)
-
-    client:on("guild_vault_updated", function(data)
-        if not data then return end
-        if data.resources then game._guild.vault = game._guild.vault or {}; game._guild.vault.resources = data.resources end
-        if data.cards then game._guild.vault = game._guild.vault or {}; game._guild.vault.cards = data.cards end
-        game._guild.message = data.event or "Vault updated"
-        game._guild.messageTimer = 2
-    end)
-
-    -- ===== Crafting Minigame =====
-    client:on("craft_minigame", function(data)
-        if not data then return end
-        game._minigame.active = true
-        game._minigame.recipeId = data.recipeId
-        game._minigame.duration = data.duration or 3000
-        game._minigame.windowStart = data.windowStart or 400
-        game._minigame.windowEnd = data.windowEnd or 600
-        game._minigame.expiresAt = love.timer.getTime() + (data.duration or 3000) / 1000
-        game._minigame.barPos = 0
-        game._minigame.barDir = 1
-        game._minigame.startedAt = love.timer.getTime()
-        game._minigame.result = nil
-        game._minigame.resultTimer = 0
-    end)
 
     -- -----------------------------------------------------------------------
     -- Crafting: advanced result listeners (gem socketing, augments, imbue, inscribe)
-    -- -----------------------------------------------------------------------
-
-    client:on("gem_socket_result", function(data)
-        if not data then return end
-        if data.success then
-            addChatMessage("Gem socketed successfully!", {0.3, 1, 0.3})
-            if data.inventory then mmoInventory = data.inventory end
-        end
-    end)
-
-    client:on("augment_result", function(data)
-        if not data then return end
-        if data.success then
-            addChatMessage("Augment applied!", {0.3, 1, 0.3})
-            if data.inventory then mmoInventory = data.inventory end
-        end
-    end)
-
-    client:on("imbue_result", function(data)
-        if not data then return end
-        if data.success then
-            addChatMessage("Imbue successful!", {0.4, 0.7, 1})
-            if data.inventory then mmoInventory = data.inventory end
-        end
-    end)
-
-    client:on("inscribe_result", function(data)
-        if not data then return end
-        if data.success then
-            addChatMessage("Inscription applied!", {0.8, 0.6, 1})
-            if data.inventory then mmoInventory = data.inventory end
-            if data.inscriptions then
-                game._itemUI.inscriptionSlots = data.inscriptions
-            end
-        end
-    end)
 
     -- -----------------------------------------------------------------------
     -- Miscellaneous event listeners
@@ -6041,30 +4288,6 @@ function game.setupListeners()
     client:on("pin_setup_required", function(data)
         if not data then return end
         addChatMessage(data.message or "Please set a PIN to secure your account", {1, 0.85, 0.3})
-    end)
-
-    -- Monster roster (tamed monsters list)
-    client:on("monster_roster", function(data)
-        if not data then return end
-        if account then
-            account.monsters = data.monsters or {}
-            account.activeParty = data.activeParty or {}
-        end
-    end)
-
-    -- Monster party updated (active party changed)
-    client:on("monster_party_updated", function(data)
-        if not data then return end
-        if account then
-            account.activeParty = data.activeParty or {}
-        end
-    end)
-
-    -- ===== Guard Hostility Warning =====
-    client:on("guard_hostile", function(data)
-        if not data then return end
-        table.insert(game._notifications, { text = data.message or "Guards refuse to serve you!", color = {1, 0.3, 0.3}, timer = NOTIFICATION_DURATION, maxTimer = NOTIFICATION_DURATION })
-        game._karma.isGuardHostile = true
     end)
 end
 
@@ -17947,7 +16170,6 @@ function game.handlePortalClick(mx, my)
     -- Clicked inside panel but not on any interactive element: consume click
     return true
 end
-
 
 -- NPC Shop panel constants
 local NPC_SHOP_W = 520

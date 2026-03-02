@@ -21,8 +21,13 @@ if not exist "client\main.lua" (
     exit /b 1
 )
 
-:: ── Step 1: Clean previous build ──
+:: ── Step 1: Clean previous build (preserve player data) ──
 echo [1/8] Cleaning previous build...
+if exist "build\MMOLite\data" (
+    echo        Preserving player data...
+    if exist "_build_data_backup" rmdir /s /q "_build_data_backup"
+    move "build\MMOLite\data" "_build_data_backup" >nul 2>nul
+)
 if exist "build" rmdir /s /q "build"
 
 :: ── Step 2: Create .love file (zip of client/ contents) ──
@@ -47,6 +52,12 @@ if not exist "build\MMOLite\MMOLite.exe" (
 )
 :: Clean up temp .love file
 del "MMOLite.love"
+
+:: Restore preserved player data from previous build
+if exist "_build_data_backup" (
+    echo        Restoring player data...
+    move "_build_data_backup" "build\MMOLite\data" >nul 2>nul
+)
 
 :: ── Step 4: Copy LOVE runtime DLLs ──
 echo [4/8] Copying LOVE runtime DLLs...

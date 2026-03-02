@@ -5,11 +5,12 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+var dataDir = require('./data-dir');
 
 var db = null;
 try { db = require('./db'); } catch (_) {}
 
-const ACCOUNTS_DIR = path.join(__dirname, 'data', 'accounts');
+const ACCOUNTS_DIR = dataDir.subdir('accounts');
 const KEY_LENGTH = 12;
 const KEY_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789'; // no ambiguous chars
 
@@ -580,8 +581,7 @@ function findAccountByTag(username, discriminator) {
   return null;
 }
 
-// Ensure directory exists
-fs.mkdirSync(ACCOUNTS_DIR, { recursive: true });
+// Directory ensured by data-dir.js subdir()
 if (ENCRYPTION_KEYS.length > 0) {
   console.log('[accounts] Encryption enabled (' + ENCRYPTION_KEYS.length + ' key(s), current version: ' + CURRENT_VERSION + ')');
 }

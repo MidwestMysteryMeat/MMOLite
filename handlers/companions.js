@@ -61,6 +61,8 @@ function deductCompanionWages(account) {
 function init(io, socket, deps) {
   var accounts = deps.accounts;
   var socketAccountMap = deps.socketAccountMap;
+  var vipPerks = deps.vipPerks;
+  var getCachedVipStatus = deps.getCachedVipStatus;
 
   socket.on('companion_hire', function(data) {
     if (!data || typeof data.companionClass !== 'string') return;
@@ -70,8 +72,10 @@ function init(io, socket, deps) {
     if (!account) return;
 
     var companions = account.companions || [];
-    if (companions.length >= MAX_COMPANIONS) {
-      socket.emit('companion_error', { message: 'You can only have ' + MAX_COMPANIONS + ' companions.' });
+    var _compVip = getCachedVipStatus ? getCachedVipStatus(key) : null;
+    var _maxComp = vipPerks ? vipPerks.getMaxCompanions(_compVip) : MAX_COMPANIONS;
+    if (companions.length >= _maxComp) {
+      socket.emit('companion_error', { message: 'You can only have ' + _maxComp + ' companions.' });
       return;
     }
 

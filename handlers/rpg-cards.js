@@ -13,14 +13,14 @@ var _cardVendorLocks = new Set();
 // ---------------------------------------------------------------------------
 // Helper: build full gacha rate disclosure payload for a given account
 // ---------------------------------------------------------------------------
-function _buildRateDisclosure(acc, accounts, key) {
+function _buildRateDisclosure(acc, accounts, key, vipLuckBonus) {
   if (!acc) return null;
 
   var raceId = acc.race || 'human';
   var pity = typeof acc.pityPullsSinceLegendary === 'number' ? acc.pityPullsSinceLegendary : 0;
 
   // Sum luck_bonus and card_luck_bonus from equipped cards (mirrors openPendingPack logic)
-  var packLuckBonus = 0;
+  var packLuckBonus = vipLuckBonus || 0;
   var cardModifiers = [];
   var cardEffects = accounts.getEquippedCardEffects(key);
   for (var i = 0; i < cardEffects.length; i++) {
@@ -71,7 +71,7 @@ function _buildRateDisclosure(acc, accounts, key) {
 
 module.exports = {
   init(io, socket, deps) {
-    var { user, socketAccountMap, accounts, checkEventRate, applyRateGrace } = deps;
+    var { user, socketAccountMap, accounts, checkEventRate, applyRateGrace, vipPerks, getCachedVipStatus } = deps;
 
     // --- get_gacha_rates: disclose exact drop rates for this player ---
     socket.on('get_gacha_rates', function() {
@@ -82,7 +82,9 @@ module.exports = {
       var acc = accounts.loadAccount(key);
       if (!acc) return;
 
-      var disclosure = _buildRateDisclosure(acc, accounts, key);
+      var _gachaVip = getCachedVipStatus ? getCachedVipStatus(key) : null;
+      var _vipLuck = vipPerks ? vipPerks.getCardPullLuckBonus(_gachaVip) : 0;
+      var disclosure = _buildRateDisclosure(acc, accounts, key, _vipLuck);
       if (!disclosure) return;
 
       socket.emit('gacha_rates', disclosure);
@@ -97,7 +99,9 @@ module.exports = {
 
       // Build pre-open rate disclosure from current account state
       var preAcc = accounts.loadAccount(key);
-      var preOpenRates = preAcc ? _buildRateDisclosure(preAcc, accounts, key) : null;
+      var _packVip = getCachedVipStatus ? getCachedVipStatus(key) : null;
+      var _packVipLuck = vipPerks ? vipPerks.getCardPullLuckBonus(_packVip) : 0;
+      var preOpenRates = preAcc ? _buildRateDisclosure(preAcc, accounts, key, _packVipLuck) : null;
 
       var result = accounts.openPendingPack(key);
       if (result.error) {

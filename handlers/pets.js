@@ -74,6 +74,8 @@ function _findCreatureTemplate(creatureType) {
 function init(io, socket, deps) {
   var accounts = deps.accounts;
   var socketAccountMap = deps.socketAccountMap;
+  var vipPerks = deps.vipPerks;
+  var getCachedVipStatus = deps.getCachedVipStatus;
 
   // Attempt to tame a nearby creature
   socket.on('pet_tame', function(data) {
@@ -83,10 +85,12 @@ function init(io, socket, deps) {
     var account = accounts.loadAccount(key);
     if (!account) return;
 
-    // Check if player already has max pets (2)
+    // Check if player already has max pets
     var pets = account.petData || [];
-    if (pets.length >= 2) {
-      socket.emit('pet_error', { message: 'You can only have 2 pets.' });
+    var _petVip = getCachedVipStatus ? getCachedVipStatus(key) : null;
+    var _maxPets = vipPerks ? vipPerks.getMaxPets(_petVip) : 2;
+    if (pets.length >= _maxPets) {
+      socket.emit('pet_error', { message: 'You can only have ' + _maxPets + ' pets.' });
       return;
     }
 
@@ -195,16 +199,19 @@ function init(io, socket, deps) {
  * Tick pet hunger/happiness decay for an account.
  * Call periodically (e.g., every hour) from server.js.
  */
-function tickPetDecay(account) {
+function tickPetDecay(account, vipStatus) {
   if (!account.petData || account.petData.length === 0) return;
+  var vipPerksModule = require('../vip-perks');
+  var hungerRate = vipPerksModule.getPetHungerDecayRate(vipStatus);
   var now = Date.now();
   for (var i = 0; i < account.petData.length; i++) {
     var pet = account.petData[i];
+    if (pet.dormant) continue;
     var lastCheck = pet.lastDecayTick || pet.lastFed || pet.tamedAt || now;
     var hoursElapsed = (now - lastCheck) / (3600 * 1000);
-    if (hoursElapsed < 1) continue; // Only decay in full-hour increments
+    if (hoursElapsed < 1) continue;
     var fullHours = Math.floor(hoursElapsed);
-    pet.hunger = Math.max(0, (pet.hunger || 100) - PET_CARE.hungerDecayPerHour * fullHours);
+    pet.hunger = Math.max(0, (pet.hunger || 100) - hungerRate * fullHours);
     pet.happiness = Math.max(0, (pet.happiness || 100) - PET_CARE.happinessDecayPerHour * fullHours);
     pet.lastDecayTick = now;
   }

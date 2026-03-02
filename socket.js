@@ -49,6 +49,8 @@ const masteryHandler = require('./handlers/mastery');
 const gridInventoryHandler = require('./handlers/grid-inventory');
 const corpseLootHandler = require('./handlers/corpse-loot');
 const bankHandler = require('./handlers/bank');
+const vipHandler = require('./handlers/vip');
+const vipPerks = require('./vip-perks');
 
 // Shared handlers (kept from BossCord era but still used)
 const inventoryHandler = require('./handlers/inventory');
@@ -60,6 +62,14 @@ const disconnectHandler = require('./handlers/disconnect');
 const challengesHandler = require('./handlers/challenges');
 const doomHandler = require('./handlers/doom');
 const worldSystemsHandler = require('./handlers/world-systems');
+
+// Late-bind VIP status function into extracted account modules (avoids circular require)
+try {
+  var _accountSkills = require('./account-skills');
+  if (_accountSkills.setVipStatusFn) _accountSkills.setVipStatusFn(vipHandler.getCachedVipStatus);
+  var _accountCharacters = require('./account-characters');
+  if (_accountCharacters.setVipStatusFn) _accountCharacters.setVipStatusFn(vipHandler.getCachedVipStatus);
+} catch (_) {}
 
 // Moderator account keys — loaded from MODERATOR_KEYS env var (comma-separated)
 const MODERATORS = new Set(
@@ -482,6 +492,7 @@ function setupSocket(io) {
           clearedCaves: {}, activeCave: null,
         },
         characterList: _charList,
+        vip: (vipHandler.vipStatusCache.get(linkedAccount.key) || {}).status || null,
       } : null,
       isMod: isModerator(socket.id),
       // MMO: zones instead of rooms
@@ -577,6 +588,9 @@ function setupSocket(io) {
       isServerHost: isServerHost,
       _unlinkSocket: _unlinkSocket,
       getSocketsForAccount: _getSocketsForAccount,
+      vipPerks: vipPerks,
+      getVipStatus: vipHandler.getVipStatus,
+      getCachedVipStatus: vipHandler.getCachedVipStatus,
     };
 
     // ------------------------------------------------------------------
@@ -618,6 +632,7 @@ function setupSocket(io) {
     gridInventoryHandler.init(io, socket, deps);
     corpseLootHandler.init(io, socket, deps);
     bankHandler.init(io, socket, deps);
+    vipHandler.init(io, socket, deps);
 
     // Shared handlers
     inventoryHandler.init(io, socket, deps);

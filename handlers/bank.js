@@ -29,12 +29,12 @@ function _getNextExpansionCost(vault) {
   return EXPANSION_BASE_COST * (1 + vault.expansionsPurchased);
 }
 
-function _bankContentsPayload(vault) {
+function _bankContentsPayload(vault, sovBonus) {
   return {
     gold: vault.gold,
     resources: vault.resources,
     items: vault.items,
-    maxSlots: vault.maxSlots,
+    maxSlots: vault.maxSlots + (sovBonus || 0),
     expansionsPurchased: vault.expansionsPurchased,
     nextExpansionCost: vault.expansionsPurchased < MAX_EXPANSIONS ? _getNextExpansionCost(vault) : null,
   };
@@ -63,7 +63,7 @@ function _isNearBanker(state, socketId) {
 
 module.exports = {
   init(io, socket, deps) {
-    var { socketAccountMap, accounts, state, checkEventRate } = deps;
+    var { socketAccountMap, accounts, state, checkEventRate, vipPerks, getCachedVipStatus } = deps;
 
     // --- bank_open: request bank contents ---
     socket.on('bank_open', function() {
@@ -77,7 +77,9 @@ module.exports = {
       var acc = accounts.loadAccount(key);
       if (!acc) return;
       _ensureVault(acc);
-      socket.emit('bank_contents', _bankContentsPayload(acc.bankVault));
+      var _openVip = getCachedVipStatus ? getCachedVipStatus(key) : null;
+      var _openBonus = vipPerks ? vipPerks.getBankSlotBonus(_openVip && _openVip.permanentPurchases) : 0;
+      socket.emit('bank_contents', _bankContentsPayload(acc.bankVault, _openBonus));
     });
 
     // --- bank_deposit_gold ---
@@ -239,7 +241,9 @@ module.exports = {
         var acc = accounts.loadAccount(key);
         if (!acc) return;
         _ensureVault(acc);
-        if (acc.bankVault.items.length >= acc.bankVault.maxSlots) {
+        var _bankVip = getCachedVipStatus ? getCachedVipStatus(key) : null;
+        var _bankBonus = vipPerks ? vipPerks.getBankSlotBonus(_bankVip && _bankVip.permanentPurchases) : 0;
+        if (acc.bankVault.items.length >= acc.bankVault.maxSlots + _bankBonus) {
           socket.emit('bank_error', { message: 'Bank vault is full' });
           return;
         }

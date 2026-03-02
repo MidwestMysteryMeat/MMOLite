@@ -4,6 +4,7 @@
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+var dataDir = require('./data-dir');
 
 // ─── Rarity definitions ───
 const RARITIES = {
@@ -50,7 +51,7 @@ function getModifierInfo(modKey) {
 }
 
 // ─── Serial Numbers ───
-var SERIAL_FILE = path.join(__dirname, 'data', 'serial_counter.json');
+var SERIAL_FILE = path.join(dataDir.DATA_DIR, 'serial_counter.json');
 
 function loadSerialCounter() {
   try {

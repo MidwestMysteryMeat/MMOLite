@@ -179,7 +179,7 @@ function canCarryWeight(account, additionalWeight) {
 // Carry capacity
 // ---------------------------------------------------------------------------
 
-function getCarryCapacity(account) {
+function getCarryCapacity(account, permanentPurchases) {
   var vigor = (account.rpgStats && account.rpgStats.vigor) || 5;
   var base = 50;
   var vigBonus = vigor * 5;
@@ -194,7 +194,13 @@ function getCarryCapacity(account) {
   // Ascension bonus
   var ascTree = account.ascensionTree || {};
   var ascCarry = (ascTree['hoarders_instinct'] || 0) * 20;
-  return base + vigBonus + cartBonus + ascCarry;
+  // Sovereign permanent purchase bonus
+  var sovCarry = 0;
+  if (permanentPurchases) {
+    var _vipPerks = require('./vip-perks');
+    sovCarry = _vipPerks.getCarryCapacityBonus(permanentPurchases);
+  }
+  return base + vigBonus + cartBonus + ascCarry + sovCarry;
 }
 
 // ---------------------------------------------------------------------------

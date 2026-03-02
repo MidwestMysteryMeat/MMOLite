@@ -7,6 +7,8 @@ var loadAccount;
 var saveAccount;
 var getEquippedCardEffects;
 var rpgData;
+var _vipPerks = require('./vip-perks');
+var _getCachedVipStatus = null;
 
 var SKILL_MAX_LEVEL = Infinity;
 
@@ -15,6 +17,11 @@ function init(deps) {
   saveAccount = deps.saveAccount;
   getEquippedCardEffects = deps.getEquippedCardEffects;
   rpgData = deps.rpgData;
+}
+
+// Late-bind VIP status lookup (avoids circular require with handlers/vip.js)
+function setVipStatusFn(fn) {
+  _getCachedVipStatus = fn;
 }
 
 function xpForLevel(n) { return Math.floor(80 * Math.pow(n, 1.7)); }
@@ -68,6 +75,12 @@ function addSkillXp(key, skillName, amount, xpRate, existingAccount) {
   // Apply mastery tree XP bonus
   var masteryXpBonus = masteryCore.getSkillMasteryBonuses(account, skillName).skill_xp_pct || 0;
   xpMultiplier += masteryXpBonus;
+
+  // Apply VIP XP multiplier
+  if (_vipPerks && _getCachedVipStatus) {
+    var _vipSt = _getCachedVipStatus(key);
+    xpMultiplier *= _vipPerks.getXpMultiplier(_vipSt);
+  }
 
   var adjustedAmount = Math.round(amount * xpMultiplier);
   var skill = account.skills[skillName];
@@ -133,6 +146,7 @@ function addSkillXp(key, skillName, amount, xpRate, existingAccount) {
 
 module.exports = {
   init,
+  setVipStatusFn,
   xpForLevel,
   getSkill,
   addSkillXp,
