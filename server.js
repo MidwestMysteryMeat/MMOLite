@@ -603,14 +603,14 @@ function scheduleNextWipe() {
   if (ms5 > 0) {
     setTimeout(() => {
       io.emit('wipe_warning', { message: 'Server wipe in 5 minutes. Zone state will be cleared.', minutesLeft: 5 });
-    }, ms5);
+    }, ms5).unref();
   }
 
   const ms1 = msUntilMidnight - 60 * 1000;
   if (ms1 > 0) {
     setTimeout(() => {
       io.emit('wipe_warning', { message: 'Server wipe in 1 minute.', minutesLeft: 1 });
-    }, ms1);
+    }, ms1).unref();
   }
 
   setTimeout(() => {
@@ -632,7 +632,7 @@ function scheduleNextWipe() {
 
     console.log('[wipe] Daily wipe executed.');
     scheduleNextWipe();
-  }, msUntilMidnight);
+  }, msUntilMidnight).unref();
 
   const h = Math.floor(msUntilMidnight / 3600000);
   const m = Math.floor((msUntilMidnight % 3600000) / 60000);

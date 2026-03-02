@@ -190,6 +190,14 @@ function love.update(dt)
         _G.gameClient:update(dt)
     end
 
+    -- Graceful quit: pump network to receive final snapshot before exiting
+    if _G._quitState == "waiting" then
+        if love.timer.getTime() > _G._quitDeadline then
+            _G._quitState = "done"
+            love.event.quit()
+        end
+    end
+
     if currentScene and currentScene.update then
         currentScene.update(dt)
     end
@@ -265,30 +273,47 @@ function love.resize(w, h)
 end
 
 function love.quit()
-    -- Shut down local server if we launched or connected to one
-    local ok, serverLauncher = pcall(require, "lib.server_launcher")
-    if ok and serverLauncher then
-        if serverLauncher.running or serverLauncher.launching then
-            serverLauncher.shutdown()
+    -- Second pass: everything is saved, allow quit
+    if _G._quitState == "done" then
+        -- Shut down local server if we launched or connected to one
+        local ok, serverLauncher = pcall(require, "lib.server_launcher")
+        if ok and serverLauncher then
+            if serverLauncher.running or serverLauncher.launching then
+                serverLauncher.shutdown()
+            end
+            serverLauncher.cleanupOrphans()
         end
-        -- Also clean up any orphaned PID file
-        serverLauncher.cleanupOrphans()
+
+        -- Stop LAN discovery listener
+        local ok2, lanDiscovery = pcall(require, "lib.lan_discovery")
+        if ok2 and lanDiscovery and lanDiscovery.listening then
+            lanDiscovery.stop()
+        end
+
+        -- Shut down Steam
+        local ok3, steamcloud = pcall(require, "lib.steamcloud")
+        if ok3 and steamcloud then
+            steamcloud.shutdown()
+        end
+
+        -- Disconnect game client
+        if _G.gameClient then
+            pcall(function() _G.gameClient:disconnect() end)
+        end
+        return false -- allow quit
     end
 
-    -- Stop LAN discovery listener
-    local ok2, lanDiscovery = pcall(require, "lib.lan_discovery")
-    if ok2 and lanDiscovery and lanDiscovery.listening then
-        lanDiscovery.stop()
+    -- First pass: request final snapshot and defer quit for up to 2 seconds
+    if not _G._quitState then
+        _G._quitState = "waiting"
+        _G._quitDeadline = love.timer.getTime() + 2
+
+        -- Request a final snapshot before we disconnect
+        if _G.gameClient and _G.gameClient.connected then
+            pcall(function() _G.gameClient:emit("snapshot_request") end)
+        end
+        return true -- abort quit, wait for snapshot or timeout
     end
 
-    -- Shut down Steam
-    local ok3, steamcloud = pcall(require, "lib.steamcloud")
-    if ok3 and steamcloud then
-        steamcloud.shutdown()
-    end
-
-    -- Disconnect game client
-    if _G.gameClient then
-        pcall(function() _G.gameClient:disconnect() end)
-    end
+    return true -- still waiting
 end

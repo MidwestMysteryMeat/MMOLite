@@ -14,19 +14,24 @@ var vipPerks = require('../vip-perks');
 
 var ENCRYPTION_KEYS = [];
 var CURRENT_VERSION = 0;
+var KEYS_FILE = process.env.MMOLITE_KEYS_FILE || '/etc/mmolite/account_secrets.json';
 
 try {
-  var secretsPath = process.env.ACCOUNT_SECRETS_FILE || '/etc/mmolite/account_secrets.json';
-  if (fs.existsSync(secretsPath)) {
-    var secretsData = JSON.parse(fs.readFileSync(secretsPath, 'utf8'));
-    if (secretsData.keys && Array.isArray(secretsData.keys)) {
-      for (var i = 0; i < secretsData.keys.length; i++) {
-        var entry = secretsData.keys[i];
-        ENCRYPTION_KEYS.push({
-          version: entry.version,
-          key: Buffer.from(entry.hex, 'hex'),
-        });
-        if (entry.version > CURRENT_VERSION) CURRENT_VERSION = entry.version;
+  if (fs.existsSync(KEYS_FILE)) {
+    var _keysConfig = JSON.parse(fs.readFileSync(KEYS_FILE, 'utf8'));
+    if (_keysConfig.keys && Array.isArray(_keysConfig.keys) && _keysConfig.keys.length > 0) {
+      CURRENT_VERSION = typeof _keysConfig.current === 'number' ? _keysConfig.current : 0;
+      for (var i = 0; i < _keysConfig.keys.length; i++) {
+        var entry = _keysConfig.keys[i];
+        if (typeof entry.version === 'number' && typeof entry.secret === 'string') {
+          ENCRYPTION_KEYS.push({
+            version: entry.version,
+            key: crypto.createHash('sha256').update(entry.secret).digest(),
+          });
+        }
+      }
+      if (ENCRYPTION_KEYS.length > 0) {
+        console.log('[vip] Loaded ' + ENCRYPTION_KEYS.length + ' encryption keys, current version: ' + CURRENT_VERSION);
       }
     }
   }
@@ -34,10 +39,14 @@ try {
   console.error('[vip] Failed to load encryption keys:', err.message);
 }
 
-// Fallback to env var
+// Fallback to env var (matches accounts.js fallback chain)
 if (ENCRYPTION_KEYS.length === 0) {
-  var secret = process.env.ACCOUNT_SECRET || process.env.MMOLITE_SECRET || 'dev-vip-secret-key-32-bytes-pad!';
-  var keyBuf = crypto.createHash('sha256').update(secret).digest();
+  var _secret = process.env.ACCOUNT_SECRET || null;
+  if (!_secret) {
+    console.error('[vip] No ACCOUNT_SECRET env var and no keys file at ' + KEYS_FILE);
+    _secret = 'dev-vip-secret-key-32-bytes-pad!';
+  }
+  var keyBuf = crypto.createHash('sha256').update(_secret).digest();
   ENCRYPTION_KEYS.push({ version: 0, key: keyBuf });
 }
 

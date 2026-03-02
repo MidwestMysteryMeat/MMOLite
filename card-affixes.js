@@ -454,7 +454,11 @@ function refreshCardEffects(card) {
     baseEffects = JSON.parse(JSON.stringify(card._baseEffects));
   } else {
     var tmpl = CARD_BY_ID[card.cardId];
-    if (!tmpl) return;
+    if (!tmpl) {
+      console.error('[card] refreshCardEffects: unknown cardId "' + card.cardId + '" — card has no template, effects cleared');
+      card.effects = [];
+      return;
+    }
     baseEffects = JSON.parse(JSON.stringify(tmpl.effects));
     if (tmpl.rarityScalable && card.rarity !== tmpl.rarity) {
       var bf = RARITY_SCALE[tmpl.rarity] || 1.0;

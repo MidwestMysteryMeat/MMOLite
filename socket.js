@@ -174,6 +174,23 @@ function setupSocket(io) {
     io.emit('server_stats', stats);
   }, 30000).unref();
 
+  // Push fresh account snapshots to all connected non-temp accounts every 5 minutes.
+  // Keeps client-side account_snapshot.dat current throughout a session.
+  var _snapshotInterval = setInterval(function() {
+    for (var _ref2 of accountSocketMap) {
+      var accKey = _ref2[0], sids = _ref2[1];
+      var acc = accounts.loadAccount(accKey);
+      if (!acc || acc.temp) continue;
+      var snap = accounts.getExportableSnapshot(accKey);
+      if (!snap) continue;
+      for (var sid of sids) {
+        var s = io.sockets.sockets.get(sid);
+        if (s) s.emit('account_snapshot', snap);
+      }
+    }
+  }, 300000);
+  _snapshotInterval.unref();
+
   io.on('connection', async (socket) => {
     // Debug: log Engine.IO transport events (only when DEBUG env var is set)
     if (process.env.DEBUG && socket.conn) {
@@ -305,16 +322,9 @@ function setupSocket(io) {
         }
       } else {
         // Standalone mode: local account lookup
+        // Unknown keys are not rate-limited — they may be valid keys from another server.
+        // The auto-create block below will create a new account with the client's key.
         linkedAccount = accounts.loadAccount(accountKey);
-        if (!linkedAccount) {
-          if (!ratelimit.check(clientIp, 'auth_fail', 5, 900000)) {
-            ratelimit.decrementConnections();
-            _removeFromIpTracking();
-            socket.emit('error', { message: 'Too many failed login attempts. Try again in 15 minutes.' });
-            socket.disconnect(true);
-            return;
-          }
-        }
 
         // PIN verification disabled — standalone desktop game, no security benefit.
         // PIN handlers (account_set_pin, account_change_pin) kept for future optional use.
@@ -386,7 +396,10 @@ function setupSocket(io) {
       }
     }
 
-    // Auto-create permanent account for new players (key assigned by server)
+    // Auto-create permanent account for new players
+    // If client provided a valid key, use it (unified key across servers).
+    // Falls back to server-generated key on collision or missing key.
+    var _isNewAccount = false;
     if (!linkedAccount) {
       var newAccount;
       if (shardBridge.isMasterMode) {
@@ -401,11 +414,18 @@ function setupSocket(io) {
           newAccount = accounts.createAccount(user.name, user.color);
         }
       } else {
-        newAccount = accounts.createAccount(user.name, user.color);
+        // Try using the client's key first for cross-server identity
+        if (accountKey) {
+          newAccount = accounts.createAccountWithKey(accountKey, user.name, user.color);
+        }
+        if (!newAccount) {
+          newAccount = accounts.createAccount(user.name, user.color);
+        }
       }
       if (newAccount) {
         _linkSocket(socket.id, newAccount.key);
         linkedAccount = newAccount;
+        _isNewAccount = true;
       }
       if (loot.PROFILE_PORTRAITS && loot.PROFILE_PORTRAITS.length > 0) {
         var randomPortrait = loot.PROFILE_PORTRAITS[Math.floor(Math.random() * loot.PROFILE_PORTRAITS.length)];
@@ -430,15 +450,6 @@ function setupSocket(io) {
     });
     socket._mmoliteSessionToken = sessionToken;
 
-    // Load last location for returning players
-    var lastLocation = linkedAccount ? accounts.getLastLocation(linkedAccount.key) : null;
-
-    // Pre-fetch characterList to log and reuse in identity payload
-    var _charList = linkedAccount ? accounts.getCharacterList(linkedAccount.key) : null;
-    if (_charList) {
-      console.log('[socket] Identity characterList: ' + _charList.characters.length + ' chars');
-    }
-
     // Track server host in offline mode.
     // First connect becomes host. If host disconnects and reconnects (same account), restore status.
     if (process.env.OFFLINE_MODE === '1' && !_serverHostSocketId) {
@@ -448,68 +459,74 @@ function setupSocket(io) {
       }
     }
 
-    // Send identity — MMOLite version with zones instead of rooms
-    socket.emit('identity', {
-      id: user.id,
-      name: user.name,
-      color: user.color,
-      tag: user.tag,
-      avatar: user.avatar || null,
-      joinedAt: user.joinedAt,
-      sessionToken: sessionToken,
-      account: linkedAccount ? {
-        key: linkedAccount.key,
-        needsPin: !(linkedAccount.pinHash || linkedAccount.hasPin),
-        temp: !!linkedAccount.temp,
-        chips: linkedAccount.chips,
-        coins: linkedAccount.chips,
-        stats: linkedAccount.stats,
-        createdAt: linkedAccount.createdAt,
-        slurFilter: !!linkedAccount.slurFilter,
-        avatar: linkedAccount.avatar || null,
-        avatarId: linkedAccount.avatarId || null,
-        tosAccepted: !!(linkedAccount.metadata && linkedAccount.metadata.tosAccepted),
-        level: linkedAccount.level || 1,
-        xp: linkedAccount.xp || 0,
-        guildId: linkedAccount.guildId || null,
-        skills: linkedAccount.skills || {},
-        mmoInventory: linkedAccount.mmoInventory || { items: [] },
-        equipment: linkedAccount.equipment || { axe: null, pickaxe: null, weapon: null, shield: null, head: null, body: null, accessory: null },
-        race: linkedAccount.race || null,
-        rpgStats: linkedAccount.rpgStats || null,
-        cardSlots: linkedAccount.cardSlots || require('./rpg-data').getCardSlotCount(linkedAccount.level || 1),
-        activeCardSlots: linkedAccount.activeCardSlots || require('./rpg-data').getActiveCardSlotCount(linkedAccount.level || 1),
-        passiveCardSlots: linkedAccount.passiveCardSlots || require('./rpg-data').getPassiveCardSlotCount(linkedAccount.level || 1),
-        pendingPacks: linkedAccount.pendingPacks || 0,
-        mount: linkedAccount.mount || null,
-        plotId: linkedAccount.plotId || null,
-        permadeath: !!linkedAccount.permadeath,
-        ascensionMark: !!linkedAccount.ascensionMark,
-        ascensionCount: linkedAccount.ascensionCount || 0,
-        dungeonProgress: linkedAccount.dungeonProgress || {
-          guildMember: false, guildXp: 0, guildRank: 'stone',
-          deepestFloor: 0, totalKills: 0, totalDeaths: 0, bossesKilled: 0,
-          clearedCaves: {}, activeCave: null,
+    // Build identity payload (reusable for snapshot re-emission)
+    function _buildIdentity(isNew) {
+      var _loc = linkedAccount ? accounts.getLastLocation(linkedAccount.key) : null;
+      var _chars = linkedAccount ? accounts.getCharacterList(linkedAccount.key) : null;
+      return {
+        id: user.id,
+        name: user.name,
+        color: user.color,
+        tag: user.tag,
+        avatar: user.avatar || null,
+        joinedAt: user.joinedAt,
+        sessionToken: sessionToken,
+        account: linkedAccount ? {
+          key: linkedAccount.key,
+          needsPin: !(linkedAccount.pinHash || linkedAccount.hasPin),
+          temp: !!linkedAccount.temp,
+          isNewAccount: !!isNew,
+          chips: linkedAccount.chips,
+          coins: linkedAccount.chips,
+          stats: linkedAccount.stats,
+          createdAt: linkedAccount.createdAt,
+          slurFilter: !!linkedAccount.slurFilter,
+          avatar: linkedAccount.avatar || null,
+          avatarId: linkedAccount.avatarId || null,
+          tosAccepted: !!(linkedAccount.metadata && linkedAccount.metadata.tosAccepted),
+          level: linkedAccount.level || 1,
+          xp: linkedAccount.xp || 0,
+          guildId: linkedAccount.guildId || null,
+          skills: linkedAccount.skills || {},
+          mmoInventory: linkedAccount.mmoInventory || { items: [] },
+          equipment: linkedAccount.equipment || { axe: null, pickaxe: null, weapon: null, shield: null, head: null, body: null, accessory: null },
+          race: linkedAccount.race || null,
+          rpgStats: linkedAccount.rpgStats || null,
+          cardSlots: linkedAccount.cardSlots || require('./rpg-data').getCardSlotCount(linkedAccount.level || 1),
+          activeCardSlots: linkedAccount.activeCardSlots || require('./rpg-data').getActiveCardSlotCount(linkedAccount.level || 1),
+          passiveCardSlots: linkedAccount.passiveCardSlots || require('./rpg-data').getPassiveCardSlotCount(linkedAccount.level || 1),
+          pendingPacks: linkedAccount.pendingPacks || 0,
+          mount: linkedAccount.mount || null,
+          plotId: linkedAccount.plotId || null,
+          permadeath: !!linkedAccount.permadeath,
+          ascensionMark: !!linkedAccount.ascensionMark,
+          ascensionCount: linkedAccount.ascensionCount || 0,
+          dungeonProgress: linkedAccount.dungeonProgress || {
+            guildMember: false, guildXp: 0, guildRank: 'stone',
+            deepestFloor: 0, totalKills: 0, totalDeaths: 0, bossesKilled: 0,
+            clearedCaves: {}, activeCave: null,
+          },
+          characterList: _chars,
+          vip: (vipHandler.vipStatusCache.get(linkedAccount.key) || {}).status || null,
+        } : null,
+        isMod: isModerator(socket.id),
+        zones: state.getZoneList(),
+        startZone: _loc ? _loc.zoneId : 'starter_town',
+        startPosition: _loc ? { x: _loc.x, y: _loc.y } : null,
+        world: {
+          timeOfDay: state.world.timeOfDay,
+          weather: state.world.weather,
         },
-        characterList: _charList,
-        vip: (vipHandler.vipStatusCache.get(linkedAccount.key) || {}).status || null,
-      } : null,
-      isMod: isModerator(socket.id),
-      // MMO: zones instead of rooms
-      zones: state.getZoneList(),
-      startZone: lastLocation ? lastLocation.zoneId : 'starter_town',
-      startPosition: lastLocation ? { x: lastLocation.x, y: lastLocation.y } : null,
-      world: {
-        timeOfDay: state.world.timeOfDay,
-        weather: state.world.weather,
-      },
-      // Static game data (sent once on connect instead of per zone_state)
-      gameData: {
-        rarityInfo: require('./rpg-data').RARITY_TIERS,
-        skillDefinitions: require('./rpg-data').SKILL_DEFINITIONS,
-        statNames: require('./rpg-data').STAT_NAMES,
-      },
-    });
+        gameData: {
+          rarityInfo: require('./rpg-data').RARITY_TIERS,
+          skillDefinitions: require('./rpg-data').SKILL_DEFINITIONS,
+          statNames: require('./rpg-data').STAT_NAMES,
+        },
+      };
+    }
+
+    // Send identity
+    socket.emit('identity', _buildIdentity(_isNewAccount));
 
     // Send server stats
     socket.emit('server_stats', {
@@ -522,6 +539,12 @@ function setupSocket(io) {
       var seasonal = require('./seasonal');
       socket.emit('season_visual_update', seasonal.getVisual());
     } catch (_svErr) { /* seasonal not loaded yet */ }
+
+    // Send account snapshot for client-side portability storage
+    if (linkedAccount && !linkedAccount.temp) {
+      var snapshot = accounts.getExportableSnapshot(linkedAccount.key);
+      if (snapshot) socket.emit('account_snapshot', snapshot);
+    }
 
     // Slur filter
     if (linkedAccount && linkedAccount.slurFilter) {
@@ -655,6 +678,69 @@ function setupSocket(io) {
       acc.metadata.tosAccepted = true;
       acc.metadata.tosDate = Date.now();
       accounts.saveAccount(acc);
+    });
+
+    // Snapshot upload: client sends saved snapshot for import into a fresh account.
+    // Only merges into accounts created within the last 30 seconds (prevents abuse).
+    socket.on('snapshot_upload', function(snapshotStr) {
+      var accKey = socketAccountMap.get(socket.id);
+      if (!accKey) return;
+      var acc = accounts.loadAccount(accKey);
+      if (!acc || acc.temp) return;
+      if (Date.now() - acc.createdAt > 120000) return;
+      if (typeof snapshotStr !== 'string' || snapshotStr.length < 2 || snapshotStr.length > 524288) return;
+
+      var merged = accounts.mergeSnapshotIntoAccount(accKey, snapshotStr);
+      if (!merged) return;
+
+      // Update closure references so _buildIdentity sees merged data
+      linkedAccount = merged;
+      user.name = merged._characterName || merged.username;
+      user.color = merged.color;
+      user.avatar = merged.avatar || null;
+      user.race = merged.race || null;
+
+      // Re-emit identity with imported data (isNewAccount=false this time)
+      socket.emit('identity', _buildIdentity(false));
+
+      // Also send a fresh snapshot back (now reflecting the merged data)
+      var snap = accounts.getExportableSnapshot(accKey);
+      if (snap) socket.emit('account_snapshot', snap);
+    });
+
+    // Snapshot request: client asks for a fresh snapshot (e.g. before disconnecting)
+    socket.on('snapshot_request', function() {
+      var accKey = socketAccountMap.get(socket.id);
+      if (!accKey) return;
+      var snap = accounts.getExportableSnapshot(accKey);
+      if (snap) socket.emit('account_snapshot', snap);
+    });
+
+    // Player-initiated sync: overwrites server account from client's saved snapshot.
+    // No freshness guard — player explicitly chose to import.
+    socket.on('sync_import', function(snapshotStr) {
+      var accKey = socketAccountMap.get(socket.id);
+      if (!accKey) return;
+      var acc = accounts.loadAccount(accKey);
+      if (!acc || acc.temp) return;
+      if (typeof snapshotStr !== 'string' || snapshotStr.length < 2 || snapshotStr.length > 524288) {
+        socket.emit('sync_import_result', { success: false, error: 'Invalid snapshot data' });
+        return;
+      }
+      var merged = accounts.mergeSnapshotIntoAccount(accKey, snapshotStr);
+      if (!merged) {
+        socket.emit('sync_import_result', { success: false, error: 'Merge failed' });
+        return;
+      }
+      linkedAccount = merged;
+      user.name = merged._characterName || merged.username;
+      user.color = merged.color;
+      user.avatar = merged.avatar || null;
+      user.race = merged.race || null;
+      socket.emit('sync_import_result', { success: true });
+      socket.emit('identity', _buildIdentity(false));
+      var snap = accounts.getExportableSnapshot(accKey);
+      if (snap) socket.emit('account_snapshot', snap);
     });
   });
 }

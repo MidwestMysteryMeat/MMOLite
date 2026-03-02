@@ -6,6 +6,7 @@
 local net = require("lib.net")
 local sha256 = require("lib.sha256")
 local audio = require("lib.audio")
+local keystore = require("lib.keystore")
 
 local login = {}
 
@@ -37,6 +38,7 @@ local statusMsg = ""
 local errorMsg = nil
 local errorTimer = 0
 local savedKey = nil
+local savedSnapshot = nil  -- portable account snapshot for cross-server import
 local receivedKey = nil  -- key received from server for new accounts
 
 -- Cursor blink
@@ -86,6 +88,13 @@ function login.load()
     -- Load saved key
     login.loadSavedKey()
 
+    -- Load portable snapshot for cross-server import
+    savedSnapshot = nil
+    local snapInfo = love.filesystem.getInfo("account_snapshot.dat")
+    if snapInfo then
+        savedSnapshot = love.filesystem.read("account_snapshot.dat")
+    end
+
     if savedKey then
         -- Returning player: skip PIN, connect directly
         mode = MODE_SOLVING
@@ -98,22 +107,12 @@ function login.load()
 end
 
 function login.loadSavedKey()
-    savedKey = nil
-    local info = love.filesystem.getInfo("account.dat")
-    if info then
-        local data = love.filesystem.read("account.dat")
-        if data and #data > 0 then
-            local key = data:match("^(%S+)")
-            if key and #key >= 12 then
-                savedKey = key
-            end
-        end
-    end
+    savedKey = keystore.getKey()
 end
 
 function login.saveKey(key)
     if key and #key >= 12 then
-        love.filesystem.write("account.dat", key)
+        keystore.setKey(key)
         savedKey = key
     end
 end
@@ -129,6 +128,12 @@ function login.update(dt)
     if errorTimer > 0 then
         errorTimer = errorTimer - dt
         if errorTimer <= 0 then errorMsg = nil end
+    end
+
+    -- Safety timeout: if snapshot upload didn't get a response, proceed anyway
+    if _G._snapshotUploadTimeout and love.timer.getTime() > _G._snapshotUploadTimeout then
+        _G._snapshotUploadTimeout = nil
+        _G.switchScene("character_select")
     end
 
     -- Solve PoW incrementally (non-blocking)
@@ -753,23 +758,20 @@ function login.finishConnect()
         _G.identity = data
         _G.pendingClient = nil
 
-        -- Save the account key from server (but NOT in offline mode —
-        -- offline servers create throwaway accounts that would overwrite
-        -- the player's real production account key)
+        -- Save the account key from server
         local accountData = data and data.account
-        if accountData and accountData.key and not _G.offlineMode and not _G.isServerHost then
+        if accountData and accountData.key then
             login.saveKey(accountData.key)
+        end
 
-            -- PIN setup skipped — standalone desktop game, no security benefit.
-            -- if accountData.needsPin then
-            --     receivedKey = accountData.key
-            --     pinField.text = ""
-            --     pinField.label = "Choose a PIN"
-            --     pinField.placeholder = "4-8 alphanumeric PIN"
-            --     mode = MODE_PIN_SETUP
-            --     login.setActiveField(pinField)
-            --     return
-            -- end
+        -- If this is a new account and we have a snapshot, upload it for import.
+        -- The server will merge the snapshot and re-emit identity (without isNewAccount).
+        if accountData and accountData.isNewAccount and savedSnapshot then
+            client:emit("snapshot_upload", savedSnapshot)
+            savedSnapshot = nil
+            statusMsg = "Importing character data..."
+            _G._snapshotUploadTimeout = love.timer.getTime() + 5
+            return
         end
 
         -- Go to character select screen

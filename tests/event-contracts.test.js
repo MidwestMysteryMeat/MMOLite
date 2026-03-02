@@ -1,7 +1,7 @@
 // tests/event-contracts.test.js
 // Layer 1: Contract tests — verify every server emit has a client listener.
-// Scans server .js files for socket.emit/'io.to.emit' calls and client game.lua
-// for client:on() registrations, then diffs them.
+// Scans server .js files for any *.emit('event') calls and all client scene
+// .lua files for client:on() registrations, then diffs them.
 
 const fs = require('fs');
 const path = require('path');
@@ -12,7 +12,9 @@ const ROOT = path.join(__dirname, '..');
 
 function collectServerEmits(dir) {
   const emits = new Set();
-  const pattern = /(?:socket|io(?:\.to\([^)]*\))?|ns)\.emit\(\s*['"]([^'"]+)['"]/g;
+  // Match any variable ending in .emit('event') — covers socket, io, ns,
+  // targetSocket, targetSock, kickedSocket, sock, etc.
+  const pattern = /\w+(?:\.to\([^)]*\))?\.emit\(\s*['"]([^'"]+)['"]/g;
 
   function scanFile(fp) {
     const src = fs.readFileSync(fp, 'utf8');
@@ -40,15 +42,27 @@ function collectServerEmits(dir) {
 
 function collectClientListeners() {
   const listeners = new Set();
-  const luaFile = path.join(ROOT, 'client', 'scenes', 'game.lua');
-  if (!fs.existsSync(luaFile)) return listeners;
-
-  const src = fs.readFileSync(luaFile, 'utf8');
   const pattern = /client:on\(\s*["']([^"']+)['"]/g;
-  let m;
-  while ((m = pattern.exec(src)) !== null) {
-    listeners.add(m[1]);
+
+  // Scan all .lua files under client/scenes/ (includes game.lua, login.lua,
+  // character_select.lua, shards.lua, and all game-handlers/)
+  function scanLuaDir(d) {
+    if (!fs.existsSync(d)) return;
+    const entries = fs.readdirSync(d, { withFileTypes: true });
+    for (const e of entries) {
+      const fp = path.join(d, e.name);
+      if (e.isDirectory()) {
+        scanLuaDir(fp);
+      } else if (e.isFile() && e.name.endsWith('.lua')) {
+        const src = fs.readFileSync(fp, 'utf8');
+        let m;
+        while ((m = pattern.exec(src)) !== null) listeners.add(m[1]);
+        pattern.lastIndex = 0;
+      }
+    }
   }
+  scanLuaDir(path.join(ROOT, 'client', 'scenes'));
+
   return listeners;
 }
 
@@ -61,8 +75,7 @@ const KNOWN_SERVER_ONLY = new Set([
   'server_shutdown', 'admin_kicked',
   // World events broadcast to all — client handles via world_event
   'world_event',
-  // Internal director emits
-  'raid_boss_phase', 'raid_gathering_update',
+  // Internal director emits (no client panel yet)
   // Challenge / achievement helpers that emit generically
   'challenge_progress', 'achievement_unlocked',
   // Party room emits — client handles via party_updated / party_left already
@@ -79,8 +92,16 @@ const KNOWN_SERVER_ONLY = new Set([
 // (e.g. future UI hooks, or emitted via non-standard variable names the regex misses).
 const KNOWN_CLIENT_EXTRA = new Set([
   'connect', 'disconnect', 'connect_error',
-  // Emitted via targetSocket.emit() in dungeon.js — regex only matches socket/io/ns vars
-  'permadeath_triggered',
+  // Emitted via callbacks.broadcastToFloor / callbacks.emitToPlayer (indirect)
+  'tc_combat_start', 'tc_combat_turn', 'tc_combat_end',
+  'tc_combat_initiative', 'tc_combat_reaction',
+  'tc_units_spawned', 'tc_corruption_zones',
+  'tc_boss_phase_change', 'tc_boss_soul_harvest', 'tc_boss_attack',
+  // Emitted via lichRaidBroadcast (indirect)
+  'raid_activated', 'raid_cancelled', 'raid_complete',
+  'raid_boss_engage', 'raid_boss_phase', 'raid_warning', 'raid_gathering_update',
+  // Emitted via callbacks.broadcastToFloor in director-ocean.js
+  'leviathan_enrage', 'leviathan_part_destroyed', 'leviathan_phase_change',
 ]);
 
 // ---------------------------------------------------------------
@@ -121,10 +142,10 @@ describe('Event Contracts: Server emits ↔ Client listeners', () => {
       console.log('[contracts] Sample missing:', missing.sort().slice(0, 20).join(', '));
     }
     // Coverage ratchet: tighten this as client handlers are wired up.
-    // Current baseline: 56.4% (215/381). Was 50% — raised after grid inventory + corpse loot events.
+    // Widened regex captures 421 server emits; 312 covered = 74%.
     const covered = serverEmits.size - missing.length;
     const coveragePct = covered / serverEmits.size;
-    expect(coveragePct).toBeGreaterThan(0.55);
+    expect(coveragePct).toBeGreaterThan(0.73);
   });
 
   test('client listeners with no server emit: report orphaned (informational)', () => {
@@ -139,7 +160,7 @@ describe('Event Contracts: Server emits ↔ Client listeners', () => {
     if (orphaned.length > 0) {
       console.log('[contracts] Orphaned:', orphaned.sort().join(', '));
     }
-    // Ratchet: tighten as orphans are resolved. Was 35 — reduced after grid inventory + corpse loot cleanup.
-    expect(orphaned.length).toBeLessThanOrEqual(34);
+    // Ratchet: widened regex + scan scope eliminated all false-positive orphans.
+    expect(orphaned.length).toBeLessThanOrEqual(0);
   });
 });

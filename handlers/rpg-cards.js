@@ -288,8 +288,7 @@ module.exports = {
       _cardVendorLocks.add(key);
       try {
         accounts.updateChips(key, -price);
-        acc = accounts.loadAccount(key);
-        if (!acc) return;
+        // loadAccount returns the same cached reference — updateChips already mutated acc.chips in-place
 
         var cardInstance = rpgData.generateCardInstance(template, 'vendor');
         if (!acc.rpgCards) acc.rpgCards = [];
@@ -373,19 +372,19 @@ module.exports = {
     // Curated shop: 1 active + 2 passives per archetype + 7 stat boosts
     var CURATED_SHOP_CARDS = [
       // ── General: Stat Boosts (common) ──
-      'vigor_I', 'might_I', 'finesse_I', 'acumen_I', 'resolve_I', 'presence_I', 'ingenuity_I',
+      'vigor', 'might', 'finesse', 'acumen', 'resolve', 'presence', 'ingenuity',
       // ── melee_dps: physical damage dealers ──
       'feral_swipe',        // active (common) - basic melee attack
       'sharp_edge',         // passive (common) - melee damage
-      'crit_boost_I',       // passive (uncommon) - crit chance
+      'crit_boost',         // passive (uncommon) - crit chance
       // ── tank: damage absorption / aggro ──
       'taunt',              // active (uncommon) - tank aggro pull
       'iron_skin',          // passive (common) - armor bonus
       'sturdy_constitution',// passive (common) - HP bonus
       // ── pure_defense: damage mitigation ──
       'fortify',            // active (uncommon) - temp armor
-      'stone_skin_I',       // passive (common) - flat armor
-      'thorns_I',           // passive (common) - damage reflect
+      'stone_skin_passive', // passive (common) - flat armor
+      'thorns',             // passive (common) - damage reflect
       // ── support: healing / buffs ──
       'heal_self_I',        // active (uncommon) - self heal
       'bandage_wrap',       // passive (common) - out-of-combat heal
@@ -397,10 +396,10 @@ module.exports = {
       // ── assassin: stealth / burst ──
       'backstab_I',         // active (uncommon) - stealth attack
       'subtle_blade',       // passive (common) - stealth damage
-      'shadow_cloak',       // passive (uncommon) - stealth bonus
+      'lockmaster',         // passive (uncommon) - lockpicking bonus
       // ── scout: mobility / evasion ──
       'smoke_screen',       // active (uncommon) - escape/stealth
-      'speed_boost_I',      // passive (common) - movement speed
+      'speed_boost',        // passive (common) - movement speed
       'keen_eyes',          // passive (common) - detection
       // ── cc_dot: crowd control / damage over time ──
       'oil_slick',          // active (uncommon) - area slow
@@ -411,17 +410,17 @@ module.exports = {
       'dark_adapted',       // passive (common) - dark bonus
       'predator_instinct',  // passive (common) - tracking
       // ── grappler: close combat control ──
-      'body_slam',          // active (uncommon) - stun attack
+      'grappler_iron_grip', // active (uncommon) - grapple stun attack
       'vice_grip',          // passive (common) - grapple power
       'wrestlers_stance',   // passive (common) - grapple defense
       // ── aquatic: water specialization ──
-      'riptide',            // active (uncommon) - water attack
+      'tidal_shield',       // active (uncommon) - water defense shield
       'water_affinity',     // passive (common) - water bonus
-      'coral_skin',         // passive (common) - water armor
+      'aquatic_adaptation', // passive (rare) - water armor/breathing
       // ── utility: crafting / exploration ──
       'detect_magic',       // active (uncommon) - reveal
-      'lucky_coin',         // passive (common) - luck
-      'carry_weight_I',     // passive (common) - carry capacity
+      'bountiful_harvest',  // passive (uncommon) - gather bonus
+      'carry_weight',       // passive (common) - carry capacity
     ];
 
     socket.on('get_card_vendor_catalog', function() {
@@ -511,17 +510,29 @@ module.exports = {
         return;
       }
 
-      // Validate cards still exist in collection
+      // Validate cards still exist in collection, build lookup for type resolution
       var cardMap = {};
       for (var i = 0; i < (acc.rpgCards || []).length; i++) {
-        cardMap[acc.rpgCards[i].instanceId] = true;
+        cardMap[acc.rpgCards[i].instanceId] = acc.rpgCards[i];
       }
 
-      var newEquipped = [null, null, null, null, null, null, null, null];
-      for (var s = 0; s < Math.min(loadout.cards.length, acc.cardSlots || 4); s++) {
-        if (loadout.cards[s] && cardMap[loadout.cards[s]]) {
-          newEquipped[s] = loadout.cards[s];
-        }
+      // Restore loadout, enforcing active/passive slot limits (mirrors equipRpgCard validation)
+      var activeSlots = acc.activeCardSlots || rpgData.getActiveCardSlotCount(acc.level || 1);
+      var passiveSlots = acc.passiveCardSlots || rpgData.getPassiveCardSlotCount(acc.level || 1);
+      var activeCount = 0, passiveCount = 0;
+      var newEquipped = [];
+      for (var s = 0; s < loadout.cards.length; s++) {
+        var instanceId = loadout.cards[s];
+        if (!instanceId || !cardMap[instanceId]) continue;
+        var savedCard = cardMap[instanceId];
+        var tmpl = rpgData.CARD_BY_ID[savedCard.cardId] || {};
+        var cardType = tmpl.type || savedCard.type || 'passive_perk';
+        var isActive = rpgData.isActiveCardType(cardType);
+        if (isActive && activeCount >= activeSlots) continue;
+        if (!isActive && passiveCount >= passiveSlots) continue;
+        newEquipped.push(instanceId);
+        if (isActive) activeCount++;
+        else passiveCount++;
       }
       acc.equippedCards = newEquipped;
       accounts.saveAccount(acc);

@@ -33,13 +33,25 @@ local DEFAULT_LIGHT_COLOR = { 1.0, 0.8, 0.5 }
 -- Vision type ambient tints { r, g, b } and brightness multiplier
 local VISION_AMBIENTS = {
     normal       = { tint = { 0.08, 0.08, 0.12 }, mult = 1.0 },
-    thermal      = { tint = { 0.15, 0.06, 0.04 }, mult = 0.9 },
+    thermal      = { tint = { 0.22, 0.08, 0.03 }, mult = 0.85 },
     night        = { tint = { 0.04, 0.12, 0.04 }, mult = 1.8 },
     tremor       = { tint = { 0.12, 0.10, 0.06 }, mult = 1.0 },
     echolocation = { tint = { 0.04, 0.04, 0.14 }, mult = 0.7 },
     magic_sense  = { tint = { 0.10, 0.04, 0.14 }, mult = 1.0 },
     true_seeing  = { tint = { 0.14, 0.12, 0.06 }, mult = 1.3 },
     darkvision   = { tint = { 0.06, 0.08, 0.10 }, mult = 1.5 },
+}
+
+-- Vision overlay tints — full-screen additive pass so every mode is visually distinct
+local VISION_OVERLAYS = {
+    -- { r, g, b, alpha } drawn after the multiply lighting pass
+    thermal      = { 0.35, 0.08, 0.0,  0.12 },
+    night        = { 0.0,  0.18, 0.0,  0.10 },
+    tremor       = { 0.20, 0.15, 0.0,  0.08 },
+    echolocation = { 0.0,  0.06, 0.30, 0.12 },
+    magic_sense  = { 0.18, 0.0,  0.25, 0.10 },
+    true_seeing  = { 0.22, 0.18, 0.0,  0.08 },
+    darkvision   = { 0.0,  0.10, 0.05, 0.06 },
 }
 
 -- Blur shader source (separable 5-tap gaussian)
@@ -239,8 +251,8 @@ function lighting.render(sources, ambientLight, cameraX, cameraY, visionType, ti
     love.graphics.setCanvas()
 end
 
---- Apply the light canvas over the scene (multiply blend), then bloom (add).
-function lighting.apply()
+--- Apply the light canvas over the scene (multiply blend), then vision overlay, then bloom.
+function lighting.apply(visionType)
     if not lightCanvas then return end
 
     -- Main lighting pass: multiply blend darkens the scene
@@ -248,6 +260,15 @@ function lighting.apply()
     love.graphics.setColor(1, 1, 1, 1)
     love.graphics.draw(lightCanvas, 0, 0, 0, screenW / canvasW, screenH / canvasH)
     love.graphics.setBlendMode("alpha")
+
+    -- Vision color overlay (full-screen tint visible everywhere)
+    if visionType and VISION_OVERLAYS[visionType] then
+        local ov = VISION_OVERLAYS[visionType]
+        love.graphics.setBlendMode("add")
+        love.graphics.setColor(ov[1], ov[2], ov[3], ov[4])
+        love.graphics.rectangle("fill", 0, 0, screenW, screenH)
+        love.graphics.setBlendMode("alpha")
+    end
 
     -- Bloom pass (skip on low quality or no shader support)
     if quality == "low" or not blurShader or not bloomCanvasH or not bloomCanvasV then

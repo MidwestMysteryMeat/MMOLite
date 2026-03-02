@@ -92,7 +92,7 @@ Hard constraints enforced on every edit.
 - Server event names and their Lua handler names must match exactly.
 - When adding a new `socket.emit(eventName, ...)` on the server, the client must register a `client:on(eventName, ...)` in `setupListeners`, and that event must be added to the `SCENE_EVENTS` table at the top of `game.lua`. There is ONE cleanup list — never create a second.
 - When removing a server emit, remove the corresponding `client:on` handler AND the `SCENE_EVENTS` entry.
-- Event contract tests (`tests/event-contracts.test.js`) enforce a coverage ratchet (currently >50%) and orphan cap (currently <=35). These thresholds only go up — tighten them as gaps are closed.
+- Event contract tests (`tests/event-contracts.test.js`) enforce a coverage ratchet (currently >73%) and orphan cap (currently <=0). These thresholds only go up — tighten them as gaps are closed.
 
 **Performance discipline:**
 - No synchronous disk I/O (`readFileSync`, `writeFileSync`) in socket event handlers. Startup/init is fine. Use `accounts.loadAccount()` (cache-backed) and `accounts.saveAccount()` (write-behind) for runtime account access.

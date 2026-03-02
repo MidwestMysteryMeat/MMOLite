@@ -13,8 +13,10 @@ M.steam = nil           -- luasteam module reference (nil if unavailable)
 
 -- Files managed by Auto-Cloud (read/written via love.filesystem)
 local CLOUD_FILES = {
-    "account.dat",      -- account key (critical)
-    "master.dat",       -- server host:port (has default fallback)
+    "account.dat",              -- unified account key
+    "keys.dat",                 -- legacy per-server account keys
+    "master.dat",               -- server host:port (has default fallback)
+    "account_snapshot.dat",     -- portable character snapshot for cross-server import
 }
 
 -- ---------------------------------------------------------------------------

@@ -1646,4 +1646,83 @@ function combatUI.getMyUnitId()
     return myUnitId
 end
 
+-- BG3-style overworld turn mode: populate move/attack range from dungeon grid
+function combatUI.setOverworldRanges(playerX, playerY, movesLeft, dungeonGrid, enemies, weaponRange)
+    moveRange = {}
+    attackRange = {}
+    abilityRange = {}
+    selectedAction = nil
+
+    if not dungeonGrid or movesLeft <= 0 then return end
+
+    -- BFS for move range using dungeon grid (1-indexed Lua grid)
+    local visited = {}
+    local queue = {{x = playerX, y = playerY, cost = 0}}
+    visited[tileKey(playerX, playerY)] = true
+    local dirs = {{0, -1}, {0, 1}, {-1, 0}, {1, 0}}
+
+    while #queue > 0 do
+        local current = table.remove(queue, 1)
+        if current.cost > 0 then
+            moveRange[tileKey(current.x, current.y)] = true
+        end
+
+        if current.cost < movesLeft then
+            for _, d in ipairs(dirs) do
+                local nx, ny = current.x + d[1], current.y + d[2]
+                local key = tileKey(nx, ny)
+                if not visited[key] then
+                    visited[key] = true
+                    local walkable = false
+                    local row = dungeonGrid[ny + 1]
+                    if row then
+                        local tile = row[nx + 1]
+                        if tile and tile ~= 0 then walkable = true end
+                    end
+                    -- Check enemy occupancy
+                    if walkable and enemies then
+                        for _, e in ipairs(enemies) do
+                            if e.alive ~= false and e.x == nx and e.y == ny then
+                                walkable = false
+                                break
+                            end
+                        end
+                    end
+                    if walkable then
+                        queue[#queue + 1] = {x = nx, y = ny, cost = current.cost + 1}
+                    end
+                end
+            end
+        end
+    end
+
+    -- Attack range: tiles with enemies within weapon range from player or any reachable tile
+    local wr = weaponRange or 1
+    local positions = {{x = playerX, y = playerY}}
+    for key, _ in pairs(moveRange) do
+        local kx, ky = key:match("^(-?%d+),(-?%d+)$")
+        if kx then positions[#positions + 1] = {x = tonumber(kx), y = tonumber(ky)} end
+    end
+    if enemies then
+        for _, e in ipairs(enemies) do
+            if e.alive ~= false then
+                for _, pos in ipairs(positions) do
+                    if math.abs(e.x - pos.x) + math.abs(e.y - pos.y) <= wr then
+                        attackRange[tileKey(e.x, e.y)] = true
+                        break
+                    end
+                end
+            end
+        end
+    end
+end
+
+function combatUI.clearOverworldRanges()
+    moveRange = {}
+    attackRange = {}
+    abilityRange = {}
+    selectedAction = nil
+    pathPreview = nil
+end
+
 return combatUI

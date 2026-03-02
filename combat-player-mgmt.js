@@ -5,6 +5,7 @@
 'use strict';
 
 var rpgData = require('./rpg-data');
+var _combatStateMaps = require('./combat-state-maps');
 
 var activeCombats, socketToCombat;
 var endUnitTurn, applyGroupScaling, checkReinforcements;
@@ -98,6 +99,7 @@ function addPlayerToCombat(combatId, playerData) {
   };
 
   combat.units.set(pUnitId, playerUnit);
+  _combatStateMaps.comboState.delete(pUnitId);
   socketToCombat.set(p.socketId, combatId);
 
   if (combat.callbacks.emitToPlayer) {
@@ -144,6 +146,7 @@ function handlePlayerDisconnect(combatId, socketId) {
 
   var unitId = 'player_' + socketId;
   var unit = combat.units.get(unitId);
+  socketToCombat.delete(socketId);
   if (!unit) return;
 
   unit.autoDefend = true;

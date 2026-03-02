@@ -17,17 +17,24 @@ var chebyshevDist = combatGrid.chebyshevDist;
 // Influence map cache — one per combat, invalidated each turn
 // ---------------------------------------------------------------------------
 
-// WeakMap keyed by combat object → { turnNumber, layers }
+// WeakMap keyed by combat object → { turnNumber, byId: Map<selfId, layers> }
+// Nested map holds per-selfId layer sets so each enemy's allySupport (which
+// excludes self) is computed once per (turn, selfId).
 var _cache = new WeakMap();
 
-function _getCached(combat) {
+function _getCached(combat, selfId) {
   var entry = _cache.get(combat);
-  if (entry && entry.turnNumber === combat.turnNumber) return entry.layers;
-  return null;
+  if (!entry || entry.turnNumber !== combat.turnNumber) return null;
+  return entry.byId.get(selfId) || null;
 }
 
-function _setCache(combat, layers) {
-  _cache.set(combat, { turnNumber: combat.turnNumber, layers: layers });
+function _setCache(combat, selfId, layers) {
+  var entry = _cache.get(combat);
+  if (!entry || entry.turnNumber !== combat.turnNumber) {
+    entry = { turnNumber: combat.turnNumber, byId: new Map() };
+    _cache.set(combat, entry);
+  }
+  entry.byId.set(selfId, layers);
 }
 
 // ---------------------------------------------------------------------------
@@ -157,8 +164,8 @@ function _genPlayerControl(combat, width, height) {
 // Returns { playerThreat, allySupport, dangerZones, playerControl }
 // Cached per turn number.
 function generateInfluence(combat, selfId) {
-  var cached = _getCached(combat);
-  if (cached && cached._selfId === selfId) return cached;
+  var cached = _getCached(combat, selfId);
+  if (cached) return cached;
 
   var floor = combat.floor;
   if (!floor) return _emptyLayers(0, 0);
@@ -174,10 +181,9 @@ function generateInfluence(combat, selfId) {
     playerControl: _genPlayerControl(combat, width, height),
     width: width,
     height: height,
-    _selfId: selfId,
   };
 
-  _setCache(combat, layers);
+  _setCache(combat, selfId, layers);
   return layers;
 }
 
@@ -190,7 +196,6 @@ function _emptyLayers(w, h) {
     playerControl: empty,
     width: w,
     height: h,
-    _selfId: null,
   };
 }
 

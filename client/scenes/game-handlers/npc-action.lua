@@ -31,13 +31,13 @@ function M.register(client, game, ctx)
         elseif data.action == "reveal_rumors" then
             if data.rumors then
                 for _, rumor in ipairs(data.rumors) do
-                    table.insert(chat.messages, { text = "[Rumor] " .. (rumor.text or rumor), color = "#CCAA66" })
+                    game.addChatMessage("[Rumor] " .. (rumor.text or rumor), {0.8, 0.67, 0.4})
                 end
             end
         elseif data.action == "faction_rep_gained" then
-            table.insert(chat.messages, { text = "[Faction] Reputation gained with " .. (data.factionId or "unknown"), color = "#88CCFF" })
+            game.addChatMessage("[Faction] Reputation gained with " .. (data.factionId or "unknown"), {0.53, 0.8, 1})
         elseif data.action == "karma_changed" then
-            table.insert(chat.messages, { text = "[Karma] Your karma is now " .. tostring(data.karma or 0), color = "#AAFFAA" })
+            game.addChatMessage("[Karma] Your karma is now " .. tostring(data.karma or 0), {0.67, 1, 0.67})
         end
     end)
 end
