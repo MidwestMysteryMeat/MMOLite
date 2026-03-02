@@ -3,6 +3,7 @@
 
 var fs = require('fs');
 var path = require('path');
+var dataDir = require('../data-dir');
 var challengesHandler = require('./challenges');
 var rpgData = require('../rpg-data');
 
@@ -15,11 +16,9 @@ var guildJoinLocks = new Set();
 // Guild Persistence
 // ---------------------------------------------------------------------------
 
-var GUILDS_DIR = path.join(__dirname, '..', 'data', 'guilds');
+var GUILDS_DIR = dataDir.subdir('guilds');
 var _pendingGuildSaves = new Map(); // guildId -> timeout handle
 var GUILD_SAVE_DEBOUNCE_MS = 1000;
-
-try { fs.mkdirSync(GUILDS_DIR, { recursive: true }); } catch (e) { /* ignore */ }
 
 function saveGuild(guild) {
   var guildId = guild.id;

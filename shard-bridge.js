@@ -427,6 +427,7 @@ function findFreeAdjacentPlot(originX, originY, zonePlots) {
 module.exports = {
   config: config,
   isMasterMode: isMasterMode,
+  masterRequest: masterRequest,
   startHeartbeat: startHeartbeat,
   stopHeartbeat: stopHeartbeat,
   checkoutCharacter: checkoutCharacter,

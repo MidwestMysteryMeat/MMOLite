@@ -14,6 +14,7 @@ data/plots/
 # Build output
 build/
 dist/
+_build_data_backup/
 
 # Secrets / env
 *.env

@@ -12,7 +12,8 @@ module.exports = {
   _trades: new Map(),
 
   init(io, socket, deps) {
-    var { user, state, socketAccountMap, accounts, checkEventRate, applyRateGrace } = deps;
+    var { user, state, socketAccountMap, accounts, checkEventRate, applyRateGrace, getCachedVipStatus } = deps;
+    var shardBridge = require('../shard-bridge');
     var trades = this._trades;
 
     // --- trade_request: initiate a trade ---
@@ -134,8 +135,16 @@ module.exports = {
                 }
               }
             }
+          } else if (rawItem.type === 'vip_token' && typeof rawItem.amount === 'number') {
+            // VIP token trade — validate sender has tokens via cached VIP status
+            var tokenAmt = Math.floor(rawItem.amount);
+            if (tokenAmt < 1 || tokenAmt > 10) continue;
+            var senderVip = getCachedVipStatus ? getCachedVipStatus(offerKey) : null;
+            var senderTokens = senderVip ? (senderVip.tokenInventory || 0) : 0;
+            if (senderTokens >= tokenAmt) {
+              validatedItems.push({ type: 'vip_token', amount: tokenAmt });
+            }
           }
-          // Ignore any other item types
         }
       }
 
@@ -258,6 +267,12 @@ module.exports = {
                   return 'A card cannot be traded to a ' + receiverAcc.race + ' character';
                 }
                 incomingCardCount++;
+              } else if (item.type === 'vip_token' && item.amount > 0) {
+                var senderVip = getCachedVipStatus ? getCachedVipStatus(accKey) : null;
+                var senderTokens = senderVip ? (senderVip.tokenInventory || 0) : 0;
+                if (senderTokens < item.amount) {
+                  return label + ' no longer has enough VIP tokens';
+                }
               }
             }
             // Check receiver collection cap
@@ -310,6 +325,17 @@ module.exports = {
                 }
               } else if (item.type === 'card' && item.cardInstanceId) {
                 pendingCardTransfers.push({ fromKey: fromKey, toKey: toKey, cardInstanceId: item.cardInstanceId });
+              } else if (item.type === 'vip_token' && item.amount > 0) {
+                // VIP token transfer — atomic on master
+                if (shardBridge.isMasterMode) {
+                  shardBridge.masterRequest('POST', '/api/vip/transfer-tokens', {
+                    fromKey: fromKey, toKey: toKey, count: item.amount,
+                  }, function(tErr, tData) {
+                    if (tErr || !tData || !tData.success) {
+                      console.error('[trade] VIP token transfer failed:', tErr ? tErr.message : (tData && tData.error));
+                    }
+                  });
+                }
               }
             }
           }

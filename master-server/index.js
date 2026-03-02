@@ -50,6 +50,19 @@ if (SHARD_SECRET === 'mmolite-dev-secret') {
 
 // Load parent accounts module (shared encryption, PIN hashing, etc.)
 const accounts = require('../accounts');
+const vip = require('./vip');
+
+// Stripe — conditionally loaded (only needed in production with STRIPE_SECRET_KEY)
+var stripe = null;
+var STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
+try {
+  if (process.env.STRIPE_SECRET_KEY) {
+    stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+    console.log('[master] Stripe initialized');
+  }
+} catch (_stripeErr) {
+  console.warn('[master] Stripe module not available:', _stripeErr.message);
+}
 
 // ---------------------------------------------------------------------------
 // Shard Registry (in-memory, heartbeat-based)
@@ -85,6 +98,92 @@ setInterval(function () {
 const app = express();
 app.disable('x-powered-by');
 app.use(compression());
+
+// Stripe webhook needs raw body — must be registered BEFORE express.json()
+app.post('/api/vip/stripe-webhook', express.raw({ type: 'application/json' }), function(req, res) {
+  if (!stripe || !STRIPE_WEBHOOK_SECRET) {
+    return res.status(503).json({ error: 'Stripe not configured' });
+  }
+  var sig = req.headers['stripe-signature'];
+  var event;
+  try {
+    event = stripe.webhooks.constructEvent(req.body, sig, STRIPE_WEBHOOK_SECRET);
+  } catch (err) {
+    console.error('[master] Stripe webhook signature failed:', err.message);
+    return res.status(400).json({ error: 'Invalid signature' });
+  }
+
+  // Dedup — prevent replay
+  if (vip.isStripeEventProcessed(event.id)) {
+    return res.json({ received: true, duplicate: true });
+  }
+  vip.markStripeEventProcessed(event.id);
+
+  try {
+    var session, sub, accountKey;
+
+    switch (event.type) {
+      case 'checkout.session.completed':
+        session = event.data.object;
+        accountKey = session.client_reference_id;
+        if (!accountKey) break;
+        var plan = (session.metadata && session.metadata.plan) || 'monthly';
+        vip.activateVip(accountKey, plan, session.customer, session.subscription);
+        // Handle one-time token purchases (no subscription)
+        if (session.metadata && session.metadata.type === 'token_purchase') {
+          var tokenCount = parseInt(session.metadata.tokenCount, 10) || 1;
+          vip.addTokens(accountKey, tokenCount);
+        }
+        if (session.metadata && session.metadata.type === 'sovereign_purchase') {
+          var sovAmount = parseInt(session.metadata.sovereignAmount, 10) || 300;
+          vip.addSovereigns(accountKey, sovAmount);
+        }
+        console.log('[master] VIP activated for ' + accountKey.substring(0, 6) + '... plan=' + plan);
+        break;
+
+      case 'invoice.payment_succeeded':
+        sub = event.data.object;
+        // Find account by subscription ID
+        accountKey = (sub.subscription_details && sub.subscription_details.metadata && sub.subscription_details.metadata.accountKey) ||
+                     (sub.metadata && sub.metadata.accountKey) || null;
+        if (accountKey) {
+          vip.renewVip(accountKey);
+          console.log('[master] VIP renewed for ' + accountKey.substring(0, 6) + '...');
+        }
+        break;
+
+      case 'invoice.payment_failed':
+        console.warn('[master] Stripe payment failed for invoice ' + event.data.object.id);
+        break;
+
+      case 'customer.subscription.deleted':
+        sub = event.data.object;
+        accountKey = (sub.metadata && sub.metadata.accountKey) || null;
+        if (accountKey) {
+          vip.cancelSubscription(accountKey);
+          console.log('[master] VIP subscription cancelled for ' + accountKey.substring(0, 6) + '...');
+        }
+        break;
+
+      case 'customer.subscription.updated':
+        sub = event.data.object;
+        accountKey = (sub.metadata && sub.metadata.accountKey) || null;
+        if (accountKey) {
+          var state = vip.loadVipState(accountKey);
+          if (state) {
+            state.stripeSubscriptionId = sub.id;
+            vip.saveVipState(state);
+          }
+        }
+        break;
+    }
+  } catch (err) {
+    console.error('[master] Stripe webhook processing error:', err.message);
+  }
+
+  res.json({ received: true });
+});
+
 app.use(express.json({ limit: '2mb' }));
 
 // CORS — allow all (Love2D clients + shards)
@@ -421,6 +520,167 @@ if (pow) {
 }
 
 // ---------------------------------------------------------------------------
+// API: VIP System
+// ---------------------------------------------------------------------------
+
+// GET /api/vip/status — shard queries VIP state for a player
+app.get('/api/vip/status', requireShardAuth, function(req, res) {
+  try {
+    var accountKey = req.query.accountKey;
+    if (!accountKey) return res.status(400).json({ success: false, error: 'Missing accountKey' });
+    var status = vip.getVipStatus(accountKey);
+    res.json({ success: true, vipStatus: status });
+  } catch (err) {
+    console.error('[master] VIP status error:', err.message);
+    res.status(500).json({ success: false, error: 'Internal error' });
+  }
+});
+
+// POST /api/vip/consume-token — player consumes a VIP token
+app.post('/api/vip/consume-token', requireShardAuth, function(req, res) {
+  try {
+    var b = req.body;
+    if (!b || !b.accountKey) return res.status(400).json({ success: false, error: 'Missing accountKey' });
+    var result = vip.consumeToken(b.accountKey);
+    if (!result.success) return res.json({ success: false, error: result.error });
+    var status = vip.getVipStatus(b.accountKey);
+    res.json({ success: true, vipStatus: status });
+  } catch (err) {
+    console.error('[master] VIP consume-token error:', err.message);
+    res.status(500).json({ success: false, error: 'Internal error' });
+  }
+});
+
+// POST /api/vip/purchase — Sovereign shop purchase
+app.post('/api/vip/purchase', requireShardAuth, function(req, res) {
+  try {
+    var b = req.body;
+    if (!b || !b.accountKey || !b.itemId) {
+      return res.status(400).json({ success: false, error: 'Missing accountKey or itemId' });
+    }
+    var result = vip.purchaseItem(b.accountKey, b.itemId);
+    if (!result.success) return res.json({ success: false, error: result.error });
+    res.json({
+      success: true,
+      itemId: b.itemId,
+      sovereignBalance: result.state.sovereignBalance,
+      permanentPurchases: result.state.permanentPurchases,
+    });
+  } catch (err) {
+    console.error('[master] VIP purchase error:', err.message);
+    res.status(500).json({ success: false, error: 'Internal error' });
+  }
+});
+
+// POST /api/vip/transfer-tokens — atomic token transfer between players
+app.post('/api/vip/transfer-tokens', requireShardAuth, function(req, res) {
+  try {
+    var b = req.body;
+    if (!b || !b.fromKey || !b.toKey || typeof b.count !== 'number') {
+      return res.status(400).json({ success: false, error: 'Missing fromKey, toKey, or count' });
+    }
+    if (b.count < 1 || b.count > 100) {
+      return res.status(400).json({ success: false, error: 'Invalid token count' });
+    }
+    var result = vip.transferTokens(b.fromKey, b.toKey, b.count);
+    if (!result.success) return res.json({ success: false, error: result.error });
+    res.json({ success: true, fromTokens: result.fromTokens, toTokens: result.toTokens });
+  } catch (err) {
+    console.error('[master] VIP transfer-tokens error:', err.message);
+    res.status(500).json({ success: false, error: 'Internal error' });
+  }
+});
+
+// POST /api/vip/grant-monthly — triggered by shard tick to grant monthly Sovereigns
+app.post('/api/vip/grant-monthly', requireShardAuth, function(req, res) {
+  try {
+    var b = req.body;
+    if (!b || !b.accountKey) return res.status(400).json({ success: false, error: 'Missing accountKey' });
+    var result = vip.grantMonthlySovereigns(b.accountKey);
+    res.json({ success: true, granted: !!result });
+  } catch (err) {
+    console.error('[master] VIP grant-monthly error:', err.message);
+    res.status(500).json({ success: false, error: 'Internal error' });
+  }
+});
+
+// POST /api/vip/create-checkout-session — shard requests a Stripe checkout URL
+app.post('/api/vip/create-checkout-session', requireShardAuth, async function(req, res) {
+  if (!stripe) return res.status(503).json({ success: false, error: 'Stripe not configured' });
+  try {
+    var b = req.body;
+    if (!b || !b.accountKey || !b.type) {
+      return res.status(400).json({ success: false, error: 'Missing fields' });
+    }
+
+    var lineItems = [];
+    var mode = 'subscription';
+    var metadata = { accountKey: b.accountKey, type: b.type };
+
+    if (b.type === 'subscription') {
+      var priceId = {
+        monthly: process.env.STRIPE_PRICE_MONTHLY,
+        quarterly: process.env.STRIPE_PRICE_QUARTERLY,
+        annual: process.env.STRIPE_PRICE_ANNUAL,
+      }[b.plan || 'monthly'];
+      if (!priceId) return res.json({ success: false, error: 'Invalid plan' });
+      lineItems.push({ price: priceId, quantity: 1 });
+      metadata.plan = b.plan || 'monthly';
+    } else if (b.type === 'token_purchase') {
+      var tokenPriceId = process.env.STRIPE_PRICE_TOKEN;
+      if (!tokenPriceId) return res.json({ success: false, error: 'Token price not configured' });
+      var tokenQty = Math.min(Math.max(parseInt(b.quantity, 10) || 1, 1), 10);
+      lineItems.push({ price: tokenPriceId, quantity: tokenQty });
+      metadata.tokenCount = String(tokenQty);
+      mode = 'payment';
+    } else if (b.type === 'sovereign_purchase') {
+      var sovPriceId = process.env.STRIPE_PRICE_SOVEREIGNS;
+      if (!sovPriceId) return res.json({ success: false, error: 'Sovereign price not configured' });
+      lineItems.push({ price: sovPriceId, quantity: 1 });
+      metadata.sovereignAmount = '300';
+      mode = 'payment';
+    } else {
+      return res.json({ success: false, error: 'Invalid purchase type' });
+    }
+
+    var session = await stripe.checkout.sessions.create({
+      client_reference_id: b.accountKey,
+      line_items: lineItems,
+      mode: mode,
+      metadata: metadata,
+      success_url: (b.successUrl || 'https://mmolite.com/payment-success') + '?session_id={CHECKOUT_SESSION_ID}',
+      cancel_url: b.cancelUrl || 'https://mmolite.com/payment-cancel',
+    });
+
+    res.json({ success: true, url: session.url, sessionId: session.id });
+  } catch (err) {
+    console.error('[master] Stripe checkout error:', err.message);
+    res.status(500).json({ success: false, error: 'Checkout creation failed' });
+  }
+});
+
+// POST /api/vip/create-portal-session — Stripe billing portal for subscription management
+app.post('/api/vip/create-portal-session', requireShardAuth, async function(req, res) {
+  if (!stripe) return res.status(503).json({ success: false, error: 'Stripe not configured' });
+  try {
+    var b = req.body;
+    if (!b || !b.accountKey) return res.status(400).json({ success: false, error: 'Missing accountKey' });
+    var state = vip.loadVipState(b.accountKey);
+    if (!state || !state.stripeCustomerId) {
+      return res.json({ success: false, error: 'No Stripe customer found' });
+    }
+    var portalSession = await stripe.billingPortal.sessions.create({
+      customer: state.stripeCustomerId,
+      return_url: b.returnUrl || 'https://mmolite.com/',
+    });
+    res.json({ success: true, url: portalSession.url });
+  } catch (err) {
+    console.error('[master] Stripe portal error:', err.message);
+    res.status(500).json({ success: false, error: 'Portal creation failed' });
+  }
+});
+
+// ---------------------------------------------------------------------------
 // Catch-all
 // ---------------------------------------------------------------------------
 
@@ -434,6 +694,7 @@ app.all('*', function (req, res) {
 
 function gracefulShutdown(signal) {
   console.log('[master] ' + signal + ' received.');
+  vip.flushAll();
   accounts.flushAll();
   process.exit(0);
 }
@@ -442,6 +703,7 @@ process.on('SIGINT', function () { gracefulShutdown('SIGINT'); });
 
 process.on('uncaughtException', function (err) {
   console.error('[master] Uncaught exception:', err.stack || err.message);
+  vip.flushAll();
   accounts.flushAll();
   setTimeout(function () { process.exit(1); }, 500);
 });

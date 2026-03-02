@@ -8,6 +8,8 @@ var _getDefaultForField;
 var CHARACTER_FIELDS;
 var MAX_CHARACTERS_PER_ACCOUNT;
 var sanitizeName;
+var _vipPerks = require('./vip-perks');
+var _getCachedVipStatus = null;
 
 function init(deps) {
   loadAccount = deps.loadAccount;
@@ -16,6 +18,20 @@ function init(deps) {
   CHARACTER_FIELDS = deps.CHARACTER_FIELDS;
   MAX_CHARACTERS_PER_ACCOUNT = deps.MAX_CHARACTERS_PER_ACCOUNT;
   sanitizeName = deps.sanitizeName;
+}
+
+function setVipStatusFn(fn) {
+  _getCachedVipStatus = fn;
+}
+
+function _getEffectiveMaxCharacters(key) {
+  if (_getCachedVipStatus) {
+    var vipStatus = _getCachedVipStatus(key);
+    if (vipStatus && vipStatus.permanentPurchases) {
+      return _vipPerks.getMaxCharacterSlots(vipStatus.permanentPurchases);
+    }
+  }
+  return MAX_CHARACTERS_PER_ACCOUNT;
 }
 
 // Extract character-specific fields from account top level into a plain object
@@ -77,8 +93,9 @@ function createCharacter(key, characterName, options) {
   var account = loadAccount(key);
   if (!account) return { error: 'Account not found' };
   _migrateToMultiCharacter(account);
-  if (account.characters.length >= (account.maxCharacters || MAX_CHARACTERS_PER_ACCOUNT)) {
-    return { error: 'Max characters reached (' + (account.maxCharacters || MAX_CHARACTERS_PER_ACCOUNT) + ')' };
+  var _effectiveMax = _getEffectiveMaxCharacters(key);
+  if (account.characters.length >= _effectiveMax) {
+    return { error: 'Max characters reached (' + _effectiveMax + ')' };
   }
   var safeName = sanitizeName(characterName || 'New Character').slice(0, 20) || 'New Character';
   var charData = {};
@@ -155,7 +172,7 @@ function getCharacterList(key) {
   return {
     characters: list,
     activeCharacterIndex: account.activeCharacterIndex,
-    maxCharacters: account.maxCharacters || MAX_CHARACTERS_PER_ACCOUNT,
+    maxCharacters: _getEffectiveMaxCharacters(key),
   };
 }
 
@@ -236,6 +253,7 @@ function incrementLeviathanKill(key, leviathanId) {
 
 module.exports = {
   init: init,
+  setVipStatusFn: setVipStatusFn,
   _extractCharacterData: _extractCharacterData,
   _applyCharacterData: _applyCharacterData,
   _getCharacterSummary: _getCharacterSummary,

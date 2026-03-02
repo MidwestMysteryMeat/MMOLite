@@ -5,11 +5,12 @@
 var crypto = require('crypto');
 var path = require('path');
 var fs = require('fs');
+var dataDir = require('../data-dir');
 var knowledgeHandler = require('./knowledge');
 
 var PLOT_SIZE = 512;    // 1 chunk * 512px
 var PLOT_GRID = 512;    // snap to 1-chunk grid
-var PLOTS_DIR = path.join(__dirname, '..', 'data', 'plots');
+var PLOTS_DIR = dataDir.subdir('plots');
 
 // Track pending unclaim confirmations: socketId -> { plotId, expiresAt }
 var pendingUnclaims = new Map();
@@ -31,8 +32,7 @@ setInterval(function() {
 var _pendingPlotSaves = new Map();  // zoneId -> timeout handle
 var PLOT_SAVE_DEBOUNCE_MS = 1000;
 
-// Ensure directory exists once at startup
-try { fs.mkdirSync(PLOTS_DIR, { recursive: true }); } catch (e) { /* ignore */ }
+// Directory ensured by data-dir.js subdir()
 
 function savePlots(zoneId, plots) {
   // Debounce: schedule async write, coalescing rapid saves

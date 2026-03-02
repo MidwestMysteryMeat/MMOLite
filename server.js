@@ -48,6 +48,7 @@ const rumorSystem = require('./rumor-system');
 const companionsHandler = require('./handlers/companions');
 const petsHandler = require('./handlers/pets');
 const corpseLootHandler = require('./handlers/corpse-loot');
+const vipHandler = require('./handlers/vip');
 
 const redis = require('./redis');
 const db = require('./db');
@@ -279,7 +280,8 @@ setInterval(function() {
     keys.forEach(function(key) {
       var acc = accounts.loadAccount(key);
       if (acc && acc.petData && acc.petData.length > 0) {
-        petsHandler.tickPetDecay(acc);
+        var vipStatus = vipHandler.getCachedVipStatus(key);
+        petsHandler.tickPetDecay(acc, vipStatus);
         accounts.saveAccount(acc);
       }
     });
@@ -287,6 +289,19 @@ setInterval(function() {
     console.error('[server] Pet decay tick error:', err.message);
   }
 }, 3600000).unref(); // 1 hour
+
+// VIP monthly Sovereign grant tick (every 6 hours — checks if 28+ days since last grant)
+setInterval(function() {
+  if (!shardBridge.isMasterMode) return;
+  try {
+    var keys = new Set(socketAccountMap.values());
+    keys.forEach(function(key) {
+      shardBridge.masterRequest('POST', '/api/vip/grant-monthly', { accountKey: key }, function() {});
+    });
+  } catch (err) {
+    console.error('[server] VIP monthly grant tick error:', err.message);
+  }
+}, 6 * 3600000).unref();
 
 // CORS for REST API — use same origin policy as Socket.IO
 app.use('/api', function(req, res, next) {
@@ -314,6 +329,7 @@ var MASTER_PROXY_PATHS = [
   '/api/characters/checkout',
   '/api/characters/checkin',
   '/api/characters/save',
+  '/api/vip',
 ];
 
 function proxyToMaster(req, res) {

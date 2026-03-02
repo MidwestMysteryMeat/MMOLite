@@ -6,6 +6,7 @@
 var crypto = require('crypto');
 var fs = require('fs');
 var path = require('path');
+var dataDir = require('../data-dir');
 var rpgData = require('../rpg-data');
 var challengesHandler = require('./challenges');
 
@@ -51,12 +52,10 @@ function debouncedAuctionUpdate(io) {
 // Auction Persistence
 // ---------------------------------------------------------------------------
 
-var AUCTION_DIR = path.join(__dirname, '..', 'data', 'auction');
+var AUCTION_DIR = dataDir.subdir('auction');
 var AUCTION_FILE = path.join(AUCTION_DIR, 'listings.json');
 var _pendingAuctionSave = null;
 var AUCTION_SAVE_DEBOUNCE_MS = 2000;
-
-try { fs.mkdirSync(AUCTION_DIR, { recursive: true }); } catch (e) { /* ignore */ }
 
 function saveAuctionListings() {
   if (_pendingAuctionSave) clearTimeout(_pendingAuctionSave);
@@ -367,7 +366,7 @@ module.exports = {
   getDynamicFee: getDynamicFee,
 
   init(io, socket, deps) {
-    var { user, socketAccountMap, accounts, applyRateGrace } = deps;
+    var { user, socketAccountMap, accounts, applyRateGrace, vipPerks, getCachedVipStatus } = deps;
     if (!_accounts) _accounts = accounts; // capture accounts ref for cleanExpired
 
     // Track auction viewers for scoped update broadcasts
@@ -482,8 +481,10 @@ module.exports = {
           socket.emit('mmo_auction_error', { message: 'Marketplace is full' });
           return;
         }
-        if (countSellerListings(key) >= MAX_LISTINGS_PER_PLAYER) {
-          socket.emit('mmo_auction_error', { message: 'Too many active listings (max ' + MAX_LISTINGS_PER_PLAYER + ')' });
+        var _vipStatus = getCachedVipStatus ? getCachedVipStatus(key) : null;
+        var _auctionPerks = vipPerks ? vipPerks.getAuctionPerks(_vipStatus) : { maxListings: MAX_LISTINGS_PER_PLAYER, expiryMs: LISTING_EXPIRY_MS };
+        if (countSellerListings(key) >= _auctionPerks.maxListings) {
+          socket.emit('mmo_auction_error', { message: 'Too many active listings (max ' + _auctionPerks.maxListings + ')' });
           return;
         }
 
@@ -528,7 +529,7 @@ module.exports = {
           cardData: card, // full card data for transfer
           price: price,
           listedAt: Date.now(),
-          expiresAt: Date.now() + LISTING_EXPIRY_MS,
+          expiresAt: Date.now() + _auctionPerks.expiryMs,
         };
 
         addListing(listing);
@@ -581,7 +582,9 @@ module.exports = {
           socket.emit('mmo_auction_error', { message: 'Marketplace is full' });
           return;
         }
-        if (countSellerListings(key) >= MAX_LISTINGS_PER_PLAYER) {
+        var _rvipStatus = getCachedVipStatus ? getCachedVipStatus(key) : null;
+        var _rAuctionPerks = vipPerks ? vipPerks.getAuctionPerks(_rvipStatus) : { maxListings: MAX_LISTINGS_PER_PLAYER, expiryMs: LISTING_EXPIRY_MS };
+        if (countSellerListings(key) >= _rAuctionPerks.maxListings) {
           socket.emit('mmo_auction_error', { message: 'Too many active listings' });
           return;
         }
@@ -606,7 +609,7 @@ module.exports = {
           amount: amount,
           price: price,
           listedAt: Date.now(),
-          expiresAt: Date.now() + LISTING_EXPIRY_MS,
+          expiresAt: Date.now() + _rAuctionPerks.expiryMs,
         };
 
         addListing(listing);
@@ -690,7 +693,9 @@ module.exports = {
           }
         }
 
-        var effectiveFee = getDynamicFee(listing.sellerKey, listing);
+        var _sellerVip = getCachedVipStatus ? getCachedVipStatus(listing.sellerKey) : null;
+        var _sellerFeeBase = vipPerks ? vipPerks.getAuctionPerks(_sellerVip).feePercent : LISTING_FEE_PERCENT;
+        var effectiveFee = Math.max(_sellerFeeBase, getDynamicFee(listing.sellerKey, listing));
         var fee = Math.ceil(listing.price * effectiveFee / 100);
         var sellerProceeds = listing.price - fee;
 

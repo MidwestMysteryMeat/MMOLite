@@ -6,6 +6,7 @@
 var crypto = require('crypto');
 var fs = require('fs');
 var path = require('path');
+var dataDir = require('../data-dir');
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -68,12 +69,9 @@ var MAX_CHEST_SLOTS = 20;          // max items per chest
 // Persistence
 // ---------------------------------------------------------------------------
 
-var PLACEMENTS_DIR = path.join(__dirname, '..', 'data', 'placements');
+var PLACEMENTS_DIR = dataDir.subdir('placements');
 var _pendingSaves = new Map();  // zoneId -> timeout handle
 var SAVE_DEBOUNCE_MS = 1000;    // debounce writes by 1 second
-
-// Ensure directory exists once at startup
-try { fs.mkdirSync(PLACEMENTS_DIR, { recursive: true }); } catch (e) { /* ignore */ }
 
 function savePlacements(zoneId, placedObjects) {
   // Debounce: schedule async write, coalescing rapid saves for same zone

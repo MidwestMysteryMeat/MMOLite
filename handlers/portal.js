@@ -132,7 +132,7 @@ module.exports = {
   _activeRaidAlerts: _activeRaidAlerts, // exposed for raid system
 
   init(io, socket, deps) {
-    var { user, state, socketAccountMap, accounts, checkEventRate } = deps;
+    var { user, state, socketAccountMap, accounts, checkEventRate, vipPerks, getCachedVipStatus } = deps;
 
     // ------------------------------------------------------------------
     // portal_list: get available portal destinations
@@ -193,9 +193,11 @@ module.exports = {
 
         // Check teleport cooldown (per-account, survives reconnect)
         var now = Date.now();
+        var _portalVip = getCachedVipStatus ? getCachedVipStatus(accKey) : null;
+        var _portalCooldown = vipPerks ? vipPerks.getPortalCooldown(_portalVip) : TELEPORT_COOLDOWN_MS;
         var lastTeleportTime = accountTeleportTimes.get(accKey) || 0;
-        if (now - lastTeleportTime < TELEPORT_COOLDOWN_MS) {
-          var remaining = Math.ceil((TELEPORT_COOLDOWN_MS - (now - lastTeleportTime)) / 1000);
+        if (_portalCooldown > 0 && now - lastTeleportTime < _portalCooldown) {
+          var remaining = Math.ceil((_portalCooldown - (now - lastTeleportTime)) / 1000);
           socket.emit('portal_error', { message: 'Portal on cooldown (' + remaining + 's remaining)' });
           return;
         }
