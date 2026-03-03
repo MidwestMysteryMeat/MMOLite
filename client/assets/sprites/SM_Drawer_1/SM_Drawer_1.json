@@ -1,0 +1,32 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SM_Drawer_1",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SM_Drawer_1_00.png"
+  ],
+  "frames": {
+    "SM_Drawer_1_default": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 49
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 0,
+        "y": 8
+      },
+      "source": {
+        "w": 64,
+        "h": 64
+      }
+    }
+  },
+  "animations": {}
+}

@@ -1,0 +1,7 @@
+{
+  "asset": "SM_Canopy_1",
+  "type": "prop",
+  "frames": {
+    "SM_Canopy_1_default": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Canopy_1\\SM_Canopy_1_default.png"
+  }
+}

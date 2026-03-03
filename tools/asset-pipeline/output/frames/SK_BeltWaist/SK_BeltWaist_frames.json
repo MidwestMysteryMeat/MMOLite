@@ -1,0 +1,10 @@
+{
+  "asset": "SK_BeltWaist",
+  "type": "character",
+  "frames": {
+    "SK_BeltWaist_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_BeltWaist\\SK_BeltWaist_south.png",
+    "SK_BeltWaist_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_BeltWaist\\SK_BeltWaist_west.png",
+    "SK_BeltWaist_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_BeltWaist\\SK_BeltWaist_north.png",
+    "SK_BeltWaist_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_BeltWaist\\SK_BeltWaist_east.png"
+  }
+}

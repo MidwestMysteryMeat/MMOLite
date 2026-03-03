@@ -62,6 +62,7 @@ const disconnectHandler = require('./handlers/disconnect');
 const challengesHandler = require('./handlers/challenges');
 const doomHandler = require('./handlers/doom');
 const worldSystemsHandler = require('./handlers/world-systems');
+const deedsHandler = require('./handlers/deeds');
 
 // Late-bind VIP status function into extracted account modules (avoids circular require)
 try {
@@ -623,6 +624,7 @@ function setupSocket(io) {
     // MMO core handlers
     zoneHandler.init(io, socket, deps);
     overworldHandler.init(io, socket, deps);
+    deedsHandler.init(io, socket, deps);
     partyHandler.init(io, socket, deps);
     monstersHandler.init(io, socket, deps);
     guildHandler.init(io, socket, deps);

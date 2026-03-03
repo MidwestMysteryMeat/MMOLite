@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SM_Statue_Hooded_Metal",
+    "max_size": 4096
+  },
+  "sheets": [
+    "SM_Statue_Hooded_Metal_00.png"
+  ],
+  "frames": {
+    "SM_Statue_Hooded_Metal_east": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 97,
+        "h": 143
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 70,
+        "y": 0
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_Statue_Hooded_Metal_north": {
+      "sheet": 0,
+      "frame": {
+        "x": 97,
+        "y": 0,
+        "w": 97,
+        "h": 143
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 70,
+        "y": 0
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_Statue_Hooded_Metal_south": {
+      "sheet": 0,
+      "frame": {
+        "x": 194,
+        "y": 0,
+        "w": 97,
+        "h": 143
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 70,
+        "y": 0
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_Statue_Hooded_Metal_west": {
+      "sheet": 0,
+      "frame": {
+        "x": 291,
+        "y": 0,
+        "w": 97,
+        "h": 143
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 70,
+        "y": 0
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    }
+  },
+  "animations": {}
+}

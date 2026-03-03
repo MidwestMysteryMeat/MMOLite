@@ -1,0 +1,10 @@
+{
+  "asset": "SK_Enemy_FrostGiant_Captain",
+  "type": "character",
+  "frames": {
+    "SK_Enemy_FrostGiant_Captain_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Enemy_FrostGiant_Captain\\SK_Enemy_FrostGiant_Captain_south.png",
+    "SK_Enemy_FrostGiant_Captain_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Enemy_FrostGiant_Captain\\SK_Enemy_FrostGiant_Captain_west.png",
+    "SK_Enemy_FrostGiant_Captain_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Enemy_FrostGiant_Captain\\SK_Enemy_FrostGiant_Captain_north.png",
+    "SK_Enemy_FrostGiant_Captain_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Enemy_FrostGiant_Captain\\SK_Enemy_FrostGiant_Captain_east.png"
+  }
+}

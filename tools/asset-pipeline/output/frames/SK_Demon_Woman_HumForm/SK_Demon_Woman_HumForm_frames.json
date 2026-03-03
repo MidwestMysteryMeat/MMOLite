@@ -1,0 +1,10 @@
+{
+  "asset": "SK_Demon_Woman_HumForm",
+  "type": "character",
+  "frames": {
+    "SK_Demon_Woman_HumForm_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Demon_Woman_HumForm\\SK_Demon_Woman_HumForm_south.png",
+    "SK_Demon_Woman_HumForm_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Demon_Woman_HumForm\\SK_Demon_Woman_HumForm_west.png",
+    "SK_Demon_Woman_HumForm_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Demon_Woman_HumForm\\SK_Demon_Woman_HumForm_north.png",
+    "SK_Demon_Woman_HumForm_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Demon_Woman_HumForm\\SK_Demon_Woman_HumForm_east.png"
+  }
+}

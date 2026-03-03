@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SM_DoorBody_2",
+    "max_size": 4096
+  },
+  "sheets": [
+    "SM_DoorBody_2_00.png"
+  ],
+  "frames": {
+    "SM_DoorBody_2_east": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 83,
+        "h": 221
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 47,
+        "y": 35
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_DoorBody_2_north": {
+      "sheet": 0,
+      "frame": {
+        "x": 83,
+        "y": 0,
+        "w": 83,
+        "h": 221
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 47,
+        "y": 35
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_DoorBody_2_south": {
+      "sheet": 0,
+      "frame": {
+        "x": 166,
+        "y": 0,
+        "w": 83,
+        "h": 221
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 47,
+        "y": 35
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_DoorBody_2_west": {
+      "sheet": 0,
+      "frame": {
+        "x": 249,
+        "y": 0,
+        "w": 83,
+        "h": 221
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 47,
+        "y": 35
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    }
+  },
+  "animations": {}
+}

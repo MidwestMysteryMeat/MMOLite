@@ -1,0 +1,10 @@
+{
+  "asset": "SM_FireLightStand_B_001",
+  "type": "building",
+  "frames": {
+    "SM_FireLightStand_B_001_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_FireLightStand_B_001\\SM_FireLightStand_B_001_south.png",
+    "SM_FireLightStand_B_001_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_FireLightStand_B_001\\SM_FireLightStand_B_001_west.png",
+    "SM_FireLightStand_B_001_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_FireLightStand_B_001\\SM_FireLightStand_B_001_north.png",
+    "SM_FireLightStand_B_001_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_FireLightStand_B_001\\SM_FireLightStand_B_001_east.png"
+  }
+}

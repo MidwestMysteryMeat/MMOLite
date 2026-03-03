@@ -1,0 +1,10 @@
+{
+  "asset": "SM_Base_FlatWall",
+  "type": "building",
+  "frames": {
+    "SM_Base_FlatWall_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Base_FlatWall\\SM_Base_FlatWall_south.png",
+    "SM_Base_FlatWall_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Base_FlatWall\\SM_Base_FlatWall_west.png",
+    "SM_Base_FlatWall_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Base_FlatWall\\SM_Base_FlatWall_north.png",
+    "SM_Base_FlatWall_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Base_FlatWall\\SM_Base_FlatWall_east.png"
+  }
+}

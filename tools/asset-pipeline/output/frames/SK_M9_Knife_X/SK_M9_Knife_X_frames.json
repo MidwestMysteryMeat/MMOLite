@@ -1,0 +1,10 @@
+{
+  "asset": "SK_M9_Knife_X",
+  "type": "character",
+  "frames": {
+    "SK_M9_Knife_X_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_M9_Knife_X\\SK_M9_Knife_X_south.png",
+    "SK_M9_Knife_X_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_M9_Knife_X\\SK_M9_Knife_X_west.png",
+    "SK_M9_Knife_X_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_M9_Knife_X\\SK_M9_Knife_X_north.png",
+    "SK_M9_Knife_X_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_M9_Knife_X\\SK_M9_Knife_X_east.png"
+  }
+}

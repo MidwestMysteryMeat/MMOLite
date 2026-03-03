@@ -1,0 +1,32 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SM_Base",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SM_Base_00.png"
+  ],
+  "frames": {
+    "SM_Base_default": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 62,
+        "h": 62
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 0,
+        "y": 2
+      },
+      "source": {
+        "w": 64,
+        "h": 64
+      }
+    }
+  },
+  "animations": {}
+}

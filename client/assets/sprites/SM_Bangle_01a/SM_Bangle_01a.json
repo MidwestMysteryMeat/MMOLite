@@ -1,0 +1,32 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SM_Bangle_01a",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SM_Bangle_01a_00.png"
+  ],
+  "frames": {
+    "SM_Bangle_01a_default": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 55,
+        "h": 42
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 5,
+        "y": 8
+      },
+      "source": {
+        "w": 64,
+        "h": 64
+      }
+    }
+  },
+  "animations": {}
+}

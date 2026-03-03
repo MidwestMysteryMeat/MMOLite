@@ -1,0 +1,7 @@
+{
+  "asset": "SM_Meat_Cooked",
+  "type": "prop",
+  "frames": {
+    "SM_Meat_Cooked_default": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Meat_Cooked\\SM_Meat_Cooked_default.png"
+  }
+}

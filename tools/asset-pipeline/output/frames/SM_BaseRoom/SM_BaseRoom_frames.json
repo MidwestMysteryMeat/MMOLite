@@ -1,0 +1,7 @@
+{
+  "asset": "SM_BaseRoom",
+  "type": "prop",
+  "frames": {
+    "SM_BaseRoom_default": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_BaseRoom\\SM_BaseRoom_default.png"
+  }
+}

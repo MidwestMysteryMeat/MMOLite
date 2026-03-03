@@ -1,0 +1,10 @@
+{
+  "asset": "SM_T4_Sight",
+  "type": "weapon",
+  "frames": {
+    "SM_T4_Sight_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_T4_Sight\\SM_T4_Sight_south.png",
+    "SM_T4_Sight_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_T4_Sight\\SM_T4_Sight_west.png",
+    "SM_T4_Sight_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_T4_Sight\\SM_T4_Sight_north.png",
+    "SM_T4_Sight_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_T4_Sight\\SM_T4_Sight_east.png"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "asset": "SM_Book_Closed",
+  "type": "prop",
+  "frames": {
+    "SM_Book_Closed_default": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Book_Closed\\SM_Book_Closed_default.png"
+  }
+}

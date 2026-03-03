@@ -1,0 +1,10 @@
+{
+  "asset": "SM_Furnace",
+  "type": "building",
+  "frames": {
+    "SM_Furnace_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Furnace\\SM_Furnace_south.png",
+    "SM_Furnace_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Furnace\\SM_Furnace_west.png",
+    "SM_Furnace_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Furnace\\SM_Furnace_north.png",
+    "SM_Furnace_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Furnace\\SM_Furnace_east.png"
+  }
+}

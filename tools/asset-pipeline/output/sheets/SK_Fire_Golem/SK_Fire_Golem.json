@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SK_Fire_Golem",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SK_Fire_Golem_00.png"
+  ],
+  "frames": {
+    "SK_Fire_Golem_east": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 51,
+        "h": 52
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 39,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Fire_Golem_north": {
+      "sheet": 0,
+      "frame": {
+        "x": 51,
+        "y": 0,
+        "w": 51,
+        "h": 52
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 39,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Fire_Golem_south": {
+      "sheet": 0,
+      "frame": {
+        "x": 102,
+        "y": 0,
+        "w": 51,
+        "h": 52
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 39,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Fire_Golem_west": {
+      "sheet": 0,
+      "frame": {
+        "x": 153,
+        "y": 0,
+        "w": 51,
+        "h": 52
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 39,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    }
+  },
+  "animations": {}
+}

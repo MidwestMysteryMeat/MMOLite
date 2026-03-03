@@ -1,0 +1,10 @@
+{
+  "asset": "SK_Enemy_Golem01_Weapon",
+  "type": "character",
+  "frames": {
+    "SK_Enemy_Golem01_Weapon_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Enemy_Golem01_Weapon\\SK_Enemy_Golem01_Weapon_south.png",
+    "SK_Enemy_Golem01_Weapon_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Enemy_Golem01_Weapon\\SK_Enemy_Golem01_Weapon_west.png",
+    "SK_Enemy_Golem01_Weapon_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Enemy_Golem01_Weapon\\SK_Enemy_Golem01_Weapon_north.png",
+    "SK_Enemy_Golem01_Weapon_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Enemy_Golem01_Weapon\\SK_Enemy_Golem01_Weapon_east.png"
+  }
+}

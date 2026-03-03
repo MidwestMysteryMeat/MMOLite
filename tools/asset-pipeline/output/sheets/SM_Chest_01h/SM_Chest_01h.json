@@ -1,0 +1,32 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SM_Chest_01h",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SM_Chest_01h_00.png"
+  ],
+  "frames": {
+    "SM_Chest_01h_default": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 54,
+        "h": 48
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 8,
+        "y": 7
+      },
+      "source": {
+        "w": 64,
+        "h": 64
+      }
+    }
+  },
+  "animations": {}
+}

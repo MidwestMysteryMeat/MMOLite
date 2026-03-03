@@ -1,0 +1,10 @@
+{
+  "asset": "SM_M9_Knife_X",
+  "type": "weapon",
+  "frames": {
+    "SM_M9_Knife_X_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_M9_Knife_X\\SM_M9_Knife_X_south.png",
+    "SM_M9_Knife_X_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_M9_Knife_X\\SM_M9_Knife_X_west.png",
+    "SM_M9_Knife_X_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_M9_Knife_X\\SM_M9_Knife_X_north.png",
+    "SM_M9_Knife_X_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_M9_Knife_X\\SM_M9_Knife_X_east.png"
+  }
+}

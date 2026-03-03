@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SM_DoorFrame_3",
+    "max_size": 4096
+  },
+  "sheets": [
+    "SM_DoorFrame_3_00.png"
+  ],
+  "frames": {
+    "SM_DoorFrame_3_east": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 94,
+        "h": 223
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 40,
+        "y": 33
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_DoorFrame_3_north": {
+      "sheet": 0,
+      "frame": {
+        "x": 94,
+        "y": 0,
+        "w": 94,
+        "h": 223
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 40,
+        "y": 33
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_DoorFrame_3_south": {
+      "sheet": 0,
+      "frame": {
+        "x": 188,
+        "y": 0,
+        "w": 94,
+        "h": 223
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 40,
+        "y": 33
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_DoorFrame_3_west": {
+      "sheet": 0,
+      "frame": {
+        "x": 282,
+        "y": 0,
+        "w": 94,
+        "h": 223
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 40,
+        "y": 33
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    }
+  },
+  "animations": {}
+}

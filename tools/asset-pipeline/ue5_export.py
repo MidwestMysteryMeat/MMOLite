@@ -85,16 +85,17 @@ def export_via_ue5_api(content_root: str, output_dir: str, asset_types: list):
 # ---------------------------------------------------------------------------
 # Mode 2: umodel (UEViewer) — no UE5 editor needed, reads raw .pak / .uasset
 # ---------------------------------------------------------------------------
+
 def export_via_umodel(input_path: str, output_dir: str, umodel_exe: str, game_version: str = "ue5"):
     """
-    Batch-extract meshes + textures using umodel.
-    umodel.exe download: https://www.gildor.org/en/projects/umodel
+    Batch-extract StaticMesh + SkeletalMesh from a UE5 Content directory.
 
-    Args:
-        input_path:   Path to Content/ directory or .pak files.
-        output_dir:   Where to write extracted FBX + textures.
-        umodel_exe:   Path to umodel.exe
-        game_version: UE version hint, e.g. 'ue5', 'ue4.27'
+    umodel must be pointed at a specific content pack subdirectory — it does NOT
+    recursively descend from the root Content/ folder on its own. We enumerate
+    every first-level subdirectory and run umodel once per pack.
+
+    umodel syntax:
+        umodel -export -gltf -png -out=<dir> -path=<pack_subdir> */SM_* */SK_*
     """
     if not os.path.exists(umodel_exe):
         log.error(f"umodel.exe not found at: {umodel_exe}")
@@ -103,50 +104,121 @@ def export_via_umodel(input_path: str, output_dir: str, umodel_exe: str, game_ve
 
     os.makedirs(output_dir, exist_ok=True)
 
-    # umodel export command:
-    #   -export          → export mode (not view)
-    #   -all             → all supported asset classes
-    #   -out=<dir>       → output directory
-    #   -fbx             → FBX format for meshes
-    #   -png             → PNG for textures
-    #   -<game>          → engine version hint
-    cmd = [
-        umodel_exe,
-        "-export",
-        "-all",
-        f"-out={output_dir}",
-        "-fbx",       # mesh format
-        "-png",       # texture format
-        f"-{game_version}",
-        input_path,
-    ]
+    # Enumerate first-level subdirectories (each is a Marketplace pack or engine folder)
+    subdirs = sorted([
+        d.path for d in os.scandir(input_path)
+        if d.is_dir() and not d.name.startswith("__")
+    ])
+    log.info(f"Found {len(subdirs)} content packs under {input_path}")
 
-    log.info(f"Running umodel: {' '.join(cmd)}")
-    try:
-        result = subprocess.run(cmd, capture_output=False, text=True)
-        if result.returncode != 0:
-            log.warning(f"umodel exited with code {result.returncode}")
-    except FileNotFoundError:
-        log.error(f"Cannot execute umodel at: {umodel_exe}")
-        sys.exit(1)
+    total_exported = 0
+    for i, subdir in enumerate(subdirs):
+        pack_name = os.path.basename(subdir)
+        # Check if this pack has any SM_ or SK_ uassets before invoking umodel
+        has_meshes = False
+        for root, _, files in os.walk(subdir):
+            if any(f.startswith(("SM_", "SK_")) and f.endswith(".uasset") for f in files):
+                has_meshes = True
+                break
+        if not has_meshes:
+            continue
 
-    # Walk output and build a manifest of all exported FBX files
+        base = [
+            umodel_exe,
+            "-export",
+            f"-out={output_dir}",
+            f"-path={subdir}",
+            "-gltf",
+            "-png",
+            "-nooverwrite",
+        ]
+        log.info(f"[{i+1}/{len(subdirs)}] {pack_name}")
+        # Run one umodel call per pattern — passing multiple patterns in one call
+        # causes umodel to exit on the first missing pattern, suppressing the summary line.
+        for pat in ("*/SM_*", "*/SK_*"):
+            cmd = base + [pat]
+            try:
+                result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+                if result.returncode not in (0, 1):
+                    log.warning(f"  umodel exit {result.returncode} ({pat})")
+                for line in (result.stdout or "").splitlines():
+                    if line.startswith("Exported "):
+                        log.info(f"  {pat}: {line}")
+                        try:
+                            total_exported += int(line.split()[1].split("/")[0])
+                        except (IndexError, ValueError):
+                            pass
+                        break
+            except subprocess.TimeoutExpired:
+                log.warning(f"  TIMEOUT — {pack_name} {pat}")
+            except FileNotFoundError:
+                log.error(f"Cannot execute umodel at: {umodel_exe}")
+                sys.exit(1)
+
+    log.info(f"Extraction complete — {total_exported} objects exported across all packs")
+
+    # Build manifest
     manifest = {"fbx_files": [], "texture_dirs": []}
-    for root, dirs, files in os.walk(output_dir):
+    for root, _, files in os.walk(output_dir):
         for f in files:
             full = os.path.join(root, f)
-            if f.lower().endswith(".fbx"):
+            if f.lower().endswith((".gltf", ".glb", ".fbx")):
                 manifest["fbx_files"].append(full)
             elif f.lower().endswith(".png"):
-                tdir = root
-                if tdir not in manifest["texture_dirs"]:
-                    manifest["texture_dirs"].append(tdir)
+                if root not in manifest["texture_dirs"]:
+                    manifest["texture_dirs"].append(root)
 
     manifest_path = os.path.join(output_dir, "export_manifest.json")
     with open(manifest_path, "w") as mf:
         json.dump(manifest, mf, indent=2)
-    log.info(f"Manifest written: {manifest_path} ({len(manifest['fbx_files'])} FBX files)")
+    log.info(f"Manifest: {manifest_path}  ({len(manifest['fbx_files'])} mesh files)")
+
+    _colocate_textures(output_dir)
     return manifest_path
+
+
+def _colocate_textures(output_dir: str):
+    """
+    For each FBX in output_dir, find textures with the same relative path
+    under Texture2D/ and copy them into the same directory as the FBX.
+    """
+    import shutil
+
+    texture_root = os.path.join(output_dir, "Texture2D")
+    if not os.path.isdir(texture_root):
+        log.info("No Texture2D folder found — skipping texture co-location.")
+        return
+
+    # Build a lookup: relative_dir → [texture_paths]
+    tex_by_reldir = {}
+    for root, _, files in os.walk(texture_root):
+        pngs = [os.path.join(root, f) for f in files if f.lower().endswith(".png")]
+        if pngs:
+            rel = os.path.relpath(root, texture_root)
+            tex_by_reldir[rel] = pngs
+
+    copied = 0
+    for root, _, files in os.walk(output_dir):
+        fbxs = [f for f in files if f.lower().endswith((".gltf", ".glb", ".fbx"))]
+        if not fbxs:
+            continue
+        # Determine which mesh subfolder this is (StaticMesh, SkeletalMesh, etc.)
+        rel_from_output = os.path.relpath(root, output_dir)
+        parts = rel_from_output.replace("\\", "/").split("/")
+        if len(parts) >= 2:
+            # Strip the first component (e.g. "StaticMesh") to get the shared path
+            shared_rel = os.path.join(*parts[1:]) if len(parts) > 1 else "."
+        else:
+            shared_rel = "."
+
+        textures = tex_by_reldir.get(shared_rel, [])
+        for tex_path in textures:
+            dest = os.path.join(root, os.path.basename(tex_path))
+            if not os.path.exists(dest):
+                shutil.copy2(tex_path, dest)
+                copied += 1
+
+    log.info(f"Co-located {copied} texture files alongside FBX files.")
 
 
 # ---------------------------------------------------------------------------

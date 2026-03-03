@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SM_TimberColumn",
+    "max_size": 4096
+  },
+  "sheets": [
+    "SM_TimberColumn_00.png"
+  ],
+  "frames": {
+    "SM_TimberColumn_east": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 27,
+        "h": 197
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 114,
+        "y": 37
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_TimberColumn_north": {
+      "sheet": 0,
+      "frame": {
+        "x": 27,
+        "y": 0,
+        "w": 27,
+        "h": 197
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 114,
+        "y": 37
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_TimberColumn_south": {
+      "sheet": 0,
+      "frame": {
+        "x": 54,
+        "y": 0,
+        "w": 27,
+        "h": 197
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 114,
+        "y": 37
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_TimberColumn_west": {
+      "sheet": 0,
+      "frame": {
+        "x": 81,
+        "y": 0,
+        "w": 27,
+        "h": 197
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 114,
+        "y": 37
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    }
+  },
+  "animations": {}
+}

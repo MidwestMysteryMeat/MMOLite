@@ -1,0 +1,32 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SM_Fork",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SM_Fork_00.png"
+  ],
+  "frames": {
+    "SM_Fork_default": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 43,
+        "h": 26
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 17,
+        "y": 22
+      },
+      "source": {
+        "w": 64,
+        "h": 64
+      }
+    }
+  },
+  "animations": {}
+}

@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SM_Chimney_2",
+    "max_size": 4096
+  },
+  "sheets": [
+    "SM_Chimney_2_00.png"
+  ],
+  "frames": {
+    "SM_Chimney_2_east": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 136,
+        "h": 208
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 67,
+        "y": 48
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_Chimney_2_north": {
+      "sheet": 0,
+      "frame": {
+        "x": 136,
+        "y": 0,
+        "w": 136,
+        "h": 208
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 67,
+        "y": 48
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_Chimney_2_south": {
+      "sheet": 0,
+      "frame": {
+        "x": 272,
+        "y": 0,
+        "w": 136,
+        "h": 208
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 67,
+        "y": 48
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_Chimney_2_west": {
+      "sheet": 0,
+      "frame": {
+        "x": 408,
+        "y": 0,
+        "w": 136,
+        "h": 208
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 67,
+        "y": 48
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    }
+  },
+  "animations": {}
+}

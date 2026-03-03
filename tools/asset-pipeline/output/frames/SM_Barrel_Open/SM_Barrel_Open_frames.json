@@ -1,0 +1,7 @@
+{
+  "asset": "SM_Barrel_Open",
+  "type": "prop",
+  "frames": {
+    "SM_Barrel_Open_default": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Barrel_Open\\SM_Barrel_Open_default.png"
+  }
+}

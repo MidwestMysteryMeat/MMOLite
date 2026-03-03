@@ -1,0 +1,32 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SM_DemoRoomClamp2",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SM_DemoRoomClamp2_00.png"
+  ],
+  "frames": {
+    "SM_DemoRoomClamp2_default": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 54
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 21,
+        "y": 4
+      },
+      "source": {
+        "w": 64,
+        "h": 64
+      }
+    }
+  },
+  "animations": {}
+}

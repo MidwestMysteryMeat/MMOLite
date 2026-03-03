@@ -1,0 +1,32 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SM_GoldBar_01a",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SM_GoldBar_01a_00.png"
+  ],
+  "frames": {
+    "SM_GoldBar_01a_default": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 60,
+        "h": 42
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 1,
+        "y": 11
+      },
+      "source": {
+        "w": 64,
+        "h": 64
+      }
+    }
+  },
+  "animations": {}
+}

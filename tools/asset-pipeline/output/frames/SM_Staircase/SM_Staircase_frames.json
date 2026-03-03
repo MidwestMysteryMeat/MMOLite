@@ -1,0 +1,10 @@
+{
+  "asset": "SM_Staircase",
+  "type": "building",
+  "frames": {
+    "SM_Staircase_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Staircase\\SM_Staircase_south.png",
+    "SM_Staircase_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Staircase\\SM_Staircase_west.png",
+    "SM_Staircase_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Staircase\\SM_Staircase_north.png",
+    "SM_Staircase_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Staircase\\SM_Staircase_east.png"
+  }
+}

@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SK_BeltsBody",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SK_BeltsBody_00.png"
+  ],
+  "frames": {
+    "SK_BeltsBody_east": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 4
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 57,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_BeltsBody_north": {
+      "sheet": 0,
+      "frame": {
+        "x": 16,
+        "y": 0,
+        "w": 16,
+        "h": 4
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 57,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_BeltsBody_south": {
+      "sheet": 0,
+      "frame": {
+        "x": 32,
+        "y": 0,
+        "w": 16,
+        "h": 4
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 57,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_BeltsBody_west": {
+      "sheet": 0,
+      "frame": {
+        "x": 48,
+        "y": 0,
+        "w": 16,
+        "h": 4
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 57,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    }
+  },
+  "animations": {}
+}

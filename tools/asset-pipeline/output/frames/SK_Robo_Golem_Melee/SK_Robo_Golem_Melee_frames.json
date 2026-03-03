@@ -1,0 +1,10 @@
+{
+  "asset": "SK_Robo_Golem_Melee",
+  "type": "character",
+  "frames": {
+    "SK_Robo_Golem_Melee_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Robo_Golem_Melee\\SK_Robo_Golem_Melee_south.png",
+    "SK_Robo_Golem_Melee_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Robo_Golem_Melee\\SK_Robo_Golem_Melee_west.png",
+    "SK_Robo_Golem_Melee_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Robo_Golem_Melee\\SK_Robo_Golem_Melee_north.png",
+    "SK_Robo_Golem_Melee_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Robo_Golem_Melee\\SK_Robo_Golem_Melee_east.png"
+  }
+}

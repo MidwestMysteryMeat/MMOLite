@@ -1,0 +1,7 @@
+{
+  "asset": "SM_Lamp_2",
+  "type": "prop",
+  "frames": {
+    "SM_Lamp_2_default": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Lamp_2\\SM_Lamp_2_default.png"
+  }
+}

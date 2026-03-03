@@ -1,0 +1,7 @@
+{
+  "asset": "SM_G67_X",
+  "type": "weapon",
+  "frames": {
+    "SM_G67_X_default": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_G67_X\\SM_G67_X_default.png"
+  }
+}

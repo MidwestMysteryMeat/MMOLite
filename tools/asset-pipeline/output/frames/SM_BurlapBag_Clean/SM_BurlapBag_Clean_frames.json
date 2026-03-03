@@ -1,0 +1,7 @@
+{
+  "asset": "SM_BurlapBag_Clean",
+  "type": "prop",
+  "frames": {
+    "SM_BurlapBag_Clean_default": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_BurlapBag_Clean\\SM_BurlapBag_Clean_default.png"
+  }
+}

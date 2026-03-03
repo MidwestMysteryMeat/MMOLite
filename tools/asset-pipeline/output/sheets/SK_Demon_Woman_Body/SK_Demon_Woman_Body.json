@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SK_Demon_Woman_Body",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SK_Demon_Woman_Body_00.png"
+  ],
+  "frames": {
+    "SK_Demon_Woman_Body_east": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 22,
+        "h": 42
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 54,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Demon_Woman_Body_north": {
+      "sheet": 0,
+      "frame": {
+        "x": 22,
+        "y": 0,
+        "w": 22,
+        "h": 42
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 54,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Demon_Woman_Body_south": {
+      "sheet": 0,
+      "frame": {
+        "x": 44,
+        "y": 0,
+        "w": 22,
+        "h": 42
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 54,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Demon_Woman_Body_west": {
+      "sheet": 0,
+      "frame": {
+        "x": 66,
+        "y": 0,
+        "w": 22,
+        "h": 42
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 54,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    }
+  },
+  "animations": {}
+}

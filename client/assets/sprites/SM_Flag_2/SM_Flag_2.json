@@ -1,0 +1,32 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SM_Flag_2",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SM_Flag_2_00.png"
+  ],
+  "frames": {
+    "SM_Flag_2_default": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 17,
+        "h": 10
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 24,
+        "y": 0
+      },
+      "source": {
+        "w": 64,
+        "h": 64
+      }
+    }
+  },
+  "animations": {}
+}

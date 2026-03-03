@@ -1,0 +1,10 @@
+{
+  "asset": "SK_Lizardman_Berserker",
+  "type": "character",
+  "frames": {
+    "SK_Lizardman_Berserker_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Lizardman_Berserker\\SK_Lizardman_Berserker_south.png",
+    "SK_Lizardman_Berserker_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Lizardman_Berserker\\SK_Lizardman_Berserker_west.png",
+    "SK_Lizardman_Berserker_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Lizardman_Berserker\\SK_Lizardman_Berserker_north.png",
+    "SK_Lizardman_Berserker_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Lizardman_Berserker\\SK_Lizardman_Berserker_east.png"
+  }
+}

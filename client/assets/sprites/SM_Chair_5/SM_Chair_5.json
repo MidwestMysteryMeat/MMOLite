@@ -1,0 +1,32 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SM_Chair_5",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SM_Chair_5_00.png"
+  ],
+  "frames": {
+    "SM_Chair_5_default": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 49,
+        "h": 34
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 15,
+        "y": 0
+      },
+      "source": {
+        "w": 64,
+        "h": 64
+      }
+    }
+  },
+  "animations": {}
+}

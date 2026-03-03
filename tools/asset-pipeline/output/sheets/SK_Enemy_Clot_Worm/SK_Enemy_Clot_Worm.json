@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SK_Enemy_Clot_Worm",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SK_Enemy_Clot_Worm_00.png"
+  ],
+  "frames": {
+    "SK_Enemy_Clot_Worm_east": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 89,
+        "h": 71
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 22,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Enemy_Clot_Worm_north": {
+      "sheet": 0,
+      "frame": {
+        "x": 89,
+        "y": 0,
+        "w": 89,
+        "h": 71
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 22,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Enemy_Clot_Worm_south": {
+      "sheet": 0,
+      "frame": {
+        "x": 178,
+        "y": 0,
+        "w": 89,
+        "h": 71
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 22,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Enemy_Clot_Worm_west": {
+      "sheet": 0,
+      "frame": {
+        "x": 267,
+        "y": 0,
+        "w": 89,
+        "h": 71
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 22,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    }
+  },
+  "animations": {}
+}

@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SM_FireLightStand_C_001_on",
+    "max_size": 4096
+  },
+  "sheets": [
+    "SM_FireLightStand_C_001_on_00.png"
+  ],
+  "frames": {
+    "SM_FireLightStand_C_001_on_east": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 116,
+        "h": 239
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 70,
+        "y": 15
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_FireLightStand_C_001_on_north": {
+      "sheet": 0,
+      "frame": {
+        "x": 116,
+        "y": 0,
+        "w": 116,
+        "h": 239
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 70,
+        "y": 15
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_FireLightStand_C_001_on_south": {
+      "sheet": 0,
+      "frame": {
+        "x": 232,
+        "y": 0,
+        "w": 116,
+        "h": 239
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 70,
+        "y": 15
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_FireLightStand_C_001_on_west": {
+      "sheet": 0,
+      "frame": {
+        "x": 348,
+        "y": 0,
+        "w": 116,
+        "h": 239
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 70,
+        "y": 15
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    }
+  },
+  "animations": {}
+}

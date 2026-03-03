@@ -1,0 +1,10 @@
+{
+  "asset": "SM_Ring_08",
+  "type": "building",
+  "frames": {
+    "SM_Ring_08_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Ring_08\\SM_Ring_08_south.png",
+    "SM_Ring_08_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Ring_08\\SM_Ring_08_west.png",
+    "SM_Ring_08_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Ring_08\\SM_Ring_08_north.png",
+    "SM_Ring_08_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Ring_08\\SM_Ring_08_east.png"
+  }
+}

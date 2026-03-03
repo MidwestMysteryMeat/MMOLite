@@ -1,0 +1,7 @@
+{
+  "asset": "SM_BarrowWheel",
+  "type": "prop",
+  "frames": {
+    "SM_BarrowWheel_default": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_BarrowWheel\\SM_BarrowWheel_default.png"
+  }
+}

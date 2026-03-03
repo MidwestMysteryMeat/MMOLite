@@ -1,0 +1,10 @@
+{
+  "asset": "SM_DoorFrame_2",
+  "type": "building",
+  "frames": {
+    "SM_DoorFrame_2_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_DoorFrame_2\\SM_DoorFrame_2_south.png",
+    "SM_DoorFrame_2_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_DoorFrame_2\\SM_DoorFrame_2_west.png",
+    "SM_DoorFrame_2_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_DoorFrame_2\\SM_DoorFrame_2_north.png",
+    "SM_DoorFrame_2_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_DoorFrame_2\\SM_DoorFrame_2_east.png"
+  }
+}

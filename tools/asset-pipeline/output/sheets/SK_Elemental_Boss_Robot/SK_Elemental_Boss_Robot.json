@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SK_Elemental_Boss_Robot",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SK_Elemental_Boss_Robot_00.png"
+  ],
+  "frames": {
+    "SK_Elemental_Boss_Robot_east": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 55,
+        "h": 61
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 43,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Elemental_Boss_Robot_north": {
+      "sheet": 0,
+      "frame": {
+        "x": 55,
+        "y": 0,
+        "w": 55,
+        "h": 61
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 43,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Elemental_Boss_Robot_south": {
+      "sheet": 0,
+      "frame": {
+        "x": 110,
+        "y": 0,
+        "w": 55,
+        "h": 61
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 43,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Elemental_Boss_Robot_west": {
+      "sheet": 0,
+      "frame": {
+        "x": 165,
+        "y": 0,
+        "w": 55,
+        "h": 61
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 43,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    }
+  },
+  "animations": {}
+}

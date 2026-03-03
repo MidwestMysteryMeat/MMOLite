@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SM_WoodStaff_09",
+    "max_size": 4096
+  },
+  "sheets": [
+    "SM_WoodStaff_09_00.png"
+  ],
+  "frames": {
+    "SM_WoodStaff_09_east": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 131
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 122,
+        "y": 0
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_WoodStaff_09_north": {
+      "sheet": 0,
+      "frame": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 131
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 122,
+        "y": 0
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_WoodStaff_09_south": {
+      "sheet": 0,
+      "frame": {
+        "x": 24,
+        "y": 0,
+        "w": 12,
+        "h": 131
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 122,
+        "y": 0
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_WoodStaff_09_west": {
+      "sheet": 0,
+      "frame": {
+        "x": 36,
+        "y": 0,
+        "w": 12,
+        "h": 131
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 122,
+        "y": 0
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    }
+  },
+  "animations": {}
+}

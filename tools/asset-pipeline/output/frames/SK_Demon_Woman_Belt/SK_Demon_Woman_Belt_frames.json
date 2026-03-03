@@ -1,0 +1,10 @@
+{
+  "asset": "SK_Demon_Woman_Belt",
+  "type": "character",
+  "frames": {
+    "SK_Demon_Woman_Belt_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Demon_Woman_Belt\\SK_Demon_Woman_Belt_south.png",
+    "SK_Demon_Woman_Belt_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Demon_Woman_Belt\\SK_Demon_Woman_Belt_west.png",
+    "SK_Demon_Woman_Belt_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Demon_Woman_Belt\\SK_Demon_Woman_Belt_north.png",
+    "SK_Demon_Woman_Belt_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Demon_Woman_Belt\\SK_Demon_Woman_Belt_east.png"
+  }
+}

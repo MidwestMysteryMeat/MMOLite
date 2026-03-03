@@ -1,0 +1,7 @@
+{
+  "asset": "SM_FruitBox",
+  "type": "prop",
+  "frames": {
+    "SM_FruitBox_default": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_FruitBox\\SM_FruitBox_default.png"
+  }
+}

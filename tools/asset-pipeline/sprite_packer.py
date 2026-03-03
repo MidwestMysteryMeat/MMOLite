@@ -113,6 +113,7 @@ def pack_frames(
     sheet_name: str,
     max_sheet:  int = 2048,
     trim:       bool = True,
+    padding:    float = 1.15,
 ) -> dict:
     """
     Load all PNGs from frame_dir, pack into one or more sheets.
@@ -150,6 +151,7 @@ def pack_frames(
             "generator":  "MMOLite Asset Pipeline",
             "sheet_name": sheet_name,
             "max_size":   max_sheet,
+            "padding":    padding,
         },
         "sheets": [],
         "frames": {},

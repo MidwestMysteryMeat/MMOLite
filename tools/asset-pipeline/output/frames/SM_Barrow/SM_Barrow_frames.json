@@ -1,0 +1,7 @@
+{
+  "asset": "SM_Barrow",
+  "type": "prop",
+  "frames": {
+    "SM_Barrow_default": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Barrow\\SM_Barrow_default.png"
+  }
+}

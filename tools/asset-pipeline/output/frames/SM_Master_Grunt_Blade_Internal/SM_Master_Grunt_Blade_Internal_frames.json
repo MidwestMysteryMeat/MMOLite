@@ -1,0 +1,10 @@
+{
+  "asset": "SM_Master_Grunt_Blade_Internal",
+  "type": "character",
+  "frames": {
+    "SM_Master_Grunt_Blade_Internal_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Master_Grunt_Blade_Internal\\SM_Master_Grunt_Blade_Internal_south.png",
+    "SM_Master_Grunt_Blade_Internal_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Master_Grunt_Blade_Internal\\SM_Master_Grunt_Blade_Internal_west.png",
+    "SM_Master_Grunt_Blade_Internal_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Master_Grunt_Blade_Internal\\SM_Master_Grunt_Blade_Internal_north.png",
+    "SM_Master_Grunt_Blade_Internal_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Master_Grunt_Blade_Internal\\SM_Master_Grunt_Blade_Internal_east.png"
+  }
+}

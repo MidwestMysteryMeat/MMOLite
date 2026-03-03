@@ -1,0 +1,10 @@
+{
+  "asset": "SK_Master_Grunt",
+  "type": "character",
+  "frames": {
+    "SK_Master_Grunt_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Master_Grunt\\SK_Master_Grunt_south.png",
+    "SK_Master_Grunt_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Master_Grunt\\SK_Master_Grunt_west.png",
+    "SK_Master_Grunt_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Master_Grunt\\SK_Master_Grunt_north.png",
+    "SK_Master_Grunt_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Master_Grunt\\SK_Master_Grunt_east.png"
+  }
+}

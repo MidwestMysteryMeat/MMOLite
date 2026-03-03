@@ -1,0 +1,7 @@
+{
+  "asset": "SM_Bench",
+  "type": "prop",
+  "frames": {
+    "SM_Bench_default": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Bench\\SM_Bench_default.png"
+  }
+}

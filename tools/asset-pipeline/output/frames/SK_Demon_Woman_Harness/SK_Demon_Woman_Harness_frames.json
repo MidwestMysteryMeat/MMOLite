@@ -1,0 +1,10 @@
+{
+  "asset": "SK_Demon_Woman_Harness",
+  "type": "character",
+  "frames": {
+    "SK_Demon_Woman_Harness_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Demon_Woman_Harness\\SK_Demon_Woman_Harness_south.png",
+    "SK_Demon_Woman_Harness_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Demon_Woman_Harness\\SK_Demon_Woman_Harness_west.png",
+    "SK_Demon_Woman_Harness_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Demon_Woman_Harness\\SK_Demon_Woman_Harness_north.png",
+    "SK_Demon_Woman_Harness_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Demon_Woman_Harness\\SK_Demon_Woman_Harness_east.png"
+  }
+}

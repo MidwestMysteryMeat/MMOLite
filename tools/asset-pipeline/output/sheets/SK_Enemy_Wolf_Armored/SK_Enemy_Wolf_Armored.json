@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SK_Enemy_Wolf_Armored",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SK_Enemy_Wolf_Armored_00.png"
+  ],
+  "frames": {
+    "SK_Enemy_Wolf_Armored_east": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 68,
+        "h": 61
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 22,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Enemy_Wolf_Armored_north": {
+      "sheet": 0,
+      "frame": {
+        "x": 68,
+        "y": 0,
+        "w": 68,
+        "h": 61
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 22,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Enemy_Wolf_Armored_south": {
+      "sheet": 0,
+      "frame": {
+        "x": 136,
+        "y": 0,
+        "w": 68,
+        "h": 61
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 22,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Enemy_Wolf_Armored_west": {
+      "sheet": 0,
+      "frame": {
+        "x": 204,
+        "y": 0,
+        "w": 68,
+        "h": 61
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 22,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    }
+  },
+  "animations": {}
+}

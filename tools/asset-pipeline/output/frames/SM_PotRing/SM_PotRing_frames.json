@@ -1,0 +1,10 @@
+{
+  "asset": "SM_PotRing",
+  "type": "building",
+  "frames": {
+    "SM_PotRing_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_PotRing\\SM_PotRing_south.png",
+    "SM_PotRing_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_PotRing\\SM_PotRing_west.png",
+    "SM_PotRing_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_PotRing\\SM_PotRing_north.png",
+    "SM_PotRing_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_PotRing\\SM_PotRing_east.png"
+  }
+}

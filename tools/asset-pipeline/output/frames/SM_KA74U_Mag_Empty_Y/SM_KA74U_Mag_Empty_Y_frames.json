@@ -1,0 +1,10 @@
+{
+  "asset": "SM_KA74U_Mag_Empty_Y",
+  "type": "weapon",
+  "frames": {
+    "SM_KA74U_Mag_Empty_Y_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_KA74U_Mag_Empty_Y\\SM_KA74U_Mag_Empty_Y_south.png",
+    "SM_KA74U_Mag_Empty_Y_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_KA74U_Mag_Empty_Y\\SM_KA74U_Mag_Empty_Y_west.png",
+    "SM_KA74U_Mag_Empty_Y_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_KA74U_Mag_Empty_Y\\SM_KA74U_Mag_Empty_Y_north.png",
+    "SM_KA74U_Mag_Empty_Y_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_KA74U_Mag_Empty_Y\\SM_KA74U_Mag_Empty_Y_east.png"
+  }
+}

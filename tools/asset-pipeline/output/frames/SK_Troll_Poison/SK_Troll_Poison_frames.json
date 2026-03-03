@@ -1,0 +1,10 @@
+{
+  "asset": "SK_Troll_Poison",
+  "type": "character",
+  "frames": {
+    "SK_Troll_Poison_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Troll_Poison\\SK_Troll_Poison_south.png",
+    "SK_Troll_Poison_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Troll_Poison\\SK_Troll_Poison_west.png",
+    "SK_Troll_Poison_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Troll_Poison\\SK_Troll_Poison_north.png",
+    "SK_Troll_Poison_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Troll_Poison\\SK_Troll_Poison_east.png"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "asset": "SK_SMG11_Y",
+  "type": "character",
+  "frames": {
+    "SK_SMG11_Y_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_SMG11_Y\\SK_SMG11_Y_south.png",
+    "SK_SMG11_Y_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_SMG11_Y\\SK_SMG11_Y_west.png",
+    "SK_SMG11_Y_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_SMG11_Y\\SK_SMG11_Y_north.png",
+    "SK_SMG11_Y_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_SMG11_Y\\SK_SMG11_Y_east.png"
+  }
+}

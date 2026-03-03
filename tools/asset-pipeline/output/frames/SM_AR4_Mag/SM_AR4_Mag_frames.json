@@ -1,0 +1,10 @@
+{
+  "asset": "SM_AR4_Mag",
+  "type": "weapon",
+  "frames": {
+    "SM_AR4_Mag_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_AR4_Mag\\SM_AR4_Mag_south.png",
+    "SM_AR4_Mag_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_AR4_Mag\\SM_AR4_Mag_west.png",
+    "SM_AR4_Mag_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_AR4_Mag\\SM_AR4_Mag_north.png",
+    "SM_AR4_Mag_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_AR4_Mag\\SM_AR4_Mag_east.png"
+  }
+}

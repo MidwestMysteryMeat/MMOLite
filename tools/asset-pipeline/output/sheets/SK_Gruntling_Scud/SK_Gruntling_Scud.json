@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SK_Gruntling_Scud",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SK_Gruntling_Scud_00.png"
+  ],
+  "frames": {
+    "SK_Gruntling_Scud_east": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 55,
+        "h": 40
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 31,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Gruntling_Scud_north": {
+      "sheet": 0,
+      "frame": {
+        "x": 55,
+        "y": 0,
+        "w": 55,
+        "h": 40
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 31,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Gruntling_Scud_south": {
+      "sheet": 0,
+      "frame": {
+        "x": 110,
+        "y": 0,
+        "w": 55,
+        "h": 40
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 31,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Gruntling_Scud_west": {
+      "sheet": 0,
+      "frame": {
+        "x": 165,
+        "y": 0,
+        "w": 55,
+        "h": 40
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 31,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    }
+  },
+  "animations": {}
+}

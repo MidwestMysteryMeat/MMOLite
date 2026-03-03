@@ -1,0 +1,7 @@
+{
+  "asset": "SM_Cube_03",
+  "type": "prop",
+  "frames": {
+    "SM_Cube_03_default": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Cube_03\\SM_Cube_03_default.png"
+  }
+}

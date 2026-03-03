@@ -1,0 +1,10 @@
+{
+  "asset": "SM_SMG11_Y",
+  "type": "weapon",
+  "frames": {
+    "SM_SMG11_Y_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_SMG11_Y\\SM_SMG11_Y_south.png",
+    "SM_SMG11_Y_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_SMG11_Y\\SM_SMG11_Y_west.png",
+    "SM_SMG11_Y_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_SMG11_Y\\SM_SMG11_Y_north.png",
+    "SM_SMG11_Y_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_SMG11_Y\\SM_SMG11_Y_east.png"
+  }
+}

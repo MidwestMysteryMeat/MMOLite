@@ -1,0 +1,7 @@
+{
+  "asset": "SM_GrainBag_2",
+  "type": "prop",
+  "frames": {
+    "SM_GrainBag_2_default": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_GrainBag_2\\SM_GrainBag_2_default.png"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "asset": "SM_Shell_12Gauge",
+  "type": "weapon",
+  "frames": {
+    "SM_Shell_12Gauge_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Shell_12Gauge\\SM_Shell_12Gauge_south.png",
+    "SM_Shell_12Gauge_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Shell_12Gauge\\SM_Shell_12Gauge_west.png",
+    "SM_Shell_12Gauge_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Shell_12Gauge\\SM_Shell_12Gauge_north.png",
+    "SM_Shell_12Gauge_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Shell_12Gauge\\SM_Shell_12Gauge_east.png"
+  }
+}

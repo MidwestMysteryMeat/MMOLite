@@ -1,0 +1,10 @@
+{
+  "asset": "SK_LeftArmArmor",
+  "type": "character",
+  "frames": {
+    "SK_LeftArmArmor_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_LeftArmArmor\\SK_LeftArmArmor_south.png",
+    "SK_LeftArmArmor_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_LeftArmArmor\\SK_LeftArmArmor_west.png",
+    "SK_LeftArmArmor_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_LeftArmArmor\\SK_LeftArmArmor_north.png",
+    "SK_LeftArmArmor_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_LeftArmArmor\\SK_LeftArmArmor_east.png"
+  }
+}

@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SM_Gruntling_Weapon01_Internal",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SM_Gruntling_Weapon01_Internal_00.png"
+  ],
+  "frames": {
+    "SM_Gruntling_Weapon01_Internal_east": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 86,
+        "h": 66
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 0,
+        "y": 9
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SM_Gruntling_Weapon01_Internal_north": {
+      "sheet": 0,
+      "frame": {
+        "x": 86,
+        "y": 0,
+        "w": 86,
+        "h": 66
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 0,
+        "y": 9
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SM_Gruntling_Weapon01_Internal_south": {
+      "sheet": 0,
+      "frame": {
+        "x": 172,
+        "y": 0,
+        "w": 86,
+        "h": 66
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 0,
+        "y": 9
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SM_Gruntling_Weapon01_Internal_west": {
+      "sheet": 0,
+      "frame": {
+        "x": 258,
+        "y": 0,
+        "w": 86,
+        "h": 66
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 0,
+        "y": 9
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    }
+  },
+  "animations": {}
+}

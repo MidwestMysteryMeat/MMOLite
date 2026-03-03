@@ -1,0 +1,7 @@
+{
+  "asset": "SM_Bracklet",
+  "type": "prop",
+  "frames": {
+    "SM_Bracklet_default": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Bracklet\\SM_Bracklet_default.png"
+  }
+}

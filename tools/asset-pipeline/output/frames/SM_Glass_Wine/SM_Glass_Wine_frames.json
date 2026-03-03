@@ -1,0 +1,7 @@
+{
+  "asset": "SM_Glass_Wine",
+  "type": "prop",
+  "frames": {
+    "SM_Glass_Wine_default": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Glass_Wine\\SM_Glass_Wine_default.png"
+  }
+}

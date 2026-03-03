@@ -1,0 +1,10 @@
+{
+  "asset": "SM_WallHolder_004",
+  "type": "building",
+  "frames": {
+    "SM_WallHolder_004_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_WallHolder_004\\SM_WallHolder_004_south.png",
+    "SM_WallHolder_004_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_WallHolder_004\\SM_WallHolder_004_west.png",
+    "SM_WallHolder_004_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_WallHolder_004\\SM_WallHolder_004_north.png",
+    "SM_WallHolder_004_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_WallHolder_004\\SM_WallHolder_004_east.png"
+  }
+}

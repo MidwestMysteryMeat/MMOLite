@@ -1,0 +1,10 @@
+{
+  "asset": "SK_AR4",
+  "type": "character",
+  "frames": {
+    "SK_AR4_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_AR4\\SK_AR4_south.png",
+    "SK_AR4_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_AR4\\SK_AR4_west.png",
+    "SK_AR4_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_AR4\\SK_AR4_north.png",
+    "SK_AR4_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_AR4\\SK_AR4_east.png"
+  }
+}

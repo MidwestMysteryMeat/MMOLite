@@ -1,0 +1,10 @@
+{
+  "asset": "SM_ChimneyTop",
+  "type": "building",
+  "frames": {
+    "SM_ChimneyTop_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_ChimneyTop\\SM_ChimneyTop_south.png",
+    "SM_ChimneyTop_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_ChimneyTop\\SM_ChimneyTop_west.png",
+    "SM_ChimneyTop_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_ChimneyTop\\SM_ChimneyTop_north.png",
+    "SM_ChimneyTop_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_ChimneyTop\\SM_ChimneyTop_east.png"
+  }
+}

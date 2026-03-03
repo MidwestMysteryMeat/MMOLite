@@ -1,0 +1,10 @@
+{
+  "asset": "SK_Demon_Woman_Bangs",
+  "type": "character",
+  "frames": {
+    "SK_Demon_Woman_Bangs_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Demon_Woman_Bangs\\SK_Demon_Woman_Bangs_south.png",
+    "SK_Demon_Woman_Bangs_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Demon_Woman_Bangs\\SK_Demon_Woman_Bangs_west.png",
+    "SK_Demon_Woman_Bangs_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Demon_Woman_Bangs\\SK_Demon_Woman_Bangs_north.png",
+    "SK_Demon_Woman_Bangs_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Demon_Woman_Bangs\\SK_Demon_Woman_Bangs_east.png"
+  }
+}

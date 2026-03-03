@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SK_Greater_Spider",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SK_Greater_Spider_00.png"
+  ],
+  "frames": {
+    "SK_Greater_Spider_east": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 117,
+        "h": 91
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 0,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Greater_Spider_north": {
+      "sheet": 0,
+      "frame": {
+        "x": 117,
+        "y": 0,
+        "w": 117,
+        "h": 91
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 0,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Greater_Spider_south": {
+      "sheet": 0,
+      "frame": {
+        "x": 234,
+        "y": 0,
+        "w": 117,
+        "h": 91
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 0,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Greater_Spider_west": {
+      "sheet": 0,
+      "frame": {
+        "x": 351,
+        "y": 0,
+        "w": 117,
+        "h": 91
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 0,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    }
+  },
+  "animations": {}
+}

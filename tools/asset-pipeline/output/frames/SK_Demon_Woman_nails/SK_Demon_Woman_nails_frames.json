@@ -1,0 +1,10 @@
+{
+  "asset": "SK_Demon_Woman_nails",
+  "type": "character",
+  "frames": {
+    "SK_Demon_Woman_nails_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Demon_Woman_nails\\SK_Demon_Woman_nails_south.png",
+    "SK_Demon_Woman_nails_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Demon_Woman_nails\\SK_Demon_Woman_nails_west.png",
+    "SK_Demon_Woman_nails_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Demon_Woman_nails\\SK_Demon_Woman_nails_north.png",
+    "SK_Demon_Woman_nails_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Demon_Woman_nails\\SK_Demon_Woman_nails_east.png"
+  }
+}

@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SK_Gruntling_Avalanche",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SK_Gruntling_Avalanche_00.png"
+  ],
+  "frames": {
+    "SK_Gruntling_Avalanche_east": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 43,
+        "h": 43
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 49,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Gruntling_Avalanche_north": {
+      "sheet": 0,
+      "frame": {
+        "x": 43,
+        "y": 0,
+        "w": 43,
+        "h": 43
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 49,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Gruntling_Avalanche_south": {
+      "sheet": 0,
+      "frame": {
+        "x": 86,
+        "y": 0,
+        "w": 43,
+        "h": 43
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 49,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Gruntling_Avalanche_west": {
+      "sheet": 0,
+      "frame": {
+        "x": 129,
+        "y": 0,
+        "w": 43,
+        "h": 43
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 49,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    }
+  },
+  "animations": {}
+}

@@ -1,0 +1,10 @@
+{
+  "asset": "SM_Shelf",
+  "type": "character",
+  "frames": {
+    "SM_Shelf_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Shelf\\SM_Shelf_south.png",
+    "SM_Shelf_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Shelf\\SM_Shelf_west.png",
+    "SM_Shelf_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Shelf\\SM_Shelf_north.png",
+    "SM_Shelf_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Shelf\\SM_Shelf_east.png"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "asset": "SK_Werewolf_Separate5",
+  "type": "character",
+  "frames": {
+    "SK_Werewolf_Separate5_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Werewolf_Separate5\\SK_Werewolf_Separate5_south.png",
+    "SK_Werewolf_Separate5_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Werewolf_Separate5\\SK_Werewolf_Separate5_west.png",
+    "SK_Werewolf_Separate5_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Werewolf_Separate5\\SK_Werewolf_Separate5_north.png",
+    "SK_Werewolf_Separate5_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Werewolf_Separate5\\SK_Werewolf_Separate5_east.png"
+  }
+}

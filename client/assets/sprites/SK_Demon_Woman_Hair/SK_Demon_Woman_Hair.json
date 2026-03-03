@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SK_Demon_Woman_Hair",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SK_Demon_Woman_Hair_00.png"
+  ],
+  "frames": {
+    "SK_Demon_Woman_Hair_east": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 15,
+        "h": 6
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 57,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Demon_Woman_Hair_north": {
+      "sheet": 0,
+      "frame": {
+        "x": 15,
+        "y": 0,
+        "w": 15,
+        "h": 6
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 57,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Demon_Woman_Hair_south": {
+      "sheet": 0,
+      "frame": {
+        "x": 30,
+        "y": 0,
+        "w": 15,
+        "h": 6
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 57,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Demon_Woman_Hair_west": {
+      "sheet": 0,
+      "frame": {
+        "x": 45,
+        "y": 0,
+        "w": 15,
+        "h": 6
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 57,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    }
+  },
+  "animations": {}
+}

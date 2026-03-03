@@ -1,0 +1,10 @@
+{
+  "asset": "SM_LightTop_001_on_A",
+  "type": "building",
+  "frames": {
+    "SM_LightTop_001_on_A_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_LightTop_001_on_A\\SM_LightTop_001_on_A_south.png",
+    "SM_LightTop_001_on_A_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_LightTop_001_on_A\\SM_LightTop_001_on_A_west.png",
+    "SM_LightTop_001_on_A_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_LightTop_001_on_A\\SM_LightTop_001_on_A_north.png",
+    "SM_LightTop_001_on_A_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_LightTop_001_on_A\\SM_LightTop_001_on_A_east.png"
+  }
+}

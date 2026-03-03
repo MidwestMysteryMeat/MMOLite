@@ -1,0 +1,32 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SM_BookCollection_1",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SM_BookCollection_1_00.png"
+  ],
+  "frames": {
+    "SM_BookCollection_1_default": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 47,
+        "h": 40
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 17,
+        "y": 24
+      },
+      "source": {
+        "w": 64,
+        "h": 64
+      }
+    }
+  },
+  "animations": {}
+}

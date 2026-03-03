@@ -1,0 +1,10 @@
+{
+  "asset": "SK_Demon_Woman_Underwear",
+  "type": "character",
+  "frames": {
+    "SK_Demon_Woman_Underwear_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Demon_Woman_Underwear\\SK_Demon_Woman_Underwear_south.png",
+    "SK_Demon_Woman_Underwear_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Demon_Woman_Underwear\\SK_Demon_Woman_Underwear_west.png",
+    "SK_Demon_Woman_Underwear_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Demon_Woman_Underwear\\SK_Demon_Woman_Underwear_north.png",
+    "SK_Demon_Woman_Underwear_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Demon_Woman_Underwear\\SK_Demon_Woman_Underwear_east.png"
+  }
+}

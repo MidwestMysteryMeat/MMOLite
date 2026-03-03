@@ -1,0 +1,10 @@
+{
+  "asset": "SK_G67",
+  "type": "character",
+  "frames": {
+    "SK_G67_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_G67\\SK_G67_south.png",
+    "SK_G67_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_G67\\SK_G67_west.png",
+    "SK_G67_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_G67\\SK_G67_north.png",
+    "SK_G67_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_G67\\SK_G67_east.png"
+  }
+}

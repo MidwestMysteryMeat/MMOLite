@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SM_RoofWall_1",
+    "max_size": 4096
+  },
+  "sheets": [
+    "SM_RoofWall_1_00.png"
+  ],
+  "frames": {
+    "SM_RoofWall_1_east": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 129,
+        "h": 219
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 127,
+        "y": 0
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_RoofWall_1_north": {
+      "sheet": 0,
+      "frame": {
+        "x": 129,
+        "y": 0,
+        "w": 129,
+        "h": 219
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 127,
+        "y": 0
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_RoofWall_1_south": {
+      "sheet": 0,
+      "frame": {
+        "x": 258,
+        "y": 0,
+        "w": 129,
+        "h": 219
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 127,
+        "y": 0
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_RoofWall_1_west": {
+      "sheet": 0,
+      "frame": {
+        "x": 387,
+        "y": 0,
+        "w": 129,
+        "h": 219
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 127,
+        "y": 0
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    }
+  },
+  "animations": {}
+}

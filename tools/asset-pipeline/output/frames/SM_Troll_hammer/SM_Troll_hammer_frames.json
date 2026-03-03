@@ -1,0 +1,10 @@
+{
+  "asset": "SM_Troll_hammer",
+  "type": "character",
+  "frames": {
+    "SM_Troll_hammer_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Troll_hammer\\SM_Troll_hammer_south.png",
+    "SM_Troll_hammer_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Troll_hammer\\SM_Troll_hammer_west.png",
+    "SM_Troll_hammer_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Troll_hammer\\SM_Troll_hammer_north.png",
+    "SM_Troll_hammer_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Troll_hammer\\SM_Troll_hammer_east.png"
+  }
+}

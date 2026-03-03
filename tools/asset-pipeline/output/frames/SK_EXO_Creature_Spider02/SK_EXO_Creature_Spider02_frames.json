@@ -1,0 +1,10 @@
+{
+  "asset": "SK_EXO_Creature_Spider02",
+  "type": "character",
+  "frames": {
+    "SK_EXO_Creature_Spider02_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_EXO_Creature_Spider02\\SK_EXO_Creature_Spider02_south.png",
+    "SK_EXO_Creature_Spider02_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_EXO_Creature_Spider02\\SK_EXO_Creature_Spider02_west.png",
+    "SK_EXO_Creature_Spider02_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_EXO_Creature_Spider02\\SK_EXO_Creature_Spider02_north.png",
+    "SK_EXO_Creature_Spider02_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_EXO_Creature_Spider02\\SK_EXO_Creature_Spider02_east.png"
+  }
+}

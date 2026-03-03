@@ -1,0 +1,10 @@
+{
+  "asset": "SM_TimberColumn",
+  "type": "building",
+  "frames": {
+    "SM_TimberColumn_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_TimberColumn\\SM_TimberColumn_south.png",
+    "SM_TimberColumn_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_TimberColumn\\SM_TimberColumn_west.png",
+    "SM_TimberColumn_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_TimberColumn\\SM_TimberColumn_north.png",
+    "SM_TimberColumn_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_TimberColumn\\SM_TimberColumn_east.png"
+  }
+}

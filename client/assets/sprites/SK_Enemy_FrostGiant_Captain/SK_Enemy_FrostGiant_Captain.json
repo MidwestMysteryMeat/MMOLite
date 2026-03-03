@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SK_Enemy_FrostGiant_Captain",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SK_Enemy_FrostGiant_Captain_00.png"
+  ],
+  "frames": {
+    "SK_Enemy_FrostGiant_Captain_east": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 69,
+        "h": 84
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 26,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Enemy_FrostGiant_Captain_north": {
+      "sheet": 0,
+      "frame": {
+        "x": 69,
+        "y": 0,
+        "w": 69,
+        "h": 84
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 26,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Enemy_FrostGiant_Captain_south": {
+      "sheet": 0,
+      "frame": {
+        "x": 138,
+        "y": 0,
+        "w": 69,
+        "h": 84
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 26,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Enemy_FrostGiant_Captain_west": {
+      "sheet": 0,
+      "frame": {
+        "x": 207,
+        "y": 0,
+        "w": 69,
+        "h": 84
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 26,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    }
+  },
+  "animations": {}
+}

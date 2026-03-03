@@ -1,0 +1,10 @@
+{
+  "asset": "SM_Cole_006",
+  "type": "building",
+  "frames": {
+    "SM_Cole_006_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Cole_006\\SM_Cole_006_south.png",
+    "SM_Cole_006_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Cole_006\\SM_Cole_006_west.png",
+    "SM_Cole_006_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Cole_006\\SM_Cole_006_north.png",
+    "SM_Cole_006_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Cole_006\\SM_Cole_006_east.png"
+  }
+}

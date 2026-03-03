@@ -1,0 +1,7 @@
+{
+  "asset": "SM_Glass_Beer",
+  "type": "prop",
+  "frames": {
+    "SM_Glass_Beer_default": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Glass_Beer\\SM_Glass_Beer_default.png"
+  }
+}

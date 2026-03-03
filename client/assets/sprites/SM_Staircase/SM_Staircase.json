@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SM_Staircase",
+    "max_size": 4096
+  },
+  "sheets": [
+    "SM_Staircase_00.png"
+  ],
+  "frames": {
+    "SM_Staircase_east": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 200,
+        "h": 201
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 0,
+        "y": 0
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_Staircase_north": {
+      "sheet": 0,
+      "frame": {
+        "x": 200,
+        "y": 0,
+        "w": 200,
+        "h": 201
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 0,
+        "y": 0
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_Staircase_south": {
+      "sheet": 0,
+      "frame": {
+        "x": 400,
+        "y": 0,
+        "w": 200,
+        "h": 201
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 0,
+        "y": 0
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_Staircase_west": {
+      "sheet": 0,
+      "frame": {
+        "x": 600,
+        "y": 0,
+        "w": 200,
+        "h": 201
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 0,
+        "y": 0
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    }
+  },
+  "animations": {}
+}

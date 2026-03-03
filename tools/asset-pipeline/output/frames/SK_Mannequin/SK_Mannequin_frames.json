@@ -1,0 +1,10 @@
+{
+  "asset": "SK_Mannequin",
+  "type": "character",
+  "frames": {
+    "SK_Mannequin_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Mannequin\\SK_Mannequin_south.png",
+    "SK_Mannequin_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Mannequin\\SK_Mannequin_west.png",
+    "SK_Mannequin_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Mannequin\\SK_Mannequin_north.png",
+    "SK_Mannequin_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Mannequin\\SK_Mannequin_east.png"
+  }
+}

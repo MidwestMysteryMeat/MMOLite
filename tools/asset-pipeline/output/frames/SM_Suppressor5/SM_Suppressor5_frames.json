@@ -1,0 +1,10 @@
+{
+  "asset": "SM_Suppressor5",
+  "type": "weapon",
+  "frames": {
+    "SM_Suppressor5_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Suppressor5\\SM_Suppressor5_south.png",
+    "SM_Suppressor5_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Suppressor5\\SM_Suppressor5_west.png",
+    "SM_Suppressor5_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Suppressor5\\SM_Suppressor5_north.png",
+    "SM_Suppressor5_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Suppressor5\\SM_Suppressor5_east.png"
+  }
+}

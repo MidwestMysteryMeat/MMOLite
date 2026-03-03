@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SK_LeftArmArmorSpikes",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SK_LeftArmArmorSpikes_00.png"
+  ],
+  "frames": {
+    "SK_LeftArmArmorSpikes_east": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 10,
+        "h": 5
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 81,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_LeftArmArmorSpikes_north": {
+      "sheet": 0,
+      "frame": {
+        "x": 10,
+        "y": 0,
+        "w": 10,
+        "h": 5
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 81,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_LeftArmArmorSpikes_south": {
+      "sheet": 0,
+      "frame": {
+        "x": 20,
+        "y": 0,
+        "w": 10,
+        "h": 5
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 81,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_LeftArmArmorSpikes_west": {
+      "sheet": 0,
+      "frame": {
+        "x": 30,
+        "y": 0,
+        "w": 10,
+        "h": 5
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 81,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    }
+  },
+  "animations": {}
+}

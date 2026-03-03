@@ -1,0 +1,7 @@
+{
+  "asset": "SM_Bangle_01j",
+  "type": "prop",
+  "frames": {
+    "SM_Bangle_01j_default": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Bangle_01j\\SM_Bangle_01j_default.png"
+  }
+}

@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SK_Gruntling_Glacer",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SK_Gruntling_Glacer_00.png"
+  ],
+  "frames": {
+    "SK_Gruntling_Glacer_east": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 45,
+        "h": 43
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 33,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Gruntling_Glacer_north": {
+      "sheet": 0,
+      "frame": {
+        "x": 45,
+        "y": 0,
+        "w": 45,
+        "h": 43
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 33,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Gruntling_Glacer_south": {
+      "sheet": 0,
+      "frame": {
+        "x": 90,
+        "y": 0,
+        "w": 45,
+        "h": 43
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 33,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Gruntling_Glacer_west": {
+      "sheet": 0,
+      "frame": {
+        "x": 135,
+        "y": 0,
+        "w": 45,
+        "h": 43
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 33,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    }
+  },
+  "animations": {}
+}

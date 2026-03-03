@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SM_OilLamp_01",
+    "max_size": 4096
+  },
+  "sheets": [
+    "SM_OilLamp_01_00.png"
+  ],
+  "frames": {
+    "SM_OilLamp_01_east": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 224,
+        "h": 202
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 16,
+        "y": 25
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_OilLamp_01_north": {
+      "sheet": 0,
+      "frame": {
+        "x": 224,
+        "y": 0,
+        "w": 224,
+        "h": 202
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 16,
+        "y": 25
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_OilLamp_01_south": {
+      "sheet": 0,
+      "frame": {
+        "x": 448,
+        "y": 0,
+        "w": 224,
+        "h": 202
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 16,
+        "y": 25
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_OilLamp_01_west": {
+      "sheet": 0,
+      "frame": {
+        "x": 672,
+        "y": 0,
+        "w": 224,
+        "h": 202
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 16,
+        "y": 25
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    }
+  },
+  "animations": {}
+}

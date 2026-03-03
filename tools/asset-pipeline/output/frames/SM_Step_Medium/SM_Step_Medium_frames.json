@@ -1,0 +1,10 @@
+{
+  "asset": "SM_Step_Medium",
+  "type": "building",
+  "frames": {
+    "SM_Step_Medium_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Step_Medium\\SM_Step_Medium_south.png",
+    "SM_Step_Medium_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Step_Medium\\SM_Step_Medium_west.png",
+    "SM_Step_Medium_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Step_Medium\\SM_Step_Medium_north.png",
+    "SM_Step_Medium_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Step_Medium\\SM_Step_Medium_east.png"
+  }
+}

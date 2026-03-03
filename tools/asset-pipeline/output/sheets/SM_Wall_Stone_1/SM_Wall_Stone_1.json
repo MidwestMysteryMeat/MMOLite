@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SM_Wall_Stone_1",
+    "max_size": 4096
+  },
+  "sheets": [
+    "SM_Wall_Stone_1_00.png"
+  ],
+  "frames": {
+    "SM_Wall_Stone_1_east": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 126,
+        "h": 228
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 130,
+        "y": 0
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_Wall_Stone_1_north": {
+      "sheet": 0,
+      "frame": {
+        "x": 126,
+        "y": 0,
+        "w": 126,
+        "h": 228
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 130,
+        "y": 0
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_Wall_Stone_1_south": {
+      "sheet": 0,
+      "frame": {
+        "x": 252,
+        "y": 0,
+        "w": 126,
+        "h": 228
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 130,
+        "y": 0
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_Wall_Stone_1_west": {
+      "sheet": 0,
+      "frame": {
+        "x": 378,
+        "y": 0,
+        "w": 126,
+        "h": 228
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 130,
+        "y": 0
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    }
+  },
+  "animations": {}
+}

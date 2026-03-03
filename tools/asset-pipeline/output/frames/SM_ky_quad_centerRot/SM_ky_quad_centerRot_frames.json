@@ -1,0 +1,7 @@
+{
+  "asset": "SM_ky_quad_centerRot",
+  "type": "prop",
+  "frames": {
+    "SM_ky_quad_centerRot_default": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_ky_quad_centerRot\\SM_ky_quad_centerRot_default.png"
+  }
+}

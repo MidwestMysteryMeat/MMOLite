@@ -1,0 +1,10 @@
+{
+  "asset": "SM_Gems_01b",
+  "type": "item",
+  "frames": {
+    "SM_Gems_01b_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Gems_01b\\SM_Gems_01b_south.png",
+    "SM_Gems_01b_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Gems_01b\\SM_Gems_01b_west.png",
+    "SM_Gems_01b_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Gems_01b\\SM_Gems_01b_north.png",
+    "SM_Gems_01b_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Gems_01b\\SM_Gems_01b_east.png"
+  }
+}

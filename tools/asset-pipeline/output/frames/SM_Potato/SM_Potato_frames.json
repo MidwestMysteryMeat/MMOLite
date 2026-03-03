@@ -1,0 +1,7 @@
+{
+  "asset": "SM_Potato",
+  "type": "prop",
+  "frames": {
+    "SM_Potato_default": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Potato\\SM_Potato_default.png"
+  }
+}

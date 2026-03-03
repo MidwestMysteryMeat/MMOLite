@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SK_Robo_Golem_Melee",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SK_Robo_Golem_Melee_00.png"
+  ],
+  "frames": {
+    "SK_Robo_Golem_Melee_east": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 73,
+        "h": 82
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 28,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Robo_Golem_Melee_north": {
+      "sheet": 0,
+      "frame": {
+        "x": 73,
+        "y": 0,
+        "w": 73,
+        "h": 82
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 28,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Robo_Golem_Melee_south": {
+      "sheet": 0,
+      "frame": {
+        "x": 146,
+        "y": 0,
+        "w": 73,
+        "h": 82
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 28,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Robo_Golem_Melee_west": {
+      "sheet": 0,
+      "frame": {
+        "x": 219,
+        "y": 0,
+        "w": 73,
+        "h": 82
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 28,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    }
+  },
+  "animations": {}
+}

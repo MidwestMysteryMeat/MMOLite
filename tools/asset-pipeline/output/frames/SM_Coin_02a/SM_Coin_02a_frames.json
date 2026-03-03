@@ -1,0 +1,7 @@
+{
+  "asset": "SM_Coin_02a",
+  "type": "item",
+  "frames": {
+    "SM_Coin_02a_default": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Coin_02a\\SM_Coin_02a_default.png"
+  }
+}

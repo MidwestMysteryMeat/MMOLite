@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SM_Shelf",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SM_Shelf_00.png"
+  ],
+  "frames": {
+    "SM_Shelf_east": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 97,
+        "h": 100
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 28,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SM_Shelf_north": {
+      "sheet": 0,
+      "frame": {
+        "x": 97,
+        "y": 0,
+        "w": 97,
+        "h": 100
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 28,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SM_Shelf_south": {
+      "sheet": 0,
+      "frame": {
+        "x": 194,
+        "y": 0,
+        "w": 97,
+        "h": 100
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 28,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SM_Shelf_west": {
+      "sheet": 0,
+      "frame": {
+        "x": 291,
+        "y": 0,
+        "w": 97,
+        "h": 100
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 28,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    }
+  },
+  "animations": {}
+}

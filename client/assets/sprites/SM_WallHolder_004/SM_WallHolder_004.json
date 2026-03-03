@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SM_WallHolder_004",
+    "max_size": 4096
+  },
+  "sheets": [
+    "SM_WallHolder_004_00.png"
+  ],
+  "frames": {
+    "SM_WallHolder_004_east": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 86,
+        "h": 66
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 133,
+        "y": 43
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_WallHolder_004_north": {
+      "sheet": 0,
+      "frame": {
+        "x": 86,
+        "y": 0,
+        "w": 86,
+        "h": 66
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 133,
+        "y": 43
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_WallHolder_004_south": {
+      "sheet": 0,
+      "frame": {
+        "x": 172,
+        "y": 0,
+        "w": 86,
+        "h": 66
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 133,
+        "y": 43
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_WallHolder_004_west": {
+      "sheet": 0,
+      "frame": {
+        "x": 258,
+        "y": 0,
+        "w": 86,
+        "h": 66
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 133,
+        "y": 43
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    }
+  },
+  "animations": {}
+}

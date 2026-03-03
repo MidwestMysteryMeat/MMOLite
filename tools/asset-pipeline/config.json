@@ -20,7 +20,7 @@
       "death_fps":        8,
       "sheet_max_size":   2048,
       "camera_type":      "isometric",
-      "match_keywords":   ["character", "hero", "npc", "creature", "enemy", "monster", "player"]
+      "match_keywords":   ["character", "hero", "npc", "creature", "enemy", "monster", "player", "human", "demon", "lizard", "goblin", "orc", "elf", "dwarf", "skeleton", "zombie", "vampire", "werewolf", "sk_", "skm_", "golem", "troll", "spider", "wolf", "worm", "frost"]
     },
 
     "building": {
@@ -30,7 +30,7 @@
       "export_animations": false,
       "sheet_max_size":   4096,
       "camera_type":      "isometric",
-      "match_keywords":   ["building", "house", "castle", "tower", "shop", "inn", "dungeon", "wall", "gate", "structure"]
+      "match_keywords":   ["building", "house", "castle", "tower", "shop", "inn", "dungeon", "wall", "gate", "structure", "arch", "facade", "roof", "floor", "beam", "column", "door", "window", "stair", "bridge", "balcony", "ruin", "modular", "medieval"]
     },
 
     "prop": {
@@ -44,22 +44,22 @@
     },
 
     "weapon": {
-      "resolution":       64,
-      "directions":       [0],
-      "direction_names":  ["default"],
+      "resolution":       128,
+      "directions":       [0, 90, 180, 270],
+      "direction_names":  ["south", "west", "north", "east"],
       "export_animations": false,
-      "sheet_max_size":   1024,
-      "camera_type":      "top_down",
+      "sheet_max_size":   2048,
+      "camera_type":      "isometric",
       "match_keywords":   ["weapon", "sword", "axe", "bow", "staff", "wand", "shield", "dagger", "spear", "mace", "hammer"]
     },
 
     "item": {
-      "resolution":       64,
-      "directions":       [0],
-      "direction_names":  ["default"],
+      "resolution":       128,
+      "directions":       [0, 90, 180, 270],
+      "direction_names":  ["south", "west", "north", "east"],
       "export_animations": false,
-      "sheet_max_size":   1024,
-      "camera_type":      "top_down",
+      "sheet_max_size":   2048,
+      "camera_type":      "isometric",
       "match_keywords":   ["item", "potion", "gem", "ring", "helmet", "armor", "boot", "scroll", "key", "coin", "bag"]
     },
 

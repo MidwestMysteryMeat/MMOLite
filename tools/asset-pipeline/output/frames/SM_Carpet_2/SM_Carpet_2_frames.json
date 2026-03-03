@@ -1,0 +1,7 @@
+{
+  "asset": "SM_Carpet_2",
+  "type": "prop",
+  "frames": {
+    "SM_Carpet_2_default": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Carpet_2\\SM_Carpet_2_default.png"
+  }
+}

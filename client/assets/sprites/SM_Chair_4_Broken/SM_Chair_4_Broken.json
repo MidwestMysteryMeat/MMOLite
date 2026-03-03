@@ -1,0 +1,32 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SM_Chair_4_Broken",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SM_Chair_4_Broken_00.png"
+  ],
+  "frames": {
+    "SM_Chair_4_Broken_default": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 18,
+        "h": 43
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 0,
+        "y": 6
+      },
+      "source": {
+        "w": 64,
+        "h": 64
+      }
+    }
+  },
+  "animations": {}
+}

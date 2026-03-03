@@ -1,0 +1,10 @@
+{
+  "asset": "SM_Statue_Hooded_Metal",
+  "type": "building",
+  "frames": {
+    "SM_Statue_Hooded_Metal_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Statue_Hooded_Metal\\SM_Statue_Hooded_Metal_south.png",
+    "SM_Statue_Hooded_Metal_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Statue_Hooded_Metal\\SM_Statue_Hooded_Metal_west.png",
+    "SM_Statue_Hooded_Metal_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Statue_Hooded_Metal\\SM_Statue_Hooded_Metal_north.png",
+    "SM_Statue_Hooded_Metal_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Statue_Hooded_Metal\\SM_Statue_Hooded_Metal_east.png"
+  }
+}

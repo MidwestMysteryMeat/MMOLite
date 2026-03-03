@@ -1,0 +1,7 @@
+{
+  "asset": "SM_GardrobeCabinet_Right",
+  "type": "prop",
+  "frames": {
+    "SM_GardrobeCabinet_Right_default": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_GardrobeCabinet_Right\\SM_GardrobeCabinet_Right_default.png"
+  }
+}

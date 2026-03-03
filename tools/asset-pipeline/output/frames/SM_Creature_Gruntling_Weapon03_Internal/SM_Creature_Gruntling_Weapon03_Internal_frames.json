@@ -1,0 +1,10 @@
+{
+  "asset": "SM_Creature_Gruntling_Weapon03_Internal",
+  "type": "character",
+  "frames": {
+    "SM_Creature_Gruntling_Weapon03_Internal_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Creature_Gruntling_Weapon03_Internal\\SM_Creature_Gruntling_Weapon03_Internal_south.png",
+    "SM_Creature_Gruntling_Weapon03_Internal_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Creature_Gruntling_Weapon03_Internal\\SM_Creature_Gruntling_Weapon03_Internal_west.png",
+    "SM_Creature_Gruntling_Weapon03_Internal_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Creature_Gruntling_Weapon03_Internal\\SM_Creature_Gruntling_Weapon03_Internal_north.png",
+    "SM_Creature_Gruntling_Weapon03_Internal_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Creature_Gruntling_Weapon03_Internal\\SM_Creature_Gruntling_Weapon03_Internal_east.png"
+  }
+}

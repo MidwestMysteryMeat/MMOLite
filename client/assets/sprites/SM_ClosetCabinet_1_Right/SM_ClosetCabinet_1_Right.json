@@ -1,0 +1,32 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SM_ClosetCabinet_1_Right",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SM_ClosetCabinet_1_Right_00.png"
+  ],
+  "frames": {
+    "SM_ClosetCabinet_1_Right_default": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 35,
+        "h": 54
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 29,
+        "y": 10
+      },
+      "source": {
+        "w": 64,
+        "h": 64
+      }
+    }
+  },
+  "animations": {}
+}

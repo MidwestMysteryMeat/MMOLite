@@ -1,0 +1,32 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SM_Well",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SM_Well_00.png"
+  ],
+  "frames": {
+    "SM_Well_default": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 51,
+        "h": 63
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 3,
+        "y": 0
+      },
+      "source": {
+        "w": 64,
+        "h": 64
+      }
+    }
+  },
+  "animations": {}
+}

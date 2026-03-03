@@ -1,0 +1,32 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SM_ClayPot_03j",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SM_ClayPot_03j_00.png"
+  ],
+  "frames": {
+    "SM_ClayPot_03j_default": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 64,
+        "h": 36
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 0,
+        "y": 20
+      },
+      "source": {
+        "w": 64,
+        "h": 64
+      }
+    }
+  },
+  "animations": {}
+}
