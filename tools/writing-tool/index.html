@@ -218,6 +218,10 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 .ctx-item { display:block; width:100%; padding:7px 14px; text-align:left; background:none; border:none; color:var(--text); font-size:12px; cursor:pointer; white-space:nowrap; }
 .ctx-item:hover { background:var(--bg3); color:var(--accent); }
 
+/* ── Server status banner ────────────────────────────────────────────────── */
+#server-banner { display:none; position:fixed; top:0; left:0; right:0; background:#5c1a1a; color:#ffb0b0; font-size:12px; padding:6px 16px; text-align:center; z-index:9999; border-bottom:1px solid #a03030; }
+#server-banner a { color:#ffd0d0; text-decoration:underline; cursor:pointer; }
+
 /* ── Fixture table ───────────────────────────────────────────────────────── */
 .fixture-table { width: 100%; border-collapse: collapse; font-size: 12px; }
 .fixture-table th { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border); color: var(--text2); font-weight: 600; font-size: 11px; text-transform: uppercase; }
@@ -431,10 +435,27 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
     <!-- CONFIG ────────────────────────────────────────────────────────────── -->
     <div class="tab" id="tab-config">
       <div class="tab-header">
-        <h2>Config — Cross-Shard Sync</h2>
+        <h2>Config</h2>
         <button class="btn btn-primary btn-sm" onclick="shardAdd()">+ Add Shard</button>
       </div>
       <div style="overflow-y:auto;flex:1;padding:16px;max-width:600px">
+
+        <!-- Server connection (local file mode) -->
+        <div id="cfg-conn-section" style="margin-bottom:24px">
+          <h3 style="font-size:13px;font-weight:600;margin-bottom:6px">Server Connection</h3>
+          <p style="font-size:12px;color:var(--text2);margin-bottom:8px;line-height:1.6">
+            Paste the writing tool URL from your server logs:<br>
+            <code style="color:var(--accent);font-size:11px">[writing-tool] Admin URL: http://IP:3001/wtool-TOKEN/writing-tool</code>
+          </p>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input class="inp" id="cfg-server-url" placeholder="http://IP:3001/wtool-TOKEN/writing-tool" style="flex:1">
+            <button class="btn btn-primary btn-sm" onclick="saveServerUrl()">Save &amp; Reload</button>
+          </div>
+          <div id="cfg-conn-status" style="font-size:11px;margin-top:6px;color:var(--text2)"></div>
+        </div>
+
+        <hr style="border:none;border-top:1px solid var(--border);margin-bottom:20px">
+
         <p style="font-size:12px;color:var(--text2);margin-bottom:16px;line-height:1.7">
           Add remote shards here to automatically mirror NPC and fixture deploys across servers.
           When you deploy an NPC on this shard, it is also forwarded to every enabled remote shard
@@ -448,6 +469,9 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
   </div><!-- #content -->
 </div><!-- #app -->
 
+<!-- Server status banner (shown when server is unreachable) -->
+<div id="server-banner">⚠️ Cannot reach the game server — API calls will fail. Make sure the server is running, then <a onclick="location.reload()">reload the page</a>.</div>
+
 <!-- Toast -->
 <div id="toast-box"></div>
 
@@ -458,8 +482,8 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 </div>
 
 <!-- Town placement modal -->
-<div id="map-town-modal" class="hidden" style="position:fixed;inset:0;background:#0008;z-index:2000;display:flex;align-items:center;justify-content:center">
-  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:24px;width:400px;max-width:95vw">
+<div id="map-town-modal" class="hidden" onclick="if(event.target===this)mapCloseTownModal()" style="position:fixed;top:0;right:0;bottom:0;left:200px;background:#0008;z-index:2000;display:flex;align-items:center;justify-content:center">
+  <div onclick="event.stopPropagation()" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:24px;width:400px;max-width:95vw">
     <h3 style="margin-bottom:16px">🏘️ Place Town</h3>
     <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:2px">Name</label>
     <input class="inp" id="tm-name" placeholder="e.g. Ashveil" style="margin-bottom:10px">
@@ -502,8 +526,17 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 'use strict';
 
 // ── Token + API base ─────────────────────────────────────────────────────────
-const TOKEN    = window.location.pathname.split('/')[1];
-const API_BASE = '/' + TOKEN + '/api';
+// Supports two modes:
+//   Served mode  — opened via http://IP:PORT/wtool-TOKEN/writing-tool (normal)
+//   Local mode   — opened as file://... , server URL configured in Config tab
+var _LOCAL_MODE = window.location.protocol === 'file:';
+var _serverBase = ''; // e.g. "http://IP:3001/wtool-TOKEN" (no trailing slash)
+if (_LOCAL_MODE) {
+  var _sv = localStorage.getItem('wtool_server_url') || '';
+  _serverBase = _sv.replace(/\/writing-tool\/?$/, '').replace(/\/$/, '');
+}
+var TOKEN    = _LOCAL_MODE ? (_serverBase.split('/').pop() || '') : window.location.pathname.split('/')[1];
+var API_BASE = _LOCAL_MODE ? (_serverBase ? _serverBase + '/api' : '') : ('/' + TOKEN + '/api');
 
 // ── Shared state ─────────────────────────────────────────────────────────────
 const S = {
@@ -516,15 +549,23 @@ const S = {
 };
 
 // ── API helper ───────────────────────────────────────────────────────────────
-async function api(method, path, body) {
+async function api(method, path, body, silent) {
+  if (!API_BASE) {
+    if (!silent) toast('No server configured — set URL in Config tab.', 'err');
+    return null;
+  }
   try {
     const opts = { method, headers: { 'Content-Type': 'application/json' } };
     if (body !== undefined) opts.body = JSON.stringify(body);
     const r = await fetch(API_BASE + path, opts);
     const data = await r.json();
-    if (!r.ok) { toast(data.error || ('HTTP ' + r.status), 'err'); return null; }
+    if (!r.ok) { if (!silent) toast(data.error || ('HTTP ' + r.status), 'err'); return null; }
     return data;
-  } catch (e) { toast('Network error: ' + e.message, 'err'); return null; }
+  } catch (e) {
+    if (!silent) toast('Network error: ' + e.message, 'err');
+    else console.warn('[api] ' + method + ' ' + path + ' —', e.message);
+    return null;
+  }
 }
 
 // ── Toast ────────────────────────────────────────────────────────────────────
@@ -569,18 +610,21 @@ document.querySelectorAll('#tab-nav button[data-tab]').forEach(btn => {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    // Close any floating map UI when switching tabs
+    mapCloseTownModal();
+    _mapHideContextMenu();
     if (TAB_LOADERS[btn.dataset.tab]) TAB_LOADERS[btn.dataset.tab]();
   });
 });
 
 // ── Shared loaders ───────────────────────────────────────────────────────────
-async function fetchZones()         { const d = await api('GET', '/zones');         if (d) S.zones = d; }
-async function fetchNpcs()          { const d = await api('GET', '/npcs');          if (d) S.npcs  = d; }
-async function fetchArcs()          { const d = await api('GET', '/arcs');          if (d) S.arcs  = d; }
-async function fetchQuests()        { const d = await api('GET', '/quests');        if (d) S.quests = d; }
-async function fetchLore()          { const d = await api('GET', '/lore');          if (d) S.lore  = d; }
-async function fetchFixtures()      { const d = await api('GET', '/fixtures');      if (d) S.fixtures = d; }
-async function fetchLocationTypes() { const d = await api('GET', '/location-types'); if (d) S.locationTypes = d; }
+async function fetchZones()         { const d = await api('GET', '/zones',          undefined, true); if (d) S.zones = d; }
+async function fetchNpcs()          { const d = await api('GET', '/npcs',           undefined, true); if (d) S.npcs  = d; }
+async function fetchArcs()          { const d = await api('GET', '/arcs',           undefined, true); if (d) S.arcs  = d; }
+async function fetchQuests()        { const d = await api('GET', '/quests',         undefined, true); if (d) S.quests = d; }
+async function fetchLore()          { const d = await api('GET', '/lore',           undefined, true); if (d) S.lore  = d; }
+async function fetchFixtures()      { const d = await api('GET', '/fixtures',       undefined, true); if (d) S.fixtures = d; }
+async function fetchLocationTypes() { const d = await api('GET', '/location-types', undefined, true); if (d) S.locationTypes = d; }
 
 // ── Portrait picker ───────────────────────────────────────────────────────────
 async function fetchPortraits() {
@@ -590,7 +634,8 @@ async function fetchPortraits() {
 }
 
 function portraitUrl(p) {
-  return window.location.pathname.replace(/\/writing-tool.*$/, '') + '/portraits/' + p;
+  var base = _LOCAL_MODE ? _serverBase : window.location.pathname.replace(/\/writing-tool.*$/, '');
+  return base + '/portraits/' + p;
 }
 
 var _portraitActiveCat = '';
@@ -2637,6 +2682,7 @@ function mapStartAddMarker() {
 }
 
 function _mapCancelAdd() {
+  if (!MAP.wrap) return;
   MAP.addingMarker = false;
   MAP.wrap.classList.remove('adding');
   document.getElementById('map-crosshair-hint').style.display = 'none';
@@ -2944,11 +2990,36 @@ async function mapDeleteTown(townId) {
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // ═══════════════════════════════════════════════════════════════════════════════
-// CONFIG — SHARD MANAGEMENT
+// CONFIG — SERVER CONNECTION + SHARD MANAGEMENT
 // ═══════════════════════════════════════════════════════════════════════════════
 
+function saveServerUrl() {
+  var url = (document.getElementById('cfg-server-url').value || '').trim();
+  if (!url) { toast('Enter a server URL', 'err'); return; }
+  localStorage.setItem('wtool_server_url', url);
+  location.reload();
+}
+
 async function loadConfig() {
-  const data = await api('GET', '/shards');
+  // Populate server URL field with current stored or derived value
+  var urlEl = document.getElementById('cfg-server-url');
+  var statusEl = document.getElementById('cfg-conn-status');
+  if (_LOCAL_MODE) {
+    urlEl.value = localStorage.getItem('wtool_server_url') || '';
+    if (_serverBase) {
+      statusEl.textContent = '✓ Connected to ' + _serverBase;
+      statusEl.style.color = 'var(--green)';
+    } else {
+      statusEl.textContent = 'Not configured — paste your server URL above.';
+      statusEl.style.color = 'var(--text2)';
+    }
+  } else {
+    urlEl.value = window.location.origin + window.location.pathname.replace(/\/writing-tool.*$/, '') + '/writing-tool';
+    urlEl.disabled = true;
+    statusEl.textContent = 'Served by game server — URL is automatic.';
+    statusEl.style.color = 'var(--text2)';
+  }
+  const data = await api('GET', '/shards', undefined, true);
   if (data) { S._shards = data; renderShardList(); }
 }
 
@@ -3047,12 +3118,36 @@ function parseJsonArr(v) {
 
 // ── Init on load ──────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
-  Promise.all([fetchZones(), fetchLocationTypes()]).then(() => {
-    initTemplates();
-  });
+  var banner = document.getElementById('server-banner');
+
+  if (_LOCAL_MODE && !_serverBase) {
+    // Local file mode, no server URL configured yet
+    banner.innerHTML = '⚙️ Local file mode — paste your server URL in ' +
+      '<a onclick="document.querySelector(\'#tab-nav button[data-tab=\\\"config\\\"]\').click()">Config</a>' +
+      ' to connect. Find it in PM2 logs: <code>[writing-tool] Admin URL: http://...</code>';
+    banner.style.display = 'block';
+    fetchLocationTypes().then(initTemplates);
+  } else if (API_BASE) {
+    // Health check — show banner if server is unreachable, then proceed silently
+    fetch(API_BASE + '/zones').then(r => {
+      if (!r.ok) banner.style.display = 'block';
+      return r.json().then(d => { if (d) S.zones = d; }).catch(() => {});
+    }).catch(() => {
+      banner.style.display = 'block';
+    }).finally(() => {
+      fetchLocationTypes().then(initTemplates);
+    });
+  }
   aqInit();
   // Dismiss map context menu on any click outside it
   document.addEventListener('click', () => _mapHideContextMenu());
+  // Escape closes any floating map UI
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    _mapHideContextMenu();
+    mapCloseTownModal();
+    _mapCancelAdd();
+  });
 });
 </script>
 </body>

@@ -134,6 +134,7 @@ function startHeartbeat(getPlayerCount) {
       rules: config.rules,
       version: config.version,
       official: config.official,
+      clientType: config.clientType || 'any',  // 'lua', 'ue5', or 'any'
     };
 
     masterRequest('POST', '/api/shards/heartbeat', body, function (err, data) {

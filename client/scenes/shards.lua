@@ -133,7 +133,14 @@ function shards.fetchShardList()
     net.fetchShardList(MASTER_HOST, MASTER_PORT, function(list, err)
         fetchingShards = false
         if list and #list > 0 then
-            shardList = list
+            -- Exclude shards reserved for the UE5 client
+            local filtered = {}
+            for _, s in ipairs(list) do
+                if s.clientType ~= "ue5" then
+                    filtered[#filtered + 1] = s
+                end
+            end
+            shardList = filtered
             for i = 1, #shardList do
                 shardStatus[i] = { status = "online", players = shardList[i].currentPlayers or 0 }
             end

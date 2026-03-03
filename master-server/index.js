@@ -227,6 +227,7 @@ app.get('/api/shards', function (req, res) {
       rules: s.rules || {},
       version: s.version || '1.0.0',
       official: !!s.official,
+      clientType: s.clientType || 'any',  // 'lua', 'ue5', or 'any'
     });
   }
   res.json({ shards: list });
@@ -255,6 +256,7 @@ app.post('/api/shards/heartbeat', requireShardAuth, function (req, res) {
     rules: b.rules || {},
     version: b.version || '1.0.0',
     official: !!b.official,
+    clientType: b.clientType || 'any',
     lastSeen: Date.now(),
   });
 
