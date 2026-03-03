@@ -6,8 +6,9 @@ local M = {}
 M.EVENTS = {
     "equipment_updated", "equip_error", "durability_info",
     "abilities_list", "ability_error", "ability_result", "cooldown_update",
-    "card_ability_result", "card_cooldown_update",
+    "card_ability_result", "card_ability_error", "card_cooldown_update",
     "food_consumed", "food_error", "repair_result", "repair_error",
+    "card_abilities_list",
 }
 
 function M.register(client, game, ctx)
@@ -130,6 +131,11 @@ function M.register(client, game, ctx)
         end
     end)
 
+    client:on("card_ability_error", function(data)
+        if not data then return end
+        game.addChatMessage(data.message or "Card ability failed", {1, 0.4, 0.2})
+    end)
+
     client:on("card_ability_result", function(data)
         if not data then return end
         if data.success == false then
@@ -144,6 +150,11 @@ function M.register(client, game, ctx)
         end
         if data.mana ~= nil then dungeon.playerMana = data.mana end
         if data.maxMana ~= nil then dungeon.playerMaxMana = data.maxMana end
+    end)
+
+    client:on("card_abilities_list", function(data)
+        if not data then return end
+        game._abilityBar.cardAbilities = data.cardAbilities or {}
     end)
 end
 

@@ -1,0 +1,96 @@
+{
+  "_comment": "Defines per-slot bone attachment and render draw order. Uses Epic Skeleton bone names by default (most Fab/Marketplace assets share this skeleton). Override bone_name if your skeleton uses different names.",
+
+  "draw_order": [
+    "body_base",
+    "legs",
+    "boots",
+    "chest",
+    "gloves",
+    "shoulders",
+    "helmet",
+    "cloak",
+    "weapon_r",
+    "weapon_l",
+    "offhand"
+  ],
+
+  "slots": {
+    "body_base": {
+      "attach_type": "armature",
+      "description": "Base body / undergarments — always rendered, no FBX attachment",
+      "is_base": true
+    },
+    "helmet": {
+      "attach_type": "bone",
+      "bone_name": "head",
+      "bone_aliases": ["Head", "Bip01_Head", "mixamorig:Head", "head"],
+      "attach_offset": [0, 0, 0],
+      "attach_rotation": [0, 0, 0]
+    },
+    "chest": {
+      "attach_type": "armature",
+      "bone_name": "spine_03",
+      "bone_aliases": ["Spine3", "spine_03", "Bip01_Spine2", "mixamorig:Spine2"],
+      "description": "Full armature deform — chest armor needs weight painting from FBX"
+    },
+    "shoulders": {
+      "attach_type": "armature",
+      "bone_name": "clavicle_l",
+      "description": "Shoulder pads — armature deform"
+    },
+    "gloves": {
+      "attach_type": "armature",
+      "bone_name": "hand_l",
+      "bone_aliases": ["hand_l", "Hand_L", "Bip01_L_Hand", "mixamorig:LeftHand"]
+    },
+    "legs": {
+      "attach_type": "armature",
+      "bone_name": "thigh_l",
+      "bone_aliases": ["thigh_l", "Thigh_L", "Bip01_L_Thigh", "mixamorig:LeftUpLeg"],
+      "description": "Leg armor / pants — armature deform"
+    },
+    "boots": {
+      "attach_type": "armature",
+      "bone_name": "calf_l",
+      "bone_aliases": ["calf_l", "Calf_L", "Bip01_L_Calf", "mixamorig:LeftLeg"],
+      "description": "Boot / greave — armature deform"
+    },
+    "cloak": {
+      "attach_type": "armature",
+      "bone_name": "spine_01",
+      "description": "Cloth cloak — armature deform, may need cloth sim bake"
+    },
+    "weapon_r": {
+      "attach_type": "bone",
+      "bone_name": "hand_r",
+      "bone_aliases": ["hand_r", "Hand_R", "Bip01_R_Hand", "mixamorig:RightHand", "weapon_r", "WeaponR", "weapon_hand_r"],
+      "attach_offset": [0, 0, 0],
+      "attach_rotation": [0, 0, 0],
+      "description": "Primary weapon — rigid parented to right hand bone"
+    },
+    "weapon_l": {
+      "attach_type": "bone",
+      "bone_name": "hand_l",
+      "bone_aliases": ["hand_l", "Hand_L", "Bip01_L_Hand", "mixamorig:LeftHand", "weapon_l", "WeaponL"],
+      "attach_offset": [0, 0, 0],
+      "attach_rotation": [0, 0, 0],
+      "description": "Secondary weapon / off-hand — rigid parented to left hand bone"
+    },
+    "offhand": {
+      "attach_type": "bone",
+      "bone_name": "lowerarm_l",
+      "bone_aliases": ["lowerarm_l", "Bip01_L_Forearm", "mixamorig:LeftForeArm"],
+      "attach_offset": [0, 0, 0],
+      "attach_rotation": [0, 0, 0],
+      "description": "Shield / buckler — parented to left forearm"
+    }
+  },
+
+  "skeleton_presets": {
+    "_comment": "Swap the whole bone name set by specifying --skeleton-preset in blender_render_layered.py",
+    "epic":    { "head": "head", "spine": "spine_03", "hand_r": "hand_r", "hand_l": "hand_l", "thigh_l": "thigh_l", "calf_l": "calf_l" },
+    "mixamo":  { "head": "mixamorig:Head", "spine": "mixamorig:Spine2", "hand_r": "mixamorig:RightHand", "hand_l": "mixamorig:LeftHand", "thigh_l": "mixamorig:LeftUpLeg", "calf_l": "mixamorig:LeftLeg" },
+    "bip01":   { "head": "Bip01_Head", "spine": "Bip01_Spine2", "hand_r": "Bip01_R_Hand", "hand_l": "Bip01_L_Hand", "thigh_l": "Bip01_L_Thigh", "calf_l": "Bip01_L_Calf" }
+  }
+}

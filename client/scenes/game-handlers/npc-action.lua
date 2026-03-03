@@ -3,7 +3,7 @@
 
 local M = {}
 
-M.EVENTS = { "npc_action" }
+M.EVENTS = { "npc_action", "npc_error", "mount_error" }
 
 function M.register(client, game, ctx)
     local players = ctx.players
@@ -38,6 +38,24 @@ function M.register(client, game, ctx)
             game.addChatMessage("[Faction] Reputation gained with " .. (data.factionId or "unknown"), {0.53, 0.8, 1})
         elseif data.action == "karma_changed" then
             game.addChatMessage("[Karma] Your karma is now " .. tostring(data.karma or 0), {0.67, 1, 0.67})
+        end
+    end)
+
+    client:on("npc_error", function(data)
+        if not data then return end
+        local myId = getMyId()
+        local me = players[myId]
+        if me then
+            game.addFloatingText({ text = data.message or "NPC error", x = me.x, y = me.y - 40, color = {1, 0.3, 0.3}, timer = 2.5 })
+        end
+    end)
+
+    client:on("mount_error", function(data)
+        if not data then return end
+        local myId = getMyId()
+        local me = players[myId]
+        if me then
+            game.addFloatingText({ text = data.message or "Mount error", x = me.x, y = me.y - 40, color = {1, 0.3, 0.3}, timer = 2.5 })
         end
     end)
 end

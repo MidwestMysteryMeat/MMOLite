@@ -1,0 +1,90 @@
+{
+  "pipeline": {
+    "renderer":        "BLENDER_EEVEE_NEXT",
+    "cycles_samples":  64,
+    "eevee_samples":   16,
+    "camera_type":     "isometric",
+    "padding_factor":  1.15
+  },
+
+  "asset_types": {
+    "character": {
+      "resolution":       128,
+      "directions":       [0, 90, 180, 270],
+      "direction_names":  ["south", "west", "north", "east"],
+      "export_animations": true,
+      "animations":       ["idle", "walk", "attack", "death"],
+      "idle_fps":         6,
+      "walk_fps":         8,
+      "attack_fps":       10,
+      "death_fps":        8,
+      "sheet_max_size":   2048,
+      "camera_type":      "isometric",
+      "match_keywords":   ["character", "hero", "npc", "creature", "enemy", "monster", "player"]
+    },
+
+    "building": {
+      "resolution":       256,
+      "directions":       [0, 90, 180, 270],
+      "direction_names":  ["south", "west", "north", "east"],
+      "export_animations": false,
+      "sheet_max_size":   4096,
+      "camera_type":      "isometric",
+      "match_keywords":   ["building", "house", "castle", "tower", "shop", "inn", "dungeon", "wall", "gate", "structure"]
+    },
+
+    "prop": {
+      "resolution":       64,
+      "directions":       [0],
+      "direction_names":  ["default"],
+      "export_animations": false,
+      "sheet_max_size":   2048,
+      "camera_type":      "isometric",
+      "match_keywords":   ["prop", "barrel", "crate", "chest", "tree", "rock", "bush", "fence", "lamp", "sign", "table", "chair"]
+    },
+
+    "weapon": {
+      "resolution":       64,
+      "directions":       [0],
+      "direction_names":  ["default"],
+      "export_animations": false,
+      "sheet_max_size":   1024,
+      "camera_type":      "top_down",
+      "match_keywords":   ["weapon", "sword", "axe", "bow", "staff", "wand", "shield", "dagger", "spear", "mace", "hammer"]
+    },
+
+    "item": {
+      "resolution":       64,
+      "directions":       [0],
+      "direction_names":  ["default"],
+      "export_animations": false,
+      "sheet_max_size":   1024,
+      "camera_type":      "top_down",
+      "match_keywords":   ["item", "potion", "gem", "ring", "helmet", "armor", "boot", "scroll", "key", "coin", "bag"]
+    },
+
+    "terrain": {
+      "resolution":       128,
+      "directions":       [0],
+      "direction_names":  ["default"],
+      "export_animations": false,
+      "sheet_max_size":   4096,
+      "camera_type":      "top_down",
+      "match_keywords":   ["terrain", "ground", "floor", "tile", "grass", "dirt", "stone", "water", "road", "path"]
+    }
+  },
+
+  "output": {
+    "frames_dir":   "output/frames",
+    "sheets_dir":   "output/sheets",
+    "manifest_dir": "output/manifests",
+    "love_assets_dir": "../../client/assets/sprites"
+  },
+
+  "lighting": {
+    "key_energy":   3.0,
+    "fill_energy":  1.2,
+    "rim_energy":   0.6,
+    "ambient_strength": 0.3
+  }
+}

@@ -10,7 +10,7 @@ M.EVENTS = {
     "zone_monster_killed", "zone_attack_error",
     "zone_corpse_spawned", "zone_corpse_removed", "loot_corpse_result",
     "zone_container_spawned", "zone_container_looted", "loot_container_result",
-    "monster_roster", "monster_party_updated",
+    "monster_roster", "monster_party_updated", "monster_error", "monster_renamed",
 }
 
 function M.register(client, game, ctx)
@@ -194,6 +194,48 @@ function M.register(client, game, ctx)
         if account then
             account.monsters = data.monsters or {}
             account.activeParty = data.activeParty or {}
+        end
+    end)
+
+    client:on("monster_error", function(data)
+        if not data then return end
+        local myId = getMyId()
+        local me = players[myId]
+        if me then
+            game.addFloatingText({
+                text  = data.message or "Monster action failed",
+                x     = me.x,
+                y     = me.y - 60,
+                color = {1, 0.3, 0.3},
+                timer = 2.5,
+            })
+        else
+            game.addChatMessage(data.message or "Monster action failed", {1, 0.3, 0.3})
+        end
+    end)
+
+    client:on("monster_renamed", function(data)
+        if not data then return end
+        local myId = getMyId()
+        local me = players[myId]
+        if me then
+            game.addFloatingText({
+                text  = "Renamed to \"" .. (data.name or "?") .. "\"",
+                x     = me.x,
+                y     = me.y - 60,
+                color = {0.5, 0.9, 1},
+                timer = 2.5,
+            })
+        end
+        -- Update roster entry in account if cached
+        local account = getAccount()
+        if account and account.monsters then
+            for _, m in ipairs(account.monsters) do
+                if m.instanceId == data.monsterId then
+                    m.nickname = data.name
+                    break
+                end
+            end
         end
     end)
 

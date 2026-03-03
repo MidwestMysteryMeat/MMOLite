@@ -6,7 +6,7 @@ local M = {}
 M.EVENTS = {
     "mmo_auction_listings", "mmo_auction_listed", "mmo_auction_bought",
     "mmo_auction_cancelled", "mmo_auction_my_results", "mmo_auction_error",
-    "mmo_auction_update", "mount_changed",
+    "mmo_auction_update", "mmo_auction_sold", "mount_changed",
 }
 
 function M.register(client, game, ctx)
@@ -83,6 +83,13 @@ function M.register(client, game, ctx)
         if game._auction.show and client then
             client:emit("mmo_auction_browse", game._auction.filters or {})
         end
+    end)
+
+    client:on("mmo_auction_sold", function(data)
+        if not data then return end
+        local msg = "[Auction] " .. (data.name or "Item") .. " sold to " ..
+                    (data.buyerName or "someone") .. " for " .. (data.proceeds or 0) .. " coins"
+        game.addChatMessage(msg, {0.5, 1, 0.5})
     end)
 
     client:on("mount_changed", function(data)

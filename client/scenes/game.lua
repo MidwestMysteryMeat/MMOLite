@@ -51,6 +51,11 @@ local handlerModules = {
     require("scenes.game-handlers.farming"),
     require("scenes.game-handlers.monster"),
     require("scenes.game-handlers.vip"),
+    require("scenes.game-handlers.inventory"),
+    require("scenes.game-handlers.placement"),
+    require("scenes.game-handlers.zone-items"),
+    require("scenes.game-handlers.combat-feedback"),
+    require("scenes.game-handlers.dungeon-lifecycle"),
 }
 
 local cardsDrawModule     = require("scenes.game-draw.cards")
@@ -388,6 +393,12 @@ game._vip = {
 game._rumors = {
     list   = {},   -- [{text, zone, time}]
     scroll = 0,
+}
+
+-- Loot item inventory (procedural items) and social equipped (badge/title)
+game._lootInv = {
+    items    = {},   -- enriched item instances from server inventory_data
+    equipped = {},   -- { badge, title } from server equipped_updated
 }
 
 -- Guild panel state (on game table to reduce upvalues)
@@ -757,6 +768,15 @@ game._cardVendor = {
     selected = nil,
     filterArch = "all",    -- archetype filter: "all" or archetype name
     filterType = "all",    -- type filter: "all", "active", "passive", "stat"
+}
+
+-- Card shop (skill card merchant NPC) state
+game._cardShop = {
+    show            = false,
+    merchant        = nil,   -- { name, title, dialogue }
+    cards           = {},    -- available card listings with prices
+    coins           = 0,     -- player's current coin balance from last sync
+    presenceDiscount = 0,    -- % discount from Presence stat (0-30)
 }
 
 -- Card loadout state
@@ -1466,6 +1486,7 @@ function game.setupListeners()
         getMmoInventory = function() return mmoInventory end,
         setMmoInventory = function(inv) mmoInventory = inv end,
         getMyId = function() return myId end,
+        getZone = function() return zone end,
         getCorpseLootPanel = function() return corpseLootPanel end,
         setCorpseLootPanel = function(p) corpseLootPanel = p end,
         getContainerLootPanel = function() return containerLootPanel end,

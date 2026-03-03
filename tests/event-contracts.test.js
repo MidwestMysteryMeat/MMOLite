@@ -66,6 +66,115 @@ function collectClientListeners() {
   return listeners;
 }
 
+// Events the server emits that are intentionally unhandled by the Love2D client.
+// Each entry must have a documented reason. Add here rather than leaving gaps
+// untracked. Triage categories:
+//   web-only:   handled by web client; no Love2D panel built
+//   legacy:     BossCord-era event; not part of MMO flow
+//   moderation: moderator tool output; no regular player UI needed
+//   dm-infra:   server-internal DM encryption key exchange
+//   deferred:   feature planned but client panel not yet built
+const KNOWN_INTENTIONAL_UNHANDLED = new Set([
+  // web-only — social profile, account management, GIF picker
+  'account_data',          // web dashboard; no Love2D UI
+  'user_profile',          // web social profile page; no Love2D UI
+  'pin_changed',           // web account-settings flow; no Love2D UI
+  'gif_favorites',         // BossCord GIF picker; not in MMO
+  // legacy BossCord (not MMO systems)
+  'tcg_table_invite',      // BossCord TCG table invite
+  'game_invite',           // BossCord multiplayer invite
+  'user_joined',           // BossCord room join broadcast
+  'user_left',             // BossCord room leave broadcast
+  // moderation — moderator tool outputs; no regular player UI
+  'mod_action_result',     // moderator action confirmation; web only
+  'mod_error',             // moderator error output; web only
+  'mute_result',           // moderator mute confirmation; web only
+  'slur_filter_updated',   // admin filter management; web only
+  // dm-infra — server-internal DM encryption key exchange
+  'dm_key_rotated',
+  'dm_key_request',
+  'dm_key_response',
+  'dm_key_confirmed',
+  // deferred — friends panel not yet built in Love2D
+  'friends_list',
+  'friend_request_received',
+  'friend_request_accepted',
+  'friend_request_declined',
+  'friend_removed',
+  'friend_status_changed',
+  // deferred — DM chat panel not yet built in Love2D
+  'dm_received',
+  'dm_sent',
+  'dm_history_result',
+  'dm_conversations_result',
+  // deferred — server admin/wipe notification
+  'wipe_warning',
+  'server_wipe',
+  // deferred — challenges panel not yet implemented
+  'daily_challenges',
+  'challenge_complete',
+  // deferred — pet evolution and passive regen ticker UI
+  'pet_evolved',
+  'passive_regen',
+  // deferred — PvP battle panel not yet built
+  'battle_end',
+  'battle_start',
+  // deferred — public profile viewer not yet built
+  'profile_result',
+  'profile_data',
+  // deferred — server update countdown HUD not yet built
+  'update_warning',
+  // deferred — achievements panel not yet built
+  'achievements',
+  'challenge_claimed',
+  // deferred — awakening system UI not yet built
+  'available_awakenings',
+  'awakening_error',
+  'awakening_selected',
+  // web-only — avatar, showcase, portraits, race list (login/web flow)
+  'avatar_updated',
+  'showcase_updated',
+  'portraits_list',
+  'race_list',
+  'account_deleted',
+  'pin_set_success',
+  // web-only — leaderboard, loot catalog (web dashboard)
+  'leaderboard_data',
+  'loot_catalog_data',
+  // legacy BossCord — TCG card lobbies
+  'card_lobbies_updated',
+  'card_lobby_update',
+  // moderation — mod action outputs (kicked, muted, teleported)
+  'mod_kicked',
+  'mod_muted',
+  'mod_teleported',
+  // DM infrastructure
+  'dm_public_key',
+  'dm_public_key_set',
+  'dm_conversations_list',
+  // deferred — friends request list (full social panel not built)
+  'friend_invite_sent',
+  'friend_request_sent',
+  'friend_requests_list',
+  // deferred — gacha rates and NPC market overview panels not built
+  'gacha_rates',
+  'npc_shop_market_overview',
+  // deferred — calendar and full moon (world tick broadcasts, no HUD yet)
+  'calendar_update',
+  'full_moon_rising',
+  // deferred — plot and structure lifecycle (no client panel yet)
+  'plot_access_updated',
+  'structure_expired',
+  'structure_spawned',
+  // deferred — auction notifications (minor, auction panel handles browsing)
+  'mmo_auction_market_health',
+  'mmo_auction_market_price',
+  // deferred — town infiltration tracker not built
+  'town_infiltration_update',
+  // BossCord room messaging (no room/channel concept in Love2D game client)
+  'new_message',
+]);
+
 // Events the server emits that are intentionally handled only server-to-server
 // or broadcast-only (no per-client UI needed), so we skip them in the diff.
 const KNOWN_SERVER_ONLY = new Set([
@@ -128,24 +237,28 @@ describe('Event Contracts: Server emits ↔ Client listeners', () => {
   });
 
   test('server emits → client handlers: report missing (informational)', () => {
-    const missing = [];
+    const genuinelyMissing = [];
+    const allowlisted = [];
     for (const ev of serverEmits) {
       if (KNOWN_SERVER_ONLY.has(ev)) continue;
       if (!clientListeners.has(ev)) {
-        missing.push(ev);
+        if (KNOWN_INTENTIONAL_UNHANDLED.has(ev)) {
+          allowlisted.push(ev);
+        } else {
+          genuinelyMissing.push(ev);
+        }
       }
     }
-    // This is informational — the game is in active development.
-    // We record the count so regressions show up as increases.
-    console.log('[contracts] Server events missing client handler: ' + missing.length + ' of ' + serverEmits.size);
-    if (missing.length > 0) {
-      console.log('[contracts] Sample missing:', missing.sort().slice(0, 20).join(', '));
+    console.log('[contracts] Genuinely missing handlers: ' + genuinelyMissing.length + ' of ' + serverEmits.size);
+    console.log('[contracts] Intentionally allowlisted: ' + allowlisted.length);
+    if (genuinelyMissing.length > 0) {
+      console.log('[contracts] Missing (not allowlisted):', genuinelyMissing.sort().join(', '));
     }
-    // Coverage ratchet: tighten this as client handlers are wired up.
-    // Widened regex captures 421 server emits; 312 covered = 74%.
-    const covered = serverEmits.size - missing.length;
-    const coveragePct = covered / serverEmits.size;
-    expect(coveragePct).toBeGreaterThan(0.73);
+    // Hard gate: genuinely missing events (not in KNOWN_INTENTIONAL_UNHANDLED) must not
+    // exceed the ratchet. To add a new missing event, add it to KNOWN_INTENTIONAL_UNHANDLED
+    // above with a documented reason. Tighten this number as gaps are closed.
+    // Baseline (2026-03-02 sprint complete): 0 genuine gaps, 61 allowlisted.
+    expect(genuinelyMissing.length).toBeLessThanOrEqual(0);
   });
 
   test('client listeners with no server emit: report orphaned (informational)', () => {

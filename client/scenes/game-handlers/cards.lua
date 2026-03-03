@@ -9,6 +9,8 @@ M.EVENTS = {
     "card_vendor_bought", "card_vendor_sold", "card_vendor_catalog",
     "card_loadout_saved", "card_loadouts",
     "card_evolution_complete", "card_evolution_info", "card_curse_cleansed",
+    "card_shop_error", "card_fuse_error", "pack_awarded",
+    "card_shop_inventory", "card_shop_bought",
 }
 
 function M.register(client, game, ctx)
@@ -158,10 +160,57 @@ function M.register(client, game, ctx)
         end
     end)
 
+    client:on("card_fuse_error", function(data)
+        local myId = getMyId()
+        if data and data.message and myId and players[myId] then
+            game.addFloatingText({
+                text  = data.message,
+                x     = players[myId].x,
+                y     = players[myId].y - 40,
+                color = {1, 0.3, 0.3},
+                timer = 2.5,
+            })
+        end
+    end)
+
+    client:on("pack_awarded", function(data)
+        if not data then return end
+        game.addChatMessage("[Pack] Pack awarded: " .. (data.reason or "reward"), {0.6, 0.4, 1})
+    end)
+
+    client:on("card_shop_error", function(data)
+        if not data then return end
+        game.addChatMessage(data.message or "Card shop error", {1, 0.3, 0.3})
+    end)
+
     client:on("card_curse_cleansed", function(data)
         if not data then return end
         local cardName = (data.card and data.card.name) or "Card"
         game.addChatMessage("Curse cleansed from " .. cardName .. "!", {0.3, 1, 0.3})
+        if client then client:emit("get_cards", {}) end
+    end)
+
+    client:on("card_shop_inventory", function(data)
+        if not data then return end
+        game._cardShop.merchant = data.merchant or {}
+        game._cardShop.cards    = data.cards or {}
+        game._cardShop.coins    = data.coins or 0
+        game._cardShop.presenceDiscount = data.presenceDiscount or 0
+    end)
+
+    client:on("card_shop_bought", function(data)
+        if not data then return end
+        local account = getAccount()
+        if account then account.coins = data.coins end
+        game._cardShop.coins = data.coins or 0
+        local myId = getMyId()
+        if myId and players[myId] then
+            game.addFloatingText({
+                text  = data.message or ("Purchased " .. (data.card and data.card.name or "card")),
+                x     = players[myId].x, y = players[myId].y - 40,
+                color = {0.3, 1, 0.5}, timer = 3,
+            })
+        end
         if client then client:emit("get_cards", {}) end
     end)
 end
