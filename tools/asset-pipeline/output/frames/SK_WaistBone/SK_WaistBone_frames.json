@@ -1,0 +1,10 @@
+{
+  "asset": "SK_WaistBone",
+  "type": "character",
+  "frames": {
+    "SK_WaistBone_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_WaistBone\\SK_WaistBone_south.png",
+    "SK_WaistBone_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_WaistBone\\SK_WaistBone_west.png",
+    "SK_WaistBone_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_WaistBone\\SK_WaistBone_north.png",
+    "SK_WaistBone_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_WaistBone\\SK_WaistBone_east.png"
+  }
+}

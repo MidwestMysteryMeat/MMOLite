@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SK_Werewolf_Separate4",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SK_Werewolf_Separate4_00.png"
+  ],
+  "frames": {
+    "SK_Werewolf_Separate4_east": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 37,
+        "h": 20
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 47,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Werewolf_Separate4_north": {
+      "sheet": 0,
+      "frame": {
+        "x": 37,
+        "y": 0,
+        "w": 37,
+        "h": 20
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 47,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Werewolf_Separate4_south": {
+      "sheet": 0,
+      "frame": {
+        "x": 74,
+        "y": 0,
+        "w": 37,
+        "h": 20
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 47,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Werewolf_Separate4_west": {
+      "sheet": 0,
+      "frame": {
+        "x": 111,
+        "y": 0,
+        "w": 37,
+        "h": 20
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 47,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    }
+  },
+  "animations": {}
+}

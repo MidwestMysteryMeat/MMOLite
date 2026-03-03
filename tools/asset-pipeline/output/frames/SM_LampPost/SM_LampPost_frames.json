@@ -1,0 +1,7 @@
+{
+  "asset": "SM_LampPost",
+  "type": "prop",
+  "frames": {
+    "SM_LampPost_default": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_LampPost\\SM_LampPost_default.png"
+  }
+}

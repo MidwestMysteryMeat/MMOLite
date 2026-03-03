@@ -1,0 +1,32 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SM_Barrel_Close_1",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SM_Barrel_Close_1_00.png"
+  ],
+  "frames": {
+    "SM_Barrel_Close_1_default": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 50,
+        "h": 64
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 7,
+        "y": 0
+      },
+      "source": {
+        "w": 64,
+        "h": 64
+      }
+    }
+  },
+  "animations": {}
+}

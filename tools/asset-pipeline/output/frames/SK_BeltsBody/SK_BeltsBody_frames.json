@@ -1,0 +1,10 @@
+{
+  "asset": "SK_BeltsBody",
+  "type": "character",
+  "frames": {
+    "SK_BeltsBody_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_BeltsBody\\SK_BeltsBody_south.png",
+    "SK_BeltsBody_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_BeltsBody\\SK_BeltsBody_west.png",
+    "SK_BeltsBody_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_BeltsBody\\SK_BeltsBody_north.png",
+    "SK_BeltsBody_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_BeltsBody\\SK_BeltsBody_east.png"
+  }
+}

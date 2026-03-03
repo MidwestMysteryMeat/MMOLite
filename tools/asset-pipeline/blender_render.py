@@ -70,14 +70,11 @@ def setup_render():
     scene  = bpy.context.scene
     engine = PIPE_CFG.get("renderer", "BLENDER_EEVEE_NEXT")
 
-    # Blender 4.2+ renamed BLENDER_EEVEE → BLENDER_EEVEE_NEXT
-    if engine not in bpy.app.handlers.__dict__ and engine == "BLENDER_EEVEE_NEXT":
-        try:
-            scene.render.engine = engine
-        except Exception:
-            scene.render.engine = "BLENDER_EEVEE"
-    else:
+    try:
         scene.render.engine = engine
+    except Exception:
+        # Fallback: Blender 4.1 and earlier use BLENDER_EEVEE
+        scene.render.engine = "BLENDER_EEVEE"
 
     if scene.render.engine in ("BLENDER_EEVEE", "BLENDER_EEVEE_NEXT"):
         scene.eevee.taa_render_samples = PIPE_CFG.get("eevee_samples", 16)
@@ -179,15 +176,34 @@ def fit_camera_to_scene(cam: bpy.types.Object, padding: float = None):
         return
 
     lo, hi = compute_bounding_box(meshes)
-    center  = (lo + hi) / 2.0
-    size    = max(hi[i] - lo[i] for i in range(3))
+    center = (lo + hi) / 2.0
 
-    cam.data.ortho_scale = size * padding
+    # Ensure matrix_world is current (rotation was set in make_camera before
+    # objects were imported; Blender lazily recomputes the scene graph).
+    bpy.context.view_layer.update()
 
-    # Move camera to face the center from its current angle
+    # Project all 8 bounding-box corners into camera space to measure the
+    # true on-screen extents.  A plain max(x,y,z) underestimates how much
+    # isometric projection expands a tall narrow object horizontally, and
+    # how much a wide flat object expands vertically.
+    cam_rot_inv = cam.matrix_world.to_3x3().inverted()
+    corners = [
+        mathutils.Vector((x, y, z))
+        for x in (lo.x, hi.x)
+        for y in (lo.y, hi.y)
+        for z in (lo.z, hi.z)
+    ]
+    proj     = [cam_rot_inv @ (c - center) for c in corners]
+    screen_w = max(p.x for p in proj) - min(p.x for p in proj)
+    screen_h = max(p.y for p in proj) - min(p.y for p in proj)
+    ortho_size = max(screen_w, screen_h)
+
+    cam.data.ortho_scale = ortho_size * padding
+
+    # Position camera facing the scene center at sufficient distance
     direction = cam.matrix_world.to_3x3() @ mathutils.Vector((0, 0, -1))
-    distance  = size * 3
-    cam.location = center - direction * distance
+    size      = max(hi[i] - lo[i] for i in range(3))
+    cam.location = center - direction * (size * 3)
 
 
 def center_objects_at_origin(objects: list):
@@ -252,6 +268,133 @@ def render_animation(arm, action, asset_name: str, dir_name: str, out_dir: str, 
 # Main
 # ────────────────────────────────────────────────────────────────────────────
 
+# ────────────────────────────────────────────────────────────────────────────
+# Texture helpers (umodel gltf doesn't embed texture URIs)
+# ────────────────────────────────────────────────────────────────────────────
+
+# Suffix → PBR slot mapping (lowercase match)
+_TEX_SUFFIXES = {
+    "cc":   ["_cc", "_d.", "_diffuse", "_basecolor", "_albedo", "_color"],
+    "nm":   ["_nm", "_n.", "_normal"],
+    "arm":  ["_aorame", "_arm", "_orme", "_orm", "_occlusionroughnessmetallic"],
+    "em":   ["_em.", "_emissive"],
+}
+
+
+def _find_textures(asset_path: str) -> dict:
+    """
+    Search for PNG textures relative to the asset file.
+    umodel layout varies: Textures/ may be a sibling, a parent, or several levels up.
+
+    Strategy:
+    1. Walk upward up to 4 levels looking for a Textures/ sibling.
+    2. Within each Textures/ tree, prefer PNGs whose stem is similar to the mesh name.
+    3. Fall back to any PNG matching the slot suffix pattern in that tree.
+
+    Returns { slot: abs_path } e.g. { 'cc': '...T_Foo_cc.png', 'nm': '...T_Foo_nm.png' }
+    """
+    asset_stem = os.path.splitext(os.path.basename(asset_path))[0].lower()
+    # Strip common prefixes (SM_, SK_, T_, etc.) to get the bare name for matching
+    for prefix in ("sm_", "sk_", "s_", "t_"):
+        if asset_stem.startswith(prefix):
+            asset_stem = asset_stem[len(prefix):]
+            break
+
+    # Build candidate texture roots: walk upward from asset dir, up to 4 levels
+    candidate_roots = []
+    d = os.path.dirname(asset_path)
+    for _ in range(5):
+        t = os.path.join(d, "Textures")
+        if os.path.isdir(t):
+            candidate_roots.append(t)
+        # Also check the directory itself for PNGs (some packs colocate textures)
+        candidate_roots.append(d)
+        d = os.path.dirname(d)
+        if not d or d == os.path.dirname(d):
+            break
+
+    def _score_png(fname_lower: str) -> int:
+        """Higher score = better match for this asset."""
+        stem_words = [w for w in asset_stem.replace("_", " ").split() if len(w) > 2]
+        return sum(1 for w in stem_words if w in fname_lower)
+
+    result = {}
+    for root in candidate_roots:
+        if not os.path.isdir(root):
+            continue
+        # Collect all PNGs under this root
+        all_pngs = []
+        for dirpath, _, files in os.walk(root):
+            for f in files:
+                if f.lower().endswith(".png"):
+                    all_pngs.append((os.path.join(dirpath, f), f.lower()))
+        if not all_pngs:
+            continue
+        # Sort: prefer PNGs whose name overlaps with the mesh name
+        all_pngs.sort(key=lambda x: -_score_png(x[1]))
+        for abs_path, fname_lower in all_pngs:
+            for slot, patterns in _TEX_SUFFIXES.items():
+                if slot not in result:
+                    for pat in patterns:
+                        if pat in fname_lower:
+                            result[slot] = abs_path
+                            break
+        if result:
+            break
+    return result
+
+
+def _assign_textures(textures: dict):
+    """
+    Wire found PNG textures into every material in the scene using Principled BSDF.
+    Blender 3.3+ uses ShaderNodeSeparateColor (not SeparateRGB).
+    """
+    for mat in bpy.data.materials:
+        if not mat.use_nodes:
+            mat.use_nodes = True
+        nodes = mat.node_tree.nodes
+        links = mat.node_tree.links
+
+        bsdf = next((n for n in nodes if n.type == "BSDF_PRINCIPLED"), None)
+        if bsdf is None:
+            bsdf = nodes.new("ShaderNodeBsdfPrincipled")
+            out = next((n for n in nodes if n.type == "OUTPUT_MATERIAL"), None)
+            if out:
+                links.new(bsdf.outputs["BSDF"], out.inputs["Surface"])
+
+        def _tex_node(path, label, non_color=False):
+            img = bpy.data.images.load(path, check_existing=True)
+            if non_color:
+                img.colorspace_settings.name = "Non-Color"
+            node = nodes.new("ShaderNodeTexImage")
+            node.image = img
+            node.label = label
+            return node
+
+        if "cc" in textures:
+            t = _tex_node(textures["cc"], "Base Color")
+            links.new(t.outputs["Color"], bsdf.inputs["Base Color"])
+
+        if "nm" in textures:
+            t = _tex_node(textures["nm"], "Normal", non_color=True)
+            nmap = nodes.new("ShaderNodeNormalMap")
+            links.new(t.outputs["Color"], nmap.inputs["Color"])
+            links.new(nmap.outputs["Normal"], bsdf.inputs["Normal"])
+
+        if "arm" in textures:
+            t = _tex_node(textures["arm"], "ARM", non_color=True)
+            # R=AO, G=Roughness, B=Metallic (UE5 convention)
+            sep = nodes.new("ShaderNodeSeparateColor")
+            links.new(t.outputs["Color"], sep.inputs["Color"])
+            links.new(sep.outputs["Green"], bsdf.inputs["Roughness"])
+            links.new(sep.outputs["Blue"],  bsdf.inputs["Metallic"])
+
+        if "em" in textures:
+            t = _tex_node(textures["em"], "Emissive")
+            links.new(t.outputs["Color"], bsdf.inputs["Emission Color"])
+            bsdf.inputs["Emission Strength"].default_value = 1.0
+
+
 def main():
     asset_name = os.path.splitext(os.path.basename(args.input))[0]
     out_dir    = args.output
@@ -264,20 +407,32 @@ def main():
     cam = make_camera()
     setup_lighting()
 
-    # Import FBX
+    # Import asset (gltf or fbx)
     log.info(f"Importing: {args.input}")
-    bpy.ops.import_scene.fbx(
-        filepath=args.input,
-        use_anim=True,
-        ignore_leaf_bones=True,
-        force_connect_children=False,
-        automatic_bone_orientation=True,
-    )
+    ext = os.path.splitext(args.input)[1].lower()
+    if ext in (".gltf", ".glb"):
+        bpy.ops.import_scene.gltf(filepath=args.input)
+    else:
+        bpy.ops.import_scene.fbx(
+            filepath=args.input,
+            use_anim=True,
+            ignore_leaf_bones=True,
+            force_connect_children=False,
+            automatic_bone_orientation=True,
+        )
 
     root_objects = get_scene_root_objects()
     if not root_objects:
-        log.error("No objects imported. FBX may be empty or unreadable.")
+        log.error("No objects imported. File may be empty or unreadable.")
         sys.exit(1)
+
+    # umodel gltf exports don't embed texture URIs — find and assign manually
+    textures = _find_textures(args.input)
+    if textures:
+        log.info(f"Textures found: {list(textures.keys())}")
+        _assign_textures(textures)
+    else:
+        log.warning("No textures found — rendering with flat materials.")
 
     center_objects_at_origin(root_objects)
     fit_camera_to_scene(cam)
@@ -320,7 +475,12 @@ def main():
     # Write per-asset frame manifest
     manifest_path = os.path.join(out_dir, f"{asset_name}_frames.json")
     with open(manifest_path, "w") as mf:
-        json.dump({"asset": asset_name, "type": args.type, "frames": manifest_frames}, mf, indent=2)
+        json.dump({
+            "asset":   asset_name,
+            "type":    args.type,
+            "frames":  manifest_frames,
+            "padding": PIPE_CFG.get("padding_factor", 1.15),
+        }, mf, indent=2)
 
     log.info(f"Done: {len(manifest_frames)} frames written to {out_dir}")
 

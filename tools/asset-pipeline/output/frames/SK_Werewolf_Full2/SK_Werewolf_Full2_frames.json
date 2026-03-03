@@ -1,0 +1,10 @@
+{
+  "asset": "SK_Werewolf_Full2",
+  "type": "character",
+  "frames": {
+    "SK_Werewolf_Full2_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Werewolf_Full2\\SK_Werewolf_Full2_south.png",
+    "SK_Werewolf_Full2_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Werewolf_Full2\\SK_Werewolf_Full2_west.png",
+    "SK_Werewolf_Full2_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Werewolf_Full2\\SK_Werewolf_Full2_north.png",
+    "SK_Werewolf_Full2_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Werewolf_Full2\\SK_Werewolf_Full2_east.png"
+  }
+}

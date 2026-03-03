@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SK_Enemy_Wolf_Base",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SK_Enemy_Wolf_Base_00.png"
+  ],
+  "frames": {
+    "SK_Enemy_Wolf_Base_east": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 66,
+        "h": 58
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 21,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Enemy_Wolf_Base_north": {
+      "sheet": 0,
+      "frame": {
+        "x": 66,
+        "y": 0,
+        "w": 66,
+        "h": 58
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 21,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Enemy_Wolf_Base_south": {
+      "sheet": 0,
+      "frame": {
+        "x": 132,
+        "y": 0,
+        "w": 66,
+        "h": 58
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 21,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Enemy_Wolf_Base_west": {
+      "sheet": 0,
+      "frame": {
+        "x": 198,
+        "y": 0,
+        "w": 66,
+        "h": 58
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 21,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    }
+  },
+  "animations": {}
+}

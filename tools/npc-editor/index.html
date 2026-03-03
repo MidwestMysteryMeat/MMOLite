@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MMOLite NPC Editor</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #1a1a2e; color: #e0e0e0; font-family: monospace; display: flex; height: 100vh; overflow: hidden; }
+
+/* NPC list panel */
+#npc-list-panel { width: 220px; min-width: 220px; background: #12192e; border-right: 1px solid #2a3a5a; display: flex; flex-direction: column; }
+#npc-list-panel h2 { padding: 10px 12px; background: #0f3460; font-size: 13px; letter-spacing: 1px; text-transform: uppercase; }
+#npc-search { padding: 6px 8px; background: #0d1b2e; border: none; border-bottom: 1px solid #2a3a5a; color: #eee; font-family: monospace; font-size: 12px; width: 100%; outline: none; }
+#npc-list { flex: 1; overflow-y: auto; }
+.npc-entry { padding: 8px 12px; cursor: pointer; border-left: 3px solid transparent; font-size: 12px; border-bottom: 1px solid #1a2a4a; }
+.npc-entry:hover { background: #1e2e4e; }
+.npc-entry.active { background: #1a3a5c; border-left-color: #e2b96f; }
+.npc-race-tag { font-size: 10px; color: #888; margin-top: 2px; }
+#list-actions { padding: 8px; display: flex; gap: 6px; }
+
+/* Editor panel */
+#editor { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+#editor-header { padding: 10px 16px; background: #0f3460; display: flex; align-items: center; gap: 12px; }
+#editor-header h3 { font-size: 14px; flex: 1; }
+#editor-tabs { display: flex; gap: 2px; }
+.etab { padding: 5px 12px; background: #0f2444; border: none; color: #aaa; cursor: pointer; font-family: monospace; font-size: 11px; border-radius: 3px 3px 0 0; border-bottom: 2px solid transparent; }
+.etab:hover { background: #1a3a5c; }
+.etab.active { color: #e2b96f; border-bottom-color: #e2b96f; background: #16213e; }
+
+#editor-body { flex: 1; overflow-y: auto; padding: 16px; }
+.tab-pane { display: none; }
+.tab-pane.active { display: block; }
+
+.field-group { margin-bottom: 20px; }
+.field-group-title { font-size: 11px; color: #e2b96f; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; padding-bottom: 4px; border-bottom: 1px solid #2a3a5a; }
+.field-row { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 8px; }
+.field-row label { width: 110px; color: #999; flex-shrink: 0; font-size: 11px; padding-top: 4px; }
+.field-row input, .field-row select, .field-row textarea {
+  flex: 1; background: #0d1b2e; border: 1px solid #2a3a5a; color: #eee;
+  padding: 5px 8px; border-radius: 3px; font-family: monospace; font-size: 12px;
+}
+.field-row input:focus, .field-row select:focus, .field-row textarea:focus { outline: none; border-color: #4a90d9; }
+.field-row textarea { resize: vertical; min-height: 60px; }
+
+/* Trait chips */
+#trait-container { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.trait-chip { background: #1a3a5c; border: 1px solid #3a6a9c; padding: 3px 10px; border-radius: 12px; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 5px; }
+.trait-chip:hover { background: #2a4a7c; }
+.trait-chip.selected { background: #0f5280; border-color: #e2b96f; color: #e2b96f; }
+.trait-chip .remove { color: #f88; font-size: 13px; }
+#trait-pool { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+.trait-option { background: #1a2a3a; border: 1px solid #2a3a5a; padding: 3px 8px; border-radius: 10px; font-size: 11px; cursor: pointer; color: #aaa; }
+.trait-option:hover { background: #2a3a5a; color: #eee; border-color: #4a6a9a; }
+
+/* Inventory table */
+#inv-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+#inv-table th { text-align: left; padding: 5px 8px; color: #888; border-bottom: 1px solid #2a3a5a; font-weight: normal; }
+#inv-table td { padding: 4px 8px; border-bottom: 1px solid #1a2a3a; }
+#inv-table td input, #inv-table td select {
+  background: #0d1b2e; border: 1px solid #2a3a5a; color: #eee; padding: 2px 5px;
+  border-radius: 2px; font-family: monospace; font-size: 11px; width: 100%;
+}
+.inv-row-btn { background: none; border: none; color: #f88; cursor: pointer; font-size: 14px; padding: 0 4px; }
+
+/* Relationship cards */
+#rel-list { display: flex; flex-direction: column; gap: 8px; }
+.rel-card { background: #0d1b2e; border: 1px solid #2a3a5a; border-radius: 5px; padding: 10px 12px; }
+.rel-card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.rel-type-badge { font-size: 10px; padding: 2px 7px; border-radius: 10px; }
+.rel-friend    { background: #1a4a2a; color: #6adf8a; border: 1px solid #2a6a3a; }
+.rel-rival     { background: #4a2a1a; color: #df8a6a; border: 1px solid #6a3a2a; }
+.rel-employer  { background: #2a3a5a; color: #8aafdf; border: 1px solid #3a5a8a; }
+.rel-family    { background: #3a2a5a; color: #af8adf; border: 1px solid #5a3a8a; }
+.rel-neutral   { background: #2a2a2a; color: #aaa;    border: 1px solid #3a3a3a; }
+
+/* Portrait preview */
+#portrait-preview { width: 80px; height: 100px; background: #0d1b2e; border: 1px solid #2a3a5a; border-radius: 4px; object-fit: cover; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #444; font-size: 28px; }
+
+/* JSON preview panel */
+#json-panel { width: 300px; min-width: 260px; background: #0d1218; border-left: 1px solid #2a3a5a; display: flex; flex-direction: column; }
+#json-panel h4 { padding: 8px 12px; background: #0f2444; font-size: 11px; color: #888; letter-spacing: 1px; }
+#json-preview { flex: 1; overflow-y: auto; padding: 10px; font-size: 10px; color: #7fdf7f; white-space: pre; line-height: 1.5; }
+#json-actions { padding: 8px; display: flex; flex-direction: column; gap: 5px; }
+
+.btn { padding: 6px 12px; border: none; border-radius: 3px; cursor: pointer; font-family: monospace; font-size: 11px; }
+.btn-primary { background: #0f5280; color: #e2b96f; }
+.btn-secondary { background: #1a3a5c; color: #aaa; border: 1px solid #3a5a8c; }
+.btn-danger { background: #4a1a1a; color: #f88; border: 1px solid #6a2a2a; }
+.btn-sm { padding: 3px 8px; font-size: 10px; }
+
+#empty-state { flex: 1; display: flex; align-items: center; justify-content: center; color: #555; font-size: 13px; flex-direction: column; gap: 12px; }
+</style>
+</head>
+<body>
+
+<!-- NPC LIST -->
+<div id="npc-list-panel">
+  <h2>NPCs</h2>
+  <input id="npc-search" type="text" placeholder="Search NPCs..." oninput="filterList(this.value)">
+  <div id="npc-list"></div>
+  <div id="list-actions">
+    <button class="btn btn-primary" style="flex:1" onclick="createNpc()">+ New NPC</button>
+    <button class="btn btn-secondary btn-sm" onclick="importAll()">Import</button>
+    <button class="btn btn-secondary btn-sm" onclick="exportAll()">Export All</button>
+  </div>
+</div>
+
+<!-- EDITOR -->
+<div id="editor">
+  <div id="editor-header">
+    <div id="portrait-preview">👤</div>
+    <div style="flex:1">
+      <h3 id="editor-title">Select or create an NPC</h3>
+      <div style="font-size:11px; color:#888; margin-top:4px" id="editor-subtitle"></div>
+    </div>
+    <div id="editor-tabs">
+      <button class="etab active" onclick="showETab('identity')">Identity</button>
+      <button class="etab" onclick="showETab('personality')">Traits</button>
+      <button class="etab" onclick="showETab('inventory')">Inventory</button>
+      <button class="etab" onclick="showETab('relations')">Relations</button>
+      <button class="etab" onclick="showETab('schedule')">Schedule</button>
+    </div>
+  </div>
+
+  <div id="editor-body">
+    <div id="empty-state">
+      <span style="font-size:40px">👥</span>
+      <span>No NPC selected. Create one or pick from the list.</span>
+      <button class="btn btn-primary" onclick="createNpc()">+ New NPC</button>
+    </div>
+
+    <!-- IDENTITY TAB -->
+    <div class="tab-pane" id="pane-identity">
+      <div class="field-group">
+        <div class="field-group-title">Core Identity</div>
+        <div class="field-row"><label>ID (unique)</label><input id="f-id" type="text" oninput="setField('id',this.value);refreshListEntry()"></div>
+        <div class="field-row"><label>Full Name</label><input id="f-name" type="text" oninput="setField('name',this.value);refreshListEntry()"></div>
+        <div class="field-row"><label>Race</label>
+          <select id="f-race" onchange="setField('race',this.value);refreshListEntry()">
+            <option value="">— unset —</option>
+            <option>human</option><option>elf</option><option>orc</option><option>dwarf</option>
+            <option>gnome</option><option>goblin</option><option>lizardfolk</option><option>catfolk</option>
+          </select>
+        </div>
+        <div class="field-row"><label>Role / Class</label>
+          <select id="f-role" onchange="setField('role',this.value)">
+            <option value="">— unset —</option>
+            <option>innkeeper</option><option>blacksmith</option><option>merchant</option>
+            <option>guard</option><option>healer</option><option>banker</option>
+            <option>quest_giver</option><option>farmer</option><option>civilian</option>
+            <option>sage</option><option>priest</option><option>thief</option>
+            <option>knight</option><option>wizard</option><option>ranger</option>
+          </select>
+        </div>
+        <div class="field-row"><label>Age</label><input id="f-age" type="number" min="1" max="999" oninput="setField('age',+this.value)"></div>
+        <div class="field-row"><label>Gender</label>
+          <select id="f-gender" onchange="setField('gender',this.value)">
+            <option value="">— unset —</option>
+            <option>male</option><option>female</option><option>nonbinary</option><option>unknown</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <div class="field-group-title">Appearance</div>
+        <div class="field-row">
+          <label>Portrait</label>
+          <div style="flex:1">
+            <input id="f-portrait" type="text" placeholder="assets/portraits/npc_id.png" oninput="setField('portrait',this.value);updatePortraitPreview()" style="margin-bottom:5px">
+            <div style="font-size:10px; color:#666">Tip: render a south-facing bust from your character FBX at 200×250px</div>
+          </div>
+        </div>
+        <div class="field-row"><label>Description</label><textarea id="f-desc" rows="3" oninput="setField('description',this.value)"></textarea></div>
+        <div class="field-row"><label>Voice / Tone</label>
+          <select id="f-voice" onchange="setField('voiceTone',this.value)">
+            <option value="">— unset —</option>
+            <option>gruff</option><option>warm</option><option>scholarly</option><option>cheerful</option>
+            <option>mysterious</option><option>nervous</option><option>boisterous</option>
+            <option>cold</option><option>weary</option><option>pious</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <div class="field-group-title">World Placement</div>
+        <div class="field-row"><label>Home Zone</label><input id="f-zone" type="text" placeholder="zone_highwatch" oninput="setField('homeZone',this.value)"></div>
+        <div class="field-row"><label>Dialogue Key</label><input id="f-dialogue" type="text" oninput="setField('dialogue',this.value)"></div>
+        <div class="field-row"><label>Shop Type</label>
+          <select id="f-shoptype" onchange="setField('shopType',this.value)">
+            <option value="">none</option>
+            <option>general_store</option><option>blacksmith</option><option>magic_shop</option>
+            <option>alchemy</option><option>inn</option><option>stable</option><option>jeweler</option>
+          </select>
+        </div>
+        <div class="field-row"><label>Quest ID</label><input id="f-questid" type="text" oninput="setField('questId',this.value)"></div>
+        <div class="field-row"><label>Faction ID</label><input id="f-faction" type="text" oninput="setField('factionId',this.value)"></div>
+        <div class="field-row"><label>Faction Rep</label><input id="f-frep" type="number" min="-100" max="100" oninput="setField('factionRep',+this.value)"></div>
+      </div>
+    </div>
+
+    <!-- PERSONALITY / TRAITS TAB -->
+    <div class="tab-pane" id="pane-personality">
+      <div class="field-group">
+        <div class="field-group-title">Active Traits <span style="color:#888;font-size:10px">(click to remove)</span></div>
+        <div id="active-traits"></div>
+      </div>
+      <div class="field-group">
+        <div class="field-group-title">Trait Pool <span style="color:#888;font-size:10px">(click to add)</span></div>
+        <div id="trait-pool"></div>
+      </div>
+      <div class="field-group">
+        <div class="field-group-title">Background Archetype</div>
+        <div class="field-row"><label>Archetype</label>
+          <select id="f-arch" onchange="setField('backgroundArchetype',this.value)">
+            <option value="">— none —</option>
+            <option>veteran</option><option>orphan</option><option>noble</option>
+            <option>merchant</option><option>pilgrim</option><option>outcast</option>
+            <option>scholar</option><option>hermit</option><option>wanderer</option>
+            <option>criminal</option><option>farmer</option><option>priest</option>
+            <option>artisan</option><option>soldier</option><option>sailor</option>
+          </select>
+        </div>
+        <div class="field-row"><label>Background</label><textarea id="f-bg" rows="4" placeholder="Write 2-4 sentences of backstory..." oninput="setField('background',this.value)"></textarea></div>
+        <div class="field-row"><label>Secret</label><textarea id="f-secret" rows="2" placeholder="Something they hide from most people..." oninput="setField('secret',this.value)"></textarea></div>
+        <div class="field-row"><label>Motivation</label><input id="f-motivation" type="text" placeholder="What do they want?" oninput="setField('motivation',this.value)"></div>
+        <div class="field-row"><label>Fear</label><input id="f-fear" type="text" placeholder="What do they fear?" oninput="setField('fear',this.value)"></div>
+      </div>
+    </div>
+
+    <!-- INVENTORY TAB -->
+    <div class="tab-pane" id="pane-inventory">
+      <div class="field-group">
+        <div class="field-group-title">Personal Inventory / Shop Stock</div>
+        <table id="inv-table">
+          <thead><tr>
+            <th>Item ID</th><th>Qty</th><th>Price</th><th>Flags</th><th></th>
+          </tr></thead>
+          <tbody id="inv-body"></tbody>
+        </table>
+        <button class="btn btn-secondary btn-sm" style="margin-top:8px" onclick="addInvRow()">+ Add Item</button>
+      </div>
+      <div class="field-group">
+        <div class="field-group-title">Gold / Currency</div>
+        <div class="field-row"><label>Carry Gold</label><input id="f-gold" type="number" min="0" oninput="setField('gold',+this.value)"></div>
+        <div class="field-row"><label>Daily Wage</label><input id="f-wage" type="number" min="0" oninput="setField('dailyWage',+this.value)"></div>
+      </div>
+    </div>
+
+    <!-- RELATIONSHIPS TAB -->
+    <div class="tab-pane" id="pane-relations">
+      <div class="field-group">
+        <div class="field-group-title">NPC Relationships</div>
+        <div id="rel-list"></div>
+        <button class="btn btn-secondary btn-sm" style="margin-top:8px" onclick="addRelationship()">+ Add Relationship</button>
+      </div>
+      <div class="field-group">
+        <div class="field-group-title">Town / Community</div>
+        <div class="field-row"><label>Town Rep</label><input id="f-town-rep" type="number" min="-100" max="100" oninput="setField('townRep',+this.value)"></div>
+        <div class="field-row"><label>Known By All</label><input id="f-famous" type="checkbox" onchange="setField('isFamous',this.checked)"></div>
+        <div class="field-row"><label>Rumor About</label><input id="f-rumor" type="text" placeholder="Rumor text (optional)" oninput="setField('rumor',this.value)"></div>
+      </div>
+    </div>
+
+    <!-- SCHEDULE TAB -->
+    <div class="tab-pane" id="pane-schedule">
+      <div class="field-group">
+        <div class="field-group-title">Sleep Schedule</div>
+        <div class="field-row"><label>Sleep Start</label><input id="f-sleep-s" type="number" min="0" max="23" oninput="setField('sleepStart',+this.value)"></div>
+        <div class="field-row"><label>Sleep End</label><input id="f-sleep-e" type="number" min="0" max="23" oninput="setField('sleepEnd',+this.value)"></div>
+      </div>
+      <div class="field-group">
+        <div class="field-group-title">Work Schedule</div>
+        <div class="field-row"><label>Work Start</label><input id="f-work-s" type="number" min="0" max="23" oninput="setField('workStart',+this.value)"></div>
+        <div class="field-row"><label>Work End</label><input id="f-work-e" type="number" min="0" max="23" oninput="setField('workEnd',+this.value)"></div>
+        <div class="field-row"><label>Days Off</label>
+          <div style="flex:1; display:flex; gap:6px; flex-wrap:wrap">
+            <label style="width:auto;color:#ccc;cursor:pointer"><input type="checkbox" value="0" onchange="toggleDay(0,this.checked)"> Sun</label>
+            <label style="width:auto;color:#ccc;cursor:pointer"><input type="checkbox" value="1" onchange="toggleDay(1,this.checked)"> Mon</label>
+            <label style="width:auto;color:#ccc;cursor:pointer"><input type="checkbox" value="2" onchange="toggleDay(2,this.checked)"> Tue</label>
+            <label style="width:auto;color:#ccc;cursor:pointer"><input type="checkbox" value="3" onchange="toggleDay(3,this.checked)"> Wed</label>
+            <label style="width:auto;color:#ccc;cursor:pointer"><input type="checkbox" value="4" onchange="toggleDay(4,this.checked)"> Thu</label>
+            <label style="width:auto;color:#ccc;cursor:pointer"><input type="checkbox" value="5" onchange="toggleDay(5,this.checked)"> Fri</label>
+            <label style="width:auto;color:#ccc;cursor:pointer"><input type="checkbox" value="6" onchange="toggleDay(6,this.checked)"> Sat</label>
+          </div>
+        </div>
+      </div>
+      <div class="field-group">
+        <div class="field-group-title">Patrol / Wander</div>
+        <div class="field-row"><label>Wander Radius</label><input id="f-wander" type="number" min="0" oninput="setField('wanderRadius',+this.value)" placeholder="0 = stationary"></div>
+        <div class="field-row"><label>Patrol Route</label><input id="f-patrol" type="text" placeholder='[{"x":100,"y":200}, ...]' oninput="setPatrol(this.value)"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- JSON PREVIEW -->
+<div id="json-panel">
+  <h4>JSON PREVIEW</h4>
+  <div id="json-preview"></div>
+  <div id="json-actions">
+    <button class="btn btn-primary" onclick="copyNpcJson()">Copy JSON</button>
+    <button class="btn btn-secondary" onclick="downloadNpcJson()">Download .json</button>
+    <button class="btn btn-danger btn-sm" onclick="deleteNpc()">Delete NPC</button>
+  </div>
+</div>
+
+<input type="file" id="import-file" accept=".json" style="display:none" onchange="handleImport(this)">
+
+<script>
+// ── State ─────────────────────────────────────────────────────────────────────
+let npcs    = {};       // id → npc object
+let current = null;     // currently editing npc id
+
+// ── All available traits ──────────────────────────────────────────────────────
+const ALL_TRAITS = [
+  // Personality
+  'brave','cowardly','friendly','hostile','greedy','generous','paranoid','trusting',
+  'curious','incurious','optimistic','pessimistic','gruff','warm','scholarly','ignorant',
+  'devout','faithless','loyal','treacherous','ambitious','content','mysterious',
+  'humorous','serious','melancholic','boisterous','quiet','impulsive','cautious',
+  // Social
+  'gossip','discreet','flirtatious','formal','informal','nostalgic','forward-thinking',
+  // Work
+  'hardworking','lazy','perfectionist','sloppy','inventive','traditional',
+  // Special
+  'haunted','blessed','cursed','gifted','scarred','charismatic','plain',
+];
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function npc() { return current ? npcs[current] : null; }
+
+function setField(key, val) {
+  const n = npc(); if (!n) return;
+  n[key] = val;
+  refreshJsonPreview();
+}
+
+function makeBlankNpc(id) {
+  return {
+    id,
+    name: 'Unnamed NPC',
+    race: 'human',
+    role: 'civilian',
+    age: 30,
+    gender: '',
+    portrait: '',
+    description: '',
+    voiceTone: '',
+    homeZone: '',
+    dialogue: id,
+    shopType: null,
+    questId: null,
+    factionId: '',
+    factionRep: 0,
+    backgroundArchetype: '',
+    background: '',
+    secret: '',
+    motivation: '',
+    fear: '',
+    traits: [],
+    inventory: [],
+    gold: 0,
+    dailyWage: 0,
+    relationships: [],
+    townRep: 0,
+    isFamous: false,
+    rumor: '',
+    sleepStart: 22,
+    sleepEnd: 6,
+    workStart: 8,
+    workEnd: 20,
+    daysOff: [],
+    wanderRadius: 0,
+    patrolRoute: [],
+  };
+}
+
+// ── NPC list ──────────────────────────────────────────────────────────────────
+function renderList(filter) {
+  const el = document.getElementById('npc-list');
+  el.innerHTML = '';
+  const ids = Object.keys(npcs).filter(id =>
+    !filter || id.toLowerCase().includes(filter) || npcs[id].name.toLowerCase().includes(filter)
+  );
+  for (const id of ids) {
+    const n = npcs[id];
+    const div = document.createElement('div');
+    div.className = 'npc-entry' + (id === current ? ' active' : '');
+    div.innerHTML = `<div>${n.name}</div><div class="npc-race-tag">${n.race||''}${n.role?' · '+n.role:''}</div>`;
+    div.onclick = () => selectNpc(id);
+    el.appendChild(div);
+  }
+}
+function filterList(v) { renderList(v.trim().toLowerCase()); }
+function refreshListEntry() { renderList(''); }
+
+function selectNpc(id) {
+  current = id;
+  renderList('');
+  populateEditor(npcs[id]);
+  document.getElementById('empty-state').style.display = 'none';
+  document.querySelectorAll('.tab-pane').forEach(p => p.style.display = 'none');
+  document.getElementById('pane-identity').style.display = 'block';
+  document.querySelectorAll('.etab').forEach((b,i) => b.classList.toggle('active', i===0));
+}
+
+function createNpc() {
+  const id = 'npc_' + Date.now().toString(36);
+  npcs[id] = makeBlankNpc(id);
+  selectNpc(id);
+}
+
+function deleteNpc() {
+  if (!current || !confirm('Delete ' + (npc()?.name||current) + '?')) return;
+  delete npcs[current];
+  current = null;
+  document.getElementById('empty-state').style.display = '';
+  document.querySelectorAll('.tab-pane').forEach(p => p.style.display = 'none');
+  renderList('');
+  refreshJsonPreview();
+}
+
+// ── Editor population ─────────────────────────────────────────────────────────
+function populateEditor(n) {
+  // Identity
+  document.getElementById('f-id').value       = n.id;
+  document.getElementById('f-name').value     = n.name;
+  document.getElementById('f-race').value     = n.race||'';
+  document.getElementById('f-role').value     = n.role||'';
+  document.getElementById('f-age').value      = n.age||'';
+  document.getElementById('f-gender').value   = n.gender||'';
+  document.getElementById('f-portrait').value = n.portrait||'';
+  document.getElementById('f-desc').value     = n.description||'';
+  document.getElementById('f-voice').value    = n.voiceTone||'';
+  document.getElementById('f-zone').value     = n.homeZone||'';
+  document.getElementById('f-dialogue').value = n.dialogue||n.id;
+  document.getElementById('f-shoptype').value = n.shopType||'';
+  document.getElementById('f-questid').value  = n.questId||'';
+  document.getElementById('f-faction').value  = n.factionId||'';
+  document.getElementById('f-frep').value     = n.factionRep||0;
+  // Personality
+  document.getElementById('f-arch').value       = n.backgroundArchetype||'';
+  document.getElementById('f-bg').value         = n.background||'';
+  document.getElementById('f-secret').value     = n.secret||'';
+  document.getElementById('f-motivation').value = n.motivation||'';
+  document.getElementById('f-fear').value       = n.fear||'';
+  // Inventory
+  document.getElementById('f-gold').value = n.gold||0;
+  document.getElementById('f-wage').value = n.dailyWage||0;
+  // Relations
+  document.getElementById('f-town-rep').value = n.townRep||0;
+  document.getElementById('f-famous').checked = n.isFamous||false;
+  document.getElementById('f-rumor').value    = n.rumor||'';
+  // Schedule
+  document.getElementById('f-sleep-s').value = n.sleepStart??22;
+  document.getElementById('f-sleep-e').value = n.sleepEnd??6;
+  document.getElementById('f-work-s').value  = n.workStart??8;
+  document.getElementById('f-work-e').value  = n.workEnd??20;
+  document.getElementById('f-wander').value  = n.wanderRadius||0;
+  document.getElementById('f-patrol').value  = n.patrolRoute?.length ? JSON.stringify(n.patrolRoute) : '';
+  // Days off checkboxes
+  document.querySelectorAll('[onchange^="toggleDay"]').forEach(cb => {
+    cb.checked = (n.daysOff||[]).includes(+cb.value);
+  });
+
+  updatePortraitPreview();
+  renderTraits();
+  renderInventory();
+  renderRelationships();
+  updateHeader();
+  refreshJsonPreview();
+}
+
+function updateHeader() {
+  const n = npc(); if (!n) return;
+  document.getElementById('editor-title').textContent = n.name || 'Unnamed NPC';
+  document.getElementById('editor-subtitle').textContent =
+    [n.race, n.role, n.homeZone ? 'in ' + n.homeZone : ''].filter(Boolean).join(' · ');
+}
+
+function updatePortraitPreview() {
+  const n = npc();
+  const el = document.getElementById('portrait-preview');
+  if (n?.portrait) {
+    el.innerHTML = `<img src="${n.portrait}" style="width:80px;height:100px;object-fit:cover;border-radius:4px" onerror="this.parentElement.textContent='👤'">`;
+  } else {
+    el.textContent = '👤';
+  }
+}
+
+// ── Traits ────────────────────────────────────────────────────────────────────
+function renderTraits() {
+  const n = npc(); if (!n) return;
+  const active = document.getElementById('active-traits');
+  active.innerHTML = '';
+  if (!n.traits.length) {
+    active.innerHTML = '<span style="color:#555;font-size:11px">No traits selected yet.</span>';
+  }
+  for (const t of n.traits) {
+    const chip = document.createElement('div');
+    chip.className = 'trait-chip selected';
+    chip.innerHTML = t + '<span class="remove" onclick="removeTrait(\''+t+'\')" title="Remove">×</span>';
+    active.appendChild(chip);
+  }
+  // Rebuild pool (exclude active)
+  const pool = document.getElementById('trait-pool');
+  pool.innerHTML = '';
+  for (const t of ALL_TRAITS) {
+    if (n.traits.includes(t)) continue;
+    const opt = document.createElement('div');
+    opt.className = 'trait-option'; opt.textContent = t;
+    opt.onclick = () => addTrait(t);
+    pool.appendChild(opt);
+  }
+}
+
+function addTrait(t) {
+  const n = npc(); if (!n || n.traits.includes(t)) return;
+  n.traits.push(t); renderTraits(); refreshJsonPreview();
+}
+function removeTrait(t) {
+  const n = npc(); if (!n) return;
+  n.traits = n.traits.filter(x => x !== t); renderTraits(); refreshJsonPreview();
+}
+
+// ── Inventory ─────────────────────────────────────────────────────────────────
+function renderInventory() {
+  const n = npc(); if (!n) return;
+  const tbody = document.getElementById('inv-body');
+  tbody.innerHTML = '';
+  for (let i = 0; i < n.inventory.length; i++) {
+    const item = n.inventory[i];
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input type="text" value="${item.itemId||''}" oninput="setInvField(${i},'itemId',this.value)" placeholder="item_id"></td>
+      <td style="width:50px"><input type="number" value="${item.quantity??1}" min="1" oninput="setInvField(${i},'quantity',+this.value)"></td>
+      <td style="width:70px"><input type="number" value="${item.price??0}" min="0" oninput="setInvField(${i},'price',+this.value)"></td>
+      <td style="width:90px">
+        <select onchange="setInvField(${i},'flag',this.value)">
+          <option ${!item.flag?'selected':''} value="">normal</option>
+          <option ${item.flag==='key_item'?'selected':''} value="key_item">key item</option>
+          <option ${item.flag==='quest'?'selected':''} value="quest">quest</option>
+          <option ${item.flag==='stolen'?'selected':''} value="stolen">stolen</option>
+        </select>
+      </td>
+      <td><button class="inv-row-btn" onclick="removeInvRow(${i})">×</button></td>`;
+    tbody.appendChild(tr);
+  }
+}
+
+function addInvRow() {
+  const n = npc(); if (!n) return;
+  n.inventory.push({itemId:'', quantity:1, price:0, flag:''});
+  renderInventory(); refreshJsonPreview();
+}
+function removeInvRow(i) {
+  const n = npc(); if (!n) return;
+  n.inventory.splice(i,1); renderInventory(); refreshJsonPreview();
+}
+function setInvField(i, key, val) {
+  const n = npc(); if (!n) return;
+  n.inventory[i][key] = val; refreshJsonPreview();
+}
+
+// ── Relationships ─────────────────────────────────────────────────────────────
+function renderRelationships() {
+  const n = npc(); if (!n) return;
+  const list = document.getElementById('rel-list');
+  list.innerHTML = '';
+  for (let i = 0; i < n.relationships.length; i++) {
+    const r = n.relationships[i];
+    const cls = 'rel-' + (r.type||'neutral');
+    const card = document.createElement('div');
+    card.className = 'rel-card';
+    card.innerHTML = `
+      <div class="rel-card-header">
+        <span class="rel-type-badge ${cls}">${r.type||'neutral'}</span>
+        <span style="flex:1;font-size:12px">${r.npcId||'?'}</span>
+        <button class="inv-row-btn" onclick="removeRel(${i})">×</button>
+      </div>
+      <div class="field-row" style="margin:0"><label style="width:70px">NPC ID</label><input type="text" value="${r.npcId||''}" oninput="setRelField(${i},'npcId',this.value)"></div>
+      <div class="field-row" style="margin-top:4px"><label style="width:70px">Type</label>
+        <select onchange="setRelField(${i},'type',this.value);renderRelationships()">
+          <option ${r.type==='friend'?'selected':''}>friend</option>
+          <option ${r.type==='rival'?'selected':''}>rival</option>
+          <option ${r.type==='employer'?'selected':''}>employer</option>
+          <option ${r.type==='employee'?'selected':''}>employee</option>
+          <option ${r.type==='family'?'selected':''}>family</option>
+          <option ${r.type==='romantic'?'selected':''}>romantic</option>
+          <option ${r.type==='enemy'?'selected':''}>enemy</option>
+          <option ${r.type==='neutral'||!r.type?'selected':''}>neutral</option>
+        </select>
+      </div>
+      <div class="field-row" style="margin-top:4px"><label style="width:70px">Notes</label><input type="text" value="${r.notes||''}" placeholder="Short note" oninput="setRelField(${i},'notes',this.value)"></div>`;
+    list.appendChild(card);
+  }
+}
+
+function addRelationship() {
+  const n = npc(); if (!n) return;
+  n.relationships.push({npcId:'', type:'neutral', notes:''});
+  renderRelationships(); refreshJsonPreview();
+}
+function removeRel(i) {
+  const n = npc(); if (!n) return;
+  n.relationships.splice(i,1); renderRelationships(); refreshJsonPreview();
+}
+function setRelField(i, key, val) {
+  const n = npc(); if (!n) return;
+  n.relationships[i][key] = val; refreshJsonPreview();
+}
+
+// ── Schedule helpers ──────────────────────────────────────────────────────────
+function toggleDay(day, checked) {
+  const n = npc(); if (!n) return;
+  n.daysOff = n.daysOff || [];
+  if (checked && !n.daysOff.includes(day)) n.daysOff.push(day);
+  else n.daysOff = n.daysOff.filter(d => d !== day);
+  refreshJsonPreview();
+}
+function setPatrol(val) {
+  const n = npc(); if (!n) return;
+  try { n.patrolRoute = val.trim() ? JSON.parse(val) : []; } catch {}
+  refreshJsonPreview();
+}
+
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+function showETab(name) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.style.display='none');
+  document.getElementById('pane-'+name).style.display='block';
+  document.querySelectorAll('.etab').forEach(b => b.classList.remove('active'));
+  const names = ['identity','personality','inventory','relations','schedule'];
+  document.querySelectorAll('.etab')[names.indexOf(name)]?.classList.add('active');
+}
+
+// ── JSON preview ──────────────────────────────────────────────────────────────
+function refreshJsonPreview() {
+  const n = npc();
+  document.getElementById('json-preview').textContent = n
+    ? JSON.stringify(n, null, 2)
+    : '// No NPC selected';
+}
+
+// ── Export / Import ───────────────────────────────────────────────────────────
+function copyNpcJson() {
+  const n = npc(); if (!n) return;
+  navigator.clipboard.writeText(JSON.stringify(n, null, 2));
+}
+function downloadNpcJson() {
+  const n = npc(); if (!n) return;
+  const blob = new Blob([JSON.stringify(n, null, 2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = (n.id||'npc') + '.json'; a.click();
+}
+function exportAll() {
+  const all = Object.values(npcs);
+  const blob = new Blob([JSON.stringify(all, null, 2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'npcs_all.json'; a.click();
+}
+function importAll() { document.getElementById('import-file').click(); }
+function handleImport(input) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      const list = Array.isArray(data) ? data : [data];
+      for (const n of list) { if (n.id) npcs[n.id] = n; }
+      renderList('');
+      if (list.length === 1) selectNpc(list[0].id);
+    } catch(err) { alert('Invalid JSON: ' + err.message); }
+  };
+  reader.readAsText(file); input.value='';
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+renderList('');
+refreshJsonPreview();
+</script>
+</body>
+</html>

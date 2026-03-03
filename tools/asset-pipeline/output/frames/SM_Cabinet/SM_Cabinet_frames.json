@@ -1,0 +1,7 @@
+{
+  "asset": "SM_Cabinet",
+  "type": "prop",
+  "frames": {
+    "SM_Cabinet_default": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Cabinet\\SM_Cabinet_default.png"
+  }
+}

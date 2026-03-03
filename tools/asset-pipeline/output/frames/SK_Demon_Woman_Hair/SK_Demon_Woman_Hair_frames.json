@@ -1,0 +1,10 @@
+{
+  "asset": "SK_Demon_Woman_Hair",
+  "type": "character",
+  "frames": {
+    "SK_Demon_Woman_Hair_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Demon_Woman_Hair\\SK_Demon_Woman_Hair_south.png",
+    "SK_Demon_Woman_Hair_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Demon_Woman_Hair\\SK_Demon_Woman_Hair_west.png",
+    "SK_Demon_Woman_Hair_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Demon_Woman_Hair\\SK_Demon_Woman_Hair_north.png",
+    "SK_Demon_Woman_Hair_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Demon_Woman_Hair\\SK_Demon_Woman_Hair_east.png"
+  }
+}

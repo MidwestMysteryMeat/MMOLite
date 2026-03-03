@@ -1,0 +1,7 @@
+{
+  "asset": "SM_Grass_2",
+  "type": "terrain",
+  "frames": {
+    "SM_Grass_2_default": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Grass_2\\SM_Grass_2_default.png"
+  }
+}

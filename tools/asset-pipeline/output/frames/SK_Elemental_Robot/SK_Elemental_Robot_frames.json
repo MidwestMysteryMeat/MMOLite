@@ -1,0 +1,10 @@
+{
+  "asset": "SK_Elemental_Robot",
+  "type": "character",
+  "frames": {
+    "SK_Elemental_Robot_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Elemental_Robot\\SK_Elemental_Robot_south.png",
+    "SK_Elemental_Robot_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Elemental_Robot\\SK_Elemental_Robot_west.png",
+    "SK_Elemental_Robot_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Elemental_Robot\\SK_Elemental_Robot_north.png",
+    "SK_Elemental_Robot_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Elemental_Robot\\SK_Elemental_Robot_east.png"
+  }
+}

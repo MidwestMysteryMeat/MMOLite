@@ -3,10 +3,13 @@
 
 var rpgData = require('../rpg-data');
 var prison = require('./prison');
+var npcLoader = require('./npc-loader');
+var writingTool = require('./writing-tool-admin');
 
 module.exports = {
   init(io, socket, deps) {
     var { user, state, socketAccountMap, accounts, loot, checkEventRate } = deps;
+    var { updateDialogueNodeState, appendFixtureHistory } = writingTool;
 
     // Per-socket dialogue state
     var npcDialogueState = null; // { npcId, npcName, currentNode, tree }
@@ -61,10 +64,10 @@ module.exports = {
       }
     }
 
-    // Helper: send a dialogue node to the client
-    function sendDialogueNode(npc, node, tree, account) {
+    // Helper: send a dialogue node to the client.
+    // npcMeta is the enriched NPC object (portrait, race, traits, voiceTone, knowledge).
+    function sendDialogueNode(npc, node, tree, account, npcMeta) {
       if (!node) {
-        // End dialogue
         npcDialogueState = null;
         socket.emit('npc_dialogue_end', { npcId: npc.id });
         return;
@@ -76,22 +79,96 @@ module.exports = {
         for (var i = 0; i < node.choices.length; i++) {
           var choice = node.choices[i];
           if (checkCondition(choice.condition, account)) {
-            filteredChoices.push({
-              index: i,
-              label: choice.label,
-            });
+            filteredChoices.push({ index: i, label: choice.label });
           }
         }
       }
 
-      npcDialogueState = { npcId: npc.id, npcName: npc.name, currentNode: node, tree: tree };
+      npcDialogueState = { npcId: npc.id, npcName: npc.name, currentNode: node, tree: tree, npcMeta: npcMeta || null };
 
-      socket.emit('npc_dialogue', {
-        npcId: npc.id,
+      var payload = {
+        npcId:   npc.id,
         npcName: npc.name,
-        text: node.text,
+        text:    node.text,
         choices: filteredChoices,
-      });
+      };
+      if (npcMeta) {
+        if (npcMeta.portrait)                       payload.portrait        = npcMeta.portrait;
+        if (npcMeta.race)                           payload.race            = npcMeta.race;
+        if (npcMeta.traits && npcMeta.traits.length) payload.traits         = npcMeta.traits;
+        if (npcMeta.voiceTone)                      payload.voiceTone       = npcMeta.voiceTone;
+        payload.availableTopics = npcLoader.getAvailableTopics(npcMeta);
+      }
+      socket.emit('npc_dialogue', payload);
+    }
+
+    // Helper: pick and send an authored dialogue node from the writing-tool graph.
+    // State priority: quest_complete → complete, quest_active → active, default → unmet/offered.
+    // Among nodes matching the target state, weighted-random selection (weight field).
+    function sendAuthoredNode(npc, nodeId, authoredGraph, account) {
+      var node = authoredGraph.nodes.find(function(n) { return n.node_id === nodeId; });
+      if (!node) {
+        npcDialogueState = null;
+        socket.emit('npc_dialogue_end', { npcId: npc.id });
+        return;
+      }
+      var outEdges = authoredGraph.edges.filter(function(e) { return e.from_node_id === node.node_id; });
+      var choices  = outEdges.map(function(e) { return { label: e.choice_label || 'Continue', toNodeId: e.to_node_id }; });
+      npcDialogueState = {
+        npcId: npc.id, npcName: npc.name,
+        authored: true, nodeId: node.node_id, graph: authoredGraph,
+        npcMeta: npc,
+        currentNode: null, tree: null,  // unused in authored mode
+      };
+      var payload = {
+        npcId:   npc.id,
+        npcName: npc.name,
+        text:    node.text || '...',
+        choices: choices.map(function(c, i) { return { index: i, label: c.label }; }),
+        _authored: true,
+      };
+      if (npc.portrait) payload.portrait = npc.portrait;
+      if (npc.race)     payload.race     = npc.race;
+      if (npc.voiceTone) payload.voiceTone = npc.voiceTone;
+      payload.availableTopics = npcLoader.getAvailableTopics(npc);
+      socket.emit('npc_dialogue', payload);
+    }
+
+    // Helper: pick a starting authored node by player state.
+    // Returns null if no authored dialogue exists for this NPC.
+    function tryAuthoredDialogue(npc, account) {
+      var authored = writingTool.getAuthoredDialogue(npc.id);
+      if (!authored || !authored.nodes || authored.nodes.length === 0) return false;
+
+      // Determine which states are eligible based on player quest progress
+      var completedQ = (account && account.questProgress && account.questProgress.completed) || [];
+      var activeQ    = (account && account.questProgress && account.questProgress.active)    || [];
+      var npcQuestIds = writingTool.getLinkedQuestsForNpc(npc.id).map(function(q) { return q.quest_id; });
+
+      var targetState = 'unmet';
+      for (var i = 0; i < npcQuestIds.length; i++) {
+        if (completedQ.indexOf(npcQuestIds[i]) !== -1) { targetState = 'complete'; break; }
+        var act = activeQ.find(function(a) { return a.questId === npcQuestIds[i]; });
+        if (act) { targetState = 'active'; break; }
+        targetState = 'offered';
+      }
+
+      // Collect nodes matching targetState, fallback to 'unmet'
+      var eligible = authored.nodes.filter(function(n) { return n.state === targetState; });
+      if (!eligible.length) eligible = authored.nodes.filter(function(n) { return n.state === 'unmet'; });
+      if (!eligible.length) eligible = authored.nodes.slice(0, 1);
+
+      // Weighted random selection
+      var totalWeight = eligible.reduce(function(s, n) { return s + (n.weight || 1); }, 0);
+      var roll = Math.random() * totalWeight;
+      var chosen = eligible[0];
+      for (var j = 0; j < eligible.length; j++) {
+        roll -= (eligible[j].weight || 1);
+        if (roll <= 0) { chosen = eligible[j]; break; }
+      }
+
+      sendAuthoredNode(npc, chosen.node_id, authored, account);
+      return true;
     }
 
     // --- npc_interact: talk to an NPC ---
@@ -113,12 +190,15 @@ module.exports = {
         return;
       }
 
+      // Merge handcrafted JSON data (portrait, traits, knowledge, etc.) into the zone NPC
+      var enriched = npcLoader.enrichNpc(npc);
+
       // Load account for condition checks
       var accKey = socketAccountMap.get(socket.id);
       var account = accKey ? accounts.loadAccount(accKey) : null;
 
       // Guard NPCs enforce karma hostility — refuse entry if karma below threshold
-      if (npc.type === 'guard' && account) {
+      if (enriched.type === 'guard' && account) {
         var karmaVal = typeof account.karma === 'number' ? account.karma : 0;
         // Severe criminal: arrest on sight
         if (karmaVal <= prison.KARMA_ARREST_THRESHOLD) {
@@ -126,8 +206,8 @@ module.exports = {
           prison.arrestPlayer(account, crimeType);
           accounts.saveAccount(account);
           socket.emit('npc_dialogue', {
-            npcId: npc.id,
-            npcName: npc.name,
+            npcId: enriched.id,
+            npcName: enriched.name,
             text: 'Criminal scum! You are under arrest for ' + (prison.CRIME_DEFINITIONS[crimeType] || {}).label + '. Take them away!',
             choices: [{ index: 0, label: '(Submit to arrest)' }],
           });
@@ -142,8 +222,8 @@ module.exports = {
         }
         if (karmaVal <= -30) {
           socket.emit('npc_dialogue', {
-            npcId: npc.id,
-            npcName: npc.name,
+            npcId: enriched.id,
+            npcName: enriched.name,
             text: 'You are not welcome here. Leave before I summon the watch.',
             choices: [{ index: 0, label: '(Back away)' }],
           });
@@ -151,36 +231,43 @@ module.exports = {
         }
       }
 
-      // Check if NPC is sleeping
+      // Check if NPC is sleeping (uses enriched sleepPhases after hours→phases conversion)
       var currentPhase = (state && typeof state.getTimeOfDay === 'function') ? state.getTimeOfDay() : 'day';
-      if (state.isNpcAsleep && state.isNpcAsleep(npc, currentPhase)) {
+      if (state.isNpcAsleep && state.isNpcAsleep(enriched, currentPhase)) {
         socket.emit('npc_dialogue', {
-          npcId: npc.id,
-          npcName: npc.name,
-          text: (npc.name || 'The NPC') + ' is sleeping. Come back during the day.',
+          npcId: enriched.id,
+          npcName: enriched.name,
+          text: (enriched.name || 'The NPC') + ' is sleeping. Come back during the day.',
           choices: [{ index: 0, label: '(Leave quietly)' }],
         });
         return;
       }
 
-      // Look up dialogue tree — check direct npcId first, then npc type for generic NPCs
-      var dialogueTree = null;
-      if (rpgData.NPC_DIALOGUES) {
-        dialogueTree = rpgData.NPC_DIALOGUES[npc.id] || rpgData.NPC_DIALOGUES[npc.type] || null;
-      }
+      // Look up dialogue tree — authored writing-tool content takes priority over static NPC_DIALOGUES
+      var handledByAuthored = tryAuthoredDialogue(enriched, account);
 
-      if (dialogueTree && dialogueTree.start) {
-        // Use dialogue tree system
-        sendDialogueNode(npc, dialogueTree.start, dialogueTree, account);
-      } else {
-        // Fallback: legacy single-line dialog
-        socket.emit('npc_dialogue', {
-          npcId: npc.id,
-          npcName: npc.name,
-          type: npc.type || 'talk',
-          text: npc.dialog || npc.dialogue || '...',
-          choices: [],
-        });
+      if (!handledByAuthored) {
+        var dialogueTree = null;
+        if (rpgData.NPC_DIALOGUES) {
+          dialogueTree = rpgData.NPC_DIALOGUES[enriched.id] || rpgData.NPC_DIALOGUES[enriched.type] || null;
+        }
+
+        if (dialogueTree && dialogueTree.start) {
+          sendDialogueNode(enriched, dialogueTree.start, dialogueTree, account, enriched);
+        } else {
+          // Fallback: single-line dialog with portrait/topics from enriched data
+          var fallback = {
+            npcId:           enriched.id,
+            npcName:         enriched.name,
+            type:            enriched.type || 'talk',
+            text:            enriched.dialog || enriched.dialogue || '...',
+            choices:         [],
+            availableTopics: npcLoader.getAvailableTopics(enriched),
+          };
+          if (enriched.portrait) fallback.portrait = enriched.portrait;
+          if (enriched.race)     fallback.race      = enriched.race;
+          socket.emit('npc_dialogue', fallback);
+        }
       }
 
       // Increment NPC relationship + town reputation on successful interaction
@@ -196,12 +283,58 @@ module.exports = {
           townReputation: account.townReputation[zoneId],
         });
       }
+
+      // Emit writing-tool quest offers/turnins for this NPC
+      var linkedQuests = writingTool.getLinkedQuestsForNpc(enriched.id);
+      if (linkedQuests.length) {
+        var activeQ    = (account && account.questProgress && account.questProgress.active)    || [];
+        var completedQ = (account && account.questProgress && account.questProgress.completed) || [];
+        var questOffers  = [];
+        var questTurnins = [];
+        for (var qi = 0; qi < linkedQuests.length; qi++) {
+          var lq   = linkedQuests[qi];
+          var cond = {};
+          try { cond = JSON.parse(lq.completion_condition || '{}'); } catch (_) {}
+          var targetCount  = cond.count || cond.level || cond.minFloor || 1;
+          var activeEntry  = null;
+          for (var ai = 0; ai < activeQ.length; ai++) {
+            if (activeQ[ai].questId === lq.quest_id) { activeEntry = activeQ[ai]; break; }
+          }
+          if (activeEntry && activeEntry.progress >= activeEntry.targetCount) {
+            questTurnins.push({ questId: lq.quest_id, name: lq.name });
+          } else if (!activeEntry && completedQ.indexOf(lq.quest_id) === -1) {
+            var offer = { questId: lq.quest_id, name: lq.name, description: lq.description || '', type: lq.type || 'fetch', targetCount: targetCount, rewards: {} };
+            try { offer.rewards = JSON.parse(lq.rewards || '{}'); } catch (_) {}
+            questOffers.push(offer);
+          }
+        }
+        if (questOffers.length || questTurnins.length) {
+          socket.emit('npc_quest_offers', { npcId: enriched.id, npcName: enriched.name, offers: questOffers, turnins: questTurnins });
+        }
+      }
     });
 
     // --- npc_dialogue_choice: player selects a dialogue option ---
     socket.on('npc_dialogue_choice', function(data) {
       if (!npcDialogueState) return;
       if (!data || typeof data.choiceIndex !== 'number') return;
+
+      // ── Authored graph traversal ──────────────────────────────────────────
+      if (npcDialogueState.authored) {
+        var currentNodeId = npcDialogueState.nodeId;
+        var graph = npcDialogueState.graph;
+        var outEdges = graph.edges.filter(function(e) { return e.from_node_id === currentNodeId; });
+        var edge = outEdges[data.choiceIndex];
+        var npcRef = { id: npcDialogueState.npcId, name: npcDialogueState.npcName };
+        Object.assign(npcRef, npcDialogueState.npcMeta || {});
+        if (edge && edge.to_node_id) {
+          sendAuthoredNode(npcRef, edge.to_node_id, graph, null);
+        } else {
+          npcDialogueState = null;
+          socket.emit('npc_dialogue_end', { npcId: npcRef.id });
+        }
+        return;
+      }
 
       var node = npcDialogueState.currentNode;
       var tree = npcDialogueState.tree;
@@ -311,7 +444,8 @@ module.exports = {
           { id: npcDialogueState.npcId, name: npcDialogueState.npcName },
           tree[choice.nextNode],
           tree,
-          account
+          account,
+          npcDialogueState.npcMeta
         );
       } else {
         // End dialogue
@@ -319,6 +453,36 @@ module.exports = {
         npcDialogueState = null;
         socket.emit('npc_dialogue_end', { npcId: endNpcId });
       }
+    });
+
+    // --- npc_ask_topic: player asks an NPC about a lore topic ---
+    socket.on('npc_ask_topic', function(data) {
+      if (!data || typeof data.npcId !== 'string' || typeof data.topicId !== 'string') return;
+      if (!npcDialogueState || npcDialogueState.npcId !== data.npcId) return;
+
+      var accKey = socketAccountMap.get(socket.id);
+      var account = accKey ? accounts.loadAccount(accKey) : null;
+
+      var meta = npcDialogueState.npcMeta;
+      if (!meta) {
+        // Enrich on-demand if meta was lost (e.g. tab reconnect during dialogue)
+        var fallbackZoneId = state.playerZones.get(socket.id);
+        var fallbackZone = fallbackZoneId && state.zones.get(fallbackZoneId);
+        if (fallbackZone && fallbackZone.npcs) {
+          var rawNpc = fallbackZone.npcs.find(function(n) { return n.id === data.npcId; });
+          if (rawNpc) meta = npcLoader.enrichNpc(rawNpc);
+        }
+      }
+      if (!meta) return;
+
+      var text = npcLoader.getTopicResponse(meta, data.topicId, account);
+      socket.emit('npc_topic_response', {
+        npcId:    meta.id,
+        npcName:  meta.name,
+        topic:    data.topicId,
+        text:     text,
+        portrait: meta.portrait || null,
+      });
     });
 
     // --- quest_list: get player's active and available quests ---
@@ -370,6 +534,25 @@ module.exports = {
         template = rpgData.WORLD_QUEST_TEMPLATES.find(function(t) { return t.questId === data.questId; });
       }
       if (!template) {
+        // Fall back to writing-tool authored quests
+        var authoredQ = writingTool.getQuestById(data.questId);
+        if (authoredQ) {
+          var qCond = {};
+          try { qCond = JSON.parse(authoredQ.completion_condition || '{}'); } catch (_) {}
+          template = {
+            questId:     authoredQ.quest_id,
+            name:        authoredQ.name,
+            description: authoredQ.description || '',
+            type:        authoredQ.type || 'fetch',
+            target:      { count: qCond.count || qCond.level || qCond.minFloor || 1 },
+            rewards:     {},
+            npcId:       authoredQ.giver_npc_id || null,
+            _authored:   authoredQ,
+          };
+          try { template.rewards = JSON.parse(authoredQ.rewards || '{}'); } catch (_) {}
+        }
+      }
+      if (!template) {
         socket.emit('quest_error', { message: 'Quest not found' });
         return;
       }
@@ -390,13 +573,28 @@ module.exports = {
       });
       accounts.saveAccount(account);
 
+      var targetCount = template.target.count || template.target.level || template.target.biomes || template.target.minFloor || 1;
       socket.emit('quest_accepted', {
-        questId: data.questId,
-        name: template.name,
-        description: template.description,
-        target: template.target,
-        progress: 0,
+        questId:     data.questId,
+        name:        template.name,
+        description: template.description || '',
+        target:      template.target,
+        targetCount: targetCount,
+        progress:    0,
       });
+
+      // Emit quest marker if authored quest has a target zone
+      if (template._authored && template._authored.target_zone_id) {
+        var aq = template._authored;
+        socket.emit('quest_marker_added', {
+          marker: {
+            questId: aq.quest_id,
+            label:   aq.map_marker_label || aq.name,
+            zoneId:  aq.target_zone_id,
+            tier:    aq.reward_tier || 1,
+          },
+        });
+      }
     });
 
     // --- quest_turnin: turn in a completed quest ---
@@ -430,6 +628,13 @@ module.exports = {
       if (rpgData.WORLD_QUEST_TEMPLATES) {
         template = rpgData.WORLD_QUEST_TEMPLATES.find(function(t) { return t.questId === data.questId; });
       }
+      if (!template) {
+        var authoredTurnin = writingTool.getQuestById(data.questId);
+        if (authoredTurnin) {
+          template = { name: authoredTurnin.name, rewards: {} };
+          try { template.rewards = JSON.parse(authoredTurnin.rewards || '{}'); } catch (_) {}
+        }
+      }
 
       // Remove from active
       account.questProgress.active.splice(activeIdx, 1);
@@ -453,6 +658,22 @@ module.exports = {
       }
 
       accounts.saveAccount(account);
+
+      // Update authored dialogue node state and fixture history if applicable
+      var authoredForTurnin = writingTool.getQuestById(data.questId);
+      if (authoredForTurnin) {
+        if (authoredForTurnin.dialogue_node_id) {
+          updateDialogueNodeState(authoredForTurnin.dialogue_node_id, 'complete');
+        }
+        if (authoredForTurnin.fixture_id) {
+          appendFixtureHistory(authoredForTurnin.fixture_id, {
+            type: 'quest_complete',
+            quest_id: data.questId,
+            quest_name: authoredForTurnin.name,
+            player_key: socketAccountMap.get(socket.id) || 'unknown',
+          });
+        }
+      }
 
       socket.emit('quest_turnin_result', {
         questId: data.questId,

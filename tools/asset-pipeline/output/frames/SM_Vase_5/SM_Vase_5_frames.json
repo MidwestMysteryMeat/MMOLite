@@ -1,0 +1,7 @@
+{
+  "asset": "SM_Vase_5",
+  "type": "prop",
+  "frames": {
+    "SM_Vase_5_default": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Vase_5\\SM_Vase_5_default.png"
+  }
+}

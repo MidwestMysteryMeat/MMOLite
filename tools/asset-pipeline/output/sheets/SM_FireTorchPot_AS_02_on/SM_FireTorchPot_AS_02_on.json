@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SM_FireTorchPot_AS_02_on",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SM_FireTorchPot_AS_02_on_00.png"
+  ],
+  "frames": {
+    "SM_FireTorchPot_AS_02_on_east": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 28,
+        "h": 86
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 50,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SM_FireTorchPot_AS_02_on_north": {
+      "sheet": 0,
+      "frame": {
+        "x": 28,
+        "y": 0,
+        "w": 28,
+        "h": 86
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 50,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SM_FireTorchPot_AS_02_on_south": {
+      "sheet": 0,
+      "frame": {
+        "x": 56,
+        "y": 0,
+        "w": 28,
+        "h": 86
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 50,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SM_FireTorchPot_AS_02_on_west": {
+      "sheet": 0,
+      "frame": {
+        "x": 84,
+        "y": 0,
+        "w": 28,
+        "h": 86
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 50,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    }
+  },
+  "animations": {}
+}

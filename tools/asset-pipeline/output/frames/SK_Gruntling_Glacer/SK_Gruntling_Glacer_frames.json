@@ -1,0 +1,10 @@
+{
+  "asset": "SK_Gruntling_Glacer",
+  "type": "character",
+  "frames": {
+    "SK_Gruntling_Glacer_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Gruntling_Glacer\\SK_Gruntling_Glacer_south.png",
+    "SK_Gruntling_Glacer_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Gruntling_Glacer\\SK_Gruntling_Glacer_west.png",
+    "SK_Gruntling_Glacer_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Gruntling_Glacer\\SK_Gruntling_Glacer_north.png",
+    "SK_Gruntling_Glacer_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Gruntling_Glacer\\SK_Gruntling_Glacer_east.png"
+  }
+}

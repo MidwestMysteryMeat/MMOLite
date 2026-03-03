@@ -1,0 +1,7 @@
+{
+  "asset": "SM_ChestCoins_01a",
+  "type": "prop",
+  "frames": {
+    "SM_ChestCoins_01a_default": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_ChestCoins_01a\\SM_ChestCoins_01a_default.png"
+  }
+}

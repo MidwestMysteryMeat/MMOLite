@@ -1,0 +1,7 @@
+{
+  "asset": "SM_Chandelier",
+  "type": "prop",
+  "frames": {
+    "SM_Chandelier_default": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Chandelier\\SM_Chandelier_default.png"
+  }
+}

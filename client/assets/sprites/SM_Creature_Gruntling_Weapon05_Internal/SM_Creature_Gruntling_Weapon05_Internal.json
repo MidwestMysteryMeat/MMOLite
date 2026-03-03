@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SM_Creature_Gruntling_Weapon05_Internal",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SM_Creature_Gruntling_Weapon05_Internal_00.png"
+  ],
+  "frames": {
+    "SM_Creature_Gruntling_Weapon05_Internal_east": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 95,
+        "h": 61
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 0,
+        "y": 40
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SM_Creature_Gruntling_Weapon05_Internal_north": {
+      "sheet": 0,
+      "frame": {
+        "x": 95,
+        "y": 0,
+        "w": 95,
+        "h": 61
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 0,
+        "y": 40
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SM_Creature_Gruntling_Weapon05_Internal_south": {
+      "sheet": 0,
+      "frame": {
+        "x": 190,
+        "y": 0,
+        "w": 95,
+        "h": 61
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 0,
+        "y": 40
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SM_Creature_Gruntling_Weapon05_Internal_west": {
+      "sheet": 0,
+      "frame": {
+        "x": 285,
+        "y": 0,
+        "w": 95,
+        "h": 61
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 0,
+        "y": 40
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    }
+  },
+  "animations": {}
+}

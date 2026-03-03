@@ -1,0 +1,7 @@
+{
+  "asset": "SM_Bed",
+  "type": "prop",
+  "frames": {
+    "SM_Bed_default": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Bed\\SM_Bed_default.png"
+  }
+}

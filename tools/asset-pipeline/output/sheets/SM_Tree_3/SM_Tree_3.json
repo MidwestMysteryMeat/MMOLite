@@ -1,0 +1,32 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SM_Tree_3",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SM_Tree_3_00.png"
+  ],
+  "frames": {
+    "SM_Tree_3_default": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 41,
+        "h": 52
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 11,
+        "y": 5
+      },
+      "source": {
+        "w": 64,
+        "h": 64
+      }
+    }
+  },
+  "animations": {}
+}

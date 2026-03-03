@@ -42,13 +42,17 @@ local function keypressed(key)
     local monsterAttackCooldown = getMonsterAttackCooldown()
     -- NPC Dialogue keyboard: number keys select choices
     if game._npcDialogue.show then
+        if key == "escape" then
+            if game._npcDialogue.topicMode then
+                game._npcDialogue.topicMode = false  -- step back to dialogue, not close
+            else
+                game._npcDialogue.show = false
+            end
+            return
+        end
         local num = tonumber(key)
         if num and num >= 1 and num <= #game._npcDialogue.choices then
             client:emit("npc_dialogue_choice", { choiceIndex = game._npcDialogue.choices[num].index })
-            return
-        end
-        if key == "escape" then
-            game._npcDialogue.show = false
             return
         end
     end
@@ -974,6 +978,14 @@ local function keypressed(key)
                 client:emit("guild_list", {})
             end
         end
+    elseif key == "j" and not chat.active then
+        -- Toggle quest log
+        local wasOpen = ui.showQuestLog
+        game.closeAllPanels()
+        ui.showQuestLog = not wasOpen
+        if ui.showQuestLog and client then
+            client:emit("quest_list", {})
+        end
     elseif key == ";" and not chat.active then
         -- Toggle ascension panel
         local wasOpen = ui.showAscension
@@ -1051,6 +1063,8 @@ local function keypressed(key)
             ui.placementMode = false
             ui.placementType = nil
             ui.placementItemId = nil
+        elseif ui.showQuestLog then
+            ui.showQuestLog = false
         elseif ui.showCompanions then
             ui.showCompanions = false
         elseif ui.showPets then
@@ -1554,14 +1568,25 @@ local function mousepressed(x, y, button)
 
     -- NPC Dialogue click handling
     if game._npcDialogue.show and button == 1 then
-        local W = love.graphics.getWidth()
-        local H = love.graphics.getHeight()
-        local panelW = math.min(600, W - 40)
-        local panelH = 200
+        local dlg    = game._npcDialogue
+        local W      = love.graphics.getWidth()
+        local H      = love.graphics.getHeight()
+        local topics      = (not dlg.topicMode) and dlg.availableTopics or nil
+        local topicCount  = topics and #topics or 0
+        local qOffers   = dlg.questOffers  or {}
+        local qTurnins  = dlg.questTurnins or {}
+        local questCount = #qOffers + #qTurnins
+        local panelW = math.min(640, W - 40)
+        local baseH  = 210
+        local topicH = topicCount > 0 and (20 + topicCount * 22) or 0
+        local questH = questCount  > 0 and (26 + questCount  * 26) or 0
+        local panelH = baseH + topicH + questH
         local panelX = (W - panelW) / 2
         local panelY = H - panelH - 20
-        local choiceY = panelY + 100
-        for i, choice in ipairs(game._npcDialogue.choices) do
+
+        -- Dialogue tree choices
+        local choiceY = panelY + 120
+        for i, choice in ipairs(dlg.choices) do
             local choiceX = panelX + 24
             local choiceW = panelW - 48
             local choiceH = 22
@@ -1571,7 +1596,61 @@ local function mousepressed(x, y, button)
             end
             choiceY = choiceY + 24
         end
-        -- Click outside choices closes dialogue
+
+        -- Topic buttons
+        if topicCount > 0 then
+            local sepY   = panelY + baseH - 16
+            local topicY = sepY + 20
+            for ti, topic in ipairs(topics) do
+                local tx = panelX + 24
+                local tw = panelW - 48
+                local th = 20
+                if x >= tx and x <= tx + tw and y >= topicY and y <= topicY + th then
+                    client:emit("npc_ask_topic", { npcId = dlg.npcId, topicId = topic.id })
+                    return
+                end
+                topicY = topicY + 22
+            end
+        end
+
+        -- Quest offer / turn-in buttons
+        if questCount > 0 then
+            local qSepY  = choiceY + 2
+            local questY = qSepY + 22
+            -- Turn-ins first (order must match drawDialoguePanel)
+            for _, qt in ipairs(qTurnins) do
+                local cx2 = panelX + 24
+                local cw2 = panelW - 48
+                if x >= cx2 and x <= cx2 + cw2 and y >= questY and y <= questY + 22 then
+                    client:emit("quest_turnin", { questId = qt.questId })
+                    return
+                end
+                questY = questY + 26
+            end
+            for _, qo in ipairs(qOffers) do
+                local cx2 = panelX + 24
+                local cw2 = panelW - 48
+                if x >= cx2 and x <= cx2 + cw2 and y >= questY and y <= questY + 22 then
+                    client:emit("quest_accept", { questId = qo.questId, npcId = dlg.questNpcId })
+                    return
+                end
+                questY = questY + 26
+            end
+        end
+
+        -- Topic-mode Back button (Esc also handled in keypressed)
+        if dlg.topicMode then
+            local bx = panelX + 24
+            local by = panelY + panelH - 30
+            local bw = 90
+            local bh = 22
+            if x >= bx - 4 and x <= bx + bw + 4 and y >= by - 2 and y <= by + bh + 4 then
+                dlg.topicMode = false
+                return
+            end
+        end
+
+        -- Click outside panel closes dialogue
         if x < panelX or x > panelX + panelW or y < panelY or y > panelY + panelH then
             game._npcDialogue.show = false
         end

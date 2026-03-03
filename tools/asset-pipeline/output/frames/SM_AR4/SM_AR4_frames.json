@@ -1,0 +1,10 @@
+{
+  "asset": "SM_AR4",
+  "type": "weapon",
+  "frames": {
+    "SM_AR4_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_AR4\\SM_AR4_south.png",
+    "SM_AR4_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_AR4\\SM_AR4_west.png",
+    "SM_AR4_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_AR4\\SM_AR4_north.png",
+    "SM_AR4_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_AR4\\SM_AR4_east.png"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "asset": "SK_Enemy_FrostGiant_Ranged",
+  "type": "character",
+  "frames": {
+    "SK_Enemy_FrostGiant_Ranged_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Enemy_FrostGiant_Ranged\\SK_Enemy_FrostGiant_Ranged_south.png",
+    "SK_Enemy_FrostGiant_Ranged_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Enemy_FrostGiant_Ranged\\SK_Enemy_FrostGiant_Ranged_west.png",
+    "SK_Enemy_FrostGiant_Ranged_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Enemy_FrostGiant_Ranged\\SK_Enemy_FrostGiant_Ranged_north.png",
+    "SK_Enemy_FrostGiant_Ranged_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Enemy_FrostGiant_Ranged\\SK_Enemy_FrostGiant_Ranged_east.png"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SM_ky_cylinder_superLow",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SM_ky_cylinder_superLow_00.png"
+  ],
+  "frames": {
+    "SM_ky_cylinder_superLow_default": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 56,
+        "h": 55
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 4,
+        "y": 9
+      },
+      "source": {
+        "w": 64,
+        "h": 64
+      }
+    }
+  },
+  "animations": {}
+}

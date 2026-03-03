@@ -1,0 +1,7 @@
+{
+  "asset": "SM_Weed",
+  "type": "prop",
+  "frames": {
+    "SM_Weed_default": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Weed\\SM_Weed_default.png"
+  }
+}

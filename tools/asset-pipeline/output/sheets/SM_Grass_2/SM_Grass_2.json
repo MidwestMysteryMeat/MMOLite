@@ -1,0 +1,32 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SM_Grass_2",
+    "max_size": 4096
+  },
+  "sheets": [
+    "SM_Grass_2_00.png"
+  ],
+  "frames": {
+    "SM_Grass_2_default": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 128,
+        "h": 128
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 0,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    }
+  },
+  "animations": {}
+}

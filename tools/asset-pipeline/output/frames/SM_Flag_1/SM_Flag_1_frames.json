@@ -1,0 +1,7 @@
+{
+  "asset": "SM_Flag_1",
+  "type": "prop",
+  "frames": {
+    "SM_Flag_1_default": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Flag_1\\SM_Flag_1_default.png"
+  }
+}

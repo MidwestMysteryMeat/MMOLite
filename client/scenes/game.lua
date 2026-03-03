@@ -25,6 +25,7 @@ local handlerModules = {
     require("scenes.game-handlers.guild"),
     require("scenes.game-handlers.minigame"),
     require("scenes.game-handlers.npc-dialogue"),
+    require("scenes.game-handlers.npc-lore"),
     require("scenes.game-handlers.environment"),
     require("scenes.game-handlers.director"),
     -- Phase C1: simple ctx
@@ -56,6 +57,8 @@ local handlerModules = {
     require("scenes.game-handlers.zone-items"),
     require("scenes.game-handlers.combat-feedback"),
     require("scenes.game-handlers.dungeon-lifecycle"),
+    require("scenes.game-handlers.buildings"),
+    require("scenes.game-handlers.world-inject"),
 }
 
 local cardsDrawModule     = require("scenes.game-draw.cards")
@@ -281,6 +284,7 @@ local ui = {
     showVip = false,
     showRumors = false,
     showEnvironment = false,
+    showQuestLog = false,
 }
 
 -- Knowledge panel state (cached data from server)
@@ -708,7 +712,31 @@ game._raid = {
 game._hoverNpc = nil            -- NPC we're near in town (guild master etc)
 
 -- NPC Dialogue state
-game._npcDialogue = { show = false, npcName = "", text = "", choices = {}, npcId = "" }
+game._npcDialogue = {
+    show            = false,
+    npcId           = "",
+    npcName         = "",
+    text            = "",
+    choices         = {},
+    portrait        = nil,    -- portrait id from handcrafted NPC JSON
+    race            = nil,    -- NPC race string
+    traits          = nil,    -- trait array
+    voiceTone       = nil,
+    availableTopics = nil,    -- { { id, label }, ... }
+    topicMode       = false,  -- true = currently showing a topic response
+    questOffers     = nil,    -- writing-tool quests available to accept
+    questTurnins    = nil,    -- writing-tool quests ready to complete
+    questNpcId      = "",
+}
+
+-- Building entry / deed state
+game._buildingEnter   = nil   -- last building_enter_result payload
+game._buildingDeedInfo = nil  -- last building_deed_info payload
+
+-- Live world-inject state (writing tool pushes)
+game._questMarkers       = {}  -- quest markers for current zone [ {questId, label, x, y, tier, ...} ]
+game._zonePlacedObjects  = {}  -- placed objects injected live (fixture sites)
+game._zoneNpcs           = {}  -- NPCs injected live into this zone
 
 -- Quest log state
 game._questLog = { active = {}, completed = {} }
@@ -1448,6 +1476,7 @@ function game.closeAllPanels()
     ui.showVip = false
     ui.showRumors = false
     ui.showEnvironment = false
+    ui.showQuestLog = false
     resetTradeState()
 end
 
@@ -6148,6 +6177,26 @@ function game.draw()
         game.drawLeviathans()
     end
 
+    -- Draw quest markers in world space (writing-tool authored quest objectives)
+    if game._questMarkers and #game._questMarkers > 0 then
+        local qFont = fonts.small or fonts.chat or love.graphics.getFont()
+        love.graphics.setFont(qFont)
+        local t = love.timer.getTime()
+        for _, qm in ipairs(game._questMarkers) do
+            local mx2, my2 = qm.x, qm.y
+            -- Pulsing diamond marker
+            local pulse = 0.7 + math.sin(t * 3) * 0.3
+            love.graphics.setColor(0.95, 0.85, 0.2, pulse)
+            love.graphics.polygon("fill", mx2, my2 - 10, mx2 + 8, my2, mx2, my2 + 10, mx2 - 8, my2)
+            love.graphics.setColor(1, 1, 1, pulse * 0.6)
+            love.graphics.setLineWidth(1)
+            love.graphics.polygon("line", mx2, my2 - 10, mx2 + 8, my2, mx2, my2 + 10, mx2 - 8, my2)
+            -- Label above marker
+            love.graphics.setColor(1, 0.95, 0.5, 0.9)
+            love.graphics.printf(qm.label or "Quest", mx2 - 60, my2 - 26, 120, "center")
+        end
+    end
+
     -- Draw floating texts (world space)
     game.drawFloatingTexts()
 
@@ -6391,6 +6440,14 @@ function game.draw()
     if ui.showEnvironment then
         game.drawEnvironmentPanel(W, H)
     end
+
+    -- Quest log panel (J key)
+    if ui.showQuestLog then
+        game.drawQuestLog(W, H)
+    end
+
+    -- Quest tracker HUD (always visible when quests are active)
+    game.drawQuestTrackerHUD(W, H)
 
     -- Notifications (guard warnings, durability, etc.)
     game.drawNotifications(W, H)

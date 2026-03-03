@@ -1,0 +1,10 @@
+{
+  "asset": "SK_KA74U_Y",
+  "type": "character",
+  "frames": {
+    "SK_KA74U_Y_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_KA74U_Y\\SK_KA74U_Y_south.png",
+    "SK_KA74U_Y_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_KA74U_Y\\SK_KA74U_Y_west.png",
+    "SK_KA74U_Y_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_KA74U_Y\\SK_KA74U_Y_north.png",
+    "SK_KA74U_Y_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_KA74U_Y\\SK_KA74U_Y_east.png"
+  }
+}

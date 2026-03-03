@@ -1,0 +1,7 @@
+{
+  "asset": "SM_Z_Sphere_01",
+  "type": "prop",
+  "frames": {
+    "SM_Z_Sphere_01_default": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Z_Sphere_01\\SM_Z_Sphere_01_default.png"
+  }
+}

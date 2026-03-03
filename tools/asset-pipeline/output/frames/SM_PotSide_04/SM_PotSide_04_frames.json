@@ -1,0 +1,10 @@
+{
+  "asset": "SM_PotSide_04",
+  "type": "building",
+  "frames": {
+    "SM_PotSide_04_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_PotSide_04\\SM_PotSide_04_south.png",
+    "SM_PotSide_04_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_PotSide_04\\SM_PotSide_04_west.png",
+    "SM_PotSide_04_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_PotSide_04\\SM_PotSide_04_north.png",
+    "SM_PotSide_04_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_PotSide_04\\SM_PotSide_04_east.png"
+  }
+}

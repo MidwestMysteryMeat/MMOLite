@@ -1,0 +1,7 @@
+{
+  "asset": "SM_Railing",
+  "type": "prop",
+  "frames": {
+    "SM_Railing_default": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Railing\\SM_Railing_default.png"
+  }
+}

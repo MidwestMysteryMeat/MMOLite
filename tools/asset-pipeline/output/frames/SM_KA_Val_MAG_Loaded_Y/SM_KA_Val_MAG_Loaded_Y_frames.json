@@ -1,0 +1,10 @@
+{
+  "asset": "SM_KA_Val_MAG_Loaded_Y",
+  "type": "weapon",
+  "frames": {
+    "SM_KA_Val_MAG_Loaded_Y_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_KA_Val_MAG_Loaded_Y\\SM_KA_Val_MAG_Loaded_Y_south.png",
+    "SM_KA_Val_MAG_Loaded_Y_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_KA_Val_MAG_Loaded_Y\\SM_KA_Val_MAG_Loaded_Y_west.png",
+    "SM_KA_Val_MAG_Loaded_Y_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_KA_Val_MAG_Loaded_Y\\SM_KA_Val_MAG_Loaded_Y_north.png",
+    "SM_KA_Val_MAG_Loaded_Y_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_KA_Val_MAG_Loaded_Y\\SM_KA_Val_MAG_Loaded_Y_east.png"
+  }
+}

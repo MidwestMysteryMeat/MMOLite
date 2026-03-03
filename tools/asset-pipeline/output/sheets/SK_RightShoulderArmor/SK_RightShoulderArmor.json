@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SK_RightShoulderArmor",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SK_RightShoulderArmor_00.png"
+  ],
+  "frames": {
+    "SK_RightShoulderArmor_east": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 128,
+        "h": 128
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 0,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_RightShoulderArmor_north": {
+      "sheet": 0,
+      "frame": {
+        "x": 128,
+        "y": 0,
+        "w": 128,
+        "h": 128
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 0,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_RightShoulderArmor_south": {
+      "sheet": 0,
+      "frame": {
+        "x": 256,
+        "y": 0,
+        "w": 128,
+        "h": 128
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 0,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_RightShoulderArmor_west": {
+      "sheet": 0,
+      "frame": {
+        "x": 384,
+        "y": 0,
+        "w": 128,
+        "h": 128
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 0,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    }
+  },
+  "animations": {}
+}

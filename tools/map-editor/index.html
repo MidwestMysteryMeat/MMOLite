@@ -22,6 +22,15 @@ body { background: #1a1a2e; color: #e0e0e0; font-family: monospace; display: fle
 .palette-type { font-size: 10px; color: #888; }
 .section-header { font-size: 10px; color: #e2b96f; text-transform: uppercase; letter-spacing: 1px; margin: 10px 0 4px; padding-bottom: 3px; border-bottom: 1px solid #333; }
 
+#asset-filter-bar { display:flex; flex-direction:column; gap:4px; padding:6px 0 4px; }
+#asset-search { width:100%; background:#0d1b2e; border:1px solid #333; color:#eee; padding:4px 8px; border-radius:3px; font-family:monospace; font-size:11px; }
+#asset-search:focus { outline:none; border-color:#4a90d9; }
+#type-tabs { display:flex; flex-wrap:wrap; gap:3px; }
+.type-tab { padding:3px 7px; background:#1a2a44; border:1px solid #2a3a5a; color:#999; cursor:pointer; border-radius:3px; font-size:10px; font-family:monospace; }
+.type-tab:hover { background:#2a3a5a; color:#ccc; }
+.type-tab.active { background:#0f3a5c; border-color:#e2b96f; color:#e2b96f; }
+canvas.palette-thumb { width:36px; height:36px; background:#1a1a3a; border-radius:3px; flex-shrink:0; }
+
 .tile-row { display: flex; flex-wrap: wrap; gap: 4px; padding: 4px 0; }
 .tile-swatch { width: 46px; height: 46px; border-radius: 4px; cursor: pointer; border: 2px solid transparent; position: relative; display: flex; align-items: center; justify-content: center; }
 .tile-swatch:hover { border-color: #aaa !important; }
@@ -80,14 +89,22 @@ textarea#json-out { width: 100%; height: 300px; background: #0d1b2e; color: #7fd
       <div class="section-header">Tiles (T)</div>
       <div class="tile-row" id="tile-palette"></div>
 
-      <div class="section-header">Buildings</div>
-      <div id="palette-buildings"></div>
-      <div class="section-header">Props — Town</div>
-      <div id="palette-props"></div>
-      <div class="section-header">Props — Dungeon</div>
-      <div id="palette-dungeon"></div>
-      <div class="section-header">NPCs</div>
-      <div id="palette-npcs"></div>
+      <div id="asset-filter-bar">
+        <div style="display:flex;gap:4px;align-items:center">
+          <input id="asset-search" placeholder="Search assets…" oninput="filterPalette(this.value)" style="flex:1">
+          <button class="type-tab active" id="btn-hide-parts" onclick="toggleComponents()" title="Hide modular sub-parts">Parts</button>
+        </div>
+        <div id="type-tabs">
+          <button class="type-tab active" data-type="all"       onclick="setTypeFilter('all')">All</button>
+          <button class="type-tab" data-type="building"         onclick="setTypeFilter('building')">Building</button>
+          <button class="type-tab" data-type="character"        onclick="setTypeFilter('character')">Character</button>
+          <button class="type-tab" data-type="weapon"           onclick="setTypeFilter('weapon')">Weapon</button>
+          <button class="type-tab" data-type="prop"             onclick="setTypeFilter('prop')">Prop</button>
+          <button class="type-tab" data-type="item"             onclick="setTypeFilter('item')">Item</button>
+          <button class="type-tab" data-type="npc"              onclick="setTypeFilter('npc')">NPC</button>
+        </div>
+      </div>
+      <div id="palette-list"></div>
       <div style="margin-top:10px">
         <button class="tool-btn" style="width:100%" onclick="loadSpriteIndex()">↺ Reload sprite_index.json</button>
       </div>
@@ -191,7 +208,7 @@ textarea#json-out { width: 100%; height: 300px; background: #0d1b2e; color: #7fd
         <div class="prop-row"><label>Height (px)</label><input id="m-h" type="number" value="2048" oninput="resizeMap(mapMeta.width,+this.value)"></div>
         <div class="prop-row"><label>Tile / Grid</label><input id="m-grid" type="number" value="64" oninput="GRID=+this.value;redraw()"></div>
         <div class="prop-row"><label>Show Grid</label><input type="checkbox" checked onchange="SHOW_GRID=this.checked;redraw()"></div>
-        <div class="prop-row"><label>Show Iso Lines</label><input type="checkbox" checked onchange="SHOW_ISO=this.checked;redraw()"></div>
+        <div class="prop-row"><label>Show ISO Grid</label><input type="checkbox" checked onchange="SHOW_ISO=this.checked;redraw()"></div>
 
         <div class="section-header" style="margin-top:10px">Layers</div>
         <div id="layer-list">
@@ -218,12 +235,14 @@ textarea#json-out { width: 100%; height: 300px; background: #0d1b2e; color: #7fd
 <div id="main">
   <div id="toolbar">
     <button class="tool-btn active" id="tool-place"  onclick="setTool('place')">Place (P)</button>
-    <button class="tool-btn"        id="tool-select" onclick="setTool('select')">Select (S)</button>
-    <button class="tool-btn"        id="tool-delete" onclick="setTool('delete')">Delete (D)</button>
+    <button class="tool-btn"        id="tool-select" onclick="setTool('select')">Select (E)</button>
+    <button class="tool-btn"        id="tool-delete" onclick="setTool('delete')">Delete (X)</button>
     <button class="tool-btn"        id="tool-tile"   onclick="setTool('tile')">Tile (T)</button>
     <button class="tool-btn"        id="tool-connect" onclick="setTool('connect')">Connect (C)</button>
     <div class="tool-sep"></div>
-    <button class="tool-btn" id="snap-btn" onclick="snapToGrid=!snapToGrid;this.classList.toggle('active')" class="active">Snap</button>
+    <button class="tool-btn active" id="snap-btn" onclick="snapToGrid=!snapToGrid;this.classList.toggle('active')">Snap</button>
+    <button class="tool-btn" id="snap-half-btn" onclick="toggleHalfSnap()" title="Half-grid snap (32px)">½</button>
+    <button class="tool-btn active" id="iso-snap-btn" onclick="toggleIsoSnap()" title="Snap tiles to isometric diamond grid">ISO</button>
     <button class="tool-btn" onclick="zoomIn()">+</button>
     <button class="tool-btn" onclick="zoomOut()">−</button>
     <button class="tool-btn" onclick="resetView()">Reset</button>
@@ -254,7 +273,8 @@ textarea#json-out { width: 100%; height: 300px; background: #0d1b2e; color: #7fd
 <script>
 // ── State ─────────────────────────────────────────────────────────────────────
 let objects     = [];
-let tiles       = [];        // sparse flat array, idx = ty*tileCountX()+tx
+let isoSnap     = true;
+let tiles       = {};        // dict keyed by "wx,wy" (canvas-centred world coords)
 let connections = [];
 let layers      = [
   {visible: true},   // 0: Ground Deco
@@ -264,9 +284,15 @@ let layers      = [
 let selected    = null;      // {kind: 'object'|'connection', idx}
 let palette     = [];
 let curAsset    = null;
-let curTile     = 'grass';
+let curDir      = 'south';
+const DIRS      = ['south', 'east', 'north', 'west'];
+let curTile       = 'grass';
+let curTypeFilter  = 'all';
+let curSearch      = '';
+let hideComponents = true;
 let tool        = 'place';
 let snapToGrid  = true;
+let snapDiv     = 1;   // 1=full grid, 2=half grid
 let tilePainting = false;
 let GRID        = 64;
 let SHOW_GRID   = true;
@@ -295,10 +321,23 @@ resizeCanvas();
 function screenToWorld(sx, sy) {
   return {x:(sx - cv.width/2 - cam.x)/cam.zoom, y:(sy - cv.height/2 - cam.y)/cam.zoom};
 }
-function snap(v) { return snapToGrid ? Math.round(v/GRID)*GRID : Math.round(v); }
-function tileCountX() { return Math.ceil(mapMeta.width  / GRID); }
-function tileCountY() { return Math.ceil(mapMeta.height / GRID); }
-function tileIdx(tx, ty) { return ty * tileCountX() + tx; }
+function snap(v) {
+  if (!snapToGrid) return Math.round(v);
+  const g = GRID / snapDiv;
+  return Math.round(v / g) * g;
+}
+function snapPos(wx, wy) {
+  if (!snapToGrid) return {x: Math.round(wx), y: Math.round(wy)};
+  if (isoSnap) {
+    const i = (wx + 2 * wy) / GRID;
+    const j = (2 * wy - wx) / GRID;
+    const ri = Math.round(i), rj = Math.round(j);
+    return {x: (ri - rj) * GRID / 2, y: (ri + rj) * GRID / 4};
+  }
+  const g = GRID / snapDiv;
+  return {x: Math.round(wx / g) * g, y: Math.round(wy / g) * g};
+}
+function tileKey(wx, wy) { return wx + ',' + wy; }
 
 // ── Tile palette data ─────────────────────────────────────────────────────────
 const TILE_META = {
@@ -342,10 +381,12 @@ function selectTile(type) {
   document.getElementById('status').textContent = type === 'erase' ? 'Erasing tiles' : 'Painting: ' + type;
 }
 
-function paintTile(mx, my) {
-  const tx = Math.floor(mx / GRID), ty = Math.floor(my / GRID);
-  if (tx < 0 || ty < 0 || tx >= tileCountX() || ty >= tileCountY()) return;
-  tiles[tileIdx(tx, ty)] = curTile === 'erase' ? null : {type: curTile};
+function paintTile(wx, wy) {
+  const hw = mapMeta.width / 2, hh = mapMeta.height / 2;
+  if (wx < -hw || wx > hw || wy < -hh || wy > hh) return;
+  const key = tileKey(wx, wy);
+  if (curTile === 'erase') delete tiles[key];
+  else tiles[key] = {type: curTile};
   redraw();
 }
 
@@ -402,33 +443,111 @@ function getPlaceholderPalette() {
   };
 }
 
+function isComponentAsset(id, allIds) {
+  const parts = id.split('_');
+  if (parts.length < 3) return false;
+  const prefix = parts.slice(0, -1).join('_');
+  let siblings = 0;
+  for (const other of allIds) {
+    if (other !== id && other.startsWith(prefix + '_')) siblings++;
+  }
+  return siblings >= 2;
+}
+
 function buildPalette(index) {
   palette = [];
-  const byType = {building:[], prop:[], dungeon:[], npc:[]};
   for (const [id, data] of Object.entries(index)) {
-    const entry = {id, ...data};
-    palette.push(entry);
-    if (data.category === 'dungeon') byType.dungeon.push(entry);
-    else (byType[data.type] || byType.prop).push(entry);
+    palette.push({id, ...data});
   }
-  const render = (cid, items) => {
-    const cont = document.getElementById(cid); if (!cont) return;
-    cont.innerHTML = '';
-    for (const item of items) {
-      const el = document.createElement('div');
-      el.className = 'palette-item'; el.dataset.id = item.id;
-      const thumb = item.sheets?.[0]
-        ? `<img class="palette-thumb" src="../../client/assets/sprites/${item.id}/${item.sheets[0]}">`
-        : `<div class="palette-thumb">▦</div>`;
-      el.innerHTML = thumb + `<div><div class="palette-name">${item.id}</div><div class="palette-type">${item.category||item.type||'prop'}</div></div>`;
-      el.onclick = () => selectPaletteItem(item, el);
-      cont.appendChild(el);
-    }
-  };
-  render('palette-buildings', byType.building);
-  render('palette-props',     byType.prop);
-  render('palette-dungeon',   byType.dungeon);
-  render('palette-npcs',      byType.npc);
+  const allIds = palette.map(p => p.id);
+  for (const entry of palette) {
+    entry._isComponent = isComponentAsset(entry.id, allIds);
+  }
+  renderPalette();
+  for (const entry of palette) {
+    if (entry.sheets?.length) loadSpriteForAsset(entry.id);
+  }
+}
+
+function setTypeFilter(type) {
+  curTypeFilter = type;
+  document.querySelectorAll('.type-tab').forEach(b => b.classList.toggle('active', b.dataset.type === type));
+  renderPalette();
+}
+
+function filterPalette(val) {
+  curSearch = (val || '').toLowerCase();
+  renderPalette();
+}
+
+function toggleHalfSnap() {
+  snapDiv = snapDiv === 1 ? 2 : 1;
+  document.getElementById('snap-half-btn').classList.toggle('active', snapDiv === 2);
+  document.getElementById('status').textContent = snapDiv === 2
+    ? 'Snap: ½ grid (32px) — good for floor tile rows'
+    : 'Snap: full grid (64px)';
+}
+
+function toggleIsoSnap() {
+  isoSnap = !isoSnap;
+  document.getElementById('iso-snap-btn').classList.toggle('active', isoSnap);
+  document.getElementById('status').textContent = isoSnap ? 'Tile snap: ISO diamond grid' : 'Tile snap: Cartesian';
+}
+
+function toggleComponents() {
+  hideComponents = !hideComponents;
+  document.getElementById('btn-hide-parts').classList.toggle('active', hideComponents);
+  renderPalette();
+}
+
+function renderPalette() {
+  const list = document.getElementById('palette-list');
+  if (!list) return;
+  list.innerHTML = '';
+  const q = curSearch;
+  const filtered = palette.filter(item => {
+    if (hideComponents && item._isComponent) return false;
+    if (curTypeFilter !== 'all' && item.type !== curTypeFilter) return false;
+    if (q && !item.id.toLowerCase().includes(q)) return false;
+    return true;
+  });
+  if (!filtered.length) {
+    list.innerHTML = '<div style="color:#666;font-size:11px;padding:8px 4px">No assets found.</div>';
+    return;
+  }
+  for (const item of filtered) {
+    const el = document.createElement('div');
+    el.className = 'palette-item'; el.dataset.id = item.id;
+    const canvas = document.createElement('canvas');
+    canvas.className = 'palette-thumb'; canvas.width = 36; canvas.height = 36;
+    const info = document.createElement('div');
+    info.innerHTML = `<div class="palette-name">${item.id}</div><div class="palette-type">${item.type||'prop'}</div>`;
+    el.appendChild(canvas); el.appendChild(info);
+    el.onclick = () => selectPaletteItem(item, el);
+    list.appendChild(el);
+    if (spriteCache[item.id]?.manifest) drawPaletteThumb(item.id, canvas);
+  }
+}
+
+function drawPaletteThumb(assetId, canvas) {
+  const c = spriteCache[assetId];
+  if (!c?.manifest?.frames || !c.images) return;
+  const frames = c.manifest.frames;
+  const frameKey = (`${assetId}_south` in frames)   ? `${assetId}_south`
+    : (`${assetId}_default` in frames) ? `${assetId}_default`
+    : Object.keys(frames)[0];
+  if (!frameKey) return;
+  const fd = frames[frameKey];
+  if (!fd) return;
+  const img = c.images[fd.sheet];
+  if (!img) return;
+  const tc  = canvas.getContext('2d');
+  tc.clearRect(0, 0, 36, 36);
+  const pad   = c.manifest.meta?.padding || 1.15;
+  const scale = Math.min((36 * pad) / fd.source.w, (36 * pad) / fd.source.h) * 0.85;
+  const dw = fd.frame.w * scale, dh = fd.frame.h * scale;
+  tc.drawImage(img, fd.frame.x, fd.frame.y, fd.frame.w, fd.frame.h,
+    (36 - dw) / 2, (36 - dh) / 2, dw, dh);
 }
 
 function selectPaletteItem(item, el) {
@@ -443,7 +562,7 @@ function selectPaletteItem(item, el) {
 function snapshot() {
   return {
     objects:     JSON.parse(JSON.stringify(objects)),
-    tiles:       [...tiles],
+    tiles:       Object.assign({}, tiles),
     connections: JSON.parse(JSON.stringify(connections)),
   };
 }
@@ -470,6 +589,71 @@ function updateUndoRedoBtns() {
   document.getElementById('btn-redo').textContent = `Redo (${future.length})`;
 }
 
+// ── Sprite cache ──────────────────────────────────────────────────────────────
+const spriteCache = {};  // assetId → { manifest, images: [HTMLImageElement, ...], loading }
+
+async function loadSpriteForAsset(assetId) {
+  if (spriteCache[assetId]) return;
+  spriteCache[assetId] = { loading: true, manifest: null, images: [] };
+  try {
+    const base = `../../client/assets/sprites/${assetId}`;
+    const r = await fetch(`${base}/${assetId}.json`);
+    if (!r.ok) return;
+    const manifest = await r.json();
+    spriteCache[assetId].manifest = manifest;
+    spriteCache[assetId].images = await Promise.all(
+      manifest.sheets.map(sheet => new Promise(res => {
+        const img = new Image();
+        img.onload  = () => res(img);
+        img.onerror = () => res(null);
+        img.src = `${base}/${sheet}`;
+      }))
+    );
+    spriteCache[assetId].loading = false;
+    redraw();
+    const thumbEl = document.querySelector(`.palette-item[data-id="${assetId}"] canvas.palette-thumb`);
+    if (thumbEl) drawPaletteThumb(assetId, thumbEl);
+  } catch(e) {
+    spriteCache[assetId].loading = false;
+  }
+}
+
+function drawSprite(assetId, dir, x, y, scale, isSel) {
+  const c = spriteCache[assetId];
+  if (!c || c.loading || !c.manifest) return false;
+
+  const frames   = c.manifest.frames;
+  const wanted   = `${assetId}_${dir || 'south'}`;
+  const fd = frames[wanted]
+          || frames[`${assetId}_default`]
+          || frames[Object.keys(frames)[0]];
+  if (!fd) return false;
+
+  const img = c.images[fd.sheet];
+  if (!img) return false;
+
+  // Scale sprite so the rendered content fills exactly GRID pixels wide.
+  // Sprites were rendered with padding_factor breathing room, so we scale
+  // by (srcW / padding) → content width = GRID, not (srcW) → content = GRID/padding.
+  const srcW  = fd.source.w, srcH = fd.source.h;
+  const pad   = c.manifest.meta?.padding || 1.15;
+  const ratio = (GRID * (scale || 1) * pad) / srcW;
+  const drawW    = fd.frame.w * ratio;
+  const drawH    = fd.frame.h * ratio;
+  // Anchor: bottom-center of the source quad lands at (x, y)
+  const drawX    = x - (fd.offset.x + fd.frame.w / 2) * ratio;
+  const drawY    = y - (fd.offset.y + fd.frame.h)     * ratio;
+
+  if (isSel) {
+    ctx.save();
+    ctx.shadowColor  = '#e2b96f';
+    ctx.shadowBlur   = 12 / cam.zoom;
+  }
+  ctx.drawImage(img, fd.frame.x, fd.frame.y, fd.frame.w, fd.frame.h, drawX, drawY, drawW, drawH);
+  if (isSel) ctx.restore();
+  return true;
+}
+
 // ── Rendering ─────────────────────────────────────────────────────────────────
 const ASSET_COLORS = {building:'#4a7a9b', prop:'#5a8a5a', npc:'#9b7a4a', unknown:'#666'};
 const CONN_ARROWS  = {north:'▲', south:'▼', east:'▶', west:'◀'};
@@ -487,7 +671,7 @@ function redraw() {
 
   drawTileLayer();
   if (SHOW_GRID) drawGrid();
-  if (SHOW_ISO)  drawIsoLines();
+  if (SHOW_ISO)  drawIsoGrid();
 
   // Sort all objects by layer then depth
   const tagged = objects.map((o,i) => ({...o, _idx:i}))
@@ -506,25 +690,21 @@ function redraw() {
   ctx.restore();
   drawMinimap();
   document.getElementById('obj-count').textContent =
-    objects.length + ' obj, ' + tiles.filter(Boolean).length + ' tiles, ' + connections.length + ' conn';
+    objects.length + ' obj, ' + Object.keys(tiles).length + ' tiles, ' + connections.length + ' conn';
 }
 
 function drawTileLayer() {
   const hw = GRID/2, hh = GRID/4;
-  for (let ty = 0; ty < tileCountY(); ty++) {
-    for (let tx = 0; tx < tileCountX(); tx++) {
-      const tile = tiles[tileIdx(tx, ty)];
-      if (!tile) continue;
-      const meta = TILE_META[tile.type] || {color:'#333'};
-      const wx = tx*GRID - mapMeta.width/2  + GRID/2;
-      const wy = ty*GRID - mapMeta.height/2 + GRID/2;
-      ctx.fillStyle = meta.color;
-      ctx.beginPath();
-      ctx.moveTo(wx, wy-hh); ctx.lineTo(wx+hw, wy);
-      ctx.lineTo(wx, wy+hh); ctx.lineTo(wx-hw, wy);
-      ctx.closePath(); ctx.fill();
-      ctx.strokeStyle = 'rgba(0,0,0,0.15)'; ctx.lineWidth = 0.5; ctx.stroke();
-    }
+  for (const [key, tile] of Object.entries(tiles)) {
+    if (!tile) continue;
+    const [wx, wy] = key.split(',').map(Number);
+    const meta = TILE_META[tile.type] || {color:'#333'};
+    ctx.fillStyle = meta.color;
+    ctx.beginPath();
+    ctx.moveTo(wx, wy-hh); ctx.lineTo(wx+hw, wy);
+    ctx.lineTo(wx, wy+hh); ctx.lineTo(wx-hw, wy);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.15)'; ctx.lineWidth = 0.5; ctx.stroke();
   }
 }
 
@@ -537,53 +717,62 @@ function drawGrid() {
   ctx.strokeRect(-hw, -hh, mapMeta.width, mapMeta.height);
 }
 
-function drawIsoLines() {
-  ctx.strokeStyle = 'rgba(100,180,255,0.04)'; ctx.lineWidth = 0.5;
-  const hw = mapMeta.width/2, hh = mapMeta.height/2;
-  for (let d = -mapMeta.width; d <= mapMeta.width; d += GRID) {
-    ctx.beginPath(); ctx.moveTo(-hw, d-hw); ctx.lineTo(hw, d+hw); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(-hw,-d+hw); ctx.lineTo(hw,-d-hw); ctx.stroke();
+function drawIsoGrid() {
+  ctx.strokeStyle = 'rgba(100,180,255,0.05)'; ctx.lineWidth = 0.5;
+  const hw = mapMeta.width / 2, hh = mapMeta.height / 2;
+  const N = Math.ceil((hw + hh * 2) / (GRID / 2)) + 2;
+  for (let n = -N; n <= N; n++) {
+    const b = n * GRID / 2;
+    // j=const iso lines, slope +½: y = x/2 + b
+    ctx.beginPath(); ctx.moveTo(-hw, -hw/2 + b); ctx.lineTo(hw, hw/2 + b); ctx.stroke();
+    // i=const iso lines, slope -½: y = -x/2 + b
+    ctx.beginPath(); ctx.moveTo(-hw, hw/2 + b); ctx.lineTo(hw, -hw/2 + b); ctx.stroke();
   }
 }
 
 function drawObject(obj, isSel) {
   const x = obj.x - mapMeta.width/2, y = obj.y - mapMeta.height/2;
-  const type  = palette.find(p => p.id===obj.asset)?.type || 'unknown';
-  const color = ASSET_COLORS[type] || '#666';
-  const s     = (obj.scale||1) * GRID;
+  const s = (obj.scale||1) * GRID;
 
-  // Shadow
-  ctx.fillStyle = 'rgba(0,0,0,0.22)';
-  ctx.beginPath(); ctx.ellipse(x, y+s*0.15, s*0.42, s*0.14, 0, 0, Math.PI*2); ctx.fill();
+  // Try sprite first
+  const spriteDrawn = drawSprite(obj.asset, obj.dir, x, y, obj.scale||1, isSel);
 
-  // Body
-  ctx.fillStyle   = isSel ? '#1a5a8c' : color;
-  ctx.strokeStyle = isSel ? '#e2b96f' : 'rgba(255,255,255,0.18)';
-  ctx.lineWidth   = isSel ? 2 : 0.5;
-  const hw2 = s*0.34, hh2 = s*0.58;
-  ctx.beginPath(); ctx.roundRect(x-hw2, y-hh2, hw2*2, hh2, 4); ctx.fill(); ctx.stroke();
+  if (!spriteDrawn) {
+    // Fallback: colored box while sprite loads or for placeholder assets
+    const type  = palette.find(p => p.id===obj.asset)?.type || 'unknown';
+    const color = ASSET_COLORS[type] || '#666';
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    ctx.beginPath(); ctx.ellipse(x, y+s*0.15, s*0.42, s*0.14, 0, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle   = isSel ? '#1a5a8c' : color;
+    ctx.strokeStyle = isSel ? '#e2b96f' : 'rgba(255,255,255,0.18)';
+    ctx.lineWidth   = isSel ? 2 : 0.5;
+    const hw2 = s*0.34, hh2 = s*0.58;
+    ctx.beginPath(); ctx.roundRect(x-hw2, y-hh2, hw2*2, hh2, 4); ctx.fill(); ctx.stroke();
+  }
 
-  // Footprint diamond
+  // Footprint diamond (always shown — helps with placement precision)
+  const fw = s*0.38, fh = s*0.14;
   ctx.strokeStyle = isSel ? 'rgba(226,185,111,0.55)' : 'rgba(255,255,255,0.07)';
   ctx.lineWidth = 0.5;
-  const fw = s*0.38, fh = s*0.14;
   ctx.beginPath();
   ctx.moveTo(x, y+s*0.1-fh); ctx.lineTo(x+fw, y+s*0.1);
   ctx.lineTo(x, y+s*0.1+fh); ctx.lineTo(x-fw, y+s*0.1);
   ctx.closePath(); ctx.stroke();
 
-  // Label
-  ctx.fillStyle = 'rgba(255,255,255,0.85)';
-  ctx.font = `${Math.max(8,GRID*0.15)}px monospace`;
-  ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-  ctx.fillText(obj.label || obj.asset || '?', x, y-hh2-2);
+  // Label (only when no sprite, or when selected)
+  if (!spriteDrawn || isSel) {
+    const hw2 = s*0.34, hh2 = s*0.58;
+    ctx.fillStyle = isSel ? '#e2b96f' : 'rgba(255,255,255,0.75)';
+    ctx.font = `${Math.max(8,GRID*0.15)}px monospace`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    ctx.fillText(obj.label || obj.asset || '?', x, y-hh2-2);
+    if (obj.enterable) { ctx.fillStyle='#e2b96f'; ctx.fillText('⬆', x, y+s*0.1+fh+12); }
+  }
 
-  // Enterable marker
-  if (obj.enterable) { ctx.fillStyle='#e2b96f'; ctx.fillText('⬆', x, y+s*0.1+fh+12); }
-
-  // Layer badge (only non-default layers)
+  // Layer badge
   const layer = obj.layer??1;
   if (layer !== 1) {
+    const hw2 = s*0.34, hh2 = s*0.58;
     ctx.fillStyle = LAYER_COLORS[layer] || '#888';
     ctx.font = '9px monospace'; ctx.textAlign = 'right';
     ctx.fillText(layer===0?'G':'O', x+hw2-2, y-hh2+10);
@@ -612,12 +801,13 @@ function drawMinimap() {
   const mw = mm.width = 160, mh = mm.height = 120;
   mctx.clearRect(0,0,mw,mh); mctx.fillStyle='#111'; mctx.fillRect(0,0,mw,mh);
   const sx = mw/mapMeta.width, sy = mh/mapMeta.height;
-  tiles.forEach((tile, idx) => {
-    if (!tile) return;
-    const tx = idx % tileCountX(), ty = Math.floor(idx/tileCountX());
+  const mhw = mapMeta.width/2, mhh = mapMeta.height/2;
+  for (const [key, tile] of Object.entries(tiles)) {
+    if (!tile) continue;
+    const [wx, wy] = key.split(',').map(Number);
     mctx.fillStyle = TILE_META[tile.type]?.color || '#333';
-    mctx.fillRect(tx*GRID*sx, ty*GRID*sy, GRID*sx+1, GRID*sy+1);
-  });
+    mctx.fillRect((wx + mhw) * sx, (wy + mhh) * sy, GRID*sx+1, (GRID/2)*sy+1);
+  }
   for (const obj of objects) {
     mctx.fillStyle = ASSET_COLORS[palette.find(p=>p.id===obj.asset)?.type||'unknown']||'#555';
     mctx.fillRect(obj.x*sx-2, obj.y*sy-2, 4, 4);
@@ -639,6 +829,7 @@ cv.addEventListener('mousemove', e => {
   const rect = cv.getBoundingClientRect();
   const wx = e.clientX-rect.left, wy = e.clientY-rect.top;
   const w = screenToWorld(wx, wy);
+  const sp = snapPos(w.x, w.y);
   const mx = snap(w.x + mapMeta.width/2), my = snap(w.y + mapMeta.height/2);
   document.getElementById('mouse-coords').textContent = `${mx}, ${my}`;
 
@@ -647,13 +838,13 @@ cv.addEventListener('mousemove', e => {
     cam.y = dragCamStart.y + (wy - dragStart.y);
     redraw(); return;
   }
-  if (tool==='tile' && tilePainting) { paintTile(mx, my); return; }
+  if (tool==='tile' && tilePainting) { paintTile(sp.x, sp.y); return; }
   if (tool==='place' && curAsset) {
     ghost = {x:mx, y:my}; redraw();
     ctx.save();
     ctx.translate(cv.width/2+cam.x, cv.height/2+cam.y); ctx.scale(cam.zoom, cam.zoom);
     ctx.globalAlpha = 0.45;
-    drawObject({...ghost, asset:curAsset.id, scale:1, layer:1}, false);
+    drawObject({...ghost, asset:curAsset.id, dir:curDir, scale:1, layer:1}, false);
     ctx.restore();
   }
 });
@@ -662,6 +853,7 @@ cv.addEventListener('mousedown', e => {
   const rect = cv.getBoundingClientRect();
   const wx = e.clientX-rect.left, wy = e.clientY-rect.top;
   const w = screenToWorld(wx, wy);
+  const sp = snapPos(w.x, w.y);
   const mx = snap(w.x + mapMeta.width/2), my = snap(w.y + mapMeta.height/2);
 
   if (e.button===1 || (e.button===0 && e.altKey)) {
@@ -670,11 +862,11 @@ cv.addEventListener('mousedown', e => {
   if (e.button !== 0) return;
 
   if (tool==='tile') {
-    saveUndo(); tilePainting=true; paintTile(mx,my);
+    saveUndo(); tilePainting=true; paintTile(sp.x, sp.y);
   } else if (tool==='place' && curAsset) {
     saveUndo();
     objects.push({id:curAsset.id+'_'+Date.now().toString(36), asset:curAsset.id,
-      x:mx, y:my, dir:'south', scale:1, layer:1,
+      x:mx, y:my, dir:curDir, scale:1, layer:1,
       enterable:false, targetZone:'', collision:{w:GRID,h:GRID}, label:''});
     redraw();
   } else if (tool==='connect') {
@@ -724,13 +916,36 @@ cv.addEventListener('wheel', e => {
 
 document.addEventListener('keydown', e => {
   if (['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)) return;
+  // WASD camera pan (pan step is constant in screen pixels regardless of zoom)
+  const PAN = 60;
+  if (e.key==='w'||e.key==='W') { cam.y += PAN; redraw(); return; }
+  if (e.key==='a'||e.key==='A') { cam.x += PAN; redraw(); return; }
+  if (e.key==='s'||e.key==='S') { cam.y -= PAN; redraw(); return; }
+  if (e.key==='d'||e.key==='D') { cam.x -= PAN; redraw(); return; }
+  // Tool shortcuts
   if (e.key==='p') setTool('place');
-  if (e.key==='s') setTool('select');
-  if (e.key==='d') setTool('delete');
+  if (e.key==='e') setTool('select');   // E = select (S reserved for pan)
+  if (e.key==='x') setTool('delete');   // X = delete  (D reserved for pan)
   if (e.key==='t') setTool('tile');
   if (e.key==='c') setTool('connect');
   if (e.key==='Delete') deleteSelected();
   if (e.key==='Escape') { selected=null; redraw(); }
+  if (e.key==='r' || e.key==='R') {
+    if (selected?.kind==='object') {
+      // Rotate selected object in place
+      saveUndo();
+      const obj = objects[selected.idx];
+      obj.dir = DIRS[(DIRS.indexOf(obj.dir||'south')+1) % DIRS.length];
+      showProps(obj);
+      redraw();
+    } else {
+      // Cycle placement direction (affects next placement, not existing objects)
+      curDir = DIRS[(DIRS.indexOf(curDir)+1) % DIRS.length];
+      document.getElementById('status').textContent =
+        (curAsset ? 'Placing: '+curAsset.id : 'Ready') + '  [next: ' + curDir + ']  — select an object then R to rotate it';
+      redraw();
+    }
+  }
   if (e.ctrlKey && e.key==='z') { e.preventDefault(); undo(); }
   if (e.ctrlKey && (e.key==='y'||(e.key==='z'&&e.shiftKey))) { e.preventDefault(); redo(); }
 });
@@ -831,18 +1046,19 @@ function showTab(name) {
 function resizeMap(w,h) { mapMeta.width=w; mapMeta.height=h; redraw(); }
 function clearMap() {
   if (!confirm('Clear all objects, tiles, and connections?')) return;
-  saveUndo(); objects=[]; tiles=[]; connections=[]; selected=null; redraw();
+  saveUndo(); objects=[]; tiles={}; connections=[]; selected=null; redraw();
 }
 
 // ── Export ────────────────────────────────────────────────────────────────────
 function buildExportJSON() {
   const tileData = [];
-  tiles.forEach((tile, idx) => {
-    if (!tile) return;
-    tileData.push({tx: idx%tileCountX(), ty: Math.floor(idx/tileCountX()), type: tile.type});
-  });
+  for (const [key, tile] of Object.entries(tiles)) {
+    if (!tile) continue;
+    const [wx, wy] = key.split(',').map(Number);
+    tileData.push({wx, wy, type: tile.type});
+  }
   return {
-    version: '1.1', generator: 'MMOLite City Map Editor',
+    version: '1.2', generator: 'MMOLite City Map Editor',
     meta: {name:mapMeta.name, type:mapMeta.type, width:mapMeta.width, height:mapMeta.height, tileSize:GRID},
     tiles: tileData,
     connections: connections.map(c=>({id:c.id, direction:c.direction, targetZoneId:c.targetZoneId, x:c.x, y:c.y, label:c.label||null})),
@@ -893,8 +1109,19 @@ function importJSON(input) {
       mapMeta = {name:meta.name||'city',type:meta.type||'town',width:meta.width||2048,height:meta.height||2048};
       objects = data.objects || [];
       connections = data.connections || [];
-      tiles = [];
-      for (const t of (data.tiles||[])) tiles[tileIdx(t.tx,t.ty)] = {type:t.type};
+      tiles = {};
+      const isV12 = parseFloat(data.version) >= 1.2;
+      for (const t of (data.tiles||[])) {
+        if (isV12) {
+          tiles[tileKey(t.wx, t.wy)] = {type: t.type};
+        } else {
+          // v1.1 Cartesian tx/ty → nearest iso grid point
+          const oldWx = t.tx * GRID - mapMeta.width/2 + GRID/2;
+          const oldWy = t.ty * GRID - mapMeta.height/2 + GRID/2;
+          const sp = snapPos(oldWx, oldWy);
+          tiles[tileKey(sp.x, sp.y)] = {type: t.type};
+        }
+      }
       document.getElementById('m-name').value = mapMeta.name;
       document.getElementById('m-type').value = mapMeta.type;
       document.getElementById('m-w').value = mapMeta.width;

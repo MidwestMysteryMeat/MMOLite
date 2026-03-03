@@ -1,0 +1,7 @@
+{
+  "asset": "SM_DemoRoomLTrim",
+  "type": "prop",
+  "frames": {
+    "SM_DemoRoomLTrim_default": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_DemoRoomLTrim\\SM_DemoRoomLTrim_default.png"
+  }
+}

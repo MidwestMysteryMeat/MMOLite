@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SM_BaseBlock_006",
+    "max_size": 4096
+  },
+  "sheets": [
+    "SM_BaseBlock_006_00.png"
+  ],
+  "frames": {
+    "SM_BaseBlock_006_east": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 198,
+        "h": 253
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 29,
+        "y": 3
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_BaseBlock_006_north": {
+      "sheet": 0,
+      "frame": {
+        "x": 198,
+        "y": 0,
+        "w": 198,
+        "h": 253
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 29,
+        "y": 3
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_BaseBlock_006_south": {
+      "sheet": 0,
+      "frame": {
+        "x": 396,
+        "y": 0,
+        "w": 198,
+        "h": 253
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 29,
+        "y": 3
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_BaseBlock_006_west": {
+      "sheet": 0,
+      "frame": {
+        "x": 594,
+        "y": 0,
+        "w": 198,
+        "h": 253
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 29,
+        "y": 3
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    }
+  },
+  "animations": {}
+}

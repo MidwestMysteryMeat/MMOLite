@@ -1,0 +1,7 @@
+{
+  "asset": "SM_WaterPot_01a",
+  "type": "terrain",
+  "frames": {
+    "SM_WaterPot_01a_default": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_WaterPot_01a\\SM_WaterPot_01a_default.png"
+  }
+}

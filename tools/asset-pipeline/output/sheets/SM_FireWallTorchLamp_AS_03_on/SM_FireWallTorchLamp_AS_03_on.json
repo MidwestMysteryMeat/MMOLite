@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SM_FireWallTorchLamp_AS_03_on",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SM_FireWallTorchLamp_AS_03_on_00.png"
+  ],
+  "frames": {
+    "SM_FireWallTorchLamp_AS_03_on_east": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 41,
+        "h": 81
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 58,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SM_FireWallTorchLamp_AS_03_on_north": {
+      "sheet": 0,
+      "frame": {
+        "x": 41,
+        "y": 0,
+        "w": 41,
+        "h": 81
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 58,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SM_FireWallTorchLamp_AS_03_on_south": {
+      "sheet": 0,
+      "frame": {
+        "x": 82,
+        "y": 0,
+        "w": 41,
+        "h": 81
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 58,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SM_FireWallTorchLamp_AS_03_on_west": {
+      "sheet": 0,
+      "frame": {
+        "x": 123,
+        "y": 0,
+        "w": 41,
+        "h": 81
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 58,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    }
+  },
+  "animations": {}
+}

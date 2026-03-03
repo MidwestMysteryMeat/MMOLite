@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SK_Mannequin",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SK_Mannequin_00.png"
+  ],
+  "frames": {
+    "SK_Mannequin_east": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 42,
+        "h": 52
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 42,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Mannequin_north": {
+      "sheet": 0,
+      "frame": {
+        "x": 42,
+        "y": 0,
+        "w": 42,
+        "h": 52
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 42,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Mannequin_south": {
+      "sheet": 0,
+      "frame": {
+        "x": 84,
+        "y": 0,
+        "w": 42,
+        "h": 52
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 42,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Mannequin_west": {
+      "sheet": 0,
+      "frame": {
+        "x": 126,
+        "y": 0,
+        "w": 42,
+        "h": 52
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 42,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    }
+  },
+  "animations": {}
+}

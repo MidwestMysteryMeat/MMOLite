@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SM_Dagger_01c",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SM_Dagger_01c_00.png"
+  ],
+  "frames": {
+    "SM_Dagger_01c_east": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 89,
+        "h": 55
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 16,
+        "y": 34
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SM_Dagger_01c_north": {
+      "sheet": 0,
+      "frame": {
+        "x": 89,
+        "y": 0,
+        "w": 89,
+        "h": 55
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 16,
+        "y": 34
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SM_Dagger_01c_south": {
+      "sheet": 0,
+      "frame": {
+        "x": 178,
+        "y": 0,
+        "w": 89,
+        "h": 55
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 16,
+        "y": 34
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SM_Dagger_01c_west": {
+      "sheet": 0,
+      "frame": {
+        "x": 267,
+        "y": 0,
+        "w": 89,
+        "h": 55
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 16,
+        "y": 34
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    }
+  },
+  "animations": {}
+}

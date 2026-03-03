@@ -1,0 +1,7 @@
+{
+  "asset": "SM_Fern",
+  "type": "prop",
+  "frames": {
+    "SM_Fern_default": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Fern\\SM_Fern_default.png"
+  }
+}

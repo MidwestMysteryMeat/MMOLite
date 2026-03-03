@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SM_KA_Val_Mag_X",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SM_KA_Val_Mag_X_00.png"
+  ],
+  "frames": {
+    "SM_KA_Val_Mag_X_east": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 59,
+        "h": 72
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 36,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SM_KA_Val_Mag_X_north": {
+      "sheet": 0,
+      "frame": {
+        "x": 59,
+        "y": 0,
+        "w": 59,
+        "h": 72
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 36,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SM_KA_Val_Mag_X_south": {
+      "sheet": 0,
+      "frame": {
+        "x": 118,
+        "y": 0,
+        "w": 59,
+        "h": 72
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 36,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SM_KA_Val_Mag_X_west": {
+      "sheet": 0,
+      "frame": {
+        "x": 177,
+        "y": 0,
+        "w": 59,
+        "h": 72
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 36,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    }
+  },
+  "animations": {}
+}

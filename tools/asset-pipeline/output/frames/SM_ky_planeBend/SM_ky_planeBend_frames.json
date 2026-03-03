@@ -1,0 +1,7 @@
+{
+  "asset": "SM_ky_planeBend",
+  "type": "prop",
+  "frames": {
+    "SM_ky_planeBend_default": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_ky_planeBend\\SM_ky_planeBend_default.png"
+  }
+}

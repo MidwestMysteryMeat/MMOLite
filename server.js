@@ -720,6 +720,12 @@ server.listen(PORT, () => {
   seasonal.generate(seasonSeed, state.world.calendar.season);
   seasonal.apply();
 
+  // Load handcrafted NPC JSON files from data/npcs/ into npc-loader registry
+  require('./handlers/npc-loader').loadNpcs();
+
+  // Writing tool — live content authoring (REST + SQLite, token-gated URL)
+  require('./handlers/writing-tool-admin').registerRoutes(app, io, state);
+
   // Async account preload (non-blocking — replaces synchronous IIFE at module load)
   accounts.preloadKeyIndex().catch(function(err) {
     console.error('[server] preloadKeyIndex error:', err.message);

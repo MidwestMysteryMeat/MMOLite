@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SK_Enemy_Golem01_Weapon",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SK_Enemy_Golem01_Weapon_00.png"
+  ],
+  "frames": {
+    "SK_Enemy_Golem01_Weapon_east": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 7,
+        "h": 26
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 61,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Enemy_Golem01_Weapon_north": {
+      "sheet": 0,
+      "frame": {
+        "x": 7,
+        "y": 0,
+        "w": 7,
+        "h": 26
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 61,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Enemy_Golem01_Weapon_south": {
+      "sheet": 0,
+      "frame": {
+        "x": 14,
+        "y": 0,
+        "w": 7,
+        "h": 26
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 61,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Enemy_Golem01_Weapon_west": {
+      "sheet": 0,
+      "frame": {
+        "x": 21,
+        "y": 0,
+        "w": 7,
+        "h": 26
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 61,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    }
+  },
+  "animations": {}
+}

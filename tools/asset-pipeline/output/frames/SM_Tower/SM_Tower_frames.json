@@ -1,0 +1,10 @@
+{
+  "asset": "SM_Tower",
+  "type": "building",
+  "frames": {
+    "SM_Tower_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Tower\\SM_Tower_south.png",
+    "SM_Tower_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Tower\\SM_Tower_west.png",
+    "SM_Tower_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Tower\\SM_Tower_north.png",
+    "SM_Tower_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Tower\\SM_Tower_east.png"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "asset": "SM_Leaf",
+  "type": "prop",
+  "frames": {
+    "SM_Leaf_default": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Leaf\\SM_Leaf_default.png"
+  }
+}

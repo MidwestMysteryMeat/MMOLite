@@ -1,0 +1,10 @@
+{
+  "asset": "SM_Bones_Skull",
+  "type": "character",
+  "frames": {
+    "SM_Bones_Skull_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Bones_Skull\\SM_Bones_Skull_south.png",
+    "SM_Bones_Skull_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Bones_Skull\\SM_Bones_Skull_west.png",
+    "SM_Bones_Skull_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Bones_Skull\\SM_Bones_Skull_north.png",
+    "SM_Bones_Skull_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Bones_Skull\\SM_Bones_Skull_east.png"
+  }
+}

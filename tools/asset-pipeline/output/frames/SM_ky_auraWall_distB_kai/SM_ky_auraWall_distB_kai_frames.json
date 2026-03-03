@@ -1,0 +1,10 @@
+{
+  "asset": "SM_ky_auraWall_distB_kai",
+  "type": "building",
+  "frames": {
+    "SM_ky_auraWall_distB_kai_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_ky_auraWall_distB_kai\\SM_ky_auraWall_distB_kai_south.png",
+    "SM_ky_auraWall_distB_kai_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_ky_auraWall_distB_kai\\SM_ky_auraWall_distB_kai_west.png",
+    "SM_ky_auraWall_distB_kai_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_ky_auraWall_distB_kai\\SM_ky_auraWall_distB_kai_north.png",
+    "SM_ky_auraWall_distB_kai_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_ky_auraWall_distB_kai\\SM_ky_auraWall_distB_kai_east.png"
+  }
+}

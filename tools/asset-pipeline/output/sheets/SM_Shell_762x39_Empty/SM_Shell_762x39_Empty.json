@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SM_Shell_762x39_Empty",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SM_Shell_762x39_Empty_00.png"
+  ],
+  "frames": {
+    "SM_Shell_762x39_Empty_east": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 100,
+        "h": 72
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 17,
+        "y": 11
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SM_Shell_762x39_Empty_north": {
+      "sheet": 0,
+      "frame": {
+        "x": 100,
+        "y": 0,
+        "w": 100,
+        "h": 72
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 17,
+        "y": 11
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SM_Shell_762x39_Empty_south": {
+      "sheet": 0,
+      "frame": {
+        "x": 200,
+        "y": 0,
+        "w": 100,
+        "h": 72
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 17,
+        "y": 11
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SM_Shell_762x39_Empty_west": {
+      "sheet": 0,
+      "frame": {
+        "x": 300,
+        "y": 0,
+        "w": 100,
+        "h": 72
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 17,
+        "y": 11
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    }
+  },
+  "animations": {}
+}

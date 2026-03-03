@@ -1,0 +1,10 @@
+{
+  "asset": "SM_FireBasekd_A_002",
+  "type": "building",
+  "frames": {
+    "SM_FireBasekd_A_002_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_FireBasekd_A_002\\SM_FireBasekd_A_002_south.png",
+    "SM_FireBasekd_A_002_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_FireBasekd_A_002\\SM_FireBasekd_A_002_west.png",
+    "SM_FireBasekd_A_002_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_FireBasekd_A_002\\SM_FireBasekd_A_002_north.png",
+    "SM_FireBasekd_A_002_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_FireBasekd_A_002\\SM_FireBasekd_A_002_east.png"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "asset": "SM_Wall_Stone_5",
+  "type": "building",
+  "frames": {
+    "SM_Wall_Stone_5_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Wall_Stone_5\\SM_Wall_Stone_5_south.png",
+    "SM_Wall_Stone_5_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Wall_Stone_5\\SM_Wall_Stone_5_west.png",
+    "SM_Wall_Stone_5_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Wall_Stone_5\\SM_Wall_Stone_5_north.png",
+    "SM_Wall_Stone_5_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Wall_Stone_5\\SM_Wall_Stone_5_east.png"
+  }
+}

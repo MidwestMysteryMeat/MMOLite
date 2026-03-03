@@ -1,0 +1,10 @@
+{
+  "asset": "SM_DemoRoomBackWall",
+  "type": "building",
+  "frames": {
+    "SM_DemoRoomBackWall_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_DemoRoomBackWall\\SM_DemoRoomBackWall_south.png",
+    "SM_DemoRoomBackWall_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_DemoRoomBackWall\\SM_DemoRoomBackWall_west.png",
+    "SM_DemoRoomBackWall_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_DemoRoomBackWall\\SM_DemoRoomBackWall_north.png",
+    "SM_DemoRoomBackWall_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_DemoRoomBackWall\\SM_DemoRoomBackWall_east.png"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "asset": "SM_NamePlate",
+  "type": "prop",
+  "frames": {
+    "SM_NamePlate_default": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_NamePlate\\SM_NamePlate_default.png"
+  }
+}

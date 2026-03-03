@@ -1,0 +1,10 @@
+{
+  "asset": "SK_Demon_Woman_Heels",
+  "type": "character",
+  "frames": {
+    "SK_Demon_Woman_Heels_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Demon_Woman_Heels\\SK_Demon_Woman_Heels_south.png",
+    "SK_Demon_Woman_Heels_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Demon_Woman_Heels\\SK_Demon_Woman_Heels_west.png",
+    "SK_Demon_Woman_Heels_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Demon_Woman_Heels\\SK_Demon_Woman_Heels_north.png",
+    "SK_Demon_Woman_Heels_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Demon_Woman_Heels\\SK_Demon_Woman_Heels_east.png"
+  }
+}

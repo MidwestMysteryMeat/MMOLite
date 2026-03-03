@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SM_BaskedSideBeamLong_02",
+    "max_size": 4096
+  },
+  "sheets": [
+    "SM_BaskedSideBeamLong_02_00.png"
+  ],
+  "frames": {
+    "SM_BaskedSideBeamLong_02_east": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 25,
+        "h": 136
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 115,
+        "y": 0
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_BaskedSideBeamLong_02_north": {
+      "sheet": 0,
+      "frame": {
+        "x": 25,
+        "y": 0,
+        "w": 25,
+        "h": 136
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 115,
+        "y": 0
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_BaskedSideBeamLong_02_south": {
+      "sheet": 0,
+      "frame": {
+        "x": 50,
+        "y": 0,
+        "w": 25,
+        "h": 136
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 115,
+        "y": 0
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_BaskedSideBeamLong_02_west": {
+      "sheet": 0,
+      "frame": {
+        "x": 75,
+        "y": 0,
+        "w": 25,
+        "h": 136
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 115,
+        "y": 0
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    }
+  },
+  "animations": {}
+}

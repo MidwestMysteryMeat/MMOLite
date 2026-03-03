@@ -1,0 +1,10 @@
+{
+  "asset": "SM_FireTorch_MX_001",
+  "type": "character",
+  "frames": {
+    "SM_FireTorch_MX_001_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_FireTorch_MX_001\\SM_FireTorch_MX_001_south.png",
+    "SM_FireTorch_MX_001_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_FireTorch_MX_001\\SM_FireTorch_MX_001_west.png",
+    "SM_FireTorch_MX_001_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_FireTorch_MX_001\\SM_FireTorch_MX_001_north.png",
+    "SM_FireTorch_MX_001_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_FireTorch_MX_001\\SM_FireTorch_MX_001_east.png"
+  }
+}

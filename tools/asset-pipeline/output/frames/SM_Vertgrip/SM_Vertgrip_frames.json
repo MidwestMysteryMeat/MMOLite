@@ -1,0 +1,10 @@
+{
+  "asset": "SM_Vertgrip",
+  "type": "weapon",
+  "frames": {
+    "SM_Vertgrip_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Vertgrip\\SM_Vertgrip_south.png",
+    "SM_Vertgrip_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Vertgrip\\SM_Vertgrip_west.png",
+    "SM_Vertgrip_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Vertgrip\\SM_Vertgrip_north.png",
+    "SM_Vertgrip_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Vertgrip\\SM_Vertgrip_east.png"
+  }
+}

@@ -19,6 +19,8 @@ local corruption, doom, sprint  -- not reassigned; no getter needed
 local getEntityState
 local getZone, getMyId, getFadeIn, getSkills, getAccount, getClient
 
+local _portraitCache = {}
+
 local function drawZoneMonsters()
     local myId = getMyId()
     local zoneMonsters = getEntityState().zoneMonsters
@@ -1871,12 +1873,28 @@ end
 
 -- NPC Dialogue Panel
 local function drawDialoguePanel(W, H)
-    if not game._npcDialogue.show then return end
+    local dlg = game._npcDialogue
+    if not dlg.show then return end
 
-    local panelW = math.min(600, W - 40)
-    local panelH = 200
-    local panelX = (W - panelW) / 2
-    local panelY = H - panelH - 20
+    local topics      = (not dlg.topicMode) and dlg.availableTopics or nil
+    local topicCount  = topics and #topics or 0
+    local choiceCount = #dlg.choices
+    local qOffers   = dlg.questOffers  or {}
+    local qTurnins  = dlg.questTurnins or {}
+    local questCount = #qOffers + #qTurnins
+
+    -- Expand height when topics or quest offers are present
+    local panelW   = math.min(640, W - 40)
+    local baseH    = 210
+    local topicH   = topicCount > 0 and (20 + topicCount * 22) or 0
+    local questH   = questCount  > 0 and (26 + questCount  * 26) or 0
+    local panelH   = baseH + topicH + questH
+    local panelX   = (W - panelW) / 2
+    local panelY   = H - panelH - 20
+
+    -- Portrait dimensions (shown on left if available)
+    local portW    = dlg.portrait and 72 or 0
+    local textOffX = portW > 0 and (portW + 12) or 0
 
     -- Background
     love.graphics.setColor(0.05, 0.05, 0.12, 0.92)
@@ -1885,35 +1903,165 @@ local function drawDialoguePanel(W, H)
     love.graphics.setLineWidth(2)
     love.graphics.rectangle("line", panelX, panelY, panelW, panelH, 8, 8)
 
+    -- Portrait rendering (loads from assets/icons/portraits/ on demand, cached)
+    if dlg.portrait then
+        if not _portraitCache then _portraitCache = {} end
+        local img = _portraitCache[dlg.portrait]
+        if img == nil then
+            local ok, loaded = pcall(love.graphics.newImage, "assets/icons/portraits/" .. dlg.portrait)
+            _portraitCache[dlg.portrait] = ok and loaded or false
+            img = _portraitCache[dlg.portrait]
+        end
+        if img then
+            local iw, ih = img:getWidth(), img:getHeight()
+            local scale  = math.min(portW / iw, portW / ih)
+            love.graphics.setColor(1, 1, 1, 1)
+            love.graphics.draw(img, panelX + 10, panelY + 10, 0, scale, scale)
+        else
+            -- Fallback placeholder when image fails to load
+            love.graphics.setColor(0.15, 0.15, 0.25, 1)
+            love.graphics.rectangle("fill", panelX + 10, panelY + 10, portW, portW, 4, 4)
+            love.graphics.setColor(0.3, 0.35, 0.55, 1)
+            love.graphics.setLineWidth(1)
+            love.graphics.rectangle("line", panelX + 10, panelY + 10, portW, portW, 4, 4)
+        end
+        -- Race label under portrait
+        if dlg.race then
+            love.graphics.setColor(0.55, 0.6, 0.75, 1)
+            love.graphics.setFont(fonts.small or fonts.main or love.graphics.getFont())
+            love.graphics.printf(dlg.race, panelX + 10, panelY + portW + 14, portW, "center")
+        end
+    end
+
     -- NPC Name
+    local nameX = panelX + 16 + textOffX
     love.graphics.setColor(1, 0.85, 0.3, 1)
     love.graphics.setFont(fonts.bold or love.graphics.getFont())
-    love.graphics.print(game._npcDialogue.npcName, panelX + 16, panelY + 10)
+    love.graphics.print(dlg.npcName, nameX, panelY + 10)
 
-    -- Text
+    -- Topic-mode label
+    if dlg.topicMode then
+        love.graphics.setColor(0.5, 0.7, 1, 0.7)
+        love.graphics.setFont(fonts.small or fonts.main or love.graphics.getFont())
+        love.graphics.print("(on this topic)", nameX + 4, panelY + 28)
+    end
+
+    -- Dialogue text
     love.graphics.setColor(0.9, 0.9, 0.95, 1)
     love.graphics.setFont(fonts.main or love.graphics.getFont())
-    love.graphics.printf(game._npcDialogue.text, panelX + 16, panelY + 35, panelW - 32, "left")
+    local textW = panelW - 32 - textOffX
+    love.graphics.printf(dlg.text, nameX, panelY + 38, textW, "left")
 
-    -- Choices
-    local choiceY = panelY + 100
-    for i, choice in ipairs(game._npcDialogue.choices) do
-        local label = "[" .. i .. "] " .. (choice.label or "...")
-        local mx, my = love.mouse.getPosition()
-        local choiceX = panelX + 24
-        local choiceW = panelW - 48
-        local choiceH = 22
-        local hover = mx >= choiceX and mx <= choiceX + choiceW and my >= choiceY and my <= choiceY + choiceH
+    local mx, my = love.mouse.getPosition()
 
+    -- Dialogue tree choices
+    local choiceY = panelY + 120
+    for i, choice in ipairs(dlg.choices) do
+        local label  = "[" .. i .. "] " .. (choice.label or "...")
+        local cx     = panelX + 24
+        local cw     = panelW - 48
+        local ch     = 22
+        local hover  = mx >= cx and mx <= cx + cw and my >= choiceY and my <= choiceY + ch
         if hover then
             love.graphics.setColor(0.3, 0.4, 0.7, 0.5)
-            love.graphics.rectangle("fill", choiceX - 4, choiceY - 2, choiceW + 8, choiceH + 4, 4, 4)
+            love.graphics.rectangle("fill", cx - 4, choiceY - 2, cw + 8, ch + 4, 4, 4)
             love.graphics.setColor(0.6, 0.8, 1, 1)
         else
             love.graphics.setColor(0.7, 0.75, 0.85, 1)
         end
-        love.graphics.print(label, choiceX, choiceY)
+        love.graphics.setFont(fonts.main or love.graphics.getFont())
+        love.graphics.print(label, cx, choiceY)
         choiceY = choiceY + 24
+    end
+
+    -- Available topics section
+    if topicCount > 0 then
+        local sepY = panelY + baseH - 16
+        love.graphics.setColor(0.3, 0.35, 0.55, 0.6)
+        love.graphics.setLineWidth(1)
+        love.graphics.line(panelX + 16, sepY, panelX + panelW - 16, sepY)
+
+        love.graphics.setColor(0.55, 0.65, 0.85, 0.8)
+        love.graphics.setFont(fonts.small or fonts.main or love.graphics.getFont())
+        love.graphics.print("Ask about:", panelX + 16, sepY + 3)
+
+        local topicY = sepY + 20
+        for ti, topic in ipairs(topics) do
+            local tx    = panelX + 24
+            local tw    = panelW - 48
+            local th    = 20
+            local hover = mx >= tx and mx <= tx + tw and my >= topicY and my <= topicY + th
+            if hover then
+                love.graphics.setColor(0.25, 0.35, 0.6, 0.45)
+                love.graphics.rectangle("fill", tx - 4, topicY - 1, tw + 8, th + 2, 3, 3)
+                love.graphics.setColor(0.5, 0.75, 1, 1)
+            else
+                love.graphics.setColor(0.5, 0.6, 0.8, 0.85)
+            end
+            love.graphics.setFont(fonts.main or love.graphics.getFont())
+            love.graphics.print("  " .. (topic.label or topic.id), tx, topicY)
+            topicY = topicY + 22
+        end
+    end
+
+    -- Quest offers / turnins (from writing-tool authored quests)
+    if questCount > 0 then
+        local qSepY = choiceY + 2
+        love.graphics.setColor(0.40, 0.30, 0.10, 0.55)
+        love.graphics.setLineWidth(1)
+        love.graphics.line(panelX + 16, qSepY, panelX + panelW - 16, qSepY)
+        love.graphics.setFont(fonts.small or fonts.main or love.graphics.getFont())
+        love.graphics.setColor(0.85, 0.72, 0.28, 0.85)
+        love.graphics.print("Quests:", panelX + 16, qSepY + 3)
+        choiceY = qSepY + 22
+
+        -- Turn-ins first (quest is complete, hand it in)
+        for _, qt in ipairs(qTurnins) do
+            local cx2  = panelX + 24
+            local cw2  = panelW - 48
+            local hover = mx >= cx2 and mx <= cx2 + cw2 and my >= choiceY and my <= choiceY + 22
+            if hover then
+                love.graphics.setColor(0.20, 0.45, 0.15, 0.50)
+                love.graphics.rectangle("fill", cx2 - 4, choiceY - 2, cw2 + 8, 26, 4, 4)
+                love.graphics.setColor(0.45, 1.0, 0.35, 1)
+            else
+                love.graphics.setColor(0.35, 0.85, 0.25, 1)
+            end
+            love.graphics.setFont(fonts.main or love.graphics.getFont())
+            love.graphics.print("[Turn in] " .. (qt.name or qt.questId), cx2, choiceY)
+            choiceY = choiceY + 26
+        end
+
+        -- New quest offers
+        for _, qo in ipairs(qOffers) do
+            local cx2  = panelX + 24
+            local cw2  = panelW - 48
+            local hover = mx >= cx2 and mx <= cx2 + cw2 and my >= choiceY and my <= choiceY + 22
+            if hover then
+                love.graphics.setColor(0.25, 0.30, 0.55, 0.50)
+                love.graphics.rectangle("fill", cx2 - 4, choiceY - 2, cw2 + 8, 26, 4, 4)
+                love.graphics.setColor(0.70, 0.85, 1.0, 1)
+            else
+                love.graphics.setColor(0.55, 0.70, 0.95, 1)
+            end
+            love.graphics.setFont(fonts.main or love.graphics.getFont())
+            love.graphics.print("[Quest] " .. (qo.name or qo.questId), cx2, choiceY)
+            choiceY = choiceY + 26
+        end
+    end
+
+    -- Topic-mode: Back button
+    if dlg.topicMode then
+        local bx    = panelX + 24
+        local by    = panelY + panelH - 30
+        local bw    = 90
+        local bh    = 22
+        local hover = mx >= bx and mx <= bx + bw and my >= by and my <= by + bh
+        love.graphics.setColor(hover and 0.3 or 0.15, hover and 0.4 or 0.2, hover and 0.7 or 0.45, 0.8)
+        love.graphics.rectangle("fill", bx - 4, by - 2, bw + 8, bh + 4, 4, 4)
+        love.graphics.setColor(0.7, 0.8, 1, 1)
+        love.graphics.setFont(fonts.main or love.graphics.getFont())
+        love.graphics.print("[Esc] Back", bx, by)
     end
 end
 

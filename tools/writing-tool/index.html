@@ -1,0 +1,3059 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MMOLite — Writing Tool</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:      #111318;
+  --bg2:     #1a1d24;
+  --bg3:     #23262f;
+  --border:  #2e3140;
+  --text:    #d8dae0;
+  --text2:   #8b8fa8;
+  --accent:  #6b8ff7;
+  --accent2: #4a6fd4;
+  --green:   #3a9a5c;
+  --red:     #a03030;
+  --gold:    #b08a30;
+  --purple:  #7a50a8;
+  --orange:  #b06020;
+  --radius:  6px;
+}
+
+html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font: 13px/1.5 'Segoe UI', system-ui, sans-serif; }
+
+#app { display: flex; height: 100vh; }
+
+/* ── Sidebar ─────────────────────────────────────────────────────────────── */
+#sidebar {
+  width: 170px; min-width: 170px; background: var(--bg2); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; padding: 12px 0;
+}
+.logo { padding: 6px 16px 14px; font-size: 14px; font-weight: 700; color: var(--accent); letter-spacing: .5px; }
+
+#tab-nav button {
+  display: block; width: 100%; text-align: left;
+  padding: 9px 16px; border: none; background: none; color: var(--text2);
+  cursor: pointer; font-size: 13px; transition: background .12s, color .12s;
+}
+#tab-nav button:hover { background: var(--bg3); color: var(--text); }
+#tab-nav button.active { background: var(--bg3); color: var(--accent); border-left: 2px solid var(--accent); padding-left: 14px; }
+#tab-nav .sep { border-top: 1px solid var(--border); margin: 6px 0; }
+
+/* ── Main ────────────────────────────────────────────────────────────────── */
+#content { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+
+.tab { display: none; flex: 1; overflow: hidden; height: 100%; }
+.tab.active { display: flex; flex-direction: column; }
+
+.tab-header {
+  padding: 12px 16px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 8px; background: var(--bg2);
+}
+.tab-header h2 { font-size: 14px; font-weight: 600; flex: 1; }
+
+.two-panel { flex: 1; display: flex; overflow: hidden; }
+.panel-left { width: 280px; min-width: 240px; border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+.panel-right { flex: 1; overflow-y: auto; padding: 16px; }
+
+/* ── Forms ───────────────────────────────────────────────────────────────── */
+.field { margin-bottom: 12px; }
+.field label { display: block; font-size: 11px; color: var(--text2); margin-bottom: 4px; text-transform: uppercase; letter-spacing: .5px; }
+.field input, .field select, .field textarea {
+  width: 100%; background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius);
+  color: var(--text); padding: 6px 8px; font-size: 13px; outline: none;
+}
+.field input:focus, .field select:focus, .field textarea:focus { border-color: var(--accent); }
+.field textarea { resize: vertical; min-height: 80px; }
+.field select option { background: var(--bg3); }
+
+.row { display: flex; gap: 10px; }
+.row .field { flex: 1; }
+
+.btn {
+  padding: 7px 14px; border: none; border-radius: var(--radius); cursor: pointer;
+  font-size: 12px; font-weight: 600; transition: opacity .12s;
+}
+.btn:hover { opacity: .85; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-secondary { background: var(--bg3); color: var(--text); border: 1px solid var(--border); }
+.btn-danger  { background: var(--red); color: #fff; }
+.btn-success { background: var(--green); color: #fff; }
+.btn-gold    { background: var(--gold); color: #fff; }
+.btn-sm { padding: 4px 10px; font-size: 11px; }
+
+/* ── List ────────────────────────────────────────────────────────────────── */
+.list-header { padding: 8px 12px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 6px; }
+.list-header input { flex: 1; }
+.list-body { flex: 1; overflow-y: auto; }
+.list-item {
+  padding: 8px 12px; border-bottom: 1px solid var(--border); cursor: pointer;
+  transition: background .1s;
+}
+.list-item:hover { background: var(--bg3); }
+.list-item.active { background: var(--bg3); border-left: 2px solid var(--accent); }
+.list-item .item-name { font-weight: 600; font-size: 13px; }
+.list-item .item-sub  { font-size: 11px; color: var(--text2); margin-top: 2px; }
+.list-item .item-row  { display: flex; justify-content: space-between; align-items: center; }
+
+/* ── Chips ───────────────────────────────────────────────────────────────── */
+.chips { display: flex; flex-wrap: wrap; gap: 4px; padding: 4px; background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); min-height: 34px; }
+.chip { background: var(--bg2); border: 1px solid var(--border); border-radius: 4px; padding: 2px 7px; font-size: 11px; display: flex; align-items: center; gap: 4px; }
+.chip .del { cursor: pointer; color: var(--text2); font-size: 12px; line-height: 1; }
+.chip .del:hover { color: var(--red); }
+.chip-input { background: none; border: none; outline: none; color: var(--text); font-size: 12px; flex: 1; min-width: 80px; padding: 2px 4px; }
+
+/* ── Toast ───────────────────────────────────────────────────────────────── */
+#toast-box { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column-reverse; gap: 6px; z-index: 9999; pointer-events: none; }
+.toast { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 14px; font-size: 13px; box-shadow: 0 4px 16px #0008; animation: fadeIn .2s; }
+.toast.ok   { border-left: 3px solid var(--green); }
+.toast.err  { border-left: 3px solid var(--red); }
+.toast.info { border-left: 3px solid var(--accent); }
+@keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+/* ── Modal ───────────────────────────────────────────────────────────────── */
+#modal { position: fixed; inset: 0; background: #0009; z-index: 9000; display: flex; align-items: center; justify-content: center; }
+#modal.hidden { display: none; }
+#modal-box { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; min-width: 340px; max-width: 520px; max-height: 80vh; overflow-y: auto; }
+#modal-box h3 { margin-bottom: 14px; font-size: 15px; }
+#modal-box .modal-actions { display: flex; gap: 8px; margin-top: 16px; justify-content: flex-end; }
+
+/* ── Templates ───────────────────────────────────────────────────────────── */
+#tab-templates { flex-direction: row; }
+.tmpl-left { width: 220px; border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+.tmpl-center { flex: 1; overflow-y: auto; padding: 16px; }
+.tmpl-right { width: 340px; border-left: 1px solid var(--border); display: flex; flex-direction: column; }
+.tmpl-preview { padding: 16px; flex: 1; overflow-y: auto; }
+.tmpl-preview h4 { font-size: 12px; color: var(--text2); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 10px; }
+#preview-text { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; font-size: 13px; line-height: 1.7; min-height: 120px; white-space: pre-wrap; color: var(--text); }
+.slot-row { display: flex; gap: 6px; align-items: flex-end; }
+.slot-row .field { flex: 1; margin: 0; }
+.dice-btn { padding: 6px 8px; background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; font-size: 14px; line-height: 1; }
+.dice-btn:hover { border-color: var(--accent); }
+.use-btn { padding: 8px 12px; border: none; border-radius: var(--radius); cursor: pointer; font-size: 12px; font-weight: 600; margin: 4px; }
+
+/* ── Dialogue canvas ─────────────────────────────────────────────────────── */
+#dialogue-canvas-wrap { flex: 1; position: relative; overflow: hidden; background: #0d0f14; }
+#dialogue-canvas { position: absolute; inset: 0; cursor: crosshair; }
+.canvas-toolbar { padding: 8px 12px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.canvas-toolbar .npc-select { width: 200px; }
+.mode-btn { padding: 5px 10px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg3); color: var(--text2); cursor: pointer; font-size: 12px; }
+.mode-btn.active { border-color: var(--accent); color: var(--accent); background: #6b8ff720; }
+.node-panel { width: 280px; border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; padding: 12px; }
+.node-panel h4 { font-size: 12px; color: var(--text2); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 10px; }
+.dialogue-wrap { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+/* ── Quests arc tree ─────────────────────────────────────────────────────── */
+.arc-item { padding: 6px 12px; cursor: pointer; border-bottom: 1px solid var(--border); font-size: 12px; }
+.arc-item:hover { background: var(--bg3); }
+.arc-item.active { background: var(--bg3); color: var(--accent); }
+.arc-badge { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 10px; margin-left: 6px; }
+.arc-section { padding: 6px 12px; font-size: 10px; color: var(--text2); text-transform: uppercase; letter-spacing: .5px; border-bottom: 1px solid var(--border); }
+
+/* ── Schedule editor ─────────────────────────────────────────────────────── */
+.sched-block { display:flex; gap:6px; align-items:center; margin-bottom:5px; }
+.sched-block input, .sched-block select { background:var(--bg3); border:1px solid var(--border); border-radius:var(--radius); color:var(--text); padding:4px 6px; font-size:12px; }
+.sched-block input[type="number"] { width:60px; }
+.sched-block .sched-label { flex:1; }
+.sched-block .btn-danger { padding:3px 8px; }
+
+/* ── Config / Shards ─────────────────────────────────────────────────────── */
+.shard-card { background:var(--bg3); border:1px solid var(--border); border-radius:var(--radius); padding:12px; margin-bottom:8px; }
+.shard-card h4 { font-size:13px; margin-bottom:4px; }
+.shard-card .shard-meta { font-size:11px; color:var(--text2); }
+
+/* ── Badge colors ────────────────────────────────────────────────────────── */
+.badge-unmet    { background: #444; color: #aaa; }
+.badge-offered  { background: var(--gold);   color: #fff; }
+.badge-active   { background: var(--accent); color: #fff; }
+.badge-complete { background: var(--green);  color: #fff; }
+.badge-main     { background: var(--purple); color: #fff; }
+.badge-side     { background: var(--bg3);    color: var(--text2); border: 1px solid var(--border); }
+.badge-arc      { background: #1a4870;       color: #7acce8; }
+.badge-daily    { background: #5a3010;       color: #e8a050; }
+.badge-world_event { background: #103828;    color: #50c880; }
+.badge-book     { background: #5a3a70; color: #ddd; }
+
+/* ── Arc flowchart canvas ─────────────────────────────────────────────────── */
+#arc-canvas-wrap { height: 220px; position: relative; overflow: hidden; background: #0d0f14; border-bottom: 1px solid var(--border); display: none; flex-shrink: 0; }
+#arc-canvas { position: absolute; inset: 0; cursor: grab; }
+#arc-canvas:active { cursor: grabbing; }
+.arc-canvas-hint { position: absolute; bottom: 6px; left: 10px; font-size: 10px; color: var(--text2); pointer-events: none; }
+
+/* ── Portrait picker ─────────────────────────────────────────────────────── */
+.portrait-pick-btn { display:flex; align-items:center; gap:8px; padding:6px 10px; background:var(--bg3); border:1px solid var(--border); border-radius:var(--radius); cursor:pointer; font-size:12px; color:var(--text2); width:100%; }
+.portrait-pick-btn:hover { border-color:var(--accent); }
+.portrait-preview { width:56px; height:56px; border-radius:4px; object-fit:cover; background:var(--bg2); border:1px solid var(--border); flex-shrink:0; }
+#portrait-modal-inner { display:flex; flex-direction:column; height:70vh; }
+.portrait-cat-tabs { display:flex; gap:4px; flex-wrap:wrap; margin-bottom:10px; }
+.portrait-cat-tab { padding:3px 10px; border:1px solid var(--border); border-radius:var(--radius); background:var(--bg3); color:var(--text2); cursor:pointer; font-size:11px; }
+.portrait-cat-tab.active { border-color:var(--accent); color:var(--accent); background:#6b8ff720; }
+.portrait-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(72px,1fr)); gap:6px; overflow-y:auto; flex:1; padding:2px; }
+.portrait-thumb { width:72px; height:72px; object-fit:cover; border-radius:4px; cursor:pointer; border:2px solid transparent; transition:border-color .1s; }
+.portrait-thumb:hover { border-color:var(--accent); }
+.portrait-thumb.selected { border-color:var(--accent); box-shadow:0 0 8px #6b8ff780; }
+
+/* ── Map editor ──────────────────────────────────────────────────────────── */
+.map-toolbar { background:var(--bg2); border-bottom:1px solid var(--border); padding:8px 12px; display:flex; gap:6px; align-items:center; flex-shrink:0; flex-wrap:wrap; }
+.map-sep { width:1px; height:18px; background:var(--border); margin:0 2px; }
+.map-filter-btn { padding:3px 9px; font-size:11px; border:1px solid var(--border); background:var(--bg3); color:var(--text2); border-radius:var(--radius); cursor:pointer; transition:background .1s,color .1s; }
+.map-filter-btn.active { background:#1a3050; color:var(--accent); border-color:var(--accent); }
+#map-canvas-wrap { flex:1; position:relative; overflow:hidden; cursor:grab; background:#09111e; }
+#map-canvas-wrap.adding { cursor:crosshair; }
+#map-canvas-wrap:active { cursor:grabbing; }
+#map-canvas { width:100%; height:100%; display:block; }
+#map-panel { width:280px; background:var(--bg2); border-left:1px solid var(--border); overflow-y:auto; flex-shrink:0; display:flex; flex-direction:column; }
+.map-panel-section { padding:12px 14px; border-bottom:1px solid var(--border); }
+.map-panel-section h3 { font-size:13px; margin-bottom:8px; }
+.map-panel-row { display:flex; justify-content:space-between; align-items:center; font-size:12px; margin-bottom:4px; color:var(--text2); }
+.map-panel-row strong { color:var(--text); }
+.map-panel-npc { padding:5px 0; border-bottom:1px solid var(--border); font-size:12px; display:flex; align-items:center; gap:6px; }
+.map-panel-npc:last-child { border-bottom:none; }
+.map-marker-color { width:12px; height:12px; border-radius:50%; flex-shrink:0; }
+#map-marker-form input, #map-marker-form select, #map-marker-form textarea { width:100%; margin-bottom:6px; }
+.ctx-item { display:block; width:100%; padding:7px 14px; text-align:left; background:none; border:none; color:var(--text); font-size:12px; cursor:pointer; white-space:nowrap; }
+.ctx-item:hover { background:var(--bg3); color:var(--accent); }
+
+/* ── Fixture table ───────────────────────────────────────────────────────── */
+.fixture-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.fixture-table th { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border); color: var(--text2); font-weight: 600; font-size: 11px; text-transform: uppercase; }
+.fixture-table td { padding: 7px 10px; border-bottom: 1px solid var(--border); }
+.fixture-table tr:hover td { background: var(--bg3); }
+
+/* ── World zones ─────────────────────────────────────────────────────────── */
+.zone-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px,1fr)); gap: 10px; padding: 16px; overflow-y: auto; }
+.zone-card { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; }
+.zone-card h4 { font-size: 13px; margin-bottom: 4px; }
+.zone-card .zone-meta { font-size: 11px; color: var(--text2); }
+
+/* ── Scrollbar ───────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #444; }
+
+/* ── Misc ────────────────────────────────────────────────────────────────── */
+.sep-line { border-top: 1px solid var(--border); margin: 12px 0; }
+.empty-state { text-align: center; color: var(--text2); padding: 32px 16px; font-size: 12px; }
+.inline-actions { display: flex; gap: 6px; margin-top: 14px; }
+.tag-pill { display: inline-block; padding: 1px 7px; border-radius: 10px; font-size: 10px; background: var(--bg3); border: 1px solid var(--border); margin: 1px; }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <!-- ── Sidebar ─────────────────────────────────────────────────────────── -->
+  <aside id="sidebar">
+    <div class="logo">✏️ Writing Tool</div>
+    <nav id="tab-nav">
+      <button data-tab="templates" class="active">📝 Templates</button>
+      <button data-tab="npcs">🧑 NPCs</button>
+      <button data-tab="dialogue">💬 Dialogue</button>
+      <button data-tab="quests">⚔️ Quests</button>
+      <button data-tab="lore">📖 Lore / Books</button>
+      <div class="sep"></div>
+      <button data-tab="fixtures">📍 Fixtures</button>
+      <button data-tab="world">🌍 World</button>
+      <button data-tab="map">🗺️ Map</button>
+      <button data-tab="config">⚙ Config</button>
+    </nav>
+  </aside>
+
+  <!-- ── Main content ───────────────────────────────────────────────────── -->
+  <div id="content">
+
+    <!-- TEMPLATES ─────────────────────────────────────────────────────── -->
+    <div class="tab active" id="tab-templates">
+      <div class="tmpl-left">
+        <div class="list-header"><strong style="font-size:12px">Template Type</strong></div>
+        <div class="list-body" id="tmpl-type-list"></div>
+      </div>
+      <div class="tmpl-center" id="tmpl-slots">
+        <div class="empty-state">Select a template type to start filling.</div>
+      </div>
+      <div class="tmpl-right">
+        <div style="padding:10px 16px;border-bottom:1px solid var(--border);font-size:12px;font-weight:600;color:var(--text2)">LIVE PREVIEW</div>
+        <div class="tmpl-preview">
+          <div id="preview-text">Your generated text will appear here.</div>
+          <div style="margin-top:12px" id="tmpl-use-btns"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NPCS ──────────────────────────────────────────────────────────── -->
+    <div class="tab" id="tab-npcs">
+      <div class="tab-header">
+        <h2>NPCs</h2>
+        <button class="btn btn-primary btn-sm" onclick="npcNew()">+ New NPC</button>
+      </div>
+      <div class="two-panel">
+        <div class="panel-left">
+          <div class="list-header">
+            <input type="search" placeholder="Search…" oninput="npcFilter(this.value)" id="npc-search">
+          </div>
+          <div class="list-body" id="npc-list"></div>
+        </div>
+        <div class="panel-right" id="npc-form-area">
+          <div class="empty-state">Select an NPC to edit, or click + New NPC.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DIALOGUE ──────────────────────────────────────────────────────── -->
+    <div class="tab" id="tab-dialogue">
+      <div class="canvas-toolbar">
+        <select id="dlg-npc-select" class="npc-select" onchange="dlgLoadNpc(this.value)">
+          <option value="">— Select NPC —</option>
+        </select>
+        <button class="mode-btn active" id="btn-mode-select" onclick="dlgSetMode('select')">☝ Select</button>
+        <button class="mode-btn" id="btn-mode-connect" onclick="dlgSetMode('connect')">🔗 Connect</button>
+        <button class="btn btn-secondary btn-sm" onclick="dlgAddNode()">+ Node</button>
+        <button class="btn btn-danger btn-sm" onclick="dlgDeleteSelected()">✕ Delete</button>
+        <span style="flex:1"></span>
+        <button class="btn btn-secondary btn-sm" onclick="dlgResetView()">⊡ Reset</button>
+        <span style="font-size:11px;color:var(--text2)" id="dlg-status">No NPC selected</span>
+      </div>
+      <div class="dialogue-wrap">
+        <div style="display:flex;flex:1;overflow:hidden">
+          <div id="dialogue-canvas-wrap">
+            <canvas id="dialogue-canvas"></canvas>
+          </div>
+          <div class="node-panel" id="node-panel">
+            <h4>Node Editor</h4>
+            <div class="empty-state" style="padding:16px 0">Click a node to edit it.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- QUESTS ────────────────────────────────────────────────────────── -->
+    <div class="tab" id="tab-quests">
+      <div class="tab-header">
+        <h2>Quests</h2>
+        <button class="btn btn-secondary btn-sm" onclick="arcNew()">+ Arc</button>
+        <button class="btn btn-primary btn-sm" onclick="questNew()">+ Quest</button>
+      </div>
+      <!-- Arc flowchart — shown when an arc is selected in the left panel -->
+      <div id="arc-canvas-wrap">
+        <canvas id="arc-canvas"></canvas>
+        <div class="arc-canvas-hint">Click a node to edit quest · Drag to pan · Scroll to pan horizontally</div>
+      </div>
+      <div class="two-panel" style="flex:1">
+        <div class="panel-left" style="width:300px">
+          <div class="arc-section">Story Arcs</div>
+          <div id="arc-list"></div>
+          <div class="arc-section" style="margin-top:4px">Quests <button class="btn btn-secondary btn-sm" style="float:right;margin-top:-2px" onclick="questFilter('')">All</button></div>
+          <div class="list-body" id="quest-list"></div>
+        </div>
+        <div class="panel-right" id="quest-form-area">
+          <div class="empty-state">Select a quest to edit, or click + Quest.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LORE ──────────────────────────────────────────────────────────── -->
+    <div class="tab" id="tab-lore">
+      <div class="tab-header">
+        <h2>Lore &amp; Books</h2>
+        <button class="btn btn-secondary btn-sm" onclick="loreNew(false)">+ Lore Entry</button>
+        <button class="btn btn-primary btn-sm" onclick="loreNew(true)">+ Book</button>
+      </div>
+      <div class="two-panel">
+        <div class="panel-left">
+          <div class="list-header">
+            <input type="search" placeholder="Search…" oninput="loreFilter(this.value)">
+          </div>
+          <div class="list-body" id="lore-list"></div>
+        </div>
+        <div class="panel-right" id="lore-form-area">
+          <div class="empty-state">Select an entry to edit.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FIXTURES ──────────────────────────────────────────────────────── -->
+    <div class="tab" id="tab-fixtures">
+      <div class="tab-header">
+        <h2>Deployed Fixtures</h2>
+        <button class="btn btn-secondary btn-sm" onclick="loadFixtures()">⟳ Refresh</button>
+      </div>
+      <div style="overflow-y:auto;flex:1;padding:16px">
+        <table class="fixture-table" id="fixture-table">
+          <thead><tr><th>Name</th><th>Zone</th><th>Type</th><th>Tier</th><th>Quest</th><th>Available</th><th></th></tr></thead>
+          <tbody id="fixture-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- WORLD ─────────────────────────────────────────────────────────── -->
+    <div class="tab" id="tab-world">
+      <div class="tab-header">
+        <h2>World Status</h2>
+        <button class="btn btn-secondary btn-sm" onclick="loadWorld()">⟳ Refresh</button>
+        <button class="btn btn-gold btn-sm" onclick="showQuickDeploy()">⚡ Quick Deploy NPC</button>
+      </div>
+      <div class="zone-grid" id="zone-grid"></div>
+    </div>
+
+    <!-- MAP ────────────────────────────────────────────────────────────────── -->
+    <div class="tab" id="tab-map" style="flex-direction:column">
+      <div class="map-toolbar">
+        <span style="font-weight:600;font-size:12px;color:var(--accent)">🗺️ World Map</span>
+        <div class="map-sep"></div>
+        <button class="map-filter-btn active" data-mfilter="town" onclick="mapToggleFilter(this)">🏙 Towns</button>
+        <button class="map-filter-btn active" data-mfilter="dungeon" onclick="mapToggleFilter(this)">⚔️ Dungeons</button>
+        <button class="map-filter-btn active" data-mfilter="building" onclick="mapToggleFilter(this)">🏠 Buildings</button>
+        <button class="map-filter-btn active" data-mfilter="poi" onclick="mapToggleFilter(this)">📍 POIs</button>
+        <button class="map-filter-btn active" data-mfilter="npcs" onclick="mapToggleFilter(this)">👤 NPCs</button>
+        <div class="map-sep"></div>
+        <button class="btn btn-sm btn-secondary" onclick="mapZoomStep(1.5)">＋</button>
+        <button class="btn btn-sm btn-secondary" onclick="mapZoomStep(1/1.5)">－</button>
+        <button class="btn btn-sm btn-secondary" onclick="mapResetView()">⊙ Reset</button>
+        <div class="map-sep"></div>
+        <button class="btn btn-sm btn-primary" onclick="mapStartAddMarker()">＋ Add Marker</button>
+        <span id="map-status" style="margin-left:auto;font-size:11px;color:var(--text2)"></span>
+      </div>
+      <div style="display:flex;flex:1;min-height:0">
+        <div id="map-canvas-wrap">
+          <canvas id="map-canvas"></canvas>
+          <div id="map-crosshair-hint" style="display:none;position:absolute;top:8px;left:50%;transform:translateX(-50%);background:#1a2740;border:1px solid var(--accent);border-radius:4px;padding:4px 10px;font-size:11px;pointer-events:none">Click to place marker — right-click to cancel</div>
+        </div>
+        <div id="map-panel">
+          <div style="padding:16px;color:var(--text2);font-size:12px">Click a zone or marker to inspect it.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONFIG ────────────────────────────────────────────────────────────── -->
+    <div class="tab" id="tab-config">
+      <div class="tab-header">
+        <h2>Config — Cross-Shard Sync</h2>
+        <button class="btn btn-primary btn-sm" onclick="shardAdd()">+ Add Shard</button>
+      </div>
+      <div style="overflow-y:auto;flex:1;padding:16px;max-width:600px">
+        <p style="font-size:12px;color:var(--text2);margin-bottom:16px;line-height:1.7">
+          Add remote shards here to automatically mirror NPC and fixture deploys across servers.
+          When you deploy an NPC on this shard, it is also forwarded to every enabled remote shard
+          via their internal sync endpoint (<code>/{token}/api/sync/npc</code>).
+          Both shards must be running the writing tool. Zone IDs must match across shards.
+        </p>
+        <div id="shard-list"></div>
+      </div>
+    </div>
+
+  </div><!-- #content -->
+</div><!-- #app -->
+
+<!-- Toast -->
+<div id="toast-box"></div>
+
+<!-- Map context menu -->
+<div id="map-context-menu" class="hidden" style="position:fixed;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:4px 0;z-index:2000;min-width:200px;box-shadow:0 4px 16px #0008">
+  <button class="ctx-item" onclick="mapCtxPlaceTown()">🏘️ Place Town here…</button>
+  <button class="ctx-item" onclick="mapCtxAddMarker()">📍 Add POI Marker here…</button>
+</div>
+
+<!-- Town placement modal -->
+<div id="map-town-modal" class="hidden" style="position:fixed;inset:0;background:#0008;z-index:2000;display:flex;align-items:center;justify-content:center">
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:24px;width:400px;max-width:95vw">
+    <h3 style="margin-bottom:16px">🏘️ Place Town</h3>
+    <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:2px">Name</label>
+    <input class="inp" id="tm-name" placeholder="e.g. Ashveil" style="margin-bottom:10px">
+    <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:2px">Type</label>
+    <select class="inp" id="tm-type" style="margin-bottom:10px">
+      <option value="hamlet">Hamlet / Farmstead (small)</option>
+      <option value="settlement" selected>Settlement / Village (medium)</option>
+      <option value="town">Town (medium)</option>
+      <option value="city">City (large)</option>
+      <option value="fortress_town">Fortress Town (medium)</option>
+      <option value="trade_outpost">Trade Outpost (small)</option>
+    </select>
+    <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:2px">Biome</label>
+    <select class="inp" id="tm-biome" style="margin-bottom:10px">
+      <option value="plains">Plains</option>
+      <option value="forest">Forest</option>
+      <option value="mountain">Mountain</option>
+      <option value="desert">Desert</option>
+      <option value="swamp">Swamp</option>
+      <option value="tundra">Tundra</option>
+      <option value="coast">Coast</option>
+    </select>
+    <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:2px">Description (optional)</label>
+    <textarea class="inp" id="tm-desc" rows="2" style="margin-bottom:14px" placeholder="A short note about this settlement…"></textarea>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" onclick="mapPlaceTownConfirm()">Place Town</button>
+      <button class="btn btn-secondary" onclick="mapCloseTownModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div id="modal" class="hidden">
+  <div id="modal-box">
+    <div id="modal-content"></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ── Token + API base ─────────────────────────────────────────────────────────
+const TOKEN    = window.location.pathname.split('/')[1];
+const API_BASE = '/' + TOKEN + '/api';
+
+// ── Shared state ─────────────────────────────────────────────────────────────
+const S = {
+  zones: [], npcs: [], arcs: [], quests: [],
+  lore: [], fixtures: [], locationTypes: [],
+  portraits: [], mapMarkers: [], placedTowns: [],
+  activeNpcId: null, activeQuestId: null, activeLoreId: null,
+  activeArcId: null,
+  _shards: [], _zoneObjects: [],
+};
+
+// ── API helper ───────────────────────────────────────────────────────────────
+async function api(method, path, body) {
+  try {
+    const opts = { method, headers: { 'Content-Type': 'application/json' } };
+    if (body !== undefined) opts.body = JSON.stringify(body);
+    const r = await fetch(API_BASE + path, opts);
+    const data = await r.json();
+    if (!r.ok) { toast(data.error || ('HTTP ' + r.status), 'err'); return null; }
+    return data;
+  } catch (e) { toast('Network error: ' + e.message, 'err'); return null; }
+}
+
+// ── Toast ────────────────────────────────────────────────────────────────────
+function toast(msg, type = 'info') {
+  const box  = document.getElementById('toast-box');
+  const el   = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = msg;
+  box.appendChild(el);
+  setTimeout(() => el.remove(), 3200);
+}
+
+// ── Modal ────────────────────────────────────────────────────────────────────
+function showModal(html, onConfirm) {
+  const m = document.getElementById('modal');
+  document.getElementById('modal-content').innerHTML = html;
+  m.classList.remove('hidden');
+  m.onclick = e => { if (e.target === m) closeModal(); };
+  if (onConfirm) window._modalConfirm = onConfirm;
+}
+function closeModal() {
+  document.getElementById('modal').classList.add('hidden');
+  window._modalConfirm = null;
+}
+function confirmModal() { if (window._modalConfirm) window._modalConfirm(); closeModal(); }
+
+// ── Tab switching ─────────────────────────────────────────────────────────────
+const TAB_LOADERS = {
+  templates: initTemplates,
+  npcs:      loadNpcs,
+  dialogue:  dlgTabActivate,
+  quests:    loadQuests,
+  lore:      loadLore,
+  fixtures:  loadFixtures,
+  world:     loadWorld,
+  map:       loadMap,
+  config:    loadConfig,
+};
+document.querySelectorAll('#tab-nav button[data-tab]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#tab-nav button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    if (TAB_LOADERS[btn.dataset.tab]) TAB_LOADERS[btn.dataset.tab]();
+  });
+});
+
+// ── Shared loaders ───────────────────────────────────────────────────────────
+async function fetchZones()         { const d = await api('GET', '/zones');         if (d) S.zones = d; }
+async function fetchNpcs()          { const d = await api('GET', '/npcs');          if (d) S.npcs  = d; }
+async function fetchArcs()          { const d = await api('GET', '/arcs');          if (d) S.arcs  = d; }
+async function fetchQuests()        { const d = await api('GET', '/quests');        if (d) S.quests = d; }
+async function fetchLore()          { const d = await api('GET', '/lore');          if (d) S.lore  = d; }
+async function fetchFixtures()      { const d = await api('GET', '/fixtures');      if (d) S.fixtures = d; }
+async function fetchLocationTypes() { const d = await api('GET', '/location-types'); if (d) S.locationTypes = d; }
+
+// ── Portrait picker ───────────────────────────────────────────────────────────
+async function fetchPortraits() {
+  if (S.portraits.length) return;
+  const d = await api('GET', '/portraits');
+  if (d) S.portraits = d;
+}
+
+function portraitUrl(p) {
+  return window.location.pathname.replace(/\/writing-tool.*$/, '') + '/portraits/' + p;
+}
+
+var _portraitActiveCat = '';
+
+async function openPortraitPicker() {
+  await fetchPortraits();
+  var cats = [...new Set(S.portraits.map(function(p) { return p.category; }))].sort();
+  if (!_portraitActiveCat || !cats.includes(_portraitActiveCat)) _portraitActiveCat = cats[0] || '';
+  showModal(
+    '<h3 style="margin-bottom:10px">Choose Portrait</h3>' +
+    '<div id="portrait-modal-inner">' +
+      '<div class="portrait-cat-tabs" id="pcats">' +
+        cats.map(function(c) {
+          return '<div class="portrait-cat-tab' + (c === _portraitActiveCat ? ' active' : '') +
+            '" onclick="portraitSetCat(\'' + c.replace(/'/g, "\\'") + '\')">' + escHtml(c) + '</div>';
+        }).join('') +
+      '</div>' +
+      '<div class="portrait-grid" id="pgrid">' + renderPortraitGrid(_portraitActiveCat) + '</div>' +
+    '</div>' +
+    '<div class="modal-actions" style="margin-top:8px">' +
+      '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button>' +
+    '</div>'
+  );
+}
+
+function portraitSetCat(cat) {
+  _portraitActiveCat = cat;
+  document.querySelectorAll('.portrait-cat-tab').forEach(function(el) {
+    el.classList.toggle('active', el.textContent === cat);
+  });
+  document.getElementById('pgrid').innerHTML = renderPortraitGrid(cat);
+}
+
+function renderPortraitGrid(cat) {
+  var list = S.portraits.filter(function(p) { return p.category === cat; });
+  var cur  = document.getElementById('nf-portrait') ? document.getElementById('nf-portrait').value : '';
+  if (!list.length) return '<div class="empty-state">No portraits in this category.</div>';
+  return list.map(function(p) {
+    return '<img class="portrait-thumb' + (p.path === cur ? ' selected' : '') + '"' +
+      ' src="' + escHtml(portraitUrl(p.path)) + '"' +
+      ' title="' + escHtml(p.name) + '"' +
+      ' onerror="this.style.display=\'none\'"' +
+      ' onclick="pickPortrait(\'' + p.path.replace(/\\/g, '\\\\').replace(/'/g, "\\'") + '\',\'' + p.name.replace(/'/g, "\\'") + '\')">';
+  }).join('');
+}
+
+function pickPortrait(path, name) {
+  var inp  = document.getElementById('nf-portrait');
+  var lbl  = document.getElementById('nf-portrait-label');
+  var prev = document.getElementById('nf-portrait-preview');
+  if (inp)  inp.value = path;
+  if (lbl)  lbl.textContent = name;
+  if (prev) { prev.src = portraitUrl(path); prev.style.display = 'block'; }
+  closeModal();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TEMPLATES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const WB = {
+  npc_name:    ['Aldric','Mira Voss','Theron the Gray','Sova Nightwhisper','Kelven','Brother Aldus','Sera Coldwell','Joss the Wanderer','Unnamed Pilgrim','Elder Wraen'],
+  settlement:  ['the Shattered Peaks','the Vale of Whispers','the Ashen Ruins','Solara\'s Cradle','the Rift Borderlands','the Sunken Marshes','the High Road','the Outer Hold','the Forsaken Shore','the Merchant Quarter'],
+  creature:    ['grave revenant','rift hollow','basilisk','feral lycanthrope','ash wraith','corrupted elder beast','hollow knight','bone collector','plague bear','void leech','risen champion','shard golem'],
+  relic:       ['ancient compass','sealed tome','shattered oathstone','rift shard','stolen regalia','hollow key','elder lens fragment','bound spirit jar','cursed banner','faded covenant scroll'],
+  action:      ['retrieve','destroy','escort safely','investigate','purge','recover','deliver','intercept','protect','track down','negotiate with','steal back from'],
+  consequence: ['The region will fall to ruin without it.','Its absence has already upset the balance.','Others are hunting for the same thing.','The window to act closes at dawn.','Failure means the innocents suffer.','The corruption is spreading fast.'],
+  time_phrase: ['fifty winters past','in the age before the Rift','before the Heaven\'s Atlas fell','when the twin cities still stood','in the early years of the Dominion','three moons ago','in living memory','since the last great war'],
+  faction:     ['The Holy Dominion','The Free Holds of Stone','The Merchant Guilds','The Rift Wardens','The Thieves\' Network','the wandering orders','the remnant survivors','a desperate cell of radicals'],
+  emotion:     ['grief','righteous fury','desperate hope','cold resolve','quiet terror','bitter regret','hollow exhaustion','reckless courage'],
+  rumor_opener:['They say','Word is','I\'ve heard tell','Don\'t repeat this, but','A trader told me','The guards won\'t say it aloud—but'],
+  history_subj:['A great warrior','The old council','A nameless pilgrim','The last survivor','An entire village','A brotherhood of scholars'],
+  lore_event:  ['vanished without trace','made a terrible bargain','unleashed something they couldn\'t control','sealed it away and swore silence','left behind a warning no one heeded','gave everything to stop what came next'],
+  reward_desc: ['gold and supplies','an old favour','a deed to unclaimed land','rare crafting materials','a key to a sealed vault','freedom from a debt','forbidden knowledge','a title among the Holds'],
+};
+
+function rnd(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+const TEMPLATES = [
+  {
+    id: 'quest_hook',
+    label: '⚔️ Quest Hook',
+    slots: [
+      { key: 'npc',        label: 'Quest Giver',   type: 'word_bank', wb: 'npc_name'    },
+      { key: 'action',     label: 'Action Verb',   type: 'word_bank', wb: 'action'      },
+      { key: 'target',     label: 'Target Object', type: 'word_bank', wb: 'relic'       },
+      { key: 'place',      label: 'Location',      type: 'word_bank', wb: 'settlement'  },
+      { key: 'reward',     label: 'Reward',        type: 'word_bank', wb: 'reward_desc' },
+    ],
+    render: v => `${v.npc} needs someone to ${v.action} the ${v.target} from ${v.place}. In return: ${v.reward}.`,
+  },
+  {
+    id: 'quest_desc',
+    label: '📜 Quest Description',
+    slots: [
+      { key: 'faction',    label: 'Faction',       type: 'word_bank', wb: 'faction'     },
+      { key: 'place',      label: 'Location',      type: 'word_bank', wb: 'settlement'  },
+      { key: 'objective',  label: 'Objective',     type: 'text',      placeholder: 'Describe the objective…' },
+      { key: 'pressure',   label: 'Time Pressure', type: 'word_bank', wb: 'consequence' },
+      { key: 'reward',     label: 'Reward',        type: 'word_bank', wb: 'reward_desc' },
+    ],
+    render: v => `${v.faction} requires action at ${v.place}.\n\n${v.objective || '[objective]'}\n\n${v.pressure} Reward: ${v.reward}.`,
+  },
+  {
+    id: 'npc_intro',
+    label: '🧑 NPC Intro Dialogue',
+    slots: [
+      { key: 'name',       label: 'NPC Name',      type: 'word_bank', wb: 'npc_name'    },
+      { key: 'occupation', label: 'Occupation',    type: 'text',      placeholder: 'blacksmith, merchant…' },
+      { key: 'faction',    label: 'Affiliation',   type: 'word_bank', wb: 'faction'     },
+      { key: 'rumor',      label: 'Rumor Hook',    type: 'word_bank', wb: 'rumor_opener'},
+    ],
+    render: v => `Hail, traveller. I'm ${v.name}, ${v.occupation || 'a local'} sworn to ${v.faction}. ${v.rumor}… there's something strange stirring in these parts. Ask me if you want to know more.`,
+  },
+  {
+    id: 'lore_entry',
+    label: '📖 Lore Entry',
+    slots: [
+      { key: 'time',    label: 'Time Reference', type: 'word_bank', wb: 'time_phrase'  },
+      { key: 'subject', label: 'Subject',        type: 'word_bank', wb: 'history_subj' },
+      { key: 'event',   label: 'Key Event',      type: 'word_bank', wb: 'lore_event'   },
+      { key: 'result',  label: 'Consequence',    type: 'word_bank', wb: 'consequence'  },
+      { key: 'belief',  label: 'Legacy Belief',  type: 'text',      placeholder: 'What do people believe now?' },
+    ],
+    render: v => `${v.time.charAt(0).toUpperCase() + v.time.slice(1)}, ${v.subject} ${v.event}. ${v.result}\n\n${v.belief || '[legacy belief]'}`,
+  },
+  {
+    id: 'book_chapter',
+    label: '📚 Book Chapter',
+    slots: [
+      { key: 'num',    label: 'Chapter Number', type: 'text',      placeholder: 'I, II, III…' },
+      { key: 'title',  label: 'Chapter Title',  type: 'text',      placeholder: 'e.g. The Burning Accord' },
+      { key: 'opener', label: 'Opening Line',   type: 'word_bank', wb: 'rumor_opener' },
+      { key: 'event',  label: 'Central Event',  type: 'word_bank', wb: 'lore_event'   },
+    ],
+    render: v => `Chapter ${v.num || '?'}: ${v.title || '[Title]'}\n\n${v.opener} — ${v.event}. The full account that follows was transcribed from surviving records, incomplete as they are.`,
+  },
+  {
+    id: 'villain_speech',
+    label: '😈 Villain Motivation',
+    slots: [
+      { key: 'name',    label: 'Villain Name',  type: 'word_bank', wb: 'npc_name'    },
+      { key: 'faction', label: 'Their Cause',   type: 'word_bank', wb: 'faction'     },
+      { key: 'emotion', label: 'Core Emotion',  type: 'word_bank', wb: 'emotion'     },
+      { key: 'action',  label: 'Intent',        type: 'word_bank', wb: 'action'      },
+    ],
+    render: v => `${v.name}: "You call it wrong. I call it necessary. ${v.faction} abandoned us — left us to rot. ${v.emotion.charAt(0).toUpperCase() + v.emotion.slice(1)} is the only honest response to what they've done. I will ${v.action} what must be done. Whatever it costs."`,
+  },
+  {
+    id: 'rumor',
+    label: '💬 Rumor / Gossip',
+    slots: [
+      { key: 'opener',  label: 'Opener',         type: 'word_bank', wb: 'rumor_opener'},
+      { key: 'subject', label: 'Subject',         type: 'word_bank', wb: 'history_subj'},
+      { key: 'event',   label: 'What Happened',  type: 'word_bank', wb: 'lore_event'  },
+      { key: 'place',   label: 'Near',            type: 'word_bank', wb: 'settlement'  },
+    ],
+    render: v => `${v.opener} ${v.subject.toLowerCase()} ${v.event} near ${v.place}. Nobody talks about it openly, but you can feel it if you know what to look for.`,
+  },
+  {
+    id: 'item_desc',
+    label: '🗡️ Item Description',
+    slots: [
+      { key: 'relic',   label: 'Item Name',     type: 'word_bank', wb: 'relic'       },
+      { key: 'time',    label: 'Age',            type: 'word_bank', wb: 'time_phrase' },
+      { key: 'faction', label: 'Origin',         type: 'word_bank', wb: 'faction'     },
+      { key: 'emotion', label: 'Feeling',        type: 'word_bank', wb: 'emotion'     },
+    ],
+    render: v => `A ${v.relic}, forged ${v.time} by ${v.faction}. Holding it brings an inexplicable sense of ${v.emotion}. The craftsmanship is unlike anything produced today.`,
+  },
+];
+
+let tmplSlotValues = {};
+let tmplCurrentId  = null;
+
+function initTemplates() {
+  const list = document.getElementById('tmpl-type-list');
+  list.innerHTML = TEMPLATES.map(t =>
+    `<div class="list-item" onclick="tmplSelect('${t.id}')" id="ttype-${t.id}">
+      <div class="item-name">${t.label}</div>
+    </div>`
+  ).join('');
+  if (!tmplCurrentId && TEMPLATES.length) tmplSelect(TEMPLATES[0].id);
+}
+
+function tmplSelect(id) {
+  tmplCurrentId = id;
+  tmplSlotValues = {};
+  document.querySelectorAll('#tmpl-type-list .list-item').forEach(el => el.classList.remove('active'));
+  const el = document.getElementById('ttype-' + id);
+  if (el) el.classList.add('active');
+  renderTmplSlots(id);
+}
+
+function renderTmplSlots(id) {
+  const tmpl   = TEMPLATES.find(t => t.id === id);
+  const center = document.getElementById('tmpl-slots');
+  if (!tmpl) return;
+
+  // Init values — seed from active NPC context when a slot matches NPC data
+  const _ctxNpc = S.activeNpcId ? S.npcs.find(n => n.npc_id === S.activeNpcId) : null;
+  tmpl.slots.forEach(s => {
+    if (tmplSlotValues[s.key] !== undefined) return;
+    if (_ctxNpc) {
+      if ((s.key === 'name' || s.key === 'npc') && _ctxNpc.name)             { tmplSlotValues[s.key] = _ctxNpc.name; return; }
+      if (s.key === 'faction' && _ctxNpc.faction)                            { tmplSlotValues[s.key] = _ctxNpc.faction; return; }
+      if (s.key === 'occupation' && _ctxNpc.occupation)                      { tmplSlotValues[s.key] = _ctxNpc.occupation; return; }
+      if (s.key === 'emotion' && _ctxNpc.personality) {
+        const persList = parseJsonArr(_ctxNpc.personality);
+        if (persList.length) { tmplSlotValues[s.key] = persList[0]; return; }
+      }
+    }
+    tmplSlotValues[s.key] = s.type === 'word_bank' ? rnd(WB[s.wb] || ['']) : '';
+  });
+
+  const _ctxBanner = _ctxNpc
+    ? `<div style="padding:6px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);font-size:11px;color:var(--accent);margin-bottom:14px">NPC context: <strong>${escHtml(_ctxNpc.name)}</strong>${_ctxNpc.faction ? ' · ' + escHtml(_ctxNpc.faction) : ''}${_ctxNpc.occupation ? ' · ' + escHtml(_ctxNpc.occupation) : ''} <span style="color:var(--text2)">(slots pre-seeded from dialogue tab)</span></div>`
+    : '';
+  center.innerHTML = `<h3 style="margin-bottom:14px;font-size:15px">${tmpl.label}</h3>${_ctxBanner}` +
+    tmpl.slots.map(s => {
+      const v = tmplSlotValues[s.key] || '';
+      if (s.type === 'dropdown') {
+        return `<div class="field"><label>${s.label}</label>
+          <select onchange="tmplSet('${s.key}',this.value)">
+            ${(s.options||[]).map(o=>`<option${v===o?' selected':''}>${o}</option>`).join('')}
+          </select></div>`;
+      }
+      const diceBtn = s.type === 'word_bank'
+        ? `<button class="dice-btn" title="Randomize" onclick="tmplRandomize('${s.key}','${s.wb}')">🎲</button>`
+        : '';
+      return `<div class="field"><label>${s.label}</label>
+        <div class="slot-row">
+          <div class="field" style="margin:0">
+            <input type="text" value="${escHtml(v)}" placeholder="${s.placeholder||''}" oninput="tmplSet('${s.key}',this.value)">
+          </div>${diceBtn}
+        </div></div>`;
+    }).join('') +
+    `<div class="inline-actions" style="margin-top:16px">
+      <button class="btn btn-secondary" onclick="tmplRandomizeAll()">🎲 Randomize All</button>
+      <button class="btn btn-primary" onclick="tmplCopyPreview()">📋 Copy Text</button>
+    </div>`;
+
+  updatePreview();
+
+  // Use buttons
+  document.getElementById('tmpl-use-btns').innerHTML =
+    `<button class="btn btn-success btn-sm" style="width:100%;margin-bottom:6px" onclick="tmplPushToQuest()">→ Pre-fill Quest Form</button>
+     <button class="btn btn-secondary btn-sm" style="width:100%;margin-bottom:6px" onclick="tmplPushToLore()">→ Pre-fill Lore Form</button>
+     <button class="btn btn-secondary btn-sm" style="width:100%" onclick="tmplPushToNpc()">→ Pre-fill NPC Dialogue</button>`;
+}
+
+function tmplSet(key, val) { tmplSlotValues[key] = val; updatePreview(); }
+function tmplRandomize(key, wb) { tmplSlotValues[key] = rnd(WB[wb]||['']); renderTmplSlots(tmplCurrentId); }
+function tmplRandomizeAll() {
+  const tmpl = TEMPLATES.find(t => t.id === tmplCurrentId);
+  if (!tmpl) return;
+  tmpl.slots.forEach(s => { if (s.type === 'word_bank') tmplSlotValues[s.key] = rnd(WB[s.wb]||['']); });
+  renderTmplSlots(tmplCurrentId);
+}
+function updatePreview() {
+  const tmpl = TEMPLATES.find(t => t.id === tmplCurrentId);
+  if (!tmpl) return;
+  const el = document.getElementById('preview-text');
+  try { el.textContent = tmpl.render(tmplSlotValues); } catch(_) {}
+}
+function tmplCopyPreview() {
+  const text = document.getElementById('preview-text').textContent;
+  navigator.clipboard.writeText(text).then(() => toast('Copied to clipboard', 'ok'));
+}
+function tmplPushToQuest() {
+  const text = document.getElementById('preview-text').textContent;
+  S._tmplText = text;
+  document.querySelector('#tab-nav button[data-tab="quests"]').click();
+  questNew(text);
+}
+function tmplPushToLore() {
+  const text = document.getElementById('preview-text').textContent;
+  S._tmplText = text;
+  document.querySelector('#tab-nav button[data-tab="lore"]').click();
+  loreNew(false, text);
+}
+function tmplPushToNpc() {
+  const text = document.getElementById('preview-text').textContent;
+  S._tmplText = text;
+  document.querySelector('#tab-nav button[data-tab="npcs"]').click();
+  toast('Paste the template text into the NPC\'s description field.', 'info');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// NPCs
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const RACES        = ['Human','Elf','Orc','Dwarf','Gnome','Goblin','Lizard Folk','Cat Folk'];
+const FACTIONS_LST = ['Holy Dominion','Free Holds of Stone','Merchant Guilds','Rift Wardens','Thieves Network','Vel\'sharath Covenant','Wandering Orders','None / Independent'];
+const VOICE_TONES  = ['formal','informal','gruff','scholarly','fearful','jovial','cryptic','weary','zealous','suspicious'];
+const OCCUPATIONS  = ['Guard','Merchant','Innkeeper','Blacksmith','Scholar','Priest','Farmer','Hunter','Thief','Noble','Wanderer','Mage','Healer','Bard','Craftsman','Civilian'];
+
+async function loadNpcs() {
+  await fetchNpcs();
+  renderNpcList();
+  populateDlgNpcSelect();
+}
+
+function renderNpcList(filter = '') {
+  const list = document.getElementById('npc-list');
+  const f = filter.toLowerCase();
+  const items = S.npcs.filter(n => !f || n.name.toLowerCase().includes(f) || (n.occupation||'').toLowerCase().includes(f));
+  list.innerHTML = items.map(n =>
+    `<div class="list-item${n.npc_id === S.activeNpcId ? ' active':''}" onclick="npcEdit('${n.npc_id}')">
+      <div class="item-row">
+        <div class="item-name">${escHtml(n.name)}</div>
+        <div class="item-sub">${n.race||''}</div>
+      </div>
+      <div class="item-sub">${n.occupation||''} · ${n.faction||'No faction'}</div>
+    </div>`
+  ).join('') || '<div class="empty-state">No NPCs yet.</div>';
+}
+function npcFilter(val) { renderNpcList(val); }
+
+function npcNew() {
+  S.activeNpcId = null;
+  _nfSched = [];
+  _nfInv   = [];
+  _nfLoot  = [];
+  S._zoneObjects = [];
+  renderNpcForm(null);
+  renderNpcList(document.getElementById('npc-search').value);
+}
+
+function npcEdit(id) {
+  S.activeNpcId = id;
+  const npc = S.npcs.find(n => n.npc_id === id);
+  _nfSched = parseJsonArr(npc ? npc.schedule  : '[]');
+  _nfInv   = parseJsonArr(npc ? npc.inventory : '[]');
+  _nfLoot  = parseJsonArr(npc ? npc.loot_table : '[]');
+  S._zoneObjects = [];
+  renderNpcList(document.getElementById('npc-search').value);
+  renderNpcForm(npc);
+}
+
+function renderNpcForm(npc) {
+  const area  = document.getElementById('npc-form-area');
+  const d     = npc || {};
+  const idVal = d.npc_id || ('npc_' + Date.now());
+
+  const chipsHtml = (fieldId, inputId, arr, field) =>
+    `<div class="chips" id="${fieldId}" onclick="document.getElementById('${inputId}').focus()">
+      ${arr.map(v=>`<div class="chip">${escHtml(v)}<span class="del" onclick="nfChipDel('${field}','${escHtml(v)}')">×</span></div>`).join('')}
+      <input class="chip-input" id="${inputId}" placeholder="Add…" onkeydown="nfChipKey(event,'${field}')">
+    </div>`;
+
+  const schedBlocks = parseJsonArr(d.schedule);
+  const schedHtml = schedBlocks.map((b,i) => nfSchedBlockHtml(b, i)).join('');
+
+  area.innerHTML = `
+    <h3 style="margin-bottom:14px;font-size:15px">${npc ? 'Edit NPC' : 'New NPC'}</h3>
+    <input type="hidden" id="npc-id" value="${escHtml(idVal)}">
+
+    <div class="row">
+      <div class="field"><label>Name *</label><input id="nf-name" type="text" value="${escHtml(d.name||'')}"></div>
+      <div class="field"><label>Tier (1–5)</label><input id="nf-tier" type="number" min="1" max="5" value="${d.tier||1}" style="width:70px"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>Race</label>
+        <select id="nf-race">${RACES.map(r=>`<option${d.race===r?' selected':''}>${r}</option>`).join('')}<option value="">—</option></select>
+      </div>
+      <div class="field"><label>Occupation</label>
+        <select id="nf-occ">${OCCUPATIONS.map(o=>`<option${d.occupation===o?' selected':''}>${o}</option>`).join('')}</select>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field"><label>Job Title</label><input id="nf-job-title" type="text" value="${escHtml(d.job_title||'')}" placeholder="e.g. Head Blacksmith of Ironhold"></div>
+      <div class="field"><label>Tier (1–5)</label><input id="nf-tier2" type="number" style="display:none"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>Faction</label>
+        <select id="nf-faction">${FACTIONS_LST.map(f=>`<option${d.faction===f?' selected':''}>${f}</option>`).join('')}</select>
+      </div>
+      <div class="field"><label>Region</label><input id="nf-region" type="text" value="${escHtml(d.region||'')}"></div>
+    </div>
+    <div class="field"><label>Portrait</label>
+      <input type="hidden" id="nf-portrait" value="${escHtml(d.portrait||'')}">
+      <button type="button" class="portrait-pick-btn" onclick="openPortraitPicker()">
+        <img class="portrait-preview" id="nf-portrait-preview"
+          ${d.portrait ? `src="${escHtml(portraitUrl(d.portrait))}"` : 'style="display:none"'}
+          onerror="this.style.display='none'">
+        <span id="nf-portrait-label">${escHtml(d.portrait ? d.portrait.split('/').pop().replace(/\.[^.]+$/, '') : 'Click to choose a portrait\u2026')}</span>
+      </button>
+    </div>
+    <div class="row">
+      <div class="field"><label>Voice Tone</label>
+        <select id="nf-voice">${VOICE_TONES.map(v=>`<option${d.voice_tone===v?' selected':''}>${v}</option>`).join('')}</select>
+      </div>
+      <div class="field"><label>Sleep Start / End (hours)</label>
+        <div class="row" style="gap:6px">
+          <input id="nf-sleep-s" type="number" min="0" max="23" value="${d.sleep_start!=null?d.sleep_start:22}" style="width:60px">
+          <span style="align-self:center;color:var(--text2)">→</span>
+          <input id="nf-sleep-e" type="number" min="0" max="23" value="${d.sleep_end!=null?d.sleep_end:6}" style="width:60px">
+        </div>
+      </div>
+    </div>
+    <div class="field"><label>Description</label><textarea id="nf-desc" rows="3">${escHtml(d.description||'')}</textarea></div>
+
+    <div class="sep-line"></div>
+    <div style="font-size:12px;font-weight:600;margin-bottom:10px;color:var(--text)">Character Depth</div>
+
+    <div class="field"><label>Background / Backstory</label><textarea id="nf-background" rows="4">${escHtml(d.background||'')}</textarea></div>
+    <div class="field"><label>Personality Traits</label>${chipsHtml('nf-personality-chips','nf-p-input',parseJsonArr(d.personality),'personality')}</div>
+    <div class="field"><label>Fears</label>${chipsHtml('nf-fears-chips','nf-fe-input',parseJsonArr(d.fears),'fears')}</div>
+    <div class="field"><label>Ambitions</label>${chipsHtml('nf-ambitions-chips','nf-am-input',parseJsonArr(d.ambitions),'ambitions')}</div>
+    <div class="field"><label>Secrets</label>${chipsHtml('nf-secrets-chips','nf-sc-input',parseJsonArr(d.secrets),'secrets')}</div>
+    <div class="field"><label>Knowledge Topics</label>${chipsHtml('nf-knowledge-chips','nf-k-input',parseJsonArr(d.knowledge),'knowledge')}</div>
+    <div class="field"><label>Notable Items</label>${chipsHtml('nf-notable-chips','nf-ni-input',parseJsonArr(d.notable_items),'notable_items')}</div>
+    <div class="sep-line"></div>
+    <div style="font-size:12px;font-weight:600;margin-bottom:8px;color:var(--text)">Shop Inventory <span style="font-weight:400;color:var(--text2)">(items this NPC sells)</span></div>
+    <div id="nf-inv-rows">${nfInvHtml(parseJsonArr(d.inventory))}</div>
+    <button class="btn btn-secondary btn-sm" style="margin-bottom:12px" onclick="nfAddInvRow()">+ Add Item</button>
+
+    <div class="sep-line"></div>
+    <div style="font-size:12px;font-weight:600;margin-bottom:8px;color:var(--text)">Drop Loot <span style="font-weight:400;color:var(--text2)">(items dropped on death/event)</span></div>
+    <div class="row" style="margin-bottom:8px">
+      <div class="field" style="max-width:140px"><label>Loot Tier</label>
+        <select id="nf-loot-tier">
+          ${[1,2,3,4,5].map(t=>`<option value="${t}"${(d.loot_tier||1)==t?' selected':''}>${t}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field" style="max-width:110px"><label>Coin Min</label>
+        <input type="number" id="nf-coin-min" value="${d.coin_drop_min||0}" min="0" style="width:80px">
+      </div>
+      <div class="field" style="max-width:110px"><label>Coin Max</label>
+        <input type="number" id="nf-coin-max" value="${d.coin_drop_max||0}" min="0" style="width:80px">
+      </div>
+    </div>
+    <div id="nf-loot-rows">${nfLootHtml(parseJsonArr(d.loot_table))}</div>
+    <button class="btn btn-secondary btn-sm" style="margin-bottom:12px" onclick="nfAddLootRow()">+ Add Loot Item</button>
+
+    <div class="field"><label>Relationships (JSON array)</label><textarea id="nf-relationships" rows="2">${escHtml(d.relationships||'[]')}</textarea></div>
+
+    <div class="sep-line"></div>
+    <div style="font-size:12px;font-weight:600;margin-bottom:10px;color:var(--text)">Daily Schedule &amp; Locations</div>
+    <p style="font-size:11px;color:var(--text2);margin-bottom:10px">Link this NPC to buildings from the map editor. First set their deploy zone, then pick buildings from that zone below.</p>
+
+    <div class="row">
+      <div class="field"><label>Assigned Zone</label>
+        <select id="nf-home-zone" onchange="nfLoadZoneObjects(this.value)">
+          <option value="">— Pick zone —</option>
+          ${S.zones.map(z=>`<option value="${z.id}"${(d.home_zone||'')===z.id?' selected':''}>${escHtml(z.name)}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field"><label>Work Building</label>
+        <select id="nf-work-obj">
+          <option value="">— Load zone first —</option>
+          ${d.work_object_id ? `<option value="${escHtml(d.work_object_id)}" selected>${escHtml(d.work_object_id)}</option>` : ''}
+        </select>
+      </div>
+      <div class="field"><label>Home Building</label>
+        <select id="nf-home-obj">
+          <option value="">— Load zone first —</option>
+          ${d.home_object_id ? `<option value="${escHtml(d.home_object_id)}" selected>${escHtml(d.home_object_id)}</option>` : ''}
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Daily Schedule <button class="btn btn-secondary btn-sm" style="margin-left:8px" onclick="nfAddSchedBlock()">+ Block</button></label>
+      <div id="nf-schedule">${schedHtml}</div>
+    </div>
+
+    <div class="inline-actions">
+      <button class="btn btn-primary" onclick="npcSave()">💾 Save</button>
+      ${npc ? `<button class="btn btn-success" onclick="npcDeployPrompt('${npc.npc_id}')">🚀 Deploy to Zone</button>` : ''}
+      ${npc ? `<button class="btn btn-danger" onclick="npcDelete('${npc.npc_id}')">✕ Delete</button>` : ''}
+    </div>`;
+
+  // Auto-load zone objects if zone is already set
+  if (d.home_zone) nfLoadZoneObjects(d.home_zone, d.work_object_id, d.home_object_id);
+}
+
+// Chip helpers
+const _nfChips = { personality: [], knowledge: [] };
+function nfChipKey(e, field) {
+  if (e.key !== 'Enter') return;
+  e.preventDefault();
+  const val = e.target.value.trim();
+  if (!val) return;
+  e.target.value = '';
+  const npc = S.npcs.find(n => n.npc_id === S.activeNpcId);
+  const arr = parseJsonArr(npc ? npc[field] : '[]');
+  if (!arr.includes(val)) arr.push(val);
+  if (npc) npc[field] = JSON.stringify(arr);
+  renderChips(field, arr);
+}
+function nfChipDel(field, val) {
+  const npc = S.npcs.find(n => n.npc_id === S.activeNpcId);
+  const arr = parseJsonArr(npc ? npc[field] : '[]').filter(x => x !== val);
+  if (npc) npc[field] = JSON.stringify(arr);
+  renderChips(field, arr);
+}
+function renderChips(field, arr) {
+  const wrap = document.getElementById('nf-' + field[0] + '-' + (field === 'personality' ? 'personality' : 'knowledge') + '-chips');
+  if (!wrap) return;
+  const input = wrap.querySelector('.chip-input');
+  wrap.innerHTML = arr.map(p=>`<div class="chip">${escHtml(p)}<span class="del" onclick="nfChipDel('${field}','${escHtml(p)}')">×</span></div>`).join('');
+  if (input) { input.id = 'nf-' + field[0] + '-input'; wrap.appendChild(input); }
+}
+
+// ── Schedule block helpers ────────────────────────────────────────────────────
+const SCHED_ACTIONS = ['work','home','sleep','patrol','break','eat','socialize','wander'];
+
+function nfSchedBlockHtml(b, i) {
+  return `<div class="sched-block" id="sb-${i}">
+    <input type="number" min="0" max="23" value="${b.hour||0}" title="Hour (0–23)" onchange="nfSchedSet(${i},'hour',parseInt(this.value)||0)">
+    <select onchange="nfSchedSet(${i},'action',this.value)">
+      ${SCHED_ACTIONS.map(a=>`<option${(b.action||'work')===a?' selected':''}>${a}</option>`).join('')}
+    </select>
+    <select class="sched-label" id="sb-loc-${i}" onchange="nfSchedSet(${i},'location_id',this.value)" title="Location (building from zone)">
+      <option value="${escHtml(b.location_id||'')}">${escHtml(b.location_id||'— Pick building —')}</option>
+    </select>
+    <input type="text" class="sched-label" value="${escHtml(b.label||'')}" placeholder="Notes…" onchange="nfSchedSet(${i},'label',this.value)">
+    <button class="btn btn-danger btn-sm" onclick="nfRemoveSchedBlock(${i})">✕</button>
+  </div>`;
+}
+
+let _nfSched = [];
+function nfAddSchedBlock() {
+  _nfSched.push({ hour: 8, action: 'work', location_id: '', label: '' });
+  document.getElementById('nf-schedule').innerHTML = _nfSched.map(nfSchedBlockHtml).join('');
+  nfRefreshSchedDropdowns();
+}
+function nfRemoveSchedBlock(i) {
+  _nfSched.splice(i, 1);
+  document.getElementById('nf-schedule').innerHTML = _nfSched.map(nfSchedBlockHtml).join('');
+  nfRefreshSchedDropdowns();
+}
+function nfSchedSet(i, key, val) { if (_nfSched[i]) _nfSched[i][key] = val; }
+
+// ── Shop Inventory rows ──────────────────────────────────────────────────────
+let _nfInv  = [];
+let _nfLoot = [];
+
+function nfInvRowHtml(row, i) {
+  return `<div class="sched-block" style="gap:6px">
+    <input type="text" placeholder="itemId" value="${escHtml(row.itemId||'')}" oninput="_nfInv[${i}].itemId=this.value" style="width:140px">
+    <input type="number" placeholder="qty" value="${row.qty||1}" min="1" oninput="_nfInv[${i}].qty=+this.value" style="width:60px">
+    <input type="number" placeholder="price" value="${row.price||0}" min="0" oninput="_nfInv[${i}].price=+this.value" style="width:70px">
+    <select oninput="_nfInv[${i}].flag=this.value" style="width:90px">
+      <option value=""${!row.flag?' selected':''}>normal</option>
+      <option value="rare"${row.flag==='rare'?' selected':''}>rare</option>
+      <option value="unique"${row.flag==='unique'?' selected':''}>unique</option>
+      <option value="quest"${row.flag==='quest'?' selected':''}>quest</option>
+    </select>
+    <button class="btn btn-danger btn-sm" onclick="nfRemoveInvRow(${i})">✕</button>
+  </div>`;
+}
+
+function nfInvHtml(rows) {
+  _nfInv = rows.map(r => Object.assign({itemId:'',qty:1,price:0,flag:''}, r));
+  return _nfInv.length
+    ? _nfInv.map(nfInvRowHtml).join('')
+    : '<p style="color:var(--text2);font-size:11px">No shop items yet.</p>';
+}
+
+function nfAddInvRow() {
+  _nfInv.push({ itemId: '', qty: 1, price: 0, flag: '' });
+  document.getElementById('nf-inv-rows').innerHTML = _nfInv.map(nfInvRowHtml).join('');
+}
+
+function nfRemoveInvRow(i) {
+  _nfInv.splice(i, 1);
+  document.getElementById('nf-inv-rows').innerHTML = _nfInv.length
+    ? _nfInv.map(nfInvRowHtml).join('')
+    : '<p style="color:var(--text2);font-size:11px">No shop items yet.</p>';
+}
+
+// ── Drop Loot rows ───────────────────────────────────────────────────────────
+function nfLootRowHtml(row, i) {
+  return `<div class="sched-block" style="gap:6px">
+    <input type="text" placeholder="itemId" value="${escHtml(row.itemId||'')}" oninput="_nfLoot[${i}].itemId=this.value" style="width:140px">
+    <input type="number" placeholder="qty" value="${row.qty||1}" min="1" oninput="_nfLoot[${i}].qty=+this.value" style="width:60px">
+    <input type="number" placeholder="chance %" value="${row.chance||100}" min="1" max="100" oninput="_nfLoot[${i}].chance=+this.value" style="width:70px">
+    <label style="font-size:11px;white-space:nowrap"><input type="checkbox"${row.guaranteed?' checked':''} onchange="_nfLoot[${i}].guaranteed=this.checked"> guaranteed</label>
+    <button class="btn btn-danger btn-sm" onclick="nfRemoveLootRow(${i})">✕</button>
+  </div>`;
+}
+
+function nfLootHtml(rows) {
+  _nfLoot = rows.map(r => Object.assign({itemId:'',qty:1,chance:100,guaranteed:false}, r));
+  return _nfLoot.length
+    ? _nfLoot.map(nfLootRowHtml).join('')
+    : '<p style="color:var(--text2);font-size:11px">No explicit drops set (procedural only).</p>';
+}
+
+function nfAddLootRow() {
+  _nfLoot.push({ itemId: '', qty: 1, chance: 100, guaranteed: false });
+  document.getElementById('nf-loot-rows').innerHTML = _nfLoot.map(nfLootRowHtml).join('');
+}
+
+function nfRemoveLootRow(i) {
+  _nfLoot.splice(i, 1);
+  document.getElementById('nf-loot-rows').innerHTML = _nfLoot.length
+    ? _nfLoot.map(nfLootRowHtml).join('')
+    : '<p style="color:var(--text2);font-size:11px">No explicit drops set (procedural only).</p>';
+}
+
+function nfRefreshSchedDropdowns() {
+  const objects = S._zoneObjects || [];
+  _nfSched.forEach((b, i) => {
+    const sel = document.getElementById('sb-loc-' + i);
+    if (!sel) return;
+    sel.innerHTML = `<option value="">— building —</option>` +
+      objects.map(o => `<option value="${o.id}"${b.location_id===o.id?' selected':''}>${escHtml(o.label||o.id)}</option>`).join('');
+  });
+}
+
+async function nfLoadZoneObjects(zoneId, currentWork, currentHome) {
+  if (!zoneId) return;
+  const data = await api('GET', '/zones/' + zoneId + '/objects');
+  S._zoneObjects = data || [];
+  const toOpts = (cur) =>
+    `<option value="">— None —</option>` +
+    (S._zoneObjects).map(o => `<option value="${o.id}"${cur===o.id?' selected':''}>${escHtml(o.label||o.id)} (${o.type})</option>`).join('');
+  const workSel = document.getElementById('nf-work-obj');
+  const homeSel = document.getElementById('nf-home-obj');
+  if (workSel) workSel.innerHTML = toOpts(currentWork || workSel.value);
+  if (homeSel) homeSel.innerHTML = toOpts(currentHome || homeSel.value);
+  nfRefreshSchedDropdowns();
+}
+
+// ── Chip helpers ──────────────────────────────────────────────────────────────
+function nfGetChips(field) {
+  const chipIds = {
+    personality: 'nf-personality-chips', knowledge: 'nf-knowledge-chips',
+    fears: 'nf-fears-chips', ambitions: 'nf-ambitions-chips',
+    secrets: 'nf-secrets-chips', notable_items: 'nf-notable-chips',
+  };
+  const wrap = document.getElementById(chipIds[field]);
+  if (!wrap) return [];
+  return Array.from(wrap.querySelectorAll('.chip')).map(c => c.textContent.replace('×','').trim()).filter(Boolean);
+}
+
+function npcFormData() {
+  const npc = S.npcs.find(n => n.npc_id === S.activeNpcId) || {};
+  // Sync current schedule blocks from live _nfSched
+  const schedWrap = document.getElementById('nf-schedule');
+  if (schedWrap && _nfSched.length === 0) {
+    // First load — read from DOM input values
+    _nfSched = parseJsonArr(npc.schedule);
+  }
+  return {
+    npc_id:         document.getElementById('npc-id').value,
+    name:           document.getElementById('nf-name').value.trim(),
+    race:           document.getElementById('nf-race').value,
+    occupation:     document.getElementById('nf-occ').value,
+    faction:        document.getElementById('nf-faction').value,
+    region:         document.getElementById('nf-region').value,
+    portrait:       document.getElementById('nf-portrait').value,
+    voice_tone:     document.getElementById('nf-voice').value,
+    description:    document.getElementById('nf-desc').value,
+    sleep_start:    parseInt(document.getElementById('nf-sleep-s').value)||22,
+    sleep_end:      parseInt(document.getElementById('nf-sleep-e').value)||6,
+    tier:           parseInt(document.getElementById('nf-tier').value)||1,
+    job_title:      document.getElementById('nf-job-title').value,
+    background:     document.getElementById('nf-background').value,
+    work_object_id: document.getElementById('nf-work-obj').value || null,
+    home_object_id: document.getElementById('nf-home-obj').value || null,
+    personality:    JSON.stringify(nfGetChips('personality')),
+    knowledge:      JSON.stringify(nfGetChips('knowledge')),
+    fears:          JSON.stringify(nfGetChips('fears')),
+    ambitions:      JSON.stringify(nfGetChips('ambitions')),
+    secrets:        JSON.stringify(nfGetChips('secrets')),
+    notable_items:  JSON.stringify(nfGetChips('notable_items')),
+    inventory:      JSON.stringify(_nfInv.filter(r=>r.itemId)),
+    loot_table:     JSON.stringify(_nfLoot.filter(r=>r.itemId)),
+    coin_drop_min:  parseInt(document.getElementById('nf-coin-min').value)||0,
+    coin_drop_max:  parseInt(document.getElementById('nf-coin-max').value)||0,
+    loot_tier:      parseInt(document.getElementById('nf-loot-tier').value)||1,
+    relationships:  document.getElementById('nf-relationships').value,
+    schedule:       JSON.stringify(_nfSched),
+  };
+}
+
+async function npcSave() {
+  const data = npcFormData();
+  if (!data.name) { toast('Name is required', 'err'); return; }
+  const isNew = !S.activeNpcId;
+  const res = isNew
+    ? await api('POST', '/npcs', data)
+    : await api('PUT',  '/npcs/' + S.activeNpcId, data);
+  if (!res) return;
+  if (isNew) S.activeNpcId = data.npc_id;
+  toast('NPC saved', 'ok');
+  await loadNpcs();
+  npcEdit(S.activeNpcId);
+}
+
+async function npcDelete(id) {
+  if (!confirm('Delete this NPC?')) return;
+  const res = await api('DELETE', '/npcs/' + id);
+  if (!res) return;
+  S.activeNpcId = null;
+  toast('NPC deleted', 'ok');
+  await loadNpcs();
+  document.getElementById('npc-form-area').innerHTML = '<div class="empty-state">Select an NPC to edit.</div>';
+}
+
+function npcDeployPrompt(npcId) {
+  if (!S.zones.length) { toast('Loading zones…', 'info'); fetchZones(); return; }
+  showModal(`
+    <h3>Deploy NPC to Zone</h3>
+    <div class="field"><label>Zone</label>
+      <select id="deploy-zone">${S.zones.map(z=>`<option value="${z.id}">${escHtml(z.name)}</option>`).join('')}</select>
+    </div>
+    <div class="row">
+      <div class="field"><label>X (tile)</label><input id="deploy-x" type="number" value="5"></div>
+      <div class="field"><label>Y (tile)</label><input id="deploy-y" type="number" value="5"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-success" onclick="npcDeploy('${npcId}')">🚀 Deploy Live</button>
+    </div>`);
+}
+
+async function npcDeploy(npcId) {
+  const zoneId = document.getElementById('deploy-zone').value;
+  const x = parseInt(document.getElementById('deploy-x').value)||5;
+  const y = parseInt(document.getElementById('deploy-y').value)||5;
+  const res = await api('POST', '/deploy/npc', { npc_id: npcId, zone_id: zoneId, x, y });
+  if (!res) return;
+  closeModal();
+  toast('NPC deployed to ' + zoneId + '!', 'ok');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// DIALOGUE GRAPH
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const DG = {
+  canvas: null, ctx: null,
+  nodes: [], edges: [],
+  pan: { x: 0, y: 0 }, zoom: 1,
+  mode: 'select',       // 'select' | 'connect'
+  selected: null,       // node or edge id
+  connectSrc: null,     // first node in connect flow
+  drag: null,           // { nodeId, ox, oy }
+  panning: false, panStart: null,
+  raf: null,
+  npcId: null,
+  dirty: false,
+};
+const NODE_W = 200, NODE_H = 76;
+const STATE_COLORS = { unmet:'#444', offered:'#7a6010', active:'#1a4a8a', complete:'#1a5a2c', quest_hook:'#7a2020' };
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ARC FLOWCHART CANVAS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const AQ_W = 190, AQ_H = 108, AQ_GAP = 56;
+const AQ_STORY_BG  = { main:'#2a1855', side:'#1e2030', arc:'#0e2640', daily:'#2e1a08', world_event:'#0a2218' };
+const AQ_STORY_AC  = { main:'#9060d8', side:'#5566aa', arc:'#3a8acc', daily:'#cc7030', world_event:'#35b870' };
+
+const AQ = {
+  canvas: null, ctx: null,
+  nodes: [],   // { quest_id, name, type, story_type, giver_name, state, x, y }
+  pan: 0,
+  drag: null,  // { startX, startPan }
+  _cssW: 0, _cssH: 220,
+};
+
+function aqInit() {
+  AQ.canvas = document.getElementById('arc-canvas');
+  if (!AQ.canvas) return;
+  AQ.ctx = AQ.canvas.getContext('2d');
+  aqResizeCanvas();
+  AQ.canvas.addEventListener('mousedown', aqMousedown);
+  AQ.canvas.addEventListener('mousemove', aqMousemove);
+  AQ.canvas.addEventListener('mouseup',   aqMouseup);
+  window.addEventListener('mouseup', aqMouseup);
+  AQ.canvas.addEventListener('wheel', aqWheel, { passive: false });
+  window.addEventListener('resize', aqResizeCanvas);
+  requestAnimationFrame(aqRenderLoop);
+}
+
+function aqResizeCanvas() {
+  const wrap = document.getElementById('arc-canvas-wrap');
+  if (!wrap || !AQ.canvas) return;
+  const W = wrap.clientWidth || 800, H = wrap.clientHeight || 220;
+  const dpr = window.devicePixelRatio || 1;
+  AQ.canvas.width  = W * dpr;
+  AQ.canvas.height = H * dpr;
+  AQ.canvas.style.width  = W + 'px';
+  AQ.canvas.style.height = H + 'px';
+  AQ.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  AQ._cssW = W; AQ._cssH = H;
+}
+
+function aqBuildLayout(arcId) {
+  const wrap = document.getElementById('arc-canvas-wrap');
+  if (!arcId || !wrap) {
+    if (wrap) wrap.style.display = 'none';
+    return;
+  }
+  const qs = S.quests.filter(q => q.arc_id === arcId).sort((a, b) => (a.arc_sequence||0) - (b.arc_sequence||0));
+  AQ.nodes = qs.map((q, i) => {
+    const giver = S.npcs.find(n => n.npc_id === q.giver_npc_id);
+    return {
+      quest_id:   q.quest_id,
+      name:       q.name,
+      type:       q.type || 'fetch',
+      story_type: q.story_type || 'side',
+      giver_name: giver ? giver.name : '',
+      state:      q.state || 'unmet',
+      seq:        i,
+      x:          20 + i * (AQ_W + AQ_GAP),
+      y:          56,
+    };
+  });
+  AQ.pan = 0;
+  wrap.style.display = 'block';
+  aqResizeCanvas();
+}
+
+function aqRenderLoop() {
+  requestAnimationFrame(aqRenderLoop);
+  const wrap = document.getElementById('arc-canvas-wrap');
+  if (!wrap || wrap.style.display === 'none' || !AQ.ctx) return;
+
+  const ctx = AQ.ctx;
+  const W = AQ._cssW, H = AQ._cssH;
+  ctx.clearRect(0, 0, W, H);
+
+  // Grid
+  ctx.strokeStyle = '#1a1d28'; ctx.lineWidth = 1;
+  const gs = 32, ox = ((AQ.pan % gs) + gs) % gs;
+  for (let x = ox - gs; x < W + gs; x += gs) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+  for (let y = 0; y < H + gs; y += gs)        { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+
+  ctx.save();
+  ctx.translate(AQ.pan, 0);
+
+  // Arrows (right edge of node i → left edge of node i+1)
+  for (let i = 0; i < AQ.nodes.length - 1; i++) {
+    const a = AQ.nodes[i], b = AQ.nodes[i + 1];
+    const sx = a.x + AQ_W, sy = a.y + AQ_H / 2;
+    const dx = b.x,        dy = b.y + AQ_H / 2;
+    const cx = (sx + dx) / 2;
+    ctx.beginPath();
+    ctx.moveTo(sx, sy);
+    ctx.bezierCurveTo(cx, sy, cx, dy, dx, dy);
+    ctx.strokeStyle = '#3a4466'; ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = '#3a4466';
+    ctx.beginPath();
+    ctx.moveTo(dx, dy);
+    ctx.lineTo(dx - 10, dy - 5);
+    ctx.lineTo(dx - 10, dy + 5);
+    ctx.closePath(); ctx.fill();
+  }
+
+  // Nodes
+  AQ.nodes.forEach(n => {
+    const isSel = n.quest_id === S.activeQuestId;
+    const bg = AQ_STORY_BG[n.story_type]  || '#1e2030';
+    const ac = AQ_STORY_AC[n.story_type]  || '#5566aa';
+
+    if (isSel) { ctx.shadowColor = ac; ctx.shadowBlur = 16; }
+
+    // Body
+    roundRect(ctx, n.x, n.y, AQ_W, AQ_H, 8);
+    ctx.fillStyle = bg; ctx.fill();
+    ctx.strokeStyle = isSel ? ac : '#2e3348'; ctx.lineWidth = isSel ? 2 : 1;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Header bar (colour strip)
+    ctx.fillStyle = ac;
+    roundRect(ctx, n.x, n.y, AQ_W, 22, 8); ctx.fill();
+    ctx.fillRect(n.x, n.y + 14, AQ_W, 8); // fill bottom half of rounded corners
+
+    // Sequence number badge
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.font = '10px Segoe UI'; ctx.textAlign = 'right';
+    ctx.fillText(n.seq + 1, n.x + AQ_W - 6, n.y + 15);
+
+    // Story type label
+    ctx.fillStyle = 'rgba(255,255,255,0.75)';
+    ctx.font = 'bold 10px Segoe UI'; ctx.textAlign = 'left';
+    ctx.fillText((n.story_type || '').toUpperCase(), n.x + 6, n.y + 15);
+
+    // Quest name
+    ctx.fillStyle = '#e8eaf0'; ctx.font = 'bold 12px Segoe UI';
+    const nameLines = wrapText(n.name, 23);
+    nameLines.slice(0, 2).forEach((line, i) => ctx.fillText(line, n.x + 8, n.y + 36 + i * 16));
+
+    // Type · state
+    ctx.fillStyle = '#7788aa'; ctx.font = '10px Segoe UI';
+    ctx.fillText(n.type + '  ·  ' + n.state, n.x + 8, n.y + AQ_H - 22);
+
+    // Giver NPC
+    if (n.giver_name) {
+      ctx.fillStyle = '#5577aa';
+      const gLine = wrapText('\u2691 ' + n.giver_name, 26);
+      ctx.fillText(gLine[0], n.x + 8, n.y + AQ_H - 8);
+    }
+  });
+
+  ctx.restore();
+}
+
+function aqMousedown(e) {
+  const rect = AQ.canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left - AQ.pan;
+  const my = e.clientY - rect.top;
+  const hit = AQ.nodes.find(n => mx >= n.x && mx <= n.x + AQ_W && my >= n.y && my <= n.y + AQ_H);
+  if (hit) { questEdit(hit.quest_id); return; }
+  AQ.drag = { startX: e.clientX, startPan: AQ.pan };
+}
+
+function aqMousemove(e) {
+  if (!AQ.drag) return;
+  AQ.pan = AQ.drag.startPan + (e.clientX - AQ.drag.startX);
+}
+
+function aqMouseup() { AQ.drag = null; }
+
+function aqWheel(e) {
+  e.preventDefault();
+  AQ.pan -= (e.deltaX || e.deltaY) * 0.6;
+}
+
+function dlgTabActivate() {
+  if (!S.npcs.length) fetchNpcs().then(populateDlgNpcSelect);
+  else populateDlgNpcSelect();
+  dlgInit();
+}
+function populateDlgNpcSelect() {
+  const sel = document.getElementById('dlg-npc-select');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— Select NPC —</option>' +
+    S.npcs.map(n => `<option value="${n.npc_id}"${n.npc_id===cur?' selected':''}>${escHtml(n.name)}</option>`).join('');
+}
+
+function dlgInit() {
+  if (DG.raf) return;
+  DG.canvas = document.getElementById('dialogue-canvas');
+  DG.ctx    = DG.canvas.getContext('2d');
+  dlgResizeCanvas();
+  window.addEventListener('resize', dlgResizeCanvas);
+  const c = DG.canvas;
+  c.addEventListener('mousedown', dlgMousedown);
+  c.addEventListener('mousemove', dlgMousemove);
+  c.addEventListener('mouseup',   dlgMouseup);
+  c.addEventListener('wheel',     dlgWheel, { passive: false });
+  c.addEventListener('dblclick',  dlgDblclick);
+  document.addEventListener('keydown', dlgKeydown);
+  DG.raf = requestAnimationFrame(dlgRender);
+}
+
+function dlgResizeCanvas() {
+  const wrap = document.getElementById('dialogue-canvas-wrap');
+  if (!wrap || !DG.canvas) return;
+  const dpr = window.devicePixelRatio || 1;
+  const w = wrap.clientWidth, h = wrap.clientHeight;
+  DG.canvas.width  = w * dpr; DG.canvas.height = h * dpr;
+  DG.canvas.style.width  = w + 'px'; DG.canvas.style.height = h + 'px';
+  DG.ctx.scale(dpr, dpr);
+  DG._cssW = w; DG._cssH = h;
+}
+
+async function dlgLoadNpc(npcId) {
+  DG.npcId = npcId || null;
+  DG.nodes = []; DG.edges = []; DG.selected = null; DG.connectSrc = null;
+  document.getElementById('dlg-status').textContent = npcId ? 'Loading…' : 'No NPC selected';
+  // Track active NPC for template context seeding
+  S.activeNpcId = npcId || null;
+  if (!npcId) { renderNodePanel(null); return; }
+  const data = await api('GET', '/dialogue/' + npcId);
+  if (!data) return;
+  DG.nodes = data.nodes || [];
+  DG.edges = data.edges || [];
+  document.getElementById('dlg-status').textContent = `${DG.nodes.length} nodes · ${DG.edges.length} edges`;
+  renderNodePanel(null);
+}
+
+function dlgSetMode(mode) {
+  DG.mode = mode; DG.connectSrc = null;
+  document.getElementById('btn-mode-select').classList.toggle('active', mode === 'select');
+  document.getElementById('btn-mode-connect').classList.toggle('active', mode === 'connect');
+  DG.canvas.style.cursor = mode === 'connect' ? 'crosshair' : 'default';
+}
+
+function dlgResetView() { DG.pan = { x: 0, y: 0 }; DG.zoom = 1; }
+
+async function dlgAddNode() {
+  if (!DG.npcId) { toast('Select an NPC first', 'err'); return; }
+  const cx = (DG._cssW||600)/2, cy = (DG._cssH||400)/2;
+  const wx = (cx - DG.pan.x) / DG.zoom;
+  const wy = (cy - DG.pan.y) / DG.zoom;
+  const id  = 'node_' + Date.now();
+  const res = await api('POST', '/dialogue', { npc_id: DG.npcId, text: 'New dialogue node.', graph_x: wx, graph_y: wy });
+  if (!res) return;
+  const node = { node_id: res.node_id || id, npc_id: DG.npcId, text: 'New dialogue node.', state: 'unmet', graph_x: wx, graph_y: wy, tags: '[]', weight: 1.0 };
+  DG.nodes.push(node);
+  DG.selected = node.node_id;
+  renderNodePanel(node);
+  document.getElementById('dlg-status').textContent = `${DG.nodes.length} nodes · ${DG.edges.length} edges`;
+}
+
+async function dlgDeleteSelected() {
+  if (!DG.selected) return;
+  const node = DG.nodes.find(n => n.node_id === DG.selected);
+  if (node) {
+    if (!confirm('Delete node "' + node.text.slice(0,40) + '"?')) return;
+    await api('DELETE', '/dialogue/' + DG.selected);
+    DG.nodes  = DG.nodes.filter(n => n.node_id !== DG.selected);
+    DG.edges  = DG.edges.filter(e => e.from_node_id !== DG.selected && e.to_node_id !== DG.selected);
+  } else {
+    // Maybe it's an edge — find and delete
+    const edgeParts = DG.selected.split('::');
+    if (edgeParts.length === 2) {
+      await api('DELETE', '/dialogue/edge', { from_node_id: edgeParts[0], to_node_id: edgeParts[1] });
+      DG.edges = DG.edges.filter(e => !(e.from_node_id === edgeParts[0] && e.to_node_id === edgeParts[1]));
+    }
+  }
+  DG.selected = null; renderNodePanel(null);
+  document.getElementById('dlg-status').textContent = `${DG.nodes.length} nodes · ${DG.edges.length} edges`;
+}
+
+function dlgKeydown(e) {
+  if (e.key === 'Delete' || e.key === 'Backspace') {
+    const focused = document.activeElement;
+    if (focused && (focused.tagName === 'INPUT' || focused.tagName === 'TEXTAREA' || focused.tagName === 'SELECT')) return;
+    dlgDeleteSelected();
+  }
+  if (e.key === 'Escape') { DG.connectSrc = null; DG.selected = null; }
+}
+
+function dlgScreenToWorld(sx, sy) {
+  return { x: (sx - DG.pan.x) / DG.zoom, y: (sy - DG.pan.y) / DG.zoom };
+}
+function dlgHitNode(wx, wy) {
+  for (let i = DG.nodes.length - 1; i >= 0; i--) {
+    const n = DG.nodes[i];
+    if (wx >= n.graph_x && wx <= n.graph_x + NODE_W && wy >= n.graph_y && wy <= n.graph_y + NODE_H) return n;
+  }
+  return null;
+}
+
+function dlgMousedown(e) {
+  const rect = DG.canvas.getBoundingClientRect();
+  const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+  const w  = dlgScreenToWorld(sx, sy);
+  const node = dlgHitNode(w.x, w.y);
+
+  if (e.button === 1 || (e.button === 0 && e.altKey)) {
+    DG.panning = true; DG.panStart = { x: sx - DG.pan.x, y: sy - DG.pan.y }; return;
+  }
+
+  if (DG.mode === 'connect') {
+    if (!node) { DG.connectSrc = null; return; }
+    if (!DG.connectSrc) { DG.connectSrc = node.node_id; toast('Source selected. Click target node.', 'info'); }
+    else if (DG.connectSrc !== node.node_id) {
+      dlgCreateEdge(DG.connectSrc, node.node_id);
+      DG.connectSrc = null;
+    }
+    return;
+  }
+
+  if (node) {
+    DG.selected = node.node_id;
+    DG.drag = { nodeId: node.node_id, ox: w.x - node.graph_x, oy: w.y - node.graph_y };
+    renderNodePanel(node);
+  } else {
+    DG.selected = null; DG.drag = null; renderNodePanel(null);
+  }
+}
+
+function dlgMousemove(e) {
+  const rect = DG.canvas.getBoundingClientRect();
+  const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+  if (DG.panning) { DG.pan.x = sx - DG.panStart.x; DG.pan.y = sy - DG.panStart.y; return; }
+  if (!DG.drag) return;
+  const w = dlgScreenToWorld(sx, sy);
+  const node = DG.nodes.find(n => n.node_id === DG.drag.nodeId);
+  if (!node) return;
+  node.graph_x = w.x - DG.drag.ox;
+  node.graph_y = w.y - DG.drag.oy;
+  DG.dirty = true;
+}
+
+function dlgMouseup(e) {
+  DG.panning = false;
+  if (DG.drag && DG.dirty) { dlgSaveNodePos(DG.drag.nodeId); DG.dirty = false; }
+  DG.drag = null;
+}
+
+function dlgWheel(e) {
+  e.preventDefault();
+  const factor = e.deltaY < 0 ? 1.12 : 0.88;
+  const rect = DG.canvas.getBoundingClientRect();
+  const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+  const wx = (sx - DG.pan.x) / DG.zoom;
+  const wy = (sy - DG.pan.y) / DG.zoom;
+  DG.zoom = Math.min(3, Math.max(0.2, DG.zoom * factor));
+  DG.pan.x = sx - wx * DG.zoom;
+  DG.pan.y = sy - wy * DG.zoom;
+}
+
+function dlgDblclick(e) {
+  if (!DG.npcId || DG.mode !== 'select') return;
+  const rect = DG.canvas.getBoundingClientRect();
+  const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+  const w  = dlgScreenToWorld(sx, sy);
+  if (dlgHitNode(w.x, w.y)) return;
+  dlgAddNodeAt(w.x, w.y);
+}
+
+async function dlgAddNodeAt(wx, wy) {
+  const res = await api('POST', '/dialogue', { npc_id: DG.npcId, text: 'New node.', graph_x: wx, graph_y: wy });
+  if (!res) return;
+  DG.nodes.push({ node_id: res.node_id, npc_id: DG.npcId, text: 'New node.', state: 'unmet', graph_x: wx, graph_y: wy, tags: '[]', weight: 1.0 });
+  DG.selected = res.node_id;
+  renderNodePanel(DG.nodes.find(n => n.node_id === res.node_id));
+  document.getElementById('dlg-status').textContent = `${DG.nodes.length} nodes · ${DG.edges.length} edges`;
+}
+
+async function dlgCreateEdge(from, to) {
+  showModal(`
+    <h3>Edge Label</h3>
+    <div class="field"><label>Choice / Response Label</label><input id="edge-label" type="text" value="Continue" placeholder="e.g. Tell me more…"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="dlgConfirmEdge('${from}','${to}')">Add Edge</button>
+    </div>`);
+}
+async function dlgConfirmEdge(from, to) {
+  const label = document.getElementById('edge-label').value.trim() || 'Continue';
+  closeModal();
+  const res = await api('POST', '/dialogue/edge', { from_node_id: from, to_node_id: to, choice_label: label });
+  if (!res) return;
+  DG.edges.push({ from_node_id: from, to_node_id: to, choice_label: label });
+  document.getElementById('dlg-status').textContent = `${DG.nodes.length} nodes · ${DG.edges.length} edges`;
+  toast('Edge created', 'ok');
+}
+
+async function dlgSaveNodePos(nodeId) {
+  const node = DG.nodes.find(n => n.node_id === nodeId);
+  if (!node) return;
+  await api('PUT', '/dialogue/' + nodeId, node);
+}
+
+function renderNodePanel(node) {
+  const panel = document.getElementById('node-panel');
+  if (!node) { panel.innerHTML = '<h4>Node Editor</h4><div class="empty-state" style="padding:16px 0">Click a node to edit it.</div>'; return; }
+  const tags = parseJsonArr(node.tags);
+  let qParams = {};
+  try { qParams = JSON.parse(node.quest_params || '{}'); } catch(_) {}
+  const questPickerHtml = `
+    <div id="np-qhook-picker" style="display:${node.is_quest_hook?'block':'none'}">
+      <div class="field"><label>Linked Quest</label>
+        <select id="np-quest-id" onchange="dlgNodeFieldUpdate('quest_params',JSON.stringify({quest_id:this.value}))">
+          <option value="">— None —</option>
+          ${S.quests.map(q=>`<option value="${q.quest_id}"${qParams.quest_id===q.quest_id?' selected':''}>${escHtml(q.name)}</option>`).join('')}
+        </select>
+      </div>
+    </div>`;
+  panel.innerHTML = `
+    <h4>Node: <span style="color:var(--text2);font-size:10px">${node.node_id}</span></h4>
+    <div class="field"><label>Dialogue Text</label>
+      <textarea id="np-text" rows="5" oninput="dlgNodeFieldUpdate('text',this.value)">${escHtml(node.text||'')}</textarea>
+    </div>
+    <div class="field"><label>State</label>
+      <select id="np-state" onchange="dlgNodeFieldUpdate('state',this.value)">
+        ${['unmet','offered','active','complete','quest_hook'].map(s=>`<option${node.state===s?' selected':''}>${s}</option>`).join('')}
+      </select>
+    </div>
+    <div class="field"><label>Quest Hook</label>
+      <input type="checkbox" id="np-qhook"${node.is_quest_hook?' checked':''} onchange="dlgNodeFieldUpdate('is_quest_hook',this.checked?1:0);document.getElementById('np-qhook-picker').style.display=this.checked?'block':'none'">
+      <label for="np-qhook" style="font-size:12px;text-transform:none;letter-spacing:0;display:inline;margin-left:6px">This node offers a quest</label>
+    </div>
+    ${questPickerHtml}
+    <div class="field"><label>Weight</label>
+      <input id="np-weight" type="number" step="0.1" min="0" max="10" value="${node.weight||1}" oninput="dlgNodeFieldUpdate('weight',parseFloat(this.value)||1)">
+    </div>
+    <div class="field"><label>Tags (comma-sep)</label>
+      <input id="np-tags" type="text" value="${escHtml(tags.join(', '))}" oninput="dlgNodeFieldUpdate('tags',JSON.stringify(this.value.split(',').map(t=>t.trim()).filter(Boolean)))">
+    </div>
+    <div style="margin-top:8px">
+      <button class="btn btn-primary btn-sm" style="width:100%" onclick="dlgSaveNode('${node.node_id}')">💾 Save Node</button>
+    </div>
+    <div class="sep-line"></div>
+    <h4 style="margin-bottom:8px">Connected From:</h4>
+    ${DG.edges.filter(e=>e.to_node_id===node.node_id).map(e=>{
+      const src = DG.nodes.find(n=>n.node_id===e.from_node_id);
+      return `<div class="item-sub" style="margin-bottom:4px">← ${escHtml(src?src.text.slice(0,30)+'…':'[unknown]')} <em>(${escHtml(e.choice_label)})</em></div>`;
+    }).join('') || '<div class="item-sub">None</div>'}`;
+}
+
+function dlgNodeFieldUpdate(field, val) {
+  const node = DG.nodes.find(n => n.node_id === DG.selected);
+  if (!node) return;
+  node[field] = val;
+}
+
+async function dlgSaveNode(nodeId) {
+  const node = DG.nodes.find(n => n.node_id === nodeId);
+  if (!node) return;
+  const res = await api('PUT', '/dialogue/' + nodeId, node);
+  if (res) toast('Node saved', 'ok');
+}
+
+function dlgRender() {
+  DG.raf = requestAnimationFrame(dlgRender);
+  const ctx = DG.ctx;
+  const W = DG._cssW || 600, H = DG._cssH || 400;
+
+  // Detect resize
+  const wrap = document.getElementById('dialogue-canvas-wrap');
+  if (wrap && (wrap.clientWidth !== W || wrap.clientHeight !== H)) dlgResizeCanvas();
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Background grid
+  ctx.save();
+  ctx.strokeStyle = '#1e2130'; ctx.lineWidth = 1;
+  const gs = 32 * DG.zoom;
+  const ox = ((DG.pan.x % gs) + gs) % gs;
+  const oy = ((DG.pan.y % gs) + gs) % gs;
+  for (let x = ox - gs; x < W + gs; x += gs) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+  for (let y = oy - gs; y < H + gs; y += gs) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+  ctx.restore();
+
+  ctx.save();
+  ctx.translate(DG.pan.x, DG.pan.y);
+  ctx.scale(DG.zoom, DG.zoom);
+
+  // Edges
+  ctx.lineWidth = 2 / DG.zoom;
+  DG.edges.forEach(e => {
+    const src = DG.nodes.find(n => n.node_id === e.from_node_id);
+    const dst = DG.nodes.find(n => n.node_id === e.to_node_id);
+    if (!src || !dst) return;
+    const sx = src.graph_x + NODE_W/2, sy = src.graph_y + NODE_H;
+    const dx = dst.graph_x + NODE_W/2, dy = dst.graph_y;
+    const cy = (sy + dy) / 2;
+    ctx.beginPath();
+    ctx.moveTo(sx, sy); ctx.bezierCurveTo(sx, cy, dx, cy, dx, dy);
+    ctx.strokeStyle = '#4455aa';
+    ctx.stroke();
+    // Arrow
+    const angle = Math.atan2(dy - cy, dx - sx);
+    ctx.fillStyle = '#4455aa';
+    ctx.beginPath();
+    ctx.moveTo(dx, dy);
+    ctx.lineTo(dx - 8*Math.cos(angle-0.4), dy - 8*Math.sin(angle-0.4));
+    ctx.lineTo(dx - 8*Math.cos(angle+0.4), dy - 8*Math.sin(angle+0.4));
+    ctx.fill();
+    // Edge label
+    const lx = (sx + dx) / 2, ly = (sy + dy) / 2;
+    ctx.fillStyle = '#8888cc';
+    ctx.font = `${11/DG.zoom}px Segoe UI`;
+    ctx.textAlign = 'center';
+    ctx.fillText(e.choice_label || '', lx, ly - 4/DG.zoom);
+  });
+
+  // Connect preview line
+  if (DG.mode === 'connect' && DG.connectSrc) {
+    const src = DG.nodes.find(n => n.node_id === DG.connectSrc);
+    if (src) {
+      ctx.strokeStyle = '#ffaa44';
+      ctx.setLineDash([6/DG.zoom, 4/DG.zoom]);
+      ctx.beginPath();
+      ctx.moveTo(src.graph_x + NODE_W/2, src.graph_y + NODE_H);
+      ctx.lineTo(src.graph_x + NODE_W/2, src.graph_y + NODE_H + 40/DG.zoom);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+
+  // Nodes
+  DG.nodes.forEach(node => {
+    const x = node.graph_x, y = node.graph_y;
+    const isSel   = node.node_id === DG.selected;
+    const isCSrc  = node.node_id === DG.connectSrc;
+    const bgColor = STATE_COLORS[node.state] || '#333';
+
+    // Shadow
+    if (isSel || isCSrc) { ctx.shadowColor = isSel ? '#6b8ff7' : '#ffaa44'; ctx.shadowBlur = 16/DG.zoom; }
+
+    // Box
+    ctx.fillStyle = bgColor;
+    roundRect(ctx, x, y, NODE_W, NODE_H, 8/DG.zoom);
+    ctx.fill();
+    ctx.strokeStyle = isSel ? '#6b8ff7' : isCSrc ? '#ffaa44' : '#334';
+    ctx.lineWidth = (isSel || isCSrc ? 2.5 : 1.5) / DG.zoom;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Quest hook badge
+    if (node.is_quest_hook) {
+      ctx.fillStyle = '#cc4400'; roundRect(ctx, x + NODE_W - 24/DG.zoom, y + 4/DG.zoom, 20/DG.zoom, 14/DG.zoom, 3/DG.zoom); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.font = `${9/DG.zoom}px Segoe UI`; ctx.textAlign = 'center';
+      ctx.fillText('⚔', x + NODE_W - 14/DG.zoom, y + 14/DG.zoom);
+    }
+
+    // Text
+    ctx.fillStyle = '#ddd';
+    ctx.font = `${12/DG.zoom}px Segoe UI`;
+    ctx.textAlign = 'left';
+    const lines = wrapText(node.text || '', 22);
+    lines.slice(0,3).forEach((line, i) => ctx.fillText(line, x + 10/DG.zoom, y + 20/DG.zoom + i * 16/DG.zoom));
+
+    // State badge
+    ctx.fillStyle = '#ffffff22';
+    ctx.font = `${9/DG.zoom}px Segoe UI`;
+    ctx.textAlign = 'left';
+    ctx.fillText(node.state || 'unmet', x + 10/DG.zoom, y + NODE_H - 8/DG.zoom);
+  });
+
+  ctx.restore();
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r, y); ctx.lineTo(x+w-r, y); ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y);
+  ctx.closePath();
+}
+
+function wrapText(text, maxChars) {
+  const words = text.split(' ');
+  const lines = []; let cur = '';
+  words.forEach(w => {
+    if ((cur + w).length > maxChars) { if (cur) lines.push(cur.trimEnd()); cur = w + ' '; }
+    else cur += w + ' ';
+  });
+  if (cur.trim()) lines.push(cur.trim());
+  return lines;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// QUESTS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const QUEST_TYPES   = ['fetch','kill','escort','explore','craft','investigate','defend','collect'];
+const QUEST_STATES  = ['unmet','offered','active','complete','failed'];
+const STORY_TYPES   = ['main','side','arc','daily','world_event'];
+const ARC_STATES    = ['unmet','offered','active','complete'];
+
+async function loadQuests() {
+  await Promise.all([fetchArcs(), fetchQuests(), fetchNpcs(), fetchZones(), fetchLocationTypes()]);
+  renderArcList();
+  renderQuestList(S.activeArcId);
+}
+
+function renderArcList() {
+  const list = document.getElementById('arc-list');
+  list.innerHTML = S.arcs.map(a =>
+    `<div class="arc-item${a.arc_id === S.activeArcId?' active':''}" onclick="questFilterArc('${a.arc_id}')">
+      <span>${escHtml(a.name)}</span>
+      <span class="arc-badge badge-${a.state}">${a.state}</span>
+      <span style="float:right;font-size:10px;color:var(--text2)">Seq ${a.sequence}</span>
+      <button class="btn btn-secondary btn-sm" style="float:right;margin-right:4px;font-size:10px" onclick="arcEdit(event,'${a.arc_id}')">Edit</button>
+    </div>`
+  ).join('') || '<div class="empty-state" style="font-size:11px;padding:8px">No arcs. Click + Arc.</div>';
+}
+
+function questFilterArc(arcId) {
+  S.activeArcId = arcId === S.activeArcId ? null : arcId;
+  renderArcList();
+  renderQuestList(S.activeArcId);
+  aqBuildLayout(S.activeArcId);
+}
+function questFilter(arcId) {
+  S.activeArcId = arcId || null;
+  renderArcList();
+  renderQuestList(S.activeArcId);
+  aqBuildLayout(S.activeArcId);
+}
+
+function renderQuestList(arcId) {
+  const list   = document.getElementById('quest-list');
+  const quests = arcId ? S.quests.filter(q => q.arc_id === arcId) : S.quests;
+  list.innerHTML = quests.map(q =>
+    `<div class="list-item${q.quest_id === S.activeQuestId?' active':''}" onclick="questEdit('${q.quest_id}')">
+      <div class="item-row">
+        <div class="item-name">${escHtml(q.name)}</div>
+        <span class="arc-badge badge-${q.story_type||'side'}">${q.story_type||'side'}</span>
+      </div>
+      <div class="item-sub">${q.type||'fetch'} · ${q.state||'unmet'} · T${q.reward_tier||1}</div>
+    </div>`
+  ).join('') || '<div class="empty-state" style="font-size:11px;padding:8px">No quests.</div>';
+}
+
+function questNew(prefillText) {
+  S.activeQuestId = null;
+  renderQuestList(S.activeArcId);
+  renderQuestForm(null, prefillText);
+}
+
+function questEdit(id) {
+  S.activeQuestId = id;
+  renderQuestList(S.activeArcId);
+  const q = S.quests.find(x => x.quest_id === id);
+  renderQuestForm(q);
+}
+
+function renderQuestForm(q, prefillText) {
+  const area = document.getElementById('quest-form-area');
+  const d    = q || {};
+  const id   = d.quest_id || ('quest_' + Date.now());
+
+  area.innerHTML = `
+    <h3 style="margin-bottom:14px;font-size:15px">${q ? 'Edit Quest' : 'New Quest'}</h3>
+    <input type="hidden" id="q-id" value="${escHtml(id)}">
+    <div class="row">
+      <div class="field"><label>Name *</label><input id="q-name" type="text" value="${escHtml(d.name||'')}"></div>
+      <div class="field"><label>Story Type</label>
+        <select id="q-story">${STORY_TYPES.map(t=>`<option${d.story_type===t?' selected':''}>${t}</option>`).join('')}</select>
+      </div>
+    </div>
+    <div class="field"><label>Description</label><textarea id="q-desc" rows="4">${escHtml(prefillText || d.description||'')}</textarea></div>
+    <div class="row">
+      <div class="field"><label>Quest Type</label>
+        <select id="q-type">${QUEST_TYPES.map(t=>`<option${d.type===t?' selected':''}>${t}</option>`).join('')}</select>
+      </div>
+      <div class="field"><label>State</label>
+        <select id="q-state">${QUEST_STATES.map(s=>`<option${d.state===s?' selected':''}>${s}</option>`).join('')}</select>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field"><label>Story Arc</label>
+        <select id="q-arc"><option value="">— None —</option>${S.arcs.map(a=>`<option value="${a.arc_id}"${d.arc_id===a.arc_id?' selected':''}>${escHtml(a.name)}</option>`).join('')}</select>
+      </div>
+      <div class="field"><label>Arc Sequence</label><input id="q-arc-seq" type="number" min="0" value="${d.arc_sequence||0}"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>Quest Giver NPC</label>
+        <select id="q-giver"><option value="">— None —</option>${S.npcs.map(n=>`<option value="${n.npc_id}"${d.giver_npc_id===n.npc_id?' selected':''}>${escHtml(n.name)}</option>`).join('')}</select>
+      </div>
+      <div class="field"><label>Reward Tier (1–5)</label><input id="q-tier" type="number" min="1" max="5" value="${d.reward_tier||1}"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>Target Zone</label>
+        <select id="q-zone"><option value="">— None —</option>${S.zones.map(z=>`<option value="${z.id}"${d.target_zone_id===z.id?' selected':''}>${escHtml(z.name)}</option>`).join('')}</select>
+      </div>
+      <div class="field"><label>Location Type</label>
+        <select id="q-loctype">${S.locationTypes.map(lt=>`<option value="${lt.type_id}"${d.location_type===lt.type_id?' selected':''}>${lt.icon||''} ${escHtml(lt.label)}</option>`).join('')}</select>
+      </div>
+    </div>
+    <div class="field"><label>Map Marker Label</label><input id="q-marker" type="text" value="${escHtml(d.map_marker_label||'')}"></div>
+    <div class="field"><label>Rewards (JSON obj)</label><textarea id="q-rewards" rows="2">${escHtml(d.rewards||'{}')}</textarea></div>
+    <div class="field"><label>Completion Condition (JSON obj)</label><textarea id="q-cond" rows="2">${escHtml(d.completion_condition||'{}')}</textarea></div>
+    <div class="field"><label>Loot Table (JSON array)</label><textarea id="q-loot" rows="2">${escHtml(d.loot_table||'[]')}</textarea></div>
+    <div class="field"><label>NPC Spawns (JSON array)</label><textarea id="q-spawns" rows="2">${escHtml(d.npc_spawns||'[]')}</textarea></div>
+    <div class="inline-actions">
+      <button class="btn btn-primary" onclick="questSave()">💾 Save</button>
+      ${q && !q.fixture_id ? `<button class="btn btn-gold" onclick="questDeployPrompt('${q.quest_id}')">🗺️ Deploy Fixture</button>` : ''}
+      ${q && q.fixture_id  ? `<span style="font-size:11px;color:var(--green)">✓ Deployed to ${escHtml(q.target_zone_id||'zone')}</span>` : ''}
+      ${q ? `<button class="btn btn-danger" onclick="questDelete('${q.quest_id}')">✕ Delete</button>` : ''}
+    </div>`;
+}
+
+function questFormData() {
+  return {
+    quest_id:        document.getElementById('q-id').value,
+    name:            document.getElementById('q-name').value.trim(),
+    description:     document.getElementById('q-desc').value,
+    story_type:      document.getElementById('q-story').value,
+    type:            document.getElementById('q-type').value,
+    state:           document.getElementById('q-state').value,
+    arc_id:          document.getElementById('q-arc').value || null,
+    arc_sequence:    parseInt(document.getElementById('q-arc-seq').value)||0,
+    giver_npc_id:    document.getElementById('q-giver').value || null,
+    reward_tier:     parseInt(document.getElementById('q-tier').value)||1,
+    target_zone_id:  document.getElementById('q-zone').value || null,
+    location_type:   document.getElementById('q-loctype').value,
+    map_marker_label:document.getElementById('q-marker').value,
+    rewards:         document.getElementById('q-rewards').value,
+    completion_condition: document.getElementById('q-cond').value,
+    loot_table:      document.getElementById('q-loot').value,
+    npc_spawns:      document.getElementById('q-spawns').value,
+  };
+}
+
+async function questSave() {
+  const data = questFormData();
+  if (!data.name) { toast('Name required', 'err'); return; }
+  const isNew = !S.activeQuestId;
+  const res = isNew
+    ? await api('POST', '/quests', data)
+    : await api('PUT',  '/quests/' + S.activeQuestId, data);
+  if (!res) return;
+  if (isNew) S.activeQuestId = data.quest_id;
+  toast('Quest saved', 'ok');
+  await fetchQuests();
+  renderArcList();
+  renderQuestList(S.activeArcId);
+  questEdit(S.activeQuestId);
+  aqBuildLayout(S.activeArcId);
+}
+
+async function questDelete(id) {
+  if (!confirm('Delete this quest?')) return;
+  await api('DELETE', '/quests/' + id);
+  S.activeQuestId = null;
+  toast('Quest deleted', 'ok');
+  await fetchQuests();
+  renderArcList();
+  renderQuestList(S.activeArcId);
+  document.getElementById('quest-form-area').innerHTML = '<div class="empty-state">Select a quest to edit.</div>';
+}
+
+function questDeployPrompt(questId) {
+  if (!S.zones.length) { fetchZones().then(() => questDeployPrompt(questId)); return; }
+  showModal(`
+    <h3>Deploy Quest Fixture</h3>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:14px">This will spawn a fixture site in the zone and broadcast it to connected players.</p>
+    <div class="field"><label>Target Zone</label>
+      <select id="dq-zone">${S.zones.map(z=>`<option value="${z.id}">${escHtml(z.name)}</option>`).join('')}</select>
+    </div>
+    <div class="row">
+      <div class="field"><label>X tile (leave 0 for auto)</label><input id="dq-x" type="number" value="0"></div>
+      <div class="field"><label>Y tile (leave 0 for auto)</label><input id="dq-y" type="number" value="0"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-gold" onclick="questDeploy('${questId}')">🗺️ Deploy Live</button>
+    </div>`);
+}
+
+async function questDeploy(questId) {
+  const zoneId = document.getElementById('dq-zone').value;
+  const x = parseInt(document.getElementById('dq-x').value)||0;
+  const y = parseInt(document.getElementById('dq-y').value)||0;
+  const body = { quest_id: questId, zone_id: zoneId };
+  if (x > 0) body.x = x;
+  if (y > 0) body.y = y;
+  const res = await api('POST', '/deploy/quest', body);
+  if (!res) return;
+  closeModal();
+  toast('Quest fixture deployed! Marker sent to zone players.', 'ok');
+  await fetchQuests();
+  renderQuestList(S.activeArcId);
+  questEdit(questId);
+}
+
+function arcNew() {
+  showModal(`
+    <h3>New Story Arc</h3>
+    <div class="field"><label>Arc Name *</label><input id="arc-name" type="text" placeholder="e.g. The Rift Unravels"></div>
+    <div class="field"><label>Description</label><textarea id="arc-desc" rows="3"></textarea></div>
+    <div class="row">
+      <div class="field"><label>Sequence</label><input id="arc-seq" type="number" value="0"></div>
+      <div class="field"><label>Faction</label><input id="arc-faction" type="text"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="arcSave()">Save Arc</button>
+    </div>`);
+}
+
+async function arcSave() {
+  const name = document.getElementById('arc-name').value.trim();
+  if (!name) { toast('Name required', 'err'); return; }
+  const res = await api('POST', '/arcs', {
+    name, description: document.getElementById('arc-desc').value,
+    sequence: parseInt(document.getElementById('arc-seq').value)||0,
+    faction:  document.getElementById('arc-faction').value || null,
+  });
+  if (!res) return;
+  closeModal();
+  toast('Arc created', 'ok');
+  await fetchArcs();
+  renderArcList();
+}
+
+function arcEdit(e, arcId) {
+  e.stopPropagation();
+  const arc = S.arcs.find(a => a.arc_id === arcId);
+  if (!arc) return;
+  showModal(`
+    <h3>Edit Arc: ${escHtml(arc.name)}</h3>
+    <div class="field"><label>Name</label><input id="arc-e-name" type="text" value="${escHtml(arc.name)}"></div>
+    <div class="field"><label>Description</label><textarea id="arc-e-desc" rows="3">${escHtml(arc.description||'')}</textarea></div>
+    <div class="row">
+      <div class="field"><label>Sequence</label><input id="arc-e-seq" type="number" value="${arc.sequence||0}"></div>
+      <div class="field"><label>State</label>
+        <select id="arc-e-state">${ARC_STATES.map(s=>`<option${arc.state===s?' selected':''}>${s}</option>`).join('')}</select>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field"><label>Faction</label><input id="arc-e-faction" type="text" value="${escHtml(arc.faction||'')}"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-danger btn-sm" onclick="arcDelete('${arcId}')">Delete</button>
+      <span style="flex:1"></span>
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="arcUpdate('${arcId}')">Save</button>
+    </div>`);
+}
+
+async function arcUpdate(id) {
+  const res = await api('PUT', '/arcs/' + id, {
+    name:        document.getElementById('arc-e-name').value,
+    description: document.getElementById('arc-e-desc').value,
+    sequence:    parseInt(document.getElementById('arc-e-seq').value)||0,
+    state:       document.getElementById('arc-e-state').value,
+    faction:     document.getElementById('arc-e-faction').value || null,
+  });
+  if (!res) return;
+  closeModal(); toast('Arc updated', 'ok');
+  await fetchArcs(); renderArcList();
+}
+
+async function arcDelete(id) {
+  if (!confirm('Delete this arc? Quests will lose their arc reference.')) return;
+  await api('DELETE', '/arcs/' + id);
+  closeModal(); toast('Arc deleted', 'ok');
+  await fetchArcs(); renderArcList();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// LORE / BOOKS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function loadLore() {
+  await Promise.all([fetchLore(), fetchNpcs()]);
+  renderLoreList();
+}
+
+function renderLoreList(filter = '') {
+  const list = document.getElementById('lore-list');
+  const f    = filter.toLowerCase();
+  const items = S.lore.filter(l => !f || l.title.toLowerCase().includes(f) || (l.content||'').toLowerCase().includes(f));
+  list.innerHTML = items.map(l =>
+    `<div class="list-item${l.lore_id===S.activeLoreId?' active':''}" onclick="loreEdit('${l.lore_id}')">
+      <div class="item-row">
+        <div class="item-name">${escHtml(l.title)}</div>
+        <span class="arc-badge ${l.is_book?'badge-book':'badge-side'}">${l.is_book?'Book':'Lore'}</span>
+      </div>
+      <div class="item-sub">${l.author||'Unknown author'} · ${l.faction||''}</div>
+    </div>`
+  ).join('') || '<div class="empty-state">No entries yet.</div>';
+}
+function loreFilter(val) { renderLoreList(val); }
+
+function loreNew(isBook, prefillText) {
+  S.activeLoreId = null;
+  renderLoreList();
+  renderLoreForm(null, isBook, prefillText);
+}
+
+function loreEdit(id) {
+  S.activeLoreId = id;
+  renderLoreList();
+  const l = S.lore.find(x => x.lore_id === id);
+  renderLoreForm(l);
+}
+
+function renderLoreForm(l, forceBook, prefillText) {
+  const area   = document.getElementById('lore-form-area');
+  const d      = l || {};
+  const isBook = forceBook !== undefined ? forceBook : !!d.is_book;
+  const id     = d.lore_id || ('lore_' + Date.now());
+  const tags   = parseJsonArr(d.tags);
+  let chapters = [];
+  try { chapters = JSON.parse(d.book_chapters || '[]'); } catch(_) {}
+
+  area.innerHTML = `
+    <h3 style="margin-bottom:14px;font-size:15px">${l ? (isBook?'Edit Book':'Edit Lore') : (isBook?'New Book':'New Lore Entry')}</h3>
+    <input type="hidden" id="l-id" value="${escHtml(id)}">
+    <input type="hidden" id="l-isbook" value="${isBook?1:0}">
+    <div class="field"><label>Title *</label><input id="l-title" type="text" value="${escHtml(d.title||'')}"></div>
+    <div class="row">
+      <div class="field"><label>Author</label><input id="l-author" type="text" value="${escHtml(d.author||'')}"></div>
+      <div class="field"><label>Faction</label><input id="l-faction" type="text" value="${escHtml(d.faction||'')}"></div>
+    </div>
+    <div class="field"><label>Tags (comma-separated)</label>
+      <input id="l-tags" type="text" value="${escHtml(tags.join(', '))}">
+    </div>
+    <div class="field"><label>Unlock Trigger (book/lore ID or event)</label>
+      <input id="l-trigger" type="text" value="${escHtml(d.unlock_trigger||'')}">
+    </div>
+    ${isBook ? `
+    <div style="margin-bottom:12px">
+      <div style="font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">BOOK CONTENT</div>
+      <div id="l-chapters">${renderChaptersForms(chapters)}</div>
+      <button class="btn btn-secondary btn-sm" style="margin-top:6px" onclick="loreAddChapter()">+ Add Chapter</button>
+    </div>
+    ` : `
+    <div class="field"><label>Content</label><textarea id="l-content" rows="12">${escHtml(prefillText || d.content||'')}</textarea></div>
+    `}
+    <div class="inline-actions">
+      <button class="btn btn-primary" onclick="loreSave()">💾 Save</button>
+      ${l ? `<button class="btn btn-danger" onclick="loreDelete('${l.lore_id}')">✕ Delete</button>` : ''}
+    </div>`;
+}
+
+function renderChaptersForms(chapters) {
+  return chapters.map((ch, i) => `
+    <div class="field" style="border:1px solid var(--border);border-radius:var(--radius);padding:10px;margin-bottom:8px" id="chap-${i}">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        <strong style="font-size:12px">Chapter ${i+1}</strong>
+        <button class="btn btn-danger btn-sm" onclick="loreRemoveChapter(${i})">✕</button>
+      </div>
+      <input type="text" placeholder="Chapter Title" value="${escHtml(ch.title||'')}" onchange="loreChapterField(${i},'title',this.value)" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:5px 8px;margin-bottom:6px">
+      <textarea rows="5" placeholder="Chapter content…" onchange="loreChapterField(${i},'content',this.value)" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:5px 8px;resize:vertical">${escHtml(ch.content||'')}</textarea>
+    </div>`).join('');
+}
+
+let _loreChapters = [];
+function loreAddChapter() {
+  _loreChapters.push({ title: '', content: '' });
+  const div = document.getElementById('l-chapters');
+  if (div) div.innerHTML = renderChaptersForms(_loreChapters);
+}
+function loreRemoveChapter(i) {
+  _loreChapters.splice(i, 1);
+  const div = document.getElementById('l-chapters');
+  if (div) div.innerHTML = renderChaptersForms(_loreChapters);
+}
+function loreChapterField(i, key, val) {
+  if (_loreChapters[i]) _loreChapters[i][key] = val;
+}
+
+async function loreSave() {
+  const isBook = document.getElementById('l-isbook').value === '1';
+  const data = {
+    lore_id:       document.getElementById('l-id').value,
+    title:         document.getElementById('l-title').value.trim(),
+    author:        document.getElementById('l-author').value,
+    faction:       document.getElementById('l-faction').value,
+    tags:          document.getElementById('l-tags').value.split(',').map(t=>t.trim()).filter(Boolean),
+    unlock_trigger:document.getElementById('l-trigger').value,
+    is_book:       isBook ? 1 : 0,
+    content:       isBook ? '' : (document.getElementById('l-content') ? document.getElementById('l-content').value : ''),
+    book_chapters: isBook ? JSON.stringify(_loreChapters) : '[]',
+  };
+  if (!data.title) { toast('Title required', 'err'); return; }
+  const isNew = !S.activeLoreId;
+  const res = isNew
+    ? await api('POST', '/lore', data)
+    : await api('PUT',  '/lore/' + S.activeLoreId, data);
+  if (!res) return;
+  if (isNew) S.activeLoreId = data.lore_id;
+  toast('Lore entry saved', 'ok');
+  await fetchLore();
+  renderLoreList();
+  loreEdit(S.activeLoreId);
+}
+
+async function loreDelete(id) {
+  if (!confirm('Delete this lore entry?')) return;
+  await api('DELETE', '/lore/' + id);
+  S.activeLoreId = null;
+  toast('Deleted', 'ok');
+  await fetchLore();
+  renderLoreList();
+  document.getElementById('lore-form-area').innerHTML = '<div class="empty-state">Select an entry.</div>';
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// FIXTURES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function loadFixtures() {
+  await fetchFixtures();
+  renderFixtureTable();
+}
+
+function renderFixtureTable() {
+  const tbody = document.getElementById('fixture-tbody');
+  tbody.innerHTML = S.fixtures.map(fx => `
+    <tr>
+      <td><strong>${escHtml(fx.name||fx.fixture_id)}</strong></td>
+      <td>${escHtml(fx.zone_id)}</td>
+      <td>${fx.location_type||'—'}</td>
+      <td>T${fx.tier||1}</td>
+      <td>${escHtml(fx.current_quest_id||'—')}</td>
+      <td><span style="color:${fx.available_for_new_quest?'var(--green)':'var(--text2)'}">${fx.available_for_new_quest?'Yes':'No'}</span></td>
+      <td><button class="btn btn-danger btn-sm" onclick="fixtureDelete('${fx.fixture_id}')">✕</button></td>
+    </tr>`
+  ).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text2);padding:24px">No fixtures deployed.</td></tr>';
+}
+
+async function fixtureDelete(id) {
+  if (!confirm('Remove fixture record? This does not remove the object from the live zone.')) return;
+  const res = await api('DELETE', '/fixtures/' + id);
+  if (!res) return;
+  toast('Fixture removed', 'ok');
+  await fetchFixtures();
+  renderFixtureTable();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// WORLD
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function loadWorld() {
+  await fetchZones();
+  renderWorldZones();
+}
+
+function renderWorldZones() {
+  const grid = document.getElementById('zone-grid');
+  grid.innerHTML = S.zones.map(z => `
+    <div class="zone-card">
+      <h4>${escHtml(z.name)}</h4>
+      <div class="zone-meta">${z.id} · ${z.type||'zone'} · ${z.biome||''}</div>
+    </div>`
+  ).join('') || '<div class="empty-state" style="grid-column:1/-1">No zones loaded.</div>';
+}
+
+function showQuickDeploy() {
+  if (!S.npcs.length || !S.zones.length) { Promise.all([fetchNpcs(), fetchZones()]).then(showQuickDeploy); return; }
+  showModal(`
+    <h3>Quick Deploy NPC</h3>
+    <div class="field"><label>NPC</label>
+      <select id="qd-npc">${S.npcs.map(n=>`<option value="${n.npc_id}">${escHtml(n.name)}</option>`).join('')}</select>
+    </div>
+    <div class="field"><label>Zone</label>
+      <select id="qd-zone">${S.zones.map(z=>`<option value="${z.id}">${escHtml(z.name)}</option>`).join('')}</select>
+    </div>
+    <div class="row">
+      <div class="field"><label>X</label><input id="qd-x" type="number" value="5"></div>
+      <div class="field"><label>Y</label><input id="qd-y" type="number" value="5"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-success" onclick="quickDeployConfirm()">🚀 Deploy</button>
+    </div>`);
+}
+
+async function quickDeployConfirm() {
+  const res = await api('POST', '/deploy/npc', {
+    npc_id:  document.getElementById('qd-npc').value,
+    zone_id: document.getElementById('qd-zone').value,
+    x: parseInt(document.getElementById('qd-x').value)||5,
+    y: parseInt(document.getElementById('qd-y').value)||5,
+  });
+  if (!res) return;
+  closeModal();
+  toast('NPC deployed live!', 'ok');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MAP EDITOR
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const MAP = {
+  canvas: null, ctx: null, wrap: null,
+  // World coords at center of canvas
+  cx: 535000, cy: 655000,
+  zoom: 0.016,          // canvas pixels per world pixel
+  minZoom: 0.0002, maxZoom: 0.5,
+  zones: [],            // from /api/map/zones
+  markers: [],          // from /api/map/markers
+  selected: null,       // { kind: 'zone'|'marker', data: {...} }
+  filters: new Set(['town','dungeon','building','poi','npcs']),
+  dragging: false, dragLast: null,
+  addingMarker: false,
+  raf: null,
+  dirty: true,
+};
+
+// Zone type → visual style
+function _mapZoneStyle(type, authored) {
+  if (type === 'town')      return authored ? { color: '#60d8a0', r: 9, label: '🏘' } : { color: '#f5c542', r: 9, label: '🏙' };
+  if (type === 'dungeon')   return { color: '#e05050', r: 7, label: '⚔️' };
+  if (type === 'building')  return { color: '#6a9fd8', r: 5, label: '🏠' };
+  if (type === 'hollow_earth') return { color: '#a060d0', r: 7, label: '🕳' };
+  return { color: '#aaa', r: 5, label: '●' };
+}
+
+function _mapMarkerStyle(type) {
+  if (type === 'danger')    return '#e05050';
+  if (type === 'lore')      return '#a060d0';
+  if (type === 'resource')  return '#60c080';
+  if (type === 'quest')     return '#f5c542';
+  return '#6a9fd8';
+}
+
+// World → canvas pixel
+function _mapW2C(wx, wy) {
+  const c = MAP.canvas;
+  return { x: (wx - MAP.cx) * MAP.zoom + c.width / 2,
+           y: (wy - MAP.cy) * MAP.zoom + c.height / 2 };
+}
+// Canvas pixel → world
+function _mapC2W(cx, cy) {
+  const c = MAP.canvas;
+  return { x: (cx - c.width / 2)  / MAP.zoom + MAP.cx,
+           y: (cy - c.height / 2) / MAP.zoom + MAP.cy };
+}
+
+function _mapHitTest(cx, cy) {
+  // Check markers first (smaller target)
+  for (const m of MAP.markers) {
+    const p = _mapW2C(m.wx, m.wy);
+    if (Math.hypot(cx - p.x, cy - p.y) < 10) return { kind: 'marker', data: m };
+  }
+  // Check zones
+  for (const z of MAP.zones) {
+    if (z.wx == null) continue;
+    const { color, r } = _mapZoneStyle(z.type, z.authoredTownId);
+    const p = _mapW2C(z.wx, z.wy);
+    if (Math.hypot(cx - p.x, cy - p.y) < r + 4) return { kind: 'zone', data: z };
+  }
+  return null;
+}
+
+function mapRender() {
+  MAP.raf = null;
+  const c = MAP.canvas, ctx = MAP.ctx;
+  if (!c) return;
+  const W = c.width, H = c.height;
+
+  // Background
+  ctx.fillStyle = '#09111e';
+  ctx.fillRect(0, 0, W, H);
+
+  // Subtle grid (every 10,000 world units)
+  const gridWorld = 10000;
+  const step = gridWorld * MAP.zoom;
+  if (step > 8) {
+    ctx.strokeStyle = '#14243a';
+    ctx.lineWidth = 1;
+    const ox = (((-MAP.cx % gridWorld) + gridWorld) % gridWorld) * MAP.zoom + W / 2;
+    for (let x = ox % step; x < W; x += step) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+    const oy = (((-MAP.cy % gridWorld) + gridWorld) % gridWorld) * MAP.zoom + H / 2;
+    for (let y = oy % step; y < H; y += step) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+  }
+
+  // Draw zones
+  ctx.textBaseline = 'middle';
+  for (const z of MAP.zones) {
+    if (z.wx == null) continue;
+    const filterKey = z.type === 'town' ? 'town' : z.type === 'dungeon' ? 'dungeon' : 'building';
+    if (!MAP.filters.has(filterKey)) continue;
+    const { color, r } = _mapZoneStyle(z.type, z.authoredTownId);
+    const p = _mapW2C(z.wx, z.wy);
+    if (p.x < -40 || p.x > W + 40 || p.y < -40 || p.y > H + 40) continue;
+
+    const isSelected = MAP.selected && MAP.selected.kind === 'zone' && MAP.selected.data.id === z.id;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, r + (isSelected ? 3 : 0), 0, Math.PI * 2);
+    ctx.fillStyle = isSelected ? '#fff' : color;
+    ctx.fill();
+    if (isSelected) { ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.stroke(); }
+
+    // Label
+    if (MAP.zoom > 0.005 || isSelected) {
+      ctx.font = isSelected ? 'bold 11px sans-serif' : '10px sans-serif';
+      ctx.fillStyle = '#dde';
+      ctx.fillText(z.name, p.x + r + 3, p.y);
+    }
+
+    // NPC count dot
+    if (MAP.filters.has('npcs') && z.npcCount > 0 && MAP.zoom > 0.003) {
+      ctx.beginPath(); ctx.arc(p.x + r - 2, p.y - r + 2, 4, 0, Math.PI * 2);
+      ctx.fillStyle = '#60c080'; ctx.fill();
+      ctx.font = '8px sans-serif'; ctx.fillStyle = '#fff';
+      ctx.fillText(z.npcCount, p.x + r - 2, p.y - r + 2);
+    }
+  }
+
+  // Draw custom markers (pin shape)
+  if (MAP.filters.has('poi')) {
+    for (const m of MAP.markers) {
+      const p = _mapW2C(m.wx, m.wy);
+      if (p.x < -20 || p.x > W + 20 || p.y < -20 || p.y > H + 20) continue;
+      const col = m.color || _mapMarkerStyle(m.type);
+      const isSelected = MAP.selected && MAP.selected.kind === 'marker' && MAP.selected.data.marker_id === m.marker_id;
+
+      // Pin: circle + stem
+      ctx.beginPath(); ctx.arc(p.x, p.y - 8, 7, 0, Math.PI * 2);
+      ctx.fillStyle = isSelected ? '#fff' : col;
+      ctx.fill();
+      if (isSelected) { ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.stroke(); }
+      ctx.beginPath(); ctx.moveTo(p.x, p.y - 1); ctx.lineTo(p.x, p.y + 6);
+      ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.stroke();
+
+      if (MAP.zoom > 0.005 || isSelected) {
+        ctx.font = isSelected ? 'bold 11px sans-serif' : '10px sans-serif';
+        ctx.fillStyle = '#dde';
+        ctx.fillText(m.label, p.x + 10, p.y - 8);
+      }
+    }
+  }
+
+  // Live players legend (bottom-left)
+  const activeTowns = MAP.zones.filter(z => z.members > 0);
+  if (activeTowns.length) {
+    ctx.font = '11px sans-serif'; ctx.fillStyle = '#60c08088';
+    ctx.fillText('● ' + activeTowns.length + ' zone(s) with players', 10, H - 12);
+  }
+
+  // World-coord readout
+  const status = document.getElementById('map-status');
+  if (status) {
+    const wc = _mapC2W(W / 2, H / 2);
+    status.textContent = `Center: (${Math.round(wc.x)}, ${Math.round(wc.y)})  Zoom: ${MAP.zoom.toFixed(4)}`;
+  }
+}
+
+function _mapScheduleRender() {
+  if (!MAP.raf) MAP.raf = requestAnimationFrame(mapRender);
+}
+
+function mapZoomStep(factor) {
+  MAP.zoom = Math.min(MAP.maxZoom, Math.max(MAP.minZoom, MAP.zoom * factor));
+  _mapScheduleRender();
+}
+
+function mapResetView() {
+  // Fit to town cluster
+  const placed = MAP.zones.filter(z => z.wx != null);
+  if (!placed.length) { MAP.cx = 535000; MAP.cy = 655000; MAP.zoom = 0.016; }
+  else {
+    const xs = placed.map(z => z.wx), ys = placed.map(z => z.wy);
+    MAP.cx = (Math.min(...xs) + Math.max(...xs)) / 2;
+    MAP.cy = (Math.min(...ys) + Math.max(...ys)) / 2;
+    const span = Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)) || 50000;
+    MAP.zoom = Math.min(MAP.maxZoom, (MAP.canvas.width * 0.7) / (span + 10000));
+  }
+  _mapScheduleRender();
+}
+
+function mapToggleFilter(btn) {
+  const key = btn.dataset.mfilter;
+  if (MAP.filters.has(key)) { MAP.filters.delete(key); btn.classList.remove('active'); }
+  else { MAP.filters.add(key); btn.classList.add('active'); }
+  _mapScheduleRender();
+}
+
+function mapStartAddMarker() {
+  MAP.addingMarker = true;
+  MAP.wrap.classList.add('adding');
+  document.getElementById('map-crosshair-hint').style.display = 'block';
+}
+
+function _mapCancelAdd() {
+  MAP.addingMarker = false;
+  MAP.wrap.classList.remove('adding');
+  document.getElementById('map-crosshair-hint').style.display = 'none';
+}
+
+function _mapSelectItem(hit) {
+  MAP.selected = hit;
+  _mapScheduleRender();
+  _mapRenderPanel();
+}
+
+function _mapRenderPanel() {
+  const panel = document.getElementById('map-panel');
+  if (!MAP.selected) {
+    panel.innerHTML = '<div style="padding:16px;color:var(--text2);font-size:12px">Click a zone or marker to inspect it.</div>';
+    return;
+  }
+  const { kind, data } = MAP.selected;
+  if (kind === 'zone') {
+    const zoneNpcs = S.npcs.filter(n => n.home_zone === data.id);
+    const zoneQuests = S.quests.filter(q => q.zone_id === data.id);
+    const style = _mapZoneStyle(data.type, data.authoredTownId);
+    const townRec = data.authoredTownId ? S.placedTowns.find(t => t.town_id === data.authoredTownId) : null;
+    const townBadge = townRec ? `<span style="font-size:10px;background:#1a3a28;color:#60d8a0;border-radius:3px;padding:1px 5px;margin-left:4px">✏️ editable</span>` : '';
+    const editForm = townRec ? `
+      <div class="map-panel-section">
+        <h3>Edit Town</h3>
+        <label style="font-size:11px;color:var(--text2)">Name</label>
+        <input class="inp" id="te-name" value="${escHtml(townRec.name)}" style="margin-bottom:6px">
+        <label style="font-size:11px;color:var(--text2)">Type</label>
+        <select class="inp" id="te-type" style="margin-bottom:6px">
+          ${['hamlet','settlement','town','city','fortress_town','trade_outpost'].map(t=>`<option value="${t}"${townRec.town_type===t?' selected':''}>${t.replace('_',' ')}</option>`).join('')}
+        </select>
+        <label style="font-size:11px;color:var(--text2)">Biome</label>
+        <select class="inp" id="te-biome" style="margin-bottom:6px">
+          ${['plains','forest','mountain','desert','swamp','tundra','coast'].map(b=>`<option value="${b}"${townRec.biome===b?' selected':''}>${b}</option>`).join('')}
+        </select>
+        <label style="font-size:11px;color:var(--text2)">Description</label>
+        <textarea class="inp" id="te-desc" rows="2" style="margin-bottom:8px">${escHtml(townRec.description||'')}</textarea>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-sm btn-primary" onclick="mapSaveTown('${escHtml(townRec.town_id)}')">Save</button>
+          <button class="btn btn-sm btn-secondary" style="margin-left:auto;color:#e05050" onclick="mapDeleteTown('${escHtml(townRec.town_id)}')">🗑 Delete</button>
+        </div>
+      </div>` : '';
+    panel.innerHTML = `
+      <div class="map-panel-section">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <span style="font-size:20px">${style.label}</span>
+          <div>
+            <div style="font-weight:700;font-size:14px">${escHtml(data.name)}${townBadge}</div>
+            <div style="font-size:11px;color:var(--text2)">${data.type}${data.wx!=null?' · ('+Math.round(data.wx)+', '+Math.round(data.wy)+')':' · no overworld position'}</div>
+          </div>
+        </div>
+        <div class="map-panel-row"><span>Zone ID</span><strong>${escHtml(data.id)}</strong></div>
+        <div class="map-panel-row"><span>Live players</span><strong>${data.members}</strong></div>
+        <div class="map-panel-row"><span>NPCs</span><strong>${data.npcCount}</strong></div>
+        <div style="display:flex;gap:6px;margin-top:10px">
+          <button class="btn btn-sm btn-secondary" onclick="document.querySelector('#tab-nav button[data-tab=\\"npcs\\"]').click()">Go to NPCs</button>
+          <button class="btn btn-sm btn-secondary" onclick="document.querySelector('#tab-nav button[data-tab=\\"quests\\"]').click()">Go to Quests</button>
+        </div>
+      </div>
+      ${editForm}
+      ${zoneNpcs.length ? `<div class="map-panel-section"><h3>NPCs (${zoneNpcs.length})</h3>${zoneNpcs.map(n=>`<div class="map-panel-npc"><img src="${n.portrait?portraitUrl(n.portrait):''}" style="width:24px;height:24px;border-radius:3px;object-fit:cover;background:var(--bg3)"onerror="this.style.display='none'">${escHtml(n.name)}<span style="margin-left:auto;font-size:10px;color:var(--text2)">${escHtml(n.occupation||'')}</span></div>`).join('')}</div>` : ''}
+      ${zoneQuests.length ? `<div class="map-panel-section"><h3>Quests (${zoneQuests.length})</h3>${zoneQuests.map(q=>`<div class="map-panel-npc">⚔️ ${escHtml(q.name)}<span style="margin-left:auto;font-size:10px;color:var(--text2)">${escHtml(q.state||'')}</span></div>`).join('')}</div>` : ''}
+    `;
+  } else {
+    // Marker
+    panel.innerHTML = `
+      <div class="map-panel-section">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span class="map-marker-color" style="background:${escHtml(data.color||'#f5c542')};width:16px;height:16px"></span>
+          <strong style="font-size:14px">${escHtml(data.label)}</strong>
+          <button class="btn btn-sm btn-secondary" style="margin-left:auto" onclick="mapDeleteMarker('${escHtml(data.marker_id)}')">🗑</button>
+        </div>
+        <div class="map-panel-row"><span>Type</span><strong>${escHtml(data.type)}</strong></div>
+        <div class="map-panel-row"><span>Position</span><strong>(${Math.round(data.wx)}, ${Math.round(data.wy)})</strong></div>
+        ${data.notes ? `<div style="font-size:12px;color:var(--text2);margin-top:8px;line-height:1.5">${escHtml(data.notes)}</div>` : ''}
+      </div>
+      <div class="map-panel-section" id="map-marker-form">
+        <h3>Edit Marker</h3>
+        <label style="font-size:11px;color:var(--text2)">Label</label>
+        <input class="inp" value="${escHtml(data.label)}" id="mf-label">
+        <label style="font-size:11px;color:var(--text2)">Type</label>
+        <select class="inp" id="mf-type">
+          ${['poi','danger','lore','resource','quest'].map(t=>`<option value="${t}"${data.type===t?' selected':''}>${t}</option>`).join('')}
+        </select>
+        <label style="font-size:11px;color:var(--text2)">Color</label>
+        <input type="color" id="mf-color" value="${data.color||'#f5c542'}" style="width:100%;height:28px;border:none;background:none;padding:0;cursor:pointer">
+        <label style="font-size:11px;color:var(--text2)">Notes</label>
+        <textarea class="inp" id="mf-notes" rows="3">${escHtml(data.notes||'')}</textarea>
+        <button class="btn btn-primary btn-sm" onclick="mapSaveMarker('${escHtml(data.marker_id)}')">Save</button>
+      </div>
+    `;
+  }
+}
+
+async function mapSaveMarker(id) {
+  const upd = {
+    label: document.getElementById('mf-label').value.trim(),
+    type: document.getElementById('mf-type').value,
+    color: document.getElementById('mf-color').value,
+    notes: document.getElementById('mf-notes').value.trim(),
+  };
+  if (!upd.label) return toast('Label required', 'err');
+  await api('PUT', '/map/markers/' + id, upd);
+  const m = MAP.markers.find(m => m.marker_id === id);
+  if (m) Object.assign(m, upd);
+  if (MAP.selected && MAP.selected.data.marker_id === id) Object.assign(MAP.selected.data, upd);
+  _mapRenderPanel(); _mapScheduleRender();
+  toast('Marker saved', 'ok');
+}
+
+async function mapDeleteMarker(id) {
+  await api('DELETE', '/map/markers/' + id);
+  MAP.markers = MAP.markers.filter(m => m.marker_id !== id);
+  MAP.selected = null;
+  _mapRenderPanel(); _mapScheduleRender();
+  toast('Marker deleted', 'ok');
+}
+
+function _mapInitEvents() {
+  const c = MAP.canvas, wrap = MAP.wrap;
+
+  // Resize observer
+  new ResizeObserver(() => {
+    c.width  = wrap.clientWidth;
+    c.height = wrap.clientHeight;
+    _mapScheduleRender();
+  }).observe(wrap);
+
+  wrap.addEventListener('mousedown', e => {
+    if (MAP.addingMarker) return;
+    MAP.dragging = true;
+    MAP.dragLast = { x: e.clientX, y: e.clientY };
+  });
+  window.addEventListener('mousemove', e => {
+    if (!MAP.dragging) return;
+    MAP.cx -= (e.clientX - MAP.dragLast.x) / MAP.zoom;
+    MAP.cy -= (e.clientY - MAP.dragLast.y) / MAP.zoom;
+    MAP.dragLast = { x: e.clientX, y: e.clientY };
+    _mapScheduleRender();
+  });
+  window.addEventListener('mouseup', () => { MAP.dragging = false; });
+
+  wrap.addEventListener('click', async e => {
+    const rect = wrap.getBoundingClientRect();
+    const cx = e.clientX - rect.left, cy = e.clientY - rect.top;
+    if (MAP.addingMarker) {
+      _mapCancelAdd();
+      const w = _mapC2W(cx, cy);
+      const label = prompt('Marker label:', 'New POI');
+      if (!label) return;
+      const result = await api('POST', '/map/markers', { label, wx: w.x, wy: w.y, type: 'poi', color: '#f5c542' });
+      if (!result) return;
+      const newM = { marker_id: result.marker_id, label, wx: w.x, wy: w.y, type: 'poi', color: '#f5c542', notes: '' };
+      MAP.markers.push(newM);
+      _mapSelectItem({ kind: 'marker', data: newM });
+      toast('Marker added', 'ok');
+      return;
+    }
+    const hit = _mapHitTest(cx, cy);
+    _mapSelectItem(hit);
+  });
+
+  wrap.addEventListener('contextmenu', e => {
+    e.preventDefault();
+    if (MAP.addingMarker) { _mapCancelAdd(); return; }
+    const rect = wrap.getBoundingClientRect();
+    _mapShowContextMenu(e.clientX, e.clientY, _mapC2W(e.clientX - rect.left, e.clientY - rect.top));
+  });
+
+  wrap.addEventListener('wheel', e => {
+    e.preventDefault();
+    const rect = wrap.getBoundingClientRect();
+    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    // Zoom toward mouse position
+    const wBefore = _mapC2W(mx, my);
+    MAP.zoom = Math.min(MAP.maxZoom, Math.max(MAP.minZoom, MAP.zoom * (e.deltaY < 0 ? 1.15 : 1/1.15)));
+    const wAfter  = _mapC2W(mx, my);
+    MAP.cx += wBefore.x - wAfter.x;
+    MAP.cy += wBefore.y - wAfter.y;
+    _mapScheduleRender();
+  }, { passive: false });
+}
+
+function _mapShowContextMenu(screenX, screenY, worldPos) {
+  MAP._ctxWorld = worldPos;
+  const menu = document.getElementById('map-context-menu');
+  menu.style.left = screenX + 'px';
+  menu.style.top  = screenY + 'px';
+  menu.classList.remove('hidden');
+}
+function _mapHideContextMenu() {
+  document.getElementById('map-context-menu').classList.add('hidden');
+}
+function mapCtxPlaceTown() {
+  _mapHideContextMenu();
+  if (MAP._ctxWorld) mapOpenTownModal(MAP._ctxWorld.wx, MAP._ctxWorld.wy);
+}
+function mapCtxAddMarker() {
+  _mapHideContextMenu();
+  if (!MAP._ctxWorld) return;
+  const label = prompt('Marker label:', 'New POI');
+  if (!label) return;
+  api('POST', '/map/markers', { label, wx: MAP._ctxWorld.wx, wy: MAP._ctxWorld.wy, type: 'poi', color: '#f5c542' }).then(result => {
+    if (!result) return;
+    const newM = { marker_id: result.marker_id, label, wx: MAP._ctxWorld.wx, wy: MAP._ctxWorld.wy, type: 'poi', color: '#f5c542', notes: '' };
+    MAP.markers.push(newM);
+    _mapSelectItem({ kind: 'marker', data: newM });
+    toast('Marker added', 'ok');
+  });
+}
+
+async function loadMap() {
+  if (!MAP.canvas) {
+    MAP.canvas = document.getElementById('map-canvas');
+    MAP.ctx    = MAP.canvas.getContext('2d');
+    MAP.wrap   = document.getElementById('map-canvas-wrap');
+    MAP.canvas.width  = MAP.wrap.clientWidth  || 800;
+    MAP.canvas.height = MAP.wrap.clientHeight || 600;
+    _mapInitEvents();
+  }
+  const [zones, markers, towns] = await Promise.all([
+    api('GET', '/map/zones'),
+    api('GET', '/map/markers'),
+    api('GET', '/towns'),
+  ]);
+  if (zones)   { MAP.zones   = zones;   S.zones = zones; }
+  if (markers) { MAP.markers = markers; S.mapMarkers = markers; }
+  if (towns)   { S.placedTowns = towns; }
+  if (!S.npcs.length)   { const d = await api('GET','/npcs');   if (d) S.npcs   = d; }
+  if (!S.quests.length) { const d = await api('GET','/quests'); if (d) S.quests = d; }
+  mapResetView();
+}
+
+// ── Town placement ────────────────────────────────────────────────────────────
+
+let _mapPendingTownPos = null;
+
+function mapOpenTownModal(wx, wy) {
+  _mapPendingTownPos = { wx, wy };
+  document.getElementById('map-town-modal').classList.remove('hidden');
+  document.getElementById('tm-name').value = '';
+  document.getElementById('tm-desc').value = '';
+}
+
+function mapCloseTownModal() {
+  document.getElementById('map-town-modal').classList.add('hidden');
+  _mapPendingTownPos = null;
+}
+
+async function mapPlaceTownConfirm() {
+  const name = document.getElementById('tm-name').value.trim();
+  if (!name) return toast('Name required', 'err');
+  if (!_mapPendingTownPos) return;
+  const body = {
+    name, wx: _mapPendingTownPos.wx, wy: _mapPendingTownPos.wy,
+    town_type: document.getElementById('tm-type').value,
+    biome: document.getElementById('tm-biome').value,
+    description: document.getElementById('tm-desc').value.trim(),
+  };
+  const result = await api('POST', '/towns', body);
+  if (!result) return;
+  mapCloseTownModal();
+  // Reload map zones so the new town appears
+  const zones = await api('GET', '/map/zones');
+  if (zones) { MAP.zones = zones; S.zones = zones; }
+  const towns = await api('GET', '/towns');
+  if (towns) S.placedTowns = towns;
+  _mapScheduleRender();
+  toast('Town placed — players can enter immediately', 'ok');
+}
+
+// ── Town edit panel helpers ───────────────────────────────────────────────────
+
+async function mapSaveTown(townId) {
+  const upd = {
+    name: document.getElementById('te-name').value.trim(),
+    town_type: document.getElementById('te-type').value,
+    biome: document.getElementById('te-biome').value,
+    description: document.getElementById('te-desc').value.trim(),
+  };
+  if (!upd.name) return toast('Name required', 'err');
+  await api('PUT', '/towns/' + townId, upd);
+  // Reflect in MAP.zones
+  const z = MAP.zones.find(z => z.authoredTownId === townId);
+  if (z) { z.name = upd.name; }
+  const t = S.placedTowns.find(t => t.town_id === townId);
+  if (t) Object.assign(t, upd);
+  if (MAP.selected && MAP.selected.kind === 'zone' && MAP.selected.data.authoredTownId === townId)
+    Object.assign(MAP.selected.data, { name: upd.name });
+  _mapScheduleRender();
+  toast('Town saved', 'ok');
+}
+
+async function mapDeleteTown(townId) {
+  if (!confirm('Delete this town? Players currently inside will be moved out.')) return;
+  await api('DELETE', '/towns/' + townId);
+  MAP.zones = MAP.zones.filter(z => z.authoredTownId !== townId);
+  S.placedTowns = S.placedTowns.filter(t => t.town_id !== townId);
+  MAP.selected = null;
+  _mapRenderPanel(); _mapScheduleRender();
+  toast('Town removed', 'ok');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════════════
+// CONFIG — SHARD MANAGEMENT
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function loadConfig() {
+  const data = await api('GET', '/shards');
+  if (data) { S._shards = data; renderShardList(); }
+}
+
+function renderShardList() {
+  const list = document.getElementById('shard-list');
+  if (!S._shards || !S._shards.length) {
+    list.innerHTML = '<div class="empty-state">No remote shards configured. Add a shard to enable simultaneous cross-shard deploys.</div>';
+    return;
+  }
+  list.innerHTML = S._shards.map(s => `
+    <div class="shard-card">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+        <h4>${escHtml(s.label)}</h4>
+        <span class="arc-badge ${s.enabled?'badge-active':'badge-unmet'}">${s.enabled?'Enabled':'Disabled'}</span>
+        <span style="flex:1"></span>
+        <button class="btn btn-secondary btn-sm" onclick="shardEdit('${s.shard_id}')">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="shardDelete('${s.shard_id}')">✕</button>
+      </div>
+      <div class="shard-meta">URL: ${escHtml(s.url)}</div>
+      <div class="shard-meta">Token: <code>${escHtml(s.token.slice(0,12))}…</code></div>
+    </div>`).join('');
+}
+
+function shardAdd() {
+  showModal(`
+    <h3>Add Remote Shard</h3>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:12px">Enter the base URL and writing-tool token for the remote shard. The token is printed to that server's console on startup.</p>
+    <div class="field"><label>Label</label><input id="sh-label" type="text" placeholder="e.g. KVM2 – The Free Holds of Stone"></div>
+    <div class="field"><label>Base URL (no trailing slash)</label><input id="sh-url" type="text" placeholder="http://<shard2-ip>:3001"></div>
+    <div class="field"><label>Remote Token</label><input id="sh-token" type="text" placeholder="wtool-…"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="shardSave()">Add Shard</button>
+    </div>`);
+}
+
+async function shardSave() {
+  const label = document.getElementById('sh-label').value.trim();
+  const url   = document.getElementById('sh-url').value.trim();
+  const token = document.getElementById('sh-token').value.trim();
+  if (!url || !token) { toast('URL and token required', 'err'); return; }
+  const res = await api('POST', '/shards', { label: label || url, url, token, enabled: true });
+  if (!res) return;
+  closeModal(); toast('Shard added', 'ok');
+  await loadConfig();
+}
+
+function shardEdit(id) {
+  const s = (S._shards||[]).find(x => x.shard_id === id);
+  if (!s) return;
+  showModal(`
+    <h3>Edit Shard: ${escHtml(s.label)}</h3>
+    <div class="field"><label>Label</label><input id="she-label" type="text" value="${escHtml(s.label)}"></div>
+    <div class="field"><label>Base URL</label><input id="she-url" type="text" value="${escHtml(s.url)}"></div>
+    <div class="field"><label>Token</label><input id="she-token" type="text" value="${escHtml(s.token)}"></div>
+    <div class="field"><label>Enabled</label>
+      <input type="checkbox" id="she-enabled"${s.enabled?' checked':''}> <label for="she-enabled" style="font-size:12px;text-transform:none;letter-spacing:0;display:inline;margin-left:6px">Active</label>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="shardUpdate('${id}')">Save</button>
+    </div>`);
+}
+
+async function shardUpdate(id) {
+  const res = await api('PUT', '/shards/' + id, {
+    label:   document.getElementById('she-label').value,
+    url:     document.getElementById('she-url').value,
+    token:   document.getElementById('she-token').value,
+    enabled: document.getElementById('she-enabled').checked,
+  });
+  if (!res) return;
+  closeModal(); toast('Shard updated', 'ok');
+  await loadConfig();
+}
+
+async function shardDelete(id) {
+  if (!confirm('Remove this shard from sync targets?')) return;
+  await api('DELETE', '/shards/' + id);
+  toast('Shard removed', 'ok');
+  await loadConfig();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// UTILITIES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function escHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function parseJsonArr(v) {
+  if (!v) return [];
+  if (Array.isArray(v)) return v;
+  try { const p = JSON.parse(v); return Array.isArray(p) ? p : []; } catch(_) { return []; }
+}
+
+// ── Init on load ──────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  Promise.all([fetchZones(), fetchLocationTypes()]).then(() => {
+    initTemplates();
+  });
+  aqInit();
+  // Dismiss map context menu on any click outside it
+  document.addEventListener('click', () => _mapHideContextMenu());
+});
+</script>
+</body>
+</html>

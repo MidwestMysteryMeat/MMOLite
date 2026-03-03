@@ -1,0 +1,7 @@
+{
+  "asset": "SM_Meat_Raw",
+  "type": "prop",
+  "frames": {
+    "SM_Meat_Raw_default": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Meat_Raw\\SM_Meat_Raw_default.png"
+  }
+}

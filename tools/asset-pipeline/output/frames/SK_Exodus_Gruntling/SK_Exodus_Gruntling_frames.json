@@ -1,0 +1,10 @@
+{
+  "asset": "SK_Exodus_Gruntling",
+  "type": "character",
+  "frames": {
+    "SK_Exodus_Gruntling_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Exodus_Gruntling\\SK_Exodus_Gruntling_south.png",
+    "SK_Exodus_Gruntling_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Exodus_Gruntling\\SK_Exodus_Gruntling_west.png",
+    "SK_Exodus_Gruntling_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Exodus_Gruntling\\SK_Exodus_Gruntling_north.png",
+    "SK_Exodus_Gruntling_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Exodus_Gruntling\\SK_Exodus_Gruntling_east.png"
+  }
+}

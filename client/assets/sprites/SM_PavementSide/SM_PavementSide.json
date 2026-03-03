@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SM_PavementSide",
+    "max_size": 4096
+  },
+  "sheets": [
+    "SM_PavementSide_00.png"
+  ],
+  "frames": {
+    "SM_PavementSide_east": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 171,
+        "h": 117
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 37,
+        "y": 73
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_PavementSide_north": {
+      "sheet": 0,
+      "frame": {
+        "x": 171,
+        "y": 0,
+        "w": 171,
+        "h": 117
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 37,
+        "y": 73
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_PavementSide_south": {
+      "sheet": 0,
+      "frame": {
+        "x": 342,
+        "y": 0,
+        "w": 171,
+        "h": 117
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 37,
+        "y": 73
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_PavementSide_west": {
+      "sheet": 0,
+      "frame": {
+        "x": 513,
+        "y": 0,
+        "w": 171,
+        "h": 117
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 37,
+        "y": 73
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    }
+  },
+  "animations": {}
+}

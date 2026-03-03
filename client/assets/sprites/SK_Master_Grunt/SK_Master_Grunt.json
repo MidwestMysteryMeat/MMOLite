@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SK_Master_Grunt",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SK_Master_Grunt_00.png"
+  ],
+  "frames": {
+    "SK_Master_Grunt_east": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 46,
+        "h": 67
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 43,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Master_Grunt_north": {
+      "sheet": 0,
+      "frame": {
+        "x": 46,
+        "y": 0,
+        "w": 46,
+        "h": 67
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 43,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Master_Grunt_south": {
+      "sheet": 0,
+      "frame": {
+        "x": 92,
+        "y": 0,
+        "w": 46,
+        "h": 67
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 43,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Master_Grunt_west": {
+      "sheet": 0,
+      "frame": {
+        "x": 138,
+        "y": 0,
+        "w": 46,
+        "h": 67
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 43,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    }
+  },
+  "animations": {}
+}

@@ -1,0 +1,10 @@
+{
+  "asset": "SK_Spiderling",
+  "type": "character",
+  "frames": {
+    "SK_Spiderling_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Spiderling\\SK_Spiderling_south.png",
+    "SK_Spiderling_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Spiderling\\SK_Spiderling_west.png",
+    "SK_Spiderling_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Spiderling\\SK_Spiderling_north.png",
+    "SK_Spiderling_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Spiderling\\SK_Spiderling_east.png"
+  }
+}

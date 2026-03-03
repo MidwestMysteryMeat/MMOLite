@@ -1,0 +1,32 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SM_DemoRoomTrim",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SM_DemoRoomTrim_00.png"
+  ],
+  "frames": {
+    "SM_DemoRoomTrim_default": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 33,
+        "h": 41
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 0,
+        "y": 20
+      },
+      "source": {
+        "w": 64,
+        "h": 64
+      }
+    }
+  },
+  "animations": {}
+}

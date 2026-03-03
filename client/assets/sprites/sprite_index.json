@@ -1,0 +1,7850 @@
+{
+  "SK_AR4": {
+    "type": "character",
+    "sheets": [
+      "SK_AR4_00.png"
+    ],
+    "frames": [
+      "SK_AR4_east",
+      "SK_AR4_north",
+      "SK_AR4_south",
+      "SK_AR4_west"
+    ],
+    "animations": []
+  },
+  "SK_AR4_X": {
+    "type": "character",
+    "sheets": [
+      "SK_AR4_X_00.png"
+    ],
+    "frames": [
+      "SK_AR4_X_east",
+      "SK_AR4_X_north",
+      "SK_AR4_X_south",
+      "SK_AR4_X_west"
+    ],
+    "animations": []
+  },
+  "SK_BeltsBody": {
+    "type": "character",
+    "sheets": [
+      "SK_BeltsBody_00.png"
+    ],
+    "frames": [
+      "SK_BeltsBody_east",
+      "SK_BeltsBody_north",
+      "SK_BeltsBody_south",
+      "SK_BeltsBody_west"
+    ],
+    "animations": []
+  },
+  "SK_BeltWaist": {
+    "type": "character",
+    "sheets": [
+      "SK_BeltWaist_00.png"
+    ],
+    "frames": [
+      "SK_BeltWaist_east",
+      "SK_BeltWaist_north",
+      "SK_BeltWaist_south",
+      "SK_BeltWaist_west"
+    ],
+    "animations": []
+  },
+  "SK_Body": {
+    "type": "character",
+    "sheets": [
+      "SK_Body_00.png"
+    ],
+    "frames": [
+      "SK_Body_east",
+      "SK_Body_north",
+      "SK_Body_south",
+      "SK_Body_west"
+    ],
+    "animations": []
+  },
+  "SK_Cloth": {
+    "type": "character",
+    "sheets": [
+      "SK_Cloth_00.png"
+    ],
+    "frames": [
+      "SK_Cloth_east",
+      "SK_Cloth_north",
+      "SK_Cloth_south",
+      "SK_Cloth_west"
+    ],
+    "animations": []
+  },
+  "SK_Demon_Woman_Bangs": {
+    "type": "character",
+    "sheets": [
+      "SK_Demon_Woman_Bangs_00.png"
+    ],
+    "frames": [
+      "SK_Demon_Woman_Bangs_east",
+      "SK_Demon_Woman_Bangs_north",
+      "SK_Demon_Woman_Bangs_south",
+      "SK_Demon_Woman_Bangs_west"
+    ],
+    "animations": []
+  },
+  "SK_Demon_Woman_Belt": {
+    "type": "character",
+    "sheets": [
+      "SK_Demon_Woman_Belt_00.png"
+    ],
+    "frames": [
+      "SK_Demon_Woman_Belt_east",
+      "SK_Demon_Woman_Belt_north",
+      "SK_Demon_Woman_Belt_south",
+      "SK_Demon_Woman_Belt_west"
+    ],
+    "animations": []
+  },
+  "SK_Demon_Woman_Body": {
+    "type": "character",
+    "sheets": [
+      "SK_Demon_Woman_Body_00.png"
+    ],
+    "frames": [
+      "SK_Demon_Woman_Body_east",
+      "SK_Demon_Woman_Body_north",
+      "SK_Demon_Woman_Body_south",
+      "SK_Demon_Woman_Body_west"
+    ],
+    "animations": []
+  },
+  "SK_Demon_Woman_BodyMesh": {
+    "type": "character",
+    "sheets": [
+      "SK_Demon_Woman_BodyMesh_00.png"
+    ],
+    "frames": [
+      "SK_Demon_Woman_BodyMesh_east",
+      "SK_Demon_Woman_BodyMesh_north",
+      "SK_Demon_Woman_BodyMesh_south",
+      "SK_Demon_Woman_BodyMesh_west"
+    ],
+    "animations": []
+  },
+  "SK_Demon_Woman_Bra": {
+    "type": "character",
+    "sheets": [
+      "SK_Demon_Woman_Bra_00.png"
+    ],
+    "frames": [
+      "SK_Demon_Woman_Bra_east",
+      "SK_Demon_Woman_Bra_north",
+      "SK_Demon_Woman_Bra_south",
+      "SK_Demon_Woman_Bra_west"
+    ],
+    "animations": []
+  },
+  "SK_Demon_Woman_Chains": {
+    "type": "character",
+    "sheets": [
+      "SK_Demon_Woman_Chains_00.png"
+    ],
+    "frames": [
+      "SK_Demon_Woman_Chains_east",
+      "SK_Demon_Woman_Chains_north",
+      "SK_Demon_Woman_Chains_south",
+      "SK_Demon_Woman_Chains_west"
+    ],
+    "animations": []
+  },
+  "SK_Demon_Woman_Choker": {
+    "type": "character",
+    "sheets": [
+      "SK_Demon_Woman_Choker_00.png"
+    ],
+    "frames": [
+      "SK_Demon_Woman_Choker_east",
+      "SK_Demon_Woman_Choker_north",
+      "SK_Demon_Woman_Choker_south",
+      "SK_Demon_Woman_Choker_west"
+    ],
+    "animations": []
+  },
+  "SK_Demon_Woman_DemForm_AB": {
+    "type": "character",
+    "sheets": [
+      "SK_Demon_Woman_DemForm_AB_00.png"
+    ],
+    "frames": [
+      "SK_Demon_Woman_DemForm_AB_east",
+      "SK_Demon_Woman_DemForm_AB_north",
+      "SK_Demon_Woman_DemForm_AB_south",
+      "SK_Demon_Woman_DemForm_AB_west"
+    ],
+    "animations": []
+  },
+  "SK_Demon_Woman_DemForm_NAB": {
+    "type": "character",
+    "sheets": [
+      "SK_Demon_Woman_DemForm_NAB_00.png"
+    ],
+    "frames": [
+      "SK_Demon_Woman_DemForm_NAB_east",
+      "SK_Demon_Woman_DemForm_NAB_north",
+      "SK_Demon_Woman_DemForm_NAB_south",
+      "SK_Demon_Woman_DemForm_NAB_west"
+    ],
+    "animations": []
+  },
+  "SK_Demon_Woman_Face4": {
+    "type": "character",
+    "sheets": [
+      "SK_Demon_Woman_Face4_00.png"
+    ],
+    "frames": [
+      "SK_Demon_Woman_Face4_east",
+      "SK_Demon_Woman_Face4_north",
+      "SK_Demon_Woman_Face4_south",
+      "SK_Demon_Woman_Face4_west"
+    ],
+    "animations": []
+  },
+  "SK_Demon_Woman_Hair": {
+    "type": "character",
+    "sheets": [
+      "SK_Demon_Woman_Hair_00.png"
+    ],
+    "frames": [
+      "SK_Demon_Woman_Hair_east",
+      "SK_Demon_Woman_Hair_north",
+      "SK_Demon_Woman_Hair_south",
+      "SK_Demon_Woman_Hair_west"
+    ],
+    "animations": []
+  },
+  "SK_Demon_Woman_Harness": {
+    "type": "character",
+    "sheets": [
+      "SK_Demon_Woman_Harness_00.png"
+    ],
+    "frames": [
+      "SK_Demon_Woman_Harness_east",
+      "SK_Demon_Woman_Harness_north",
+      "SK_Demon_Woman_Harness_south",
+      "SK_Demon_Woman_Harness_west"
+    ],
+    "animations": []
+  },
+  "SK_Demon_Woman_Heels": {
+    "type": "character",
+    "sheets": [
+      "SK_Demon_Woman_Heels_00.png"
+    ],
+    "frames": [
+      "SK_Demon_Woman_Heels_east",
+      "SK_Demon_Woman_Heels_north",
+      "SK_Demon_Woman_Heels_south",
+      "SK_Demon_Woman_Heels_west"
+    ],
+    "animations": []
+  },
+  "SK_Demon_Woman_Horns": {
+    "type": "character",
+    "sheets": [
+      "SK_Demon_Woman_Horns_00.png"
+    ],
+    "frames": [
+      "SK_Demon_Woman_Horns_east",
+      "SK_Demon_Woman_Horns_north",
+      "SK_Demon_Woman_Horns_south",
+      "SK_Demon_Woman_Horns_west"
+    ],
+    "animations": []
+  },
+  "SK_Demon_Woman_HumForm": {
+    "type": "character",
+    "sheets": [
+      "SK_Demon_Woman_HumForm_00.png"
+    ],
+    "frames": [
+      "SK_Demon_Woman_HumForm_east",
+      "SK_Demon_Woman_HumForm_north",
+      "SK_Demon_Woman_HumForm_south",
+      "SK_Demon_Woman_HumForm_west"
+    ],
+    "animations": []
+  },
+  "SK_Demon_Woman_nails": {
+    "type": "character",
+    "sheets": [
+      "SK_Demon_Woman_nails_00.png"
+    ],
+    "frames": [
+      "SK_Demon_Woman_nails_east",
+      "SK_Demon_Woman_nails_north",
+      "SK_Demon_Woman_nails_south",
+      "SK_Demon_Woman_nails_west"
+    ],
+    "animations": []
+  },
+  "SK_Demon_Woman_Nude": {
+    "type": "character",
+    "sheets": [
+      "SK_Demon_Woman_Nude_00.png"
+    ],
+    "frames": [
+      "SK_Demon_Woman_Nude_east",
+      "SK_Demon_Woman_Nude_north",
+      "SK_Demon_Woman_Nude_south",
+      "SK_Demon_Woman_Nude_west"
+    ],
+    "animations": []
+  },
+  "SK_Demon_Woman_Pants": {
+    "type": "character",
+    "sheets": [
+      "SK_Demon_Woman_Pants_00.png"
+    ],
+    "frames": [
+      "SK_Demon_Woman_Pants_east",
+      "SK_Demon_Woman_Pants_north",
+      "SK_Demon_Woman_Pants_south",
+      "SK_Demon_Woman_Pants_west"
+    ],
+    "animations": []
+  },
+  "SK_Demon_Woman_Skirt": {
+    "type": "character",
+    "sheets": [
+      "SK_Demon_Woman_Skirt_00.png"
+    ],
+    "frames": [
+      "SK_Demon_Woman_Skirt_east",
+      "SK_Demon_Woman_Skirt_north",
+      "SK_Demon_Woman_Skirt_south",
+      "SK_Demon_Woman_Skirt_west"
+    ],
+    "animations": []
+  },
+  "SK_Demon_Woman_Stocking": {
+    "type": "character",
+    "sheets": [
+      "SK_Demon_Woman_Stocking_00.png"
+    ],
+    "frames": [
+      "SK_Demon_Woman_Stocking_east",
+      "SK_Demon_Woman_Stocking_north",
+      "SK_Demon_Woman_Stocking_south",
+      "SK_Demon_Woman_Stocking_west"
+    ],
+    "animations": []
+  },
+  "SK_Demon_Woman_Tail": {
+    "type": "character",
+    "sheets": [
+      "SK_Demon_Woman_Tail_00.png"
+    ],
+    "frames": [
+      "SK_Demon_Woman_Tail_east",
+      "SK_Demon_Woman_Tail_north",
+      "SK_Demon_Woman_Tail_south",
+      "SK_Demon_Woman_Tail_west"
+    ],
+    "animations": []
+  },
+  "SK_Demon_Woman_Underwear": {
+    "type": "character",
+    "sheets": [
+      "SK_Demon_Woman_Underwear_00.png"
+    ],
+    "frames": [
+      "SK_Demon_Woman_Underwear_east",
+      "SK_Demon_Woman_Underwear_north",
+      "SK_Demon_Woman_Underwear_south",
+      "SK_Demon_Woman_Underwear_west"
+    ],
+    "animations": []
+  },
+  "SK_Demon_Woman_Wings": {
+    "type": "character",
+    "sheets": [
+      "SK_Demon_Woman_Wings_00.png"
+    ],
+    "frames": [
+      "SK_Demon_Woman_Wings_east",
+      "SK_Demon_Woman_Wings_north",
+      "SK_Demon_Woman_Wings_south",
+      "SK_Demon_Woman_Wings_west"
+    ],
+    "animations": []
+  },
+  "SK_Elemental_Boss_Robot": {
+    "type": "character",
+    "sheets": [
+      "SK_Elemental_Boss_Robot_00.png"
+    ],
+    "frames": [
+      "SK_Elemental_Boss_Robot_east",
+      "SK_Elemental_Boss_Robot_north",
+      "SK_Elemental_Boss_Robot_south",
+      "SK_Elemental_Boss_Robot_west"
+    ],
+    "animations": []
+  },
+  "SK_Elemental_Robot": {
+    "type": "character",
+    "sheets": [
+      "SK_Elemental_Robot_00.png"
+    ],
+    "frames": [
+      "SK_Elemental_Robot_east",
+      "SK_Elemental_Robot_north",
+      "SK_Elemental_Robot_south",
+      "SK_Elemental_Robot_west"
+    ],
+    "animations": []
+  },
+  "SK_Enemy_Clot_Worm": {
+    "type": "character",
+    "sheets": [
+      "SK_Enemy_Clot_Worm_00.png"
+    ],
+    "frames": [
+      "SK_Enemy_Clot_Worm_east",
+      "SK_Enemy_Clot_Worm_north",
+      "SK_Enemy_Clot_Worm_south",
+      "SK_Enemy_Clot_Worm_west"
+    ],
+    "animations": []
+  },
+  "SK_Enemy_FrostGiant_Captain": {
+    "type": "character",
+    "sheets": [
+      "SK_Enemy_FrostGiant_Captain_00.png"
+    ],
+    "frames": [
+      "SK_Enemy_FrostGiant_Captain_east",
+      "SK_Enemy_FrostGiant_Captain_north",
+      "SK_Enemy_FrostGiant_Captain_south",
+      "SK_Enemy_FrostGiant_Captain_west"
+    ],
+    "animations": []
+  },
+  "SK_Enemy_FrostGiant_Magic": {
+    "type": "character",
+    "sheets": [
+      "SK_Enemy_FrostGiant_Magic_00.png"
+    ],
+    "frames": [
+      "SK_Enemy_FrostGiant_Magic_east",
+      "SK_Enemy_FrostGiant_Magic_north",
+      "SK_Enemy_FrostGiant_Magic_south",
+      "SK_Enemy_FrostGiant_Magic_west"
+    ],
+    "animations": []
+  },
+  "SK_Enemy_FrostGiant_Ranged": {
+    "type": "character",
+    "sheets": [
+      "SK_Enemy_FrostGiant_Ranged_00.png"
+    ],
+    "frames": [
+      "SK_Enemy_FrostGiant_Ranged_east",
+      "SK_Enemy_FrostGiant_Ranged_north",
+      "SK_Enemy_FrostGiant_Ranged_south",
+      "SK_Enemy_FrostGiant_Ranged_west"
+    ],
+    "animations": []
+  },
+  "SK_Enemy_Golem01_Weapon": {
+    "type": "character",
+    "sheets": [
+      "SK_Enemy_Golem01_Weapon_00.png"
+    ],
+    "frames": [
+      "SK_Enemy_Golem01_Weapon_east",
+      "SK_Enemy_Golem01_Weapon_north",
+      "SK_Enemy_Golem01_Weapon_south",
+      "SK_Enemy_Golem01_Weapon_west"
+    ],
+    "animations": []
+  },
+  "SK_Enemy_Wolf_Armored": {
+    "type": "character",
+    "sheets": [
+      "SK_Enemy_Wolf_Armored_00.png"
+    ],
+    "frames": [
+      "SK_Enemy_Wolf_Armored_east",
+      "SK_Enemy_Wolf_Armored_north",
+      "SK_Enemy_Wolf_Armored_south",
+      "SK_Enemy_Wolf_Armored_west"
+    ],
+    "animations": []
+  },
+  "SK_Enemy_Wolf_Base": {
+    "type": "character",
+    "sheets": [
+      "SK_Enemy_Wolf_Base_00.png"
+    ],
+    "frames": [
+      "SK_Enemy_Wolf_Base_east",
+      "SK_Enemy_Wolf_Base_north",
+      "SK_Enemy_Wolf_Base_south",
+      "SK_Enemy_Wolf_Base_west"
+    ],
+    "animations": []
+  },
+  "SK_Exodus_Gruntling": {
+    "type": "character",
+    "sheets": [
+      "SK_Exodus_Gruntling_00.png"
+    ],
+    "frames": [
+      "SK_Exodus_Gruntling_east",
+      "SK_Exodus_Gruntling_north",
+      "SK_Exodus_Gruntling_south",
+      "SK_Exodus_Gruntling_west"
+    ],
+    "animations": []
+  },
+  "SK_EXO_Creature_Spider02": {
+    "type": "character",
+    "sheets": [
+      "SK_EXO_Creature_Spider02_00.png"
+    ],
+    "frames": [
+      "SK_EXO_Creature_Spider02_east",
+      "SK_EXO_Creature_Spider02_north",
+      "SK_EXO_Creature_Spider02_south",
+      "SK_EXO_Creature_Spider02_west"
+    ],
+    "animations": []
+  },
+  "SK_Fire_Golem": {
+    "type": "character",
+    "sheets": [
+      "SK_Fire_Golem_00.png"
+    ],
+    "frames": [
+      "SK_Fire_Golem_east",
+      "SK_Fire_Golem_north",
+      "SK_Fire_Golem_south",
+      "SK_Fire_Golem_west"
+    ],
+    "animations": []
+  },
+  "SK_G67": {
+    "type": "character",
+    "sheets": [
+      "SK_G67_00.png"
+    ],
+    "frames": [
+      "SK_G67_east",
+      "SK_G67_north",
+      "SK_G67_south",
+      "SK_G67_west"
+    ],
+    "animations": []
+  },
+  "SK_G67_X": {
+    "type": "character",
+    "sheets": [
+      "SK_G67_X_00.png"
+    ],
+    "frames": [
+      "SK_G67_X_east",
+      "SK_G67_X_north",
+      "SK_G67_X_south",
+      "SK_G67_X_west"
+    ],
+    "animations": []
+  },
+  "SK_Greater_Spider": {
+    "type": "character",
+    "sheets": [
+      "SK_Greater_Spider_00.png"
+    ],
+    "frames": [
+      "SK_Greater_Spider_east",
+      "SK_Greater_Spider_north",
+      "SK_Greater_Spider_south",
+      "SK_Greater_Spider_west"
+    ],
+    "animations": []
+  },
+  "SK_Greater_Spider_Boss": {
+    "type": "character",
+    "sheets": [
+      "SK_Greater_Spider_Boss_00.png"
+    ],
+    "frames": [
+      "SK_Greater_Spider_Boss_east",
+      "SK_Greater_Spider_Boss_north",
+      "SK_Greater_Spider_Boss_south",
+      "SK_Greater_Spider_Boss_west"
+    ],
+    "animations": []
+  },
+  "SK_Greater_Spider_Boss_Cine": {
+    "type": "character",
+    "sheets": [
+      "SK_Greater_Spider_Boss_Cine_00.png"
+    ],
+    "frames": [
+      "SK_Greater_Spider_Boss_Cine_east",
+      "SK_Greater_Spider_Boss_Cine_north",
+      "SK_Greater_Spider_Boss_Cine_south",
+      "SK_Greater_Spider_Boss_Cine_west"
+    ],
+    "animations": []
+  },
+  "SK_Gruntling_Avalanche": {
+    "type": "character",
+    "sheets": [
+      "SK_Gruntling_Avalanche_00.png"
+    ],
+    "frames": [
+      "SK_Gruntling_Avalanche_east",
+      "SK_Gruntling_Avalanche_north",
+      "SK_Gruntling_Avalanche_south",
+      "SK_Gruntling_Avalanche_west"
+    ],
+    "animations": []
+  },
+  "SK_Gruntling_Glacer": {
+    "type": "character",
+    "sheets": [
+      "SK_Gruntling_Glacer_00.png"
+    ],
+    "frames": [
+      "SK_Gruntling_Glacer_east",
+      "SK_Gruntling_Glacer_north",
+      "SK_Gruntling_Glacer_south",
+      "SK_Gruntling_Glacer_west"
+    ],
+    "animations": []
+  },
+  "SK_Gruntling_Guardian": {
+    "type": "character",
+    "sheets": [
+      "SK_Gruntling_Guardian_00.png"
+    ],
+    "frames": [
+      "SK_Gruntling_Guardian_east",
+      "SK_Gruntling_Guardian_north",
+      "SK_Gruntling_Guardian_south",
+      "SK_Gruntling_Guardian_west"
+    ],
+    "animations": []
+  },
+  "SK_Gruntling_Scud": {
+    "type": "character",
+    "sheets": [
+      "SK_Gruntling_Scud_00.png"
+    ],
+    "frames": [
+      "SK_Gruntling_Scud_east",
+      "SK_Gruntling_Scud_north",
+      "SK_Gruntling_Scud_south",
+      "SK_Gruntling_Scud_west"
+    ],
+    "animations": []
+  },
+  "SK_KA47": {
+    "type": "character",
+    "sheets": [
+      "SK_KA47_00.png"
+    ],
+    "frames": [
+      "SK_KA47_east",
+      "SK_KA47_north",
+      "SK_KA47_south",
+      "SK_KA47_west"
+    ],
+    "animations": []
+  },
+  "SK_KA47_X": {
+    "type": "character",
+    "sheets": [
+      "SK_KA47_X_00.png"
+    ],
+    "frames": [
+      "SK_KA47_X_east",
+      "SK_KA47_X_north",
+      "SK_KA47_X_south",
+      "SK_KA47_X_west"
+    ],
+    "animations": []
+  },
+  "SK_KA74U_X": {
+    "type": "character",
+    "sheets": [
+      "SK_KA74U_X_00.png"
+    ],
+    "frames": [
+      "SK_KA74U_X_east",
+      "SK_KA74U_X_north",
+      "SK_KA74U_X_south",
+      "SK_KA74U_X_west"
+    ],
+    "animations": []
+  },
+  "SK_KA74U_Y": {
+    "type": "character",
+    "sheets": [
+      "SK_KA74U_Y_00.png"
+    ],
+    "frames": [
+      "SK_KA74U_Y_east",
+      "SK_KA74U_Y_north",
+      "SK_KA74U_Y_south",
+      "SK_KA74U_Y_west"
+    ],
+    "animations": []
+  },
+  "SK_KA_Val_X": {
+    "type": "character",
+    "sheets": [
+      "SK_KA_Val_X_00.png"
+    ],
+    "frames": [
+      "SK_KA_Val_X_east",
+      "SK_KA_Val_X_north",
+      "SK_KA_Val_X_south",
+      "SK_KA_Val_X_west"
+    ],
+    "animations": []
+  },
+  "SK_KA_Val_Y": {
+    "type": "character",
+    "sheets": [
+      "SK_KA_Val_Y_00.png"
+    ],
+    "frames": [
+      "SK_KA_Val_Y_east",
+      "SK_KA_Val_Y_north",
+      "SK_KA_Val_Y_south",
+      "SK_KA_Val_Y_west"
+    ],
+    "animations": []
+  },
+  "SK_LeftArmArmor": {
+    "type": "character",
+    "sheets": [
+      "SK_LeftArmArmor_00.png"
+    ],
+    "frames": [
+      "SK_LeftArmArmor_east",
+      "SK_LeftArmArmor_north",
+      "SK_LeftArmArmor_south",
+      "SK_LeftArmArmor_west"
+    ],
+    "animations": []
+  },
+  "SK_LeftArmArmorSpikes": {
+    "type": "character",
+    "sheets": [
+      "SK_LeftArmArmorSpikes_00.png"
+    ],
+    "frames": [
+      "SK_LeftArmArmorSpikes_east",
+      "SK_LeftArmArmorSpikes_north",
+      "SK_LeftArmArmorSpikes_south",
+      "SK_LeftArmArmorSpikes_west"
+    ],
+    "animations": []
+  },
+  "SK_LeftShoulderArmorSpikes": {
+    "type": "character",
+    "sheets": [
+      "SK_LeftShoulderArmorSpikes_00.png"
+    ],
+    "frames": [
+      "SK_LeftShoulderArmorSpikes_east",
+      "SK_LeftShoulderArmorSpikes_north",
+      "SK_LeftShoulderArmorSpikes_south",
+      "SK_LeftShoulderArmorSpikes_west"
+    ],
+    "animations": []
+  },
+  "SK_LeftShoulderArmor_01": {
+    "type": "character",
+    "sheets": [
+      "SK_LeftShoulderArmor_01_00.png"
+    ],
+    "frames": [
+      "SK_LeftShoulderArmor_01_east",
+      "SK_LeftShoulderArmor_01_north",
+      "SK_LeftShoulderArmor_01_south",
+      "SK_LeftShoulderArmor_01_west"
+    ],
+    "animations": []
+  },
+  "SK_LeftShoulderArmor_02": {
+    "type": "character",
+    "sheets": [
+      "SK_LeftShoulderArmor_02_00.png"
+    ],
+    "frames": [
+      "SK_LeftShoulderArmor_02_east",
+      "SK_LeftShoulderArmor_02_north",
+      "SK_LeftShoulderArmor_02_south",
+      "SK_LeftShoulderArmor_02_west"
+    ],
+    "animations": []
+  },
+  "SK_Lizardman_Berserker": {
+    "type": "character",
+    "sheets": [
+      "SK_Lizardman_Berserker_00.png"
+    ],
+    "frames": [
+      "SK_Lizardman_Berserker_east",
+      "SK_Lizardman_Berserker_north",
+      "SK_Lizardman_Berserker_south",
+      "SK_Lizardman_Berserker_west"
+    ],
+    "animations": []
+  },
+  "SK_M9_Knife": {
+    "type": "character",
+    "sheets": [
+      "SK_M9_Knife_00.png"
+    ],
+    "frames": [
+      "SK_M9_Knife_east",
+      "SK_M9_Knife_north",
+      "SK_M9_Knife_south",
+      "SK_M9_Knife_west"
+    ],
+    "animations": []
+  },
+  "SK_M9_Knife_X": {
+    "type": "character",
+    "sheets": [
+      "SK_M9_Knife_X_00.png"
+    ],
+    "frames": [
+      "SK_M9_Knife_X_east",
+      "SK_M9_Knife_X_north",
+      "SK_M9_Knife_X_south",
+      "SK_M9_Knife_X_west"
+    ],
+    "animations": []
+  },
+  "SK_Mannequin": {
+    "type": "character",
+    "sheets": [
+      "SK_Mannequin_00.png"
+    ],
+    "frames": [
+      "SK_Mannequin_east",
+      "SK_Mannequin_north",
+      "SK_Mannequin_south",
+      "SK_Mannequin_west"
+    ],
+    "animations": []
+  },
+  "SK_Master_Grunt": {
+    "type": "character",
+    "sheets": [
+      "SK_Master_Grunt_00.png"
+    ],
+    "frames": [
+      "SK_Master_Grunt_east",
+      "SK_Master_Grunt_north",
+      "SK_Master_Grunt_south",
+      "SK_Master_Grunt_west"
+    ],
+    "animations": []
+  },
+  "SK_RightArmArmor": {
+    "type": "character",
+    "sheets": [
+      "SK_RightArmArmor_00.png"
+    ],
+    "frames": [
+      "SK_RightArmArmor_east",
+      "SK_RightArmArmor_north",
+      "SK_RightArmArmor_south",
+      "SK_RightArmArmor_west"
+    ],
+    "animations": []
+  },
+  "SK_RightArmArmorSpikes": {
+    "type": "character",
+    "sheets": [
+      "SK_RightArmArmorSpikes_00.png"
+    ],
+    "frames": [
+      "SK_RightArmArmorSpikes_east",
+      "SK_RightArmArmorSpikes_north",
+      "SK_RightArmArmorSpikes_south",
+      "SK_RightArmArmorSpikes_west"
+    ],
+    "animations": []
+  },
+  "SK_RightShoulderArmor": {
+    "type": "character",
+    "sheets": [
+      "SK_RightShoulderArmor_00.png"
+    ],
+    "frames": [
+      "SK_RightShoulderArmor_east",
+      "SK_RightShoulderArmor_north",
+      "SK_RightShoulderArmor_south",
+      "SK_RightShoulderArmor_west"
+    ],
+    "animations": []
+  },
+  "SK_Robo_Golem": {
+    "type": "character",
+    "sheets": [
+      "SK_Robo_Golem_00.png"
+    ],
+    "frames": [
+      "SK_Robo_Golem_east",
+      "SK_Robo_Golem_north",
+      "SK_Robo_Golem_south",
+      "SK_Robo_Golem_west"
+    ],
+    "animations": []
+  },
+  "SK_Robo_Golem_Melee": {
+    "type": "character",
+    "sheets": [
+      "SK_Robo_Golem_Melee_00.png"
+    ],
+    "frames": [
+      "SK_Robo_Golem_Melee_east",
+      "SK_Robo_Golem_Melee_north",
+      "SK_Robo_Golem_Melee_south",
+      "SK_Robo_Golem_Melee_west"
+    ],
+    "animations": []
+  },
+  "SK_Skull": {
+    "type": "character",
+    "sheets": [
+      "SK_Skull_00.png"
+    ],
+    "frames": [
+      "SK_Skull_east",
+      "SK_Skull_north",
+      "SK_Skull_south",
+      "SK_Skull_west"
+    ],
+    "animations": []
+  },
+  "SK_SMG11_Nostock_X": {
+    "type": "character",
+    "sheets": [
+      "SK_SMG11_Nostock_X_00.png"
+    ],
+    "frames": [
+      "SK_SMG11_Nostock_X_east",
+      "SK_SMG11_Nostock_X_north",
+      "SK_SMG11_Nostock_X_south",
+      "SK_SMG11_Nostock_X_west"
+    ],
+    "animations": []
+  },
+  "SK_SMG11_Nostock_Y": {
+    "type": "character",
+    "sheets": [
+      "SK_SMG11_Nostock_Y_00.png"
+    ],
+    "frames": [
+      "SK_SMG11_Nostock_Y_east",
+      "SK_SMG11_Nostock_Y_north",
+      "SK_SMG11_Nostock_Y_south",
+      "SK_SMG11_Nostock_Y_west"
+    ],
+    "animations": []
+  },
+  "SK_SMG11_X": {
+    "type": "character",
+    "sheets": [
+      "SK_SMG11_X_00.png"
+    ],
+    "frames": [
+      "SK_SMG11_X_east",
+      "SK_SMG11_X_north",
+      "SK_SMG11_X_south",
+      "SK_SMG11_X_west"
+    ],
+    "animations": []
+  },
+  "SK_SMG11_Y": {
+    "type": "character",
+    "sheets": [
+      "SK_SMG11_Y_00.png"
+    ],
+    "frames": [
+      "SK_SMG11_Y_east",
+      "SK_SMG11_Y_north",
+      "SK_SMG11_Y_south",
+      "SK_SMG11_Y_west"
+    ],
+    "animations": []
+  },
+  "SK_Spiderling": {
+    "type": "character",
+    "sheets": [
+      "SK_Spiderling_00.png"
+    ],
+    "frames": [
+      "SK_Spiderling_east",
+      "SK_Spiderling_north",
+      "SK_Spiderling_south",
+      "SK_Spiderling_west"
+    ],
+    "animations": []
+  },
+  "SK_SpiderlingLOW": {
+    "type": "character",
+    "sheets": [
+      "SK_SpiderlingLOW_00.png"
+    ],
+    "frames": [
+      "SK_SpiderlingLOW_east",
+      "SK_SpiderlingLOW_north",
+      "SK_SpiderlingLOW_south",
+      "SK_SpiderlingLOW_west"
+    ],
+    "animations": []
+  },
+  "SK_Troll_Poison": {
+    "type": "character",
+    "sheets": [
+      "SK_Troll_Poison_00.png"
+    ],
+    "frames": [
+      "SK_Troll_Poison_east",
+      "SK_Troll_Poison_north",
+      "SK_Troll_Poison_south",
+      "SK_Troll_Poison_west"
+    ],
+    "animations": []
+  },
+  "SK_WaistBone": {
+    "type": "character",
+    "sheets": [
+      "SK_WaistBone_00.png"
+    ],
+    "frames": [
+      "SK_WaistBone_east",
+      "SK_WaistBone_north",
+      "SK_WaistBone_south",
+      "SK_WaistBone_west"
+    ],
+    "animations": []
+  },
+  "SK_Werewolf_Full1": {
+    "type": "character",
+    "sheets": [
+      "SK_Werewolf_Full1_00.png"
+    ],
+    "frames": [
+      "SK_Werewolf_Full1_east",
+      "SK_Werewolf_Full1_north",
+      "SK_Werewolf_Full1_south",
+      "SK_Werewolf_Full1_west"
+    ],
+    "animations": []
+  },
+  "SK_Werewolf_Full2": {
+    "type": "character",
+    "sheets": [
+      "SK_Werewolf_Full2_00.png"
+    ],
+    "frames": [
+      "SK_Werewolf_Full2_east",
+      "SK_Werewolf_Full2_north",
+      "SK_Werewolf_Full2_south",
+      "SK_Werewolf_Full2_west"
+    ],
+    "animations": []
+  },
+  "SK_Werewolf_Full3": {
+    "type": "character",
+    "sheets": [
+      "SK_Werewolf_Full3_00.png"
+    ],
+    "frames": [
+      "SK_Werewolf_Full3_east",
+      "SK_Werewolf_Full3_north",
+      "SK_Werewolf_Full3_south",
+      "SK_Werewolf_Full3_west"
+    ],
+    "animations": []
+  },
+  "SK_Werewolf_Full4": {
+    "type": "character",
+    "sheets": [
+      "SK_Werewolf_Full4_00.png"
+    ],
+    "frames": [
+      "SK_Werewolf_Full4_east",
+      "SK_Werewolf_Full4_north",
+      "SK_Werewolf_Full4_south",
+      "SK_Werewolf_Full4_west"
+    ],
+    "animations": []
+  },
+  "SK_Werewolf_Full5": {
+    "type": "character",
+    "sheets": [
+      "SK_Werewolf_Full5_00.png"
+    ],
+    "frames": [
+      "SK_Werewolf_Full5_east",
+      "SK_Werewolf_Full5_north",
+      "SK_Werewolf_Full5_south",
+      "SK_Werewolf_Full5_west"
+    ],
+    "animations": []
+  },
+  "SK_Werewolf_Separate1": {
+    "type": "character",
+    "sheets": [
+      "SK_Werewolf_Separate1_00.png"
+    ],
+    "frames": [
+      "SK_Werewolf_Separate1_east",
+      "SK_Werewolf_Separate1_north",
+      "SK_Werewolf_Separate1_south",
+      "SK_Werewolf_Separate1_west"
+    ],
+    "animations": []
+  },
+  "SK_Werewolf_Separate2": {
+    "type": "character",
+    "sheets": [
+      "SK_Werewolf_Separate2_00.png"
+    ],
+    "frames": [
+      "SK_Werewolf_Separate2_east",
+      "SK_Werewolf_Separate2_north",
+      "SK_Werewolf_Separate2_south",
+      "SK_Werewolf_Separate2_west"
+    ],
+    "animations": []
+  },
+  "SK_Werewolf_Separate3": {
+    "type": "character",
+    "sheets": [
+      "SK_Werewolf_Separate3_00.png"
+    ],
+    "frames": [
+      "SK_Werewolf_Separate3_east",
+      "SK_Werewolf_Separate3_north",
+      "SK_Werewolf_Separate3_south",
+      "SK_Werewolf_Separate3_west"
+    ],
+    "animations": []
+  },
+  "SK_Werewolf_Separate4": {
+    "type": "character",
+    "sheets": [
+      "SK_Werewolf_Separate4_00.png"
+    ],
+    "frames": [
+      "SK_Werewolf_Separate4_east",
+      "SK_Werewolf_Separate4_north",
+      "SK_Werewolf_Separate4_south",
+      "SK_Werewolf_Separate4_west"
+    ],
+    "animations": []
+  },
+  "SK_Werewolf_Separate5": {
+    "type": "character",
+    "sheets": [
+      "SK_Werewolf_Separate5_00.png"
+    ],
+    "frames": [
+      "SK_Werewolf_Separate5_east",
+      "SK_Werewolf_Separate5_north",
+      "SK_Werewolf_Separate5_south",
+      "SK_Werewolf_Separate5_west"
+    ],
+    "animations": []
+  },
+  "SK_Werewolf_Separate6": {
+    "type": "character",
+    "sheets": [
+      "SK_Werewolf_Separate6_00.png"
+    ],
+    "frames": [
+      "SK_Werewolf_Separate6_east",
+      "SK_Werewolf_Separate6_north",
+      "SK_Werewolf_Separate6_south",
+      "SK_Werewolf_Separate6_west"
+    ],
+    "animations": []
+  },
+  "SK_Werewolf_Separate7": {
+    "type": "character",
+    "sheets": [
+      "SK_Werewolf_Separate7_00.png"
+    ],
+    "frames": [
+      "SK_Werewolf_Separate7_east",
+      "SK_Werewolf_Separate7_north",
+      "SK_Werewolf_Separate7_south",
+      "SK_Werewolf_Separate7_west"
+    ],
+    "animations": []
+  },
+  "SK_Werewolf_Separate8": {
+    "type": "character",
+    "sheets": [
+      "SK_Werewolf_Separate8_00.png"
+    ],
+    "frames": [
+      "SK_Werewolf_Separate8_east",
+      "SK_Werewolf_Separate8_north",
+      "SK_Werewolf_Separate8_south",
+      "SK_Werewolf_Separate8_west"
+    ],
+    "animations": []
+  },
+  "SM_1Meter_01": {
+    "type": "building",
+    "sheets": [
+      "SM_1Meter_01_00.png"
+    ],
+    "frames": [
+      "SM_1Meter_01_east",
+      "SM_1Meter_01_north",
+      "SM_1Meter_01_south",
+      "SM_1Meter_01_west"
+    ],
+    "animations": []
+  },
+  "SM_Apple_1": {
+    "type": "prop",
+    "sheets": [
+      "SM_Apple_1_00.png"
+    ],
+    "frames": [
+      "SM_Apple_1_default"
+    ],
+    "animations": []
+  },
+  "SM_Apple_2": {
+    "type": "prop",
+    "sheets": [
+      "SM_Apple_2_00.png"
+    ],
+    "frames": [
+      "SM_Apple_2_default"
+    ],
+    "animations": []
+  },
+  "SM_AR4": {
+    "type": "weapon",
+    "sheets": [
+      "SM_AR4_00.png"
+    ],
+    "frames": [
+      "SM_AR4_east",
+      "SM_AR4_north",
+      "SM_AR4_south",
+      "SM_AR4_west"
+    ],
+    "animations": []
+  },
+  "SM_AR4_Mag": {
+    "type": "weapon",
+    "sheets": [
+      "SM_AR4_Mag_00.png"
+    ],
+    "frames": [
+      "SM_AR4_Mag_east",
+      "SM_AR4_Mag_north",
+      "SM_AR4_Mag_south",
+      "SM_AR4_Mag_west"
+    ],
+    "animations": []
+  },
+  "SM_AR4_Mag_Empty": {
+    "type": "weapon",
+    "sheets": [
+      "SM_AR4_Mag_Empty_00.png"
+    ],
+    "frames": [
+      "SM_AR4_Mag_Empty_east",
+      "SM_AR4_Mag_Empty_north",
+      "SM_AR4_Mag_Empty_south",
+      "SM_AR4_Mag_Empty_west"
+    ],
+    "animations": []
+  },
+  "SM_AR4_X": {
+    "type": "weapon",
+    "sheets": [
+      "SM_AR4_X_00.png"
+    ],
+    "frames": [
+      "SM_AR4_X_east",
+      "SM_AR4_X_north",
+      "SM_AR4_X_south",
+      "SM_AR4_X_west"
+    ],
+    "animations": []
+  },
+  "SM_Axe": {
+    "type": "weapon",
+    "sheets": [
+      "SM_Axe_00.png"
+    ],
+    "frames": [
+      "SM_Axe_east",
+      "SM_Axe_north",
+      "SM_Axe_south",
+      "SM_Axe_west"
+    ],
+    "animations": []
+  },
+  "SM_Band_01a": {
+    "type": "prop",
+    "sheets": [
+      "SM_Band_01a_00.png"
+    ],
+    "frames": [
+      "SM_Band_01a_default"
+    ],
+    "animations": []
+  },
+  "SM_Bangle_01a": {
+    "type": "prop",
+    "sheets": [
+      "SM_Bangle_01a_00.png"
+    ],
+    "frames": [
+      "SM_Bangle_01a_default"
+    ],
+    "animations": []
+  },
+  "SM_Bangle_01b": {
+    "type": "prop",
+    "sheets": [
+      "SM_Bangle_01b_00.png"
+    ],
+    "frames": [
+      "SM_Bangle_01b_default"
+    ],
+    "animations": []
+  },
+  "SM_Bangle_01c": {
+    "type": "prop",
+    "sheets": [
+      "SM_Bangle_01c_00.png"
+    ],
+    "frames": [
+      "SM_Bangle_01c_default"
+    ],
+    "animations": []
+  },
+  "SM_Bangle_01d": {
+    "type": "prop",
+    "sheets": [
+      "SM_Bangle_01d_00.png"
+    ],
+    "frames": [
+      "SM_Bangle_01d_default"
+    ],
+    "animations": []
+  },
+  "SM_Bangle_01e": {
+    "type": "prop",
+    "sheets": [
+      "SM_Bangle_01e_00.png"
+    ],
+    "frames": [
+      "SM_Bangle_01e_default"
+    ],
+    "animations": []
+  },
+  "SM_Bangle_01f": {
+    "type": "prop",
+    "sheets": [
+      "SM_Bangle_01f_00.png"
+    ],
+    "frames": [
+      "SM_Bangle_01f_default"
+    ],
+    "animations": []
+  },
+  "SM_Bangle_01g": {
+    "type": "prop",
+    "sheets": [
+      "SM_Bangle_01g_00.png"
+    ],
+    "frames": [
+      "SM_Bangle_01g_default"
+    ],
+    "animations": []
+  },
+  "SM_Bangle_01h": {
+    "type": "prop",
+    "sheets": [
+      "SM_Bangle_01h_00.png"
+    ],
+    "frames": [
+      "SM_Bangle_01h_default"
+    ],
+    "animations": []
+  },
+  "SM_Bangle_01i": {
+    "type": "prop",
+    "sheets": [
+      "SM_Bangle_01i_00.png"
+    ],
+    "frames": [
+      "SM_Bangle_01i_default"
+    ],
+    "animations": []
+  },
+  "SM_Bangle_01j": {
+    "type": "prop",
+    "sheets": [
+      "SM_Bangle_01j_00.png"
+    ],
+    "frames": [
+      "SM_Bangle_01j_default"
+    ],
+    "animations": []
+  },
+  "SM_Bangle_02a": {
+    "type": "prop",
+    "sheets": [
+      "SM_Bangle_02a_00.png"
+    ],
+    "frames": [
+      "SM_Bangle_02a_default"
+    ],
+    "animations": []
+  },
+  "SM_Bangle_02b": {
+    "type": "prop",
+    "sheets": [
+      "SM_Bangle_02b_00.png"
+    ],
+    "frames": [
+      "SM_Bangle_02b_default"
+    ],
+    "animations": []
+  },
+  "SM_Bangle_02c": {
+    "type": "prop",
+    "sheets": [
+      "SM_Bangle_02c_00.png"
+    ],
+    "frames": [
+      "SM_Bangle_02c_default"
+    ],
+    "animations": []
+  },
+  "SM_Bangle_02d": {
+    "type": "prop",
+    "sheets": [
+      "SM_Bangle_02d_00.png"
+    ],
+    "frames": [
+      "SM_Bangle_02d_default"
+    ],
+    "animations": []
+  },
+  "SM_Bangle_02e": {
+    "type": "prop",
+    "sheets": [
+      "SM_Bangle_02e_00.png"
+    ],
+    "frames": [
+      "SM_Bangle_02e_default"
+    ],
+    "animations": []
+  },
+  "SM_Bangle_02f": {
+    "type": "prop",
+    "sheets": [
+      "SM_Bangle_02f_00.png"
+    ],
+    "frames": [
+      "SM_Bangle_02f_default"
+    ],
+    "animations": []
+  },
+  "SM_Bangle_02g": {
+    "type": "prop",
+    "sheets": [
+      "SM_Bangle_02g_00.png"
+    ],
+    "frames": [
+      "SM_Bangle_02g_default"
+    ],
+    "animations": []
+  },
+  "SM_Bangle_02h": {
+    "type": "prop",
+    "sheets": [
+      "SM_Bangle_02h_00.png"
+    ],
+    "frames": [
+      "SM_Bangle_02h_default"
+    ],
+    "animations": []
+  },
+  "SM_Bangle_02i": {
+    "type": "prop",
+    "sheets": [
+      "SM_Bangle_02i_00.png"
+    ],
+    "frames": [
+      "SM_Bangle_02i_default"
+    ],
+    "animations": []
+  },
+  "SM_Bangle_02j": {
+    "type": "prop",
+    "sheets": [
+      "SM_Bangle_02j_00.png"
+    ],
+    "frames": [
+      "SM_Bangle_02j_default"
+    ],
+    "animations": []
+  },
+  "SM_Barrel_Close_1": {
+    "type": "prop",
+    "sheets": [
+      "SM_Barrel_Close_1_00.png"
+    ],
+    "frames": [
+      "SM_Barrel_Close_1_default"
+    ],
+    "animations": []
+  },
+  "SM_Barrel_Close_2": {
+    "type": "prop",
+    "sheets": [
+      "SM_Barrel_Close_2_00.png"
+    ],
+    "frames": [
+      "SM_Barrel_Close_2_default"
+    ],
+    "animations": []
+  },
+  "SM_Barrel_Open": {
+    "type": "prop",
+    "sheets": [
+      "SM_Barrel_Open_00.png"
+    ],
+    "frames": [
+      "SM_Barrel_Open_default"
+    ],
+    "animations": []
+  },
+  "SM_Barrow": {
+    "type": "prop",
+    "sheets": [
+      "SM_Barrow_00.png"
+    ],
+    "frames": [
+      "SM_Barrow_default"
+    ],
+    "animations": []
+  },
+  "SM_BarrowWheel": {
+    "type": "prop",
+    "sheets": [
+      "SM_BarrowWheel_00.png"
+    ],
+    "frames": [
+      "SM_BarrowWheel_default"
+    ],
+    "animations": []
+  },
+  "SM_Base": {
+    "type": "prop",
+    "sheets": [
+      "SM_Base_00.png"
+    ],
+    "frames": [
+      "SM_Base_default"
+    ],
+    "animations": []
+  },
+  "SM_Base2": {
+    "type": "prop",
+    "sheets": [
+      "SM_Base2_00.png"
+    ],
+    "frames": [
+      "SM_Base2_default"
+    ],
+    "animations": []
+  },
+  "SM_BaseBlock_001": {
+    "type": "building",
+    "sheets": [
+      "SM_BaseBlock_001_00.png"
+    ],
+    "frames": [
+      "SM_BaseBlock_001_east",
+      "SM_BaseBlock_001_north",
+      "SM_BaseBlock_001_south",
+      "SM_BaseBlock_001_west"
+    ],
+    "animations": []
+  },
+  "SM_BaseBlock_002": {
+    "type": "building",
+    "sheets": [
+      "SM_BaseBlock_002_00.png"
+    ],
+    "frames": [
+      "SM_BaseBlock_002_east",
+      "SM_BaseBlock_002_north",
+      "SM_BaseBlock_002_south",
+      "SM_BaseBlock_002_west"
+    ],
+    "animations": []
+  },
+  "SM_BaseBlock_003": {
+    "type": "building",
+    "sheets": [
+      "SM_BaseBlock_003_00.png"
+    ],
+    "frames": [
+      "SM_BaseBlock_003_east",
+      "SM_BaseBlock_003_north",
+      "SM_BaseBlock_003_south",
+      "SM_BaseBlock_003_west"
+    ],
+    "animations": []
+  },
+  "SM_BaseBlock_004": {
+    "type": "building",
+    "sheets": [
+      "SM_BaseBlock_004_00.png"
+    ],
+    "frames": [
+      "SM_BaseBlock_004_east",
+      "SM_BaseBlock_004_north",
+      "SM_BaseBlock_004_south",
+      "SM_BaseBlock_004_west"
+    ],
+    "animations": []
+  },
+  "SM_BaseBlock_005": {
+    "type": "building",
+    "sheets": [
+      "SM_BaseBlock_005_00.png"
+    ],
+    "frames": [
+      "SM_BaseBlock_005_east",
+      "SM_BaseBlock_005_north",
+      "SM_BaseBlock_005_south",
+      "SM_BaseBlock_005_west"
+    ],
+    "animations": []
+  },
+  "SM_BaseBlock_006": {
+    "type": "building",
+    "sheets": [
+      "SM_BaseBlock_006_00.png"
+    ],
+    "frames": [
+      "SM_BaseBlock_006_east",
+      "SM_BaseBlock_006_north",
+      "SM_BaseBlock_006_south",
+      "SM_BaseBlock_006_west"
+    ],
+    "animations": []
+  },
+  "SM_BaseBlock_006_om": {
+    "type": "building",
+    "sheets": [
+      "SM_BaseBlock_006_om_00.png"
+    ],
+    "frames": [
+      "SM_BaseBlock_006_om_east",
+      "SM_BaseBlock_006_om_north",
+      "SM_BaseBlock_006_om_south",
+      "SM_BaseBlock_006_om_west"
+    ],
+    "animations": []
+  },
+  "SM_BaseBlock_007": {
+    "type": "building",
+    "sheets": [
+      "SM_BaseBlock_007_00.png"
+    ],
+    "frames": [
+      "SM_BaseBlock_007_east",
+      "SM_BaseBlock_007_north",
+      "SM_BaseBlock_007_south",
+      "SM_BaseBlock_007_west"
+    ],
+    "animations": []
+  },
+  "SM_BaseBlock_007_on": {
+    "type": "building",
+    "sheets": [
+      "SM_BaseBlock_007_on_00.png"
+    ],
+    "frames": [
+      "SM_BaseBlock_007_on_east",
+      "SM_BaseBlock_007_on_north",
+      "SM_BaseBlock_007_on_south",
+      "SM_BaseBlock_007_on_west"
+    ],
+    "animations": []
+  },
+  "SM_BaseBlock_008": {
+    "type": "building",
+    "sheets": [
+      "SM_BaseBlock_008_00.png"
+    ],
+    "frames": [
+      "SM_BaseBlock_008_east",
+      "SM_BaseBlock_008_north",
+      "SM_BaseBlock_008_south",
+      "SM_BaseBlock_008_west"
+    ],
+    "animations": []
+  },
+  "SM_BaseBlock_008_on": {
+    "type": "building",
+    "sheets": [
+      "SM_BaseBlock_008_on_00.png"
+    ],
+    "frames": [
+      "SM_BaseBlock_008_on_east",
+      "SM_BaseBlock_008_on_north",
+      "SM_BaseBlock_008_on_south",
+      "SM_BaseBlock_008_on_west"
+    ],
+    "animations": []
+  },
+  "SM_BaseBlock_009": {
+    "type": "building",
+    "sheets": [
+      "SM_BaseBlock_009_00.png"
+    ],
+    "frames": [
+      "SM_BaseBlock_009_east",
+      "SM_BaseBlock_009_north",
+      "SM_BaseBlock_009_south",
+      "SM_BaseBlock_009_west"
+    ],
+    "animations": []
+  },
+  "SM_BaseBlock_009_on": {
+    "type": "building",
+    "sheets": [
+      "SM_BaseBlock_009_on_00.png"
+    ],
+    "frames": [
+      "SM_BaseBlock_009_on_east",
+      "SM_BaseBlock_009_on_north",
+      "SM_BaseBlock_009_on_south",
+      "SM_BaseBlock_009_on_west"
+    ],
+    "animations": []
+  },
+  "SM_BaseBlock_010": {
+    "type": "building",
+    "sheets": [
+      "SM_BaseBlock_010_00.png"
+    ],
+    "frames": [
+      "SM_BaseBlock_010_east",
+      "SM_BaseBlock_010_north",
+      "SM_BaseBlock_010_south",
+      "SM_BaseBlock_010_west"
+    ],
+    "animations": []
+  },
+  "SM_BaseBlock_010_on": {
+    "type": "building",
+    "sheets": [
+      "SM_BaseBlock_010_on_00.png"
+    ],
+    "frames": [
+      "SM_BaseBlock_010_on_east",
+      "SM_BaseBlock_010_on_north",
+      "SM_BaseBlock_010_on_south",
+      "SM_BaseBlock_010_on_west"
+    ],
+    "animations": []
+  },
+  "SM_BaseBlock_011": {
+    "type": "building",
+    "sheets": [
+      "SM_BaseBlock_011_00.png"
+    ],
+    "frames": [
+      "SM_BaseBlock_011_east",
+      "SM_BaseBlock_011_north",
+      "SM_BaseBlock_011_south",
+      "SM_BaseBlock_011_west"
+    ],
+    "animations": []
+  },
+  "SM_BaseBlock_011_on": {
+    "type": "building",
+    "sheets": [
+      "SM_BaseBlock_011_on_00.png"
+    ],
+    "frames": [
+      "SM_BaseBlock_011_on_east",
+      "SM_BaseBlock_011_on_north",
+      "SM_BaseBlock_011_on_south",
+      "SM_BaseBlock_011_on_west"
+    ],
+    "animations": []
+  },
+  "SM_BaseBlock_012": {
+    "type": "building",
+    "sheets": [
+      "SM_BaseBlock_012_00.png"
+    ],
+    "frames": [
+      "SM_BaseBlock_012_east",
+      "SM_BaseBlock_012_north",
+      "SM_BaseBlock_012_south",
+      "SM_BaseBlock_012_west"
+    ],
+    "animations": []
+  },
+  "SM_BaseBlock_012_on": {
+    "type": "building",
+    "sheets": [
+      "SM_BaseBlock_012_on_00.png"
+    ],
+    "frames": [
+      "SM_BaseBlock_012_on_east",
+      "SM_BaseBlock_012_on_north",
+      "SM_BaseBlock_012_on_south",
+      "SM_BaseBlock_012_on_west"
+    ],
+    "animations": []
+  },
+  "SM_BaseBlock_013": {
+    "type": "building",
+    "sheets": [
+      "SM_BaseBlock_013_00.png"
+    ],
+    "frames": [
+      "SM_BaseBlock_013_east",
+      "SM_BaseBlock_013_north",
+      "SM_BaseBlock_013_south",
+      "SM_BaseBlock_013_west"
+    ],
+    "animations": []
+  },
+  "SM_BaseBlock_013_on": {
+    "type": "building",
+    "sheets": [
+      "SM_BaseBlock_013_on_00.png"
+    ],
+    "frames": [
+      "SM_BaseBlock_013_on_east",
+      "SM_BaseBlock_013_on_north",
+      "SM_BaseBlock_013_on_south",
+      "SM_BaseBlock_013_on_west"
+    ],
+    "animations": []
+  },
+  "SM_BaseBlock_014": {
+    "type": "building",
+    "sheets": [
+      "SM_BaseBlock_014_00.png"
+    ],
+    "frames": [
+      "SM_BaseBlock_014_east",
+      "SM_BaseBlock_014_north",
+      "SM_BaseBlock_014_south",
+      "SM_BaseBlock_014_west"
+    ],
+    "animations": []
+  },
+  "SM_BaseBlock_014_on": {
+    "type": "building",
+    "sheets": [
+      "SM_BaseBlock_014_on_00.png"
+    ],
+    "frames": [
+      "SM_BaseBlock_014_on_east",
+      "SM_BaseBlock_014_on_north",
+      "SM_BaseBlock_014_on_south",
+      "SM_BaseBlock_014_on_west"
+    ],
+    "animations": []
+  },
+  "SM_BaseBlock_015": {
+    "type": "building",
+    "sheets": [
+      "SM_BaseBlock_015_00.png"
+    ],
+    "frames": [
+      "SM_BaseBlock_015_east",
+      "SM_BaseBlock_015_north",
+      "SM_BaseBlock_015_south",
+      "SM_BaseBlock_015_west"
+    ],
+    "animations": []
+  },
+  "SM_BaseBlock_015_on": {
+    "type": "building",
+    "sheets": [
+      "SM_BaseBlock_015_on_00.png"
+    ],
+    "frames": [
+      "SM_BaseBlock_015_on_east",
+      "SM_BaseBlock_015_on_north",
+      "SM_BaseBlock_015_on_south",
+      "SM_BaseBlock_015_on_west"
+    ],
+    "animations": []
+  },
+  "SM_BaseBlock_016": {
+    "type": "building",
+    "sheets": [
+      "SM_BaseBlock_016_00.png"
+    ],
+    "frames": [
+      "SM_BaseBlock_016_east",
+      "SM_BaseBlock_016_north",
+      "SM_BaseBlock_016_south",
+      "SM_BaseBlock_016_west"
+    ],
+    "animations": []
+  },
+  "SM_BaseBlock_016_on": {
+    "type": "building",
+    "sheets": [
+      "SM_BaseBlock_016_on_00.png"
+    ],
+    "frames": [
+      "SM_BaseBlock_016_on_east",
+      "SM_BaseBlock_016_on_north",
+      "SM_BaseBlock_016_on_south",
+      "SM_BaseBlock_016_on_west"
+    ],
+    "animations": []
+  },
+  "SM_BaseBlock_017": {
+    "type": "building",
+    "sheets": [
+      "SM_BaseBlock_017_00.png"
+    ],
+    "frames": [
+      "SM_BaseBlock_017_east",
+      "SM_BaseBlock_017_north",
+      "SM_BaseBlock_017_south",
+      "SM_BaseBlock_017_west"
+    ],
+    "animations": []
+  },
+  "SM_BaseBlock_017_on": {
+    "type": "building",
+    "sheets": [
+      "SM_BaseBlock_017_on_00.png"
+    ],
+    "frames": [
+      "SM_BaseBlock_017_on_east",
+      "SM_BaseBlock_017_on_north",
+      "SM_BaseBlock_017_on_south",
+      "SM_BaseBlock_017_on_west"
+    ],
+    "animations": []
+  },
+  "SM_BaseBlock_018": {
+    "type": "building",
+    "sheets": [
+      "SM_BaseBlock_018_00.png"
+    ],
+    "frames": [
+      "SM_BaseBlock_018_east",
+      "SM_BaseBlock_018_north",
+      "SM_BaseBlock_018_south",
+      "SM_BaseBlock_018_west"
+    ],
+    "animations": []
+  },
+  "SM_BaseBlock_018_on": {
+    "type": "building",
+    "sheets": [
+      "SM_BaseBlock_018_on_00.png"
+    ],
+    "frames": [
+      "SM_BaseBlock_018_on_east",
+      "SM_BaseBlock_018_on_north",
+      "SM_BaseBlock_018_on_south",
+      "SM_BaseBlock_018_on_west"
+    ],
+    "animations": []
+  },
+  "SM_BaseBlock_019": {
+    "type": "building",
+    "sheets": [
+      "SM_BaseBlock_019_00.png"
+    ],
+    "frames": [
+      "SM_BaseBlock_019_east",
+      "SM_BaseBlock_019_north",
+      "SM_BaseBlock_019_south",
+      "SM_BaseBlock_019_west"
+    ],
+    "animations": []
+  },
+  "SM_BaseBlock_020": {
+    "type": "building",
+    "sheets": [
+      "SM_BaseBlock_020_00.png"
+    ],
+    "frames": [
+      "SM_BaseBlock_020_east",
+      "SM_BaseBlock_020_north",
+      "SM_BaseBlock_020_south",
+      "SM_BaseBlock_020_west"
+    ],
+    "animations": []
+  },
+  "SM_BaseBlock_020_on": {
+    "type": "building",
+    "sheets": [
+      "SM_BaseBlock_020_on_00.png"
+    ],
+    "frames": [
+      "SM_BaseBlock_020_on_east",
+      "SM_BaseBlock_020_on_north",
+      "SM_BaseBlock_020_on_south",
+      "SM_BaseBlock_020_on_west"
+    ],
+    "animations": []
+  },
+  "SM_BaseBlock_096_on": {
+    "type": "building",
+    "sheets": [
+      "SM_BaseBlock_096_on_00.png"
+    ],
+    "frames": [
+      "SM_BaseBlock_096_on_east",
+      "SM_BaseBlock_096_on_north",
+      "SM_BaseBlock_096_on_south",
+      "SM_BaseBlock_096_on_west"
+    ],
+    "animations": []
+  },
+  "SM_BaseRoom": {
+    "type": "prop",
+    "sheets": [
+      "SM_BaseRoom_00.png"
+    ],
+    "frames": [
+      "SM_BaseRoom_default"
+    ],
+    "animations": []
+  },
+  "SM_Base_FlatWall": {
+    "type": "building",
+    "sheets": [
+      "SM_Base_FlatWall_00.png"
+    ],
+    "frames": [
+      "SM_Base_FlatWall_east",
+      "SM_Base_FlatWall_north",
+      "SM_Base_FlatWall_south",
+      "SM_Base_FlatWall_west"
+    ],
+    "animations": []
+  },
+  "SM_BaskedSideBeamLong_01": {
+    "type": "building",
+    "sheets": [
+      "SM_BaskedSideBeamLong_01_00.png"
+    ],
+    "frames": [
+      "SM_BaskedSideBeamLong_01_east",
+      "SM_BaskedSideBeamLong_01_north",
+      "SM_BaskedSideBeamLong_01_south",
+      "SM_BaskedSideBeamLong_01_west"
+    ],
+    "animations": []
+  },
+  "SM_BaskedSideBeamLong_02": {
+    "type": "building",
+    "sheets": [
+      "SM_BaskedSideBeamLong_02_00.png"
+    ],
+    "frames": [
+      "SM_BaskedSideBeamLong_02_east",
+      "SM_BaskedSideBeamLong_02_north",
+      "SM_BaskedSideBeamLong_02_south",
+      "SM_BaskedSideBeamLong_02_west"
+    ],
+    "animations": []
+  },
+  "SM_BaskedSideBeamLong_03": {
+    "type": "building",
+    "sheets": [
+      "SM_BaskedSideBeamLong_03_00.png"
+    ],
+    "frames": [
+      "SM_BaskedSideBeamLong_03_east",
+      "SM_BaskedSideBeamLong_03_north",
+      "SM_BaskedSideBeamLong_03_south",
+      "SM_BaskedSideBeamLong_03_west"
+    ],
+    "animations": []
+  },
+  "SM_BaskedSideBeamLong_04": {
+    "type": "building",
+    "sheets": [
+      "SM_BaskedSideBeamLong_04_00.png"
+    ],
+    "frames": [
+      "SM_BaskedSideBeamLong_04_east",
+      "SM_BaskedSideBeamLong_04_north",
+      "SM_BaskedSideBeamLong_04_south",
+      "SM_BaskedSideBeamLong_04_west"
+    ],
+    "animations": []
+  },
+  "SM_BaskedSideBeamLong_05": {
+    "type": "building",
+    "sheets": [
+      "SM_BaskedSideBeamLong_05_00.png"
+    ],
+    "frames": [
+      "SM_BaskedSideBeamLong_05_east",
+      "SM_BaskedSideBeamLong_05_north",
+      "SM_BaskedSideBeamLong_05_south",
+      "SM_BaskedSideBeamLong_05_west"
+    ],
+    "animations": []
+  },
+  "SM_BaskedSideBeamLong_06": {
+    "type": "building",
+    "sheets": [
+      "SM_BaskedSideBeamLong_06_00.png"
+    ],
+    "frames": [
+      "SM_BaskedSideBeamLong_06_east",
+      "SM_BaskedSideBeamLong_06_north",
+      "SM_BaskedSideBeamLong_06_south",
+      "SM_BaskedSideBeamLong_06_west"
+    ],
+    "animations": []
+  },
+  "SM_BaskedSideBeamLong_07": {
+    "type": "building",
+    "sheets": [
+      "SM_BaskedSideBeamLong_07_00.png"
+    ],
+    "frames": [
+      "SM_BaskedSideBeamLong_07_east",
+      "SM_BaskedSideBeamLong_07_north",
+      "SM_BaskedSideBeamLong_07_south",
+      "SM_BaskedSideBeamLong_07_west"
+    ],
+    "animations": []
+  },
+  "SM_BaskedSideBeamLong_08": {
+    "type": "building",
+    "sheets": [
+      "SM_BaskedSideBeamLong_08_00.png"
+    ],
+    "frames": [
+      "SM_BaskedSideBeamLong_08_east",
+      "SM_BaskedSideBeamLong_08_north",
+      "SM_BaskedSideBeamLong_08_south",
+      "SM_BaskedSideBeamLong_08_west"
+    ],
+    "animations": []
+  },
+  "SM_BaskedSideBeam_01": {
+    "type": "building",
+    "sheets": [
+      "SM_BaskedSideBeam_01_00.png"
+    ],
+    "frames": [
+      "SM_BaskedSideBeam_01_east",
+      "SM_BaskedSideBeam_01_north",
+      "SM_BaskedSideBeam_01_south",
+      "SM_BaskedSideBeam_01_west"
+    ],
+    "animations": []
+  },
+  "SM_BaskedSideBeam_02": {
+    "type": "building",
+    "sheets": [
+      "SM_BaskedSideBeam_02_00.png"
+    ],
+    "frames": [
+      "SM_BaskedSideBeam_02_east",
+      "SM_BaskedSideBeam_02_north",
+      "SM_BaskedSideBeam_02_south",
+      "SM_BaskedSideBeam_02_west"
+    ],
+    "animations": []
+  },
+  "SM_BaskedSideBeam_03": {
+    "type": "building",
+    "sheets": [
+      "SM_BaskedSideBeam_03_00.png"
+    ],
+    "frames": [
+      "SM_BaskedSideBeam_03_east",
+      "SM_BaskedSideBeam_03_north",
+      "SM_BaskedSideBeam_03_south",
+      "SM_BaskedSideBeam_03_west"
+    ],
+    "animations": []
+  },
+  "SM_BaskedSideBeam_04": {
+    "type": "building",
+    "sheets": [
+      "SM_BaskedSideBeam_04_00.png"
+    ],
+    "frames": [
+      "SM_BaskedSideBeam_04_east",
+      "SM_BaskedSideBeam_04_north",
+      "SM_BaskedSideBeam_04_south",
+      "SM_BaskedSideBeam_04_west"
+    ],
+    "animations": []
+  },
+  "SM_BaskedSideBeam_05": {
+    "type": "building",
+    "sheets": [
+      "SM_BaskedSideBeam_05_00.png"
+    ],
+    "frames": [
+      "SM_BaskedSideBeam_05_east",
+      "SM_BaskedSideBeam_05_north",
+      "SM_BaskedSideBeam_05_south",
+      "SM_BaskedSideBeam_05_west"
+    ],
+    "animations": []
+  },
+  "SM_BaskedSideBeam_06": {
+    "type": "building",
+    "sheets": [
+      "SM_BaskedSideBeam_06_00.png"
+    ],
+    "frames": [
+      "SM_BaskedSideBeam_06_east",
+      "SM_BaskedSideBeam_06_north",
+      "SM_BaskedSideBeam_06_south",
+      "SM_BaskedSideBeam_06_west"
+    ],
+    "animations": []
+  },
+  "SM_BaskedSideBeam_07": {
+    "type": "building",
+    "sheets": [
+      "SM_BaskedSideBeam_07_00.png"
+    ],
+    "frames": [
+      "SM_BaskedSideBeam_07_east",
+      "SM_BaskedSideBeam_07_north",
+      "SM_BaskedSideBeam_07_south",
+      "SM_BaskedSideBeam_07_west"
+    ],
+    "animations": []
+  },
+  "SM_BaskedSideBeam_08": {
+    "type": "building",
+    "sheets": [
+      "SM_BaskedSideBeam_08_00.png"
+    ],
+    "frames": [
+      "SM_BaskedSideBeam_08_east",
+      "SM_BaskedSideBeam_08_north",
+      "SM_BaskedSideBeam_08_south",
+      "SM_BaskedSideBeam_08_west"
+    ],
+    "animations": []
+  },
+  "SM_Beam_1": {
+    "type": "building",
+    "sheets": [
+      "SM_Beam_1_00.png"
+    ],
+    "frames": [
+      "SM_Beam_1_east",
+      "SM_Beam_1_north",
+      "SM_Beam_1_south",
+      "SM_Beam_1_west"
+    ],
+    "animations": []
+  },
+  "SM_Beam_2": {
+    "type": "building",
+    "sheets": [
+      "SM_Beam_2_00.png"
+    ],
+    "frames": [
+      "SM_Beam_2_east",
+      "SM_Beam_2_north",
+      "SM_Beam_2_south",
+      "SM_Beam_2_west"
+    ],
+    "animations": []
+  },
+  "SM_Bed": {
+    "type": "prop",
+    "sheets": [
+      "SM_Bed_00.png"
+    ],
+    "frames": [
+      "SM_Bed_default"
+    ],
+    "animations": []
+  },
+  "SM_Bench": {
+    "type": "prop",
+    "sheets": [
+      "SM_Bench_00.png"
+    ],
+    "frames": [
+      "SM_Bench_default"
+    ],
+    "animations": []
+  },
+  "SM_Bones_Skull": {
+    "type": "character",
+    "sheets": [
+      "SM_Bones_Skull_00.png"
+    ],
+    "frames": [
+      "SM_Bones_Skull_east",
+      "SM_Bones_Skull_north",
+      "SM_Bones_Skull_south",
+      "SM_Bones_Skull_west"
+    ],
+    "animations": []
+  },
+  "SM_BookCollection_1": {
+    "type": "prop",
+    "sheets": [
+      "SM_BookCollection_1_00.png"
+    ],
+    "frames": [
+      "SM_BookCollection_1_default"
+    ],
+    "animations": []
+  },
+  "SM_BookCollection_2": {
+    "type": "prop",
+    "sheets": [
+      "SM_BookCollection_2_00.png"
+    ],
+    "frames": [
+      "SM_BookCollection_2_default"
+    ],
+    "animations": []
+  },
+  "SM_Book_Closed": {
+    "type": "prop",
+    "sheets": [
+      "SM_Book_Closed_00.png"
+    ],
+    "frames": [
+      "SM_Book_Closed_default"
+    ],
+    "animations": []
+  },
+  "SM_Book_Open": {
+    "type": "prop",
+    "sheets": [
+      "SM_Book_Open_00.png"
+    ],
+    "frames": [
+      "SM_Book_Open_default"
+    ],
+    "animations": []
+  },
+  "SM_Bottle_1": {
+    "type": "prop",
+    "sheets": [
+      "SM_Bottle_1_00.png"
+    ],
+    "frames": [
+      "SM_Bottle_1_default"
+    ],
+    "animations": []
+  },
+  "SM_Bottle_2": {
+    "type": "prop",
+    "sheets": [
+      "SM_Bottle_2_00.png"
+    ],
+    "frames": [
+      "SM_Bottle_2_default"
+    ],
+    "animations": []
+  },
+  "SM_Bowl_01a": {
+    "type": "weapon",
+    "sheets": [
+      "SM_Bowl_01a_00.png"
+    ],
+    "frames": [
+      "SM_Bowl_01a_default"
+    ],
+    "animations": []
+  },
+  "SM_Box": {
+    "type": "prop",
+    "sheets": [
+      "SM_Box_00.png"
+    ],
+    "frames": [
+      "SM_Box_default"
+    ],
+    "animations": []
+  },
+  "SM_Bracklet": {
+    "type": "prop",
+    "sheets": [
+      "SM_Bracklet_00.png"
+    ],
+    "frames": [
+      "SM_Bracklet_default"
+    ],
+    "animations": []
+  },
+  "SM_BurlapBag_Clean": {
+    "type": "prop",
+    "sheets": [
+      "SM_BurlapBag_Clean_00.png"
+    ],
+    "frames": [
+      "SM_BurlapBag_Clean_default"
+    ],
+    "animations": []
+  },
+  "SM_BurlapBag_Dirty": {
+    "type": "prop",
+    "sheets": [
+      "SM_BurlapBag_Dirty_00.png"
+    ],
+    "frames": [
+      "SM_BurlapBag_Dirty_default"
+    ],
+    "animations": []
+  },
+  "SM_Cabinet": {
+    "type": "prop",
+    "sheets": [
+      "SM_Cabinet_00.png"
+    ],
+    "frames": [
+      "SM_Cabinet_default"
+    ],
+    "animations": []
+  },
+  "SM_CabinetShelf": {
+    "type": "character",
+    "sheets": [
+      "SM_CabinetShelf_00.png"
+    ],
+    "frames": [
+      "SM_CabinetShelf_east",
+      "SM_CabinetShelf_north",
+      "SM_CabinetShelf_south",
+      "SM_CabinetShelf_west"
+    ],
+    "animations": []
+  },
+  "SM_Candle_Long": {
+    "type": "prop",
+    "sheets": [
+      "SM_Candle_Long_00.png"
+    ],
+    "frames": [
+      "SM_Candle_Long_default"
+    ],
+    "animations": []
+  },
+  "SM_Candle_Short": {
+    "type": "prop",
+    "sheets": [
+      "SM_Candle_Short_00.png"
+    ],
+    "frames": [
+      "SM_Candle_Short_default"
+    ],
+    "animations": []
+  },
+  "SM_Canopy_1": {
+    "type": "prop",
+    "sheets": [
+      "SM_Canopy_1_00.png"
+    ],
+    "frames": [
+      "SM_Canopy_1_default"
+    ],
+    "animations": []
+  },
+  "SM_Canopy_2": {
+    "type": "prop",
+    "sheets": [
+      "SM_Canopy_2_00.png"
+    ],
+    "frames": [
+      "SM_Canopy_2_default"
+    ],
+    "animations": []
+  },
+  "SM_Canopy_3": {
+    "type": "prop",
+    "sheets": [
+      "SM_Canopy_3_00.png"
+    ],
+    "frames": [
+      "SM_Canopy_3_default"
+    ],
+    "animations": []
+  },
+  "SM_Cantilever": {
+    "type": "building",
+    "sheets": [
+      "SM_Cantilever_00.png"
+    ],
+    "frames": [
+      "SM_Cantilever_east",
+      "SM_Cantilever_north",
+      "SM_Cantilever_south",
+      "SM_Cantilever_west"
+    ],
+    "animations": []
+  },
+  "SM_Cap_1": {
+    "type": "prop",
+    "sheets": [
+      "SM_Cap_1_00.png"
+    ],
+    "frames": [
+      "SM_Cap_1_default"
+    ],
+    "animations": []
+  },
+  "SM_Cap_2": {
+    "type": "prop",
+    "sheets": [
+      "SM_Cap_2_00.png"
+    ],
+    "frames": [
+      "SM_Cap_2_default"
+    ],
+    "animations": []
+  },
+  "SM_Carpet_1": {
+    "type": "prop",
+    "sheets": [
+      "SM_Carpet_1_00.png"
+    ],
+    "frames": [
+      "SM_Carpet_1_default"
+    ],
+    "animations": []
+  },
+  "SM_Carpet_2": {
+    "type": "prop",
+    "sheets": [
+      "SM_Carpet_2_00.png"
+    ],
+    "frames": [
+      "SM_Carpet_2_default"
+    ],
+    "animations": []
+  },
+  "SM_Carpet_3": {
+    "type": "prop",
+    "sheets": [
+      "SM_Carpet_3_00.png"
+    ],
+    "frames": [
+      "SM_Carpet_3_default"
+    ],
+    "animations": []
+  },
+  "SM_Chair_1": {
+    "type": "prop",
+    "sheets": [
+      "SM_Chair_1_00.png"
+    ],
+    "frames": [
+      "SM_Chair_1_default"
+    ],
+    "animations": []
+  },
+  "SM_Chair_2": {
+    "type": "prop",
+    "sheets": [
+      "SM_Chair_2_00.png"
+    ],
+    "frames": [
+      "SM_Chair_2_default"
+    ],
+    "animations": []
+  },
+  "SM_Chair_3": {
+    "type": "prop",
+    "sheets": [
+      "SM_Chair_3_00.png"
+    ],
+    "frames": [
+      "SM_Chair_3_default"
+    ],
+    "animations": []
+  },
+  "SM_Chair_4": {
+    "type": "prop",
+    "sheets": [
+      "SM_Chair_4_00.png"
+    ],
+    "frames": [
+      "SM_Chair_4_default"
+    ],
+    "animations": []
+  },
+  "SM_Chair_4_Broken": {
+    "type": "prop",
+    "sheets": [
+      "SM_Chair_4_Broken_00.png"
+    ],
+    "frames": [
+      "SM_Chair_4_Broken_default"
+    ],
+    "animations": []
+  },
+  "SM_Chair_5": {
+    "type": "prop",
+    "sheets": [
+      "SM_Chair_5_00.png"
+    ],
+    "frames": [
+      "SM_Chair_5_default"
+    ],
+    "animations": []
+  },
+  "SM_Chalice_01a": {
+    "type": "prop",
+    "sheets": [
+      "SM_Chalice_01a_00.png"
+    ],
+    "frames": [
+      "SM_Chalice_01a_default"
+    ],
+    "animations": []
+  },
+  "SM_Chalice_02a": {
+    "type": "prop",
+    "sheets": [
+      "SM_Chalice_02a_00.png"
+    ],
+    "frames": [
+      "SM_Chalice_02a_default"
+    ],
+    "animations": []
+  },
+  "SM_Chalice_02b": {
+    "type": "prop",
+    "sheets": [
+      "SM_Chalice_02b_00.png"
+    ],
+    "frames": [
+      "SM_Chalice_02b_default"
+    ],
+    "animations": []
+  },
+  "SM_Chandelier": {
+    "type": "prop",
+    "sheets": [
+      "SM_Chandelier_00.png"
+    ],
+    "frames": [
+      "SM_Chandelier_default"
+    ],
+    "animations": []
+  },
+  "SM_ChestCoins_01a": {
+    "type": "prop",
+    "sheets": [
+      "SM_ChestCoins_01a_00.png"
+    ],
+    "frames": [
+      "SM_ChestCoins_01a_default"
+    ],
+    "animations": []
+  },
+  "SM_Chest_01a": {
+    "type": "prop",
+    "sheets": [
+      "SM_Chest_01a_00.png"
+    ],
+    "frames": [
+      "SM_Chest_01a_default"
+    ],
+    "animations": []
+  },
+  "SM_Chest_01b": {
+    "type": "prop",
+    "sheets": [
+      "SM_Chest_01b_00.png"
+    ],
+    "frames": [
+      "SM_Chest_01b_default"
+    ],
+    "animations": []
+  },
+  "SM_Chest_01c": {
+    "type": "prop",
+    "sheets": [
+      "SM_Chest_01c_00.png"
+    ],
+    "frames": [
+      "SM_Chest_01c_default"
+    ],
+    "animations": []
+  },
+  "SM_Chest_01d": {
+    "type": "prop",
+    "sheets": [
+      "SM_Chest_01d_00.png"
+    ],
+    "frames": [
+      "SM_Chest_01d_default"
+    ],
+    "animations": []
+  },
+  "SM_Chest_01e": {
+    "type": "prop",
+    "sheets": [
+      "SM_Chest_01e_00.png"
+    ],
+    "frames": [
+      "SM_Chest_01e_default"
+    ],
+    "animations": []
+  },
+  "SM_Chest_01f": {
+    "type": "prop",
+    "sheets": [
+      "SM_Chest_01f_00.png"
+    ],
+    "frames": [
+      "SM_Chest_01f_default"
+    ],
+    "animations": []
+  },
+  "SM_Chest_01g": {
+    "type": "prop",
+    "sheets": [
+      "SM_Chest_01g_00.png"
+    ],
+    "frames": [
+      "SM_Chest_01g_default"
+    ],
+    "animations": []
+  },
+  "SM_Chest_01h": {
+    "type": "prop",
+    "sheets": [
+      "SM_Chest_01h_00.png"
+    ],
+    "frames": [
+      "SM_Chest_01h_default"
+    ],
+    "animations": []
+  },
+  "SM_Chest_02a": {
+    "type": "prop",
+    "sheets": [
+      "SM_Chest_02a_00.png"
+    ],
+    "frames": [
+      "SM_Chest_02a_default"
+    ],
+    "animations": []
+  },
+  "SM_Chest_02b": {
+    "type": "prop",
+    "sheets": [
+      "SM_Chest_02b_00.png"
+    ],
+    "frames": [
+      "SM_Chest_02b_default"
+    ],
+    "animations": []
+  },
+  "SM_Chest_02c": {
+    "type": "prop",
+    "sheets": [
+      "SM_Chest_02c_00.png"
+    ],
+    "frames": [
+      "SM_Chest_02c_default"
+    ],
+    "animations": []
+  },
+  "SM_Chest_02d": {
+    "type": "prop",
+    "sheets": [
+      "SM_Chest_02d_00.png"
+    ],
+    "frames": [
+      "SM_Chest_02d_default"
+    ],
+    "animations": []
+  },
+  "SM_ChimneyTop": {
+    "type": "building",
+    "sheets": [
+      "SM_ChimneyTop_00.png"
+    ],
+    "frames": [
+      "SM_ChimneyTop_east",
+      "SM_ChimneyTop_north",
+      "SM_ChimneyTop_south",
+      "SM_ChimneyTop_west"
+    ],
+    "animations": []
+  },
+  "SM_Chimney_1": {
+    "type": "building",
+    "sheets": [
+      "SM_Chimney_1_00.png"
+    ],
+    "frames": [
+      "SM_Chimney_1_east",
+      "SM_Chimney_1_north",
+      "SM_Chimney_1_south",
+      "SM_Chimney_1_west"
+    ],
+    "animations": []
+  },
+  "SM_Chimney_2": {
+    "type": "building",
+    "sheets": [
+      "SM_Chimney_2_00.png"
+    ],
+    "frames": [
+      "SM_Chimney_2_east",
+      "SM_Chimney_2_north",
+      "SM_Chimney_2_south",
+      "SM_Chimney_2_west"
+    ],
+    "animations": []
+  },
+  "SM_Chimney_3": {
+    "type": "building",
+    "sheets": [
+      "SM_Chimney_3_00.png"
+    ],
+    "frames": [
+      "SM_Chimney_3_east",
+      "SM_Chimney_3_north",
+      "SM_Chimney_3_south",
+      "SM_Chimney_3_west"
+    ],
+    "animations": []
+  },
+  "SM_ClayPot_01": {
+    "type": "prop",
+    "sheets": [
+      "SM_ClayPot_01_00.png"
+    ],
+    "frames": [
+      "SM_ClayPot_01_default"
+    ],
+    "animations": []
+  },
+  "SM_ClayPot_02": {
+    "type": "prop",
+    "sheets": [
+      "SM_ClayPot_02_00.png"
+    ],
+    "frames": [
+      "SM_ClayPot_02_default"
+    ],
+    "animations": []
+  },
+  "SM_ClayPot_03a": {
+    "type": "prop",
+    "sheets": [
+      "SM_ClayPot_03a_00.png"
+    ],
+    "frames": [
+      "SM_ClayPot_03a_default"
+    ],
+    "animations": []
+  },
+  "SM_ClayPot_03b": {
+    "type": "prop",
+    "sheets": [
+      "SM_ClayPot_03b_00.png"
+    ],
+    "frames": [
+      "SM_ClayPot_03b_default"
+    ],
+    "animations": []
+  },
+  "SM_ClayPot_03c": {
+    "type": "prop",
+    "sheets": [
+      "SM_ClayPot_03c_00.png"
+    ],
+    "frames": [
+      "SM_ClayPot_03c_default"
+    ],
+    "animations": []
+  },
+  "SM_ClayPot_03d": {
+    "type": "prop",
+    "sheets": [
+      "SM_ClayPot_03d_00.png"
+    ],
+    "frames": [
+      "SM_ClayPot_03d_default"
+    ],
+    "animations": []
+  },
+  "SM_ClayPot_03e": {
+    "type": "prop",
+    "sheets": [
+      "SM_ClayPot_03e_00.png"
+    ],
+    "frames": [
+      "SM_ClayPot_03e_default"
+    ],
+    "animations": []
+  },
+  "SM_ClayPot_03f": {
+    "type": "prop",
+    "sheets": [
+      "SM_ClayPot_03f_00.png"
+    ],
+    "frames": [
+      "SM_ClayPot_03f_default"
+    ],
+    "animations": []
+  },
+  "SM_ClayPot_03g": {
+    "type": "prop",
+    "sheets": [
+      "SM_ClayPot_03g_00.png"
+    ],
+    "frames": [
+      "SM_ClayPot_03g_default"
+    ],
+    "animations": []
+  },
+  "SM_ClayPot_03h": {
+    "type": "prop",
+    "sheets": [
+      "SM_ClayPot_03h_00.png"
+    ],
+    "frames": [
+      "SM_ClayPot_03h_default"
+    ],
+    "animations": []
+  },
+  "SM_ClayPot_03i": {
+    "type": "prop",
+    "sheets": [
+      "SM_ClayPot_03i_00.png"
+    ],
+    "frames": [
+      "SM_ClayPot_03i_default"
+    ],
+    "animations": []
+  },
+  "SM_ClayPot_03j": {
+    "type": "prop",
+    "sheets": [
+      "SM_ClayPot_03j_00.png"
+    ],
+    "frames": [
+      "SM_ClayPot_03j_default"
+    ],
+    "animations": []
+  },
+  "SM_ClosetCabinet_1_Left": {
+    "type": "prop",
+    "sheets": [
+      "SM_ClosetCabinet_1_Left_00.png"
+    ],
+    "frames": [
+      "SM_ClosetCabinet_1_Left_default"
+    ],
+    "animations": []
+  },
+  "SM_ClosetCabinet_1_Right": {
+    "type": "prop",
+    "sheets": [
+      "SM_ClosetCabinet_1_Right_00.png"
+    ],
+    "frames": [
+      "SM_ClosetCabinet_1_Right_default"
+    ],
+    "animations": []
+  },
+  "SM_ClosetCabinet_2_Left": {
+    "type": "prop",
+    "sheets": [
+      "SM_ClosetCabinet_2_Left_00.png"
+    ],
+    "frames": [
+      "SM_ClosetCabinet_2_Left_default"
+    ],
+    "animations": []
+  },
+  "SM_ClosetCabinet_2_Right": {
+    "type": "prop",
+    "sheets": [
+      "SM_ClosetCabinet_2_Right_00.png"
+    ],
+    "frames": [
+      "SM_ClosetCabinet_2_Right_default"
+    ],
+    "animations": []
+  },
+  "SM_Closet_1": {
+    "type": "prop",
+    "sheets": [
+      "SM_Closet_1_00.png"
+    ],
+    "frames": [
+      "SM_Closet_1_default"
+    ],
+    "animations": []
+  },
+  "SM_Closet_2": {
+    "type": "prop",
+    "sheets": [
+      "SM_Closet_2_00.png"
+    ],
+    "frames": [
+      "SM_Closet_2_default"
+    ],
+    "animations": []
+  },
+  "SM_Closet_3": {
+    "type": "prop",
+    "sheets": [
+      "SM_Closet_3_00.png"
+    ],
+    "frames": [
+      "SM_Closet_3_default"
+    ],
+    "animations": []
+  },
+  "SM_Closet_4": {
+    "type": "prop",
+    "sheets": [
+      "SM_Closet_4_00.png"
+    ],
+    "frames": [
+      "SM_Closet_4_default"
+    ],
+    "animations": []
+  },
+  "SM_Closet_5": {
+    "type": "prop",
+    "sheets": [
+      "SM_Closet_5_00.png"
+    ],
+    "frames": [
+      "SM_Closet_5_default"
+    ],
+    "animations": []
+  },
+  "SM_Closet_6": {
+    "type": "prop",
+    "sheets": [
+      "SM_Closet_6_00.png"
+    ],
+    "frames": [
+      "SM_Closet_6_default"
+    ],
+    "animations": []
+  },
+  "SM_Closet_7": {
+    "type": "prop",
+    "sheets": [
+      "SM_Closet_7_00.png"
+    ],
+    "frames": [
+      "SM_Closet_7_default"
+    ],
+    "animations": []
+  },
+  "SM_Coal_01a": {
+    "type": "prop",
+    "sheets": [
+      "SM_Coal_01a_00.png"
+    ],
+    "frames": [
+      "SM_Coal_01a_default"
+    ],
+    "animations": []
+  },
+  "SM_CoinMaterial_01a": {
+    "type": "item",
+    "sheets": [
+      "SM_CoinMaterial_01a_00.png"
+    ],
+    "frames": [
+      "SM_CoinMaterial_01a_default"
+    ],
+    "animations": []
+  },
+  "SM_CoinMaterial_01b": {
+    "type": "item",
+    "sheets": [
+      "SM_CoinMaterial_01b_00.png"
+    ],
+    "frames": [
+      "SM_CoinMaterial_01b_east",
+      "SM_CoinMaterial_01b_north",
+      "SM_CoinMaterial_01b_south",
+      "SM_CoinMaterial_01b_west"
+    ],
+    "animations": []
+  },
+  "SM_CoinMaterial_01c": {
+    "type": "item",
+    "sheets": [
+      "SM_CoinMaterial_01c_00.png"
+    ],
+    "frames": [
+      "SM_CoinMaterial_01c_default"
+    ],
+    "animations": []
+  },
+  "SM_CoinMaterial_01d": {
+    "type": "item",
+    "sheets": [
+      "SM_CoinMaterial_01d_00.png"
+    ],
+    "frames": [
+      "SM_CoinMaterial_01d_default"
+    ],
+    "animations": []
+  },
+  "SM_CoinMaterial_01e": {
+    "type": "item",
+    "sheets": [
+      "SM_CoinMaterial_01e_00.png"
+    ],
+    "frames": [
+      "SM_CoinMaterial_01e_default"
+    ],
+    "animations": []
+  },
+  "SM_Coin_01a": {
+    "type": "item",
+    "sheets": [
+      "SM_Coin_01a_00.png"
+    ],
+    "frames": [
+      "SM_Coin_01a_default"
+    ],
+    "animations": []
+  },
+  "SM_Coin_02a": {
+    "type": "item",
+    "sheets": [
+      "SM_Coin_02a_00.png"
+    ],
+    "frames": [
+      "SM_Coin_02a_default"
+    ],
+    "animations": []
+  },
+  "SM_Coin_Pile_01a": {
+    "type": "item",
+    "sheets": [
+      "SM_Coin_Pile_01a_00.png"
+    ],
+    "frames": [
+      "SM_Coin_Pile_01a_default"
+    ],
+    "animations": []
+  },
+  "SM_Coin_Pile_01b": {
+    "type": "item",
+    "sheets": [
+      "SM_Coin_Pile_01b_00.png"
+    ],
+    "frames": [
+      "SM_Coin_Pile_01b_default"
+    ],
+    "animations": []
+  },
+  "SM_Coin_Pile_01c": {
+    "type": "item",
+    "sheets": [
+      "SM_Coin_Pile_01c_00.png"
+    ],
+    "frames": [
+      "SM_Coin_Pile_01c_default"
+    ],
+    "animations": []
+  },
+  "SM_Coin_Pile_01d": {
+    "type": "item",
+    "sheets": [
+      "SM_Coin_Pile_01d_00.png"
+    ],
+    "frames": [
+      "SM_Coin_Pile_01d_default"
+    ],
+    "animations": []
+  },
+  "SM_Coin_Pile_01e": {
+    "type": "item",
+    "sheets": [
+      "SM_Coin_Pile_01e_00.png"
+    ],
+    "frames": [
+      "SM_Coin_Pile_01e_default"
+    ],
+    "animations": []
+  },
+  "SM_Coin_Pile_01f": {
+    "type": "item",
+    "sheets": [
+      "SM_Coin_Pile_01f_00.png"
+    ],
+    "frames": [
+      "SM_Coin_Pile_01f_default"
+    ],
+    "animations": []
+  },
+  "SM_Coin_Pile_01g": {
+    "type": "item",
+    "sheets": [
+      "SM_Coin_Pile_01g_00.png"
+    ],
+    "frames": [
+      "SM_Coin_Pile_01g_default"
+    ],
+    "animations": []
+  },
+  "SM_Coin_Pile_01h": {
+    "type": "item",
+    "sheets": [
+      "SM_Coin_Pile_01h_00.png"
+    ],
+    "frames": [
+      "SM_Coin_Pile_01h_default"
+    ],
+    "animations": []
+  },
+  "SM_Coin_Pile_01i": {
+    "type": "item",
+    "sheets": [
+      "SM_Coin_Pile_01i_00.png"
+    ],
+    "frames": [
+      "SM_Coin_Pile_01i_default"
+    ],
+    "animations": []
+  },
+  "SM_Coin_Pile_02a": {
+    "type": "item",
+    "sheets": [
+      "SM_Coin_Pile_02a_00.png"
+    ],
+    "frames": [
+      "SM_Coin_Pile_02a_default"
+    ],
+    "animations": []
+  },
+  "SM_Coin_Pile_02b": {
+    "type": "item",
+    "sheets": [
+      "SM_Coin_Pile_02b_00.png"
+    ],
+    "frames": [
+      "SM_Coin_Pile_02b_default"
+    ],
+    "animations": []
+  },
+  "SM_Coin_Pile_02c": {
+    "type": "item",
+    "sheets": [
+      "SM_Coin_Pile_02c_00.png"
+    ],
+    "frames": [
+      "SM_Coin_Pile_02c_default"
+    ],
+    "animations": []
+  },
+  "SM_Coin_Pile_02d": {
+    "type": "item",
+    "sheets": [
+      "SM_Coin_Pile_02d_00.png"
+    ],
+    "frames": [
+      "SM_Coin_Pile_02d_default"
+    ],
+    "animations": []
+  },
+  "SM_Coin_Pile_02e": {
+    "type": "item",
+    "sheets": [
+      "SM_Coin_Pile_02e_00.png"
+    ],
+    "frames": [
+      "SM_Coin_Pile_02e_default"
+    ],
+    "animations": []
+  },
+  "SM_Coin_Pile_02f": {
+    "type": "item",
+    "sheets": [
+      "SM_Coin_Pile_02f_00.png"
+    ],
+    "frames": [
+      "SM_Coin_Pile_02f_default"
+    ],
+    "animations": []
+  },
+  "SM_Coin_Pile_02g": {
+    "type": "item",
+    "sheets": [
+      "SM_Coin_Pile_02g_00.png"
+    ],
+    "frames": [
+      "SM_Coin_Pile_02g_default"
+    ],
+    "animations": []
+  },
+  "SM_Coin_Pile_02h": {
+    "type": "item",
+    "sheets": [
+      "SM_Coin_Pile_02h_00.png"
+    ],
+    "frames": [
+      "SM_Coin_Pile_02h_default"
+    ],
+    "animations": []
+  },
+  "SM_Coin_Pile_02i": {
+    "type": "item",
+    "sheets": [
+      "SM_Coin_Pile_02i_00.png"
+    ],
+    "frames": [
+      "SM_Coin_Pile_02i_default"
+    ],
+    "animations": []
+  },
+  "SM_Cole_001": {
+    "type": "building",
+    "sheets": [
+      "SM_Cole_001_00.png"
+    ],
+    "frames": [
+      "SM_Cole_001_east",
+      "SM_Cole_001_north",
+      "SM_Cole_001_south",
+      "SM_Cole_001_west"
+    ],
+    "animations": []
+  },
+  "SM_Cole_002": {
+    "type": "building",
+    "sheets": [
+      "SM_Cole_002_00.png"
+    ],
+    "frames": [
+      "SM_Cole_002_east",
+      "SM_Cole_002_north",
+      "SM_Cole_002_south",
+      "SM_Cole_002_west"
+    ],
+    "animations": []
+  },
+  "SM_Cole_003": {
+    "type": "building",
+    "sheets": [
+      "SM_Cole_003_00.png"
+    ],
+    "frames": [
+      "SM_Cole_003_east",
+      "SM_Cole_003_north",
+      "SM_Cole_003_south",
+      "SM_Cole_003_west"
+    ],
+    "animations": []
+  },
+  "SM_Cole_004": {
+    "type": "building",
+    "sheets": [
+      "SM_Cole_004_00.png"
+    ],
+    "frames": [
+      "SM_Cole_004_east",
+      "SM_Cole_004_north",
+      "SM_Cole_004_south",
+      "SM_Cole_004_west"
+    ],
+    "animations": []
+  },
+  "SM_Cole_005": {
+    "type": "building",
+    "sheets": [
+      "SM_Cole_005_00.png"
+    ],
+    "frames": [
+      "SM_Cole_005_east",
+      "SM_Cole_005_north",
+      "SM_Cole_005_south",
+      "SM_Cole_005_west"
+    ],
+    "animations": []
+  },
+  "SM_Cole_006": {
+    "type": "building",
+    "sheets": [
+      "SM_Cole_006_00.png"
+    ],
+    "frames": [
+      "SM_Cole_006_east",
+      "SM_Cole_006_north",
+      "SM_Cole_006_south",
+      "SM_Cole_006_west"
+    ],
+    "animations": []
+  },
+  "SM_Colth_03": {
+    "type": "building",
+    "sheets": [
+      "SM_Colth_03_00.png"
+    ],
+    "frames": [
+      "SM_Colth_03_east",
+      "SM_Colth_03_north",
+      "SM_Colth_03_south",
+      "SM_Colth_03_west"
+    ],
+    "animations": []
+  },
+  "SM_Colth_04": {
+    "type": "building",
+    "sheets": [
+      "SM_Colth_04_00.png"
+    ],
+    "frames": [
+      "SM_Colth_04_east",
+      "SM_Colth_04_north",
+      "SM_Colth_04_south",
+      "SM_Colth_04_west"
+    ],
+    "animations": []
+  },
+  "SM_Column_Stone_1": {
+    "type": "building",
+    "sheets": [
+      "SM_Column_Stone_1_00.png"
+    ],
+    "frames": [
+      "SM_Column_Stone_1_east",
+      "SM_Column_Stone_1_north",
+      "SM_Column_Stone_1_south",
+      "SM_Column_Stone_1_west"
+    ],
+    "animations": []
+  },
+  "SM_Column_Stone_2": {
+    "type": "building",
+    "sheets": [
+      "SM_Column_Stone_2_00.png"
+    ],
+    "frames": [
+      "SM_Column_Stone_2_east",
+      "SM_Column_Stone_2_north",
+      "SM_Column_Stone_2_south",
+      "SM_Column_Stone_2_west"
+    ],
+    "animations": []
+  },
+  "SM_Cord_01": {
+    "type": "building",
+    "sheets": [
+      "SM_Cord_01_00.png"
+    ],
+    "frames": [
+      "SM_Cord_01_east",
+      "SM_Cord_01_north",
+      "SM_Cord_01_south",
+      "SM_Cord_01_west"
+    ],
+    "animations": []
+  },
+  "SM_Cord_02": {
+    "type": "building",
+    "sheets": [
+      "SM_Cord_02_00.png"
+    ],
+    "frames": [
+      "SM_Cord_02_east",
+      "SM_Cord_02_north",
+      "SM_Cord_02_south",
+      "SM_Cord_02_west"
+    ],
+    "animations": []
+  },
+  "SM_Creature_Gruntling_Weapon03_Internal": {
+    "type": "character",
+    "sheets": [
+      "SM_Creature_Gruntling_Weapon03_Internal_00.png"
+    ],
+    "frames": [
+      "SM_Creature_Gruntling_Weapon03_Internal_east",
+      "SM_Creature_Gruntling_Weapon03_Internal_north",
+      "SM_Creature_Gruntling_Weapon03_Internal_south",
+      "SM_Creature_Gruntling_Weapon03_Internal_west"
+    ],
+    "animations": []
+  },
+  "SM_Creature_Gruntling_Weapon04_Internal": {
+    "type": "character",
+    "sheets": [
+      "SM_Creature_Gruntling_Weapon04_Internal_00.png"
+    ],
+    "frames": [
+      "SM_Creature_Gruntling_Weapon04_Internal_east",
+      "SM_Creature_Gruntling_Weapon04_Internal_north",
+      "SM_Creature_Gruntling_Weapon04_Internal_south",
+      "SM_Creature_Gruntling_Weapon04_Internal_west"
+    ],
+    "animations": []
+  },
+  "SM_Creature_Gruntling_Weapon05_Internal": {
+    "type": "character",
+    "sheets": [
+      "SM_Creature_Gruntling_Weapon05_Internal_00.png"
+    ],
+    "frames": [
+      "SM_Creature_Gruntling_Weapon05_Internal_east",
+      "SM_Creature_Gruntling_Weapon05_Internal_north",
+      "SM_Creature_Gruntling_Weapon05_Internal_south",
+      "SM_Creature_Gruntling_Weapon05_Internal_west"
+    ],
+    "animations": []
+  },
+  "SM_Crown_01a": {
+    "type": "prop",
+    "sheets": [
+      "SM_Crown_01a_00.png"
+    ],
+    "frames": [
+      "SM_Crown_01a_default"
+    ],
+    "animations": []
+  },
+  "SM_Cube_01": {
+    "type": "prop",
+    "sheets": [
+      "SM_Cube_01_00.png"
+    ],
+    "frames": [
+      "SM_Cube_01_default"
+    ],
+    "animations": []
+  },
+  "SM_Cube_02": {
+    "type": "prop",
+    "sheets": [
+      "SM_Cube_02_00.png"
+    ],
+    "frames": [
+      "SM_Cube_02_default"
+    ],
+    "animations": []
+  },
+  "SM_Cube_03": {
+    "type": "prop",
+    "sheets": [
+      "SM_Cube_03_00.png"
+    ],
+    "frames": [
+      "SM_Cube_03_default"
+    ],
+    "animations": []
+  },
+  "SM_CycRoom_01": {
+    "type": "building",
+    "sheets": [
+      "SM_CycRoom_01_00.png"
+    ],
+    "frames": [
+      "SM_CycRoom_01_east",
+      "SM_CycRoom_01_north",
+      "SM_CycRoom_01_south",
+      "SM_CycRoom_01_west"
+    ],
+    "animations": []
+  },
+  "SM_Cylinder_01": {
+    "type": "prop",
+    "sheets": [
+      "SM_Cylinder_01_00.png"
+    ],
+    "frames": [
+      "SM_Cylinder_01_default"
+    ],
+    "animations": []
+  },
+  "SM_Dagger_01a": {
+    "type": "weapon",
+    "sheets": [
+      "SM_Dagger_01a_00.png"
+    ],
+    "frames": [
+      "SM_Dagger_01a_east",
+      "SM_Dagger_01a_north",
+      "SM_Dagger_01a_south",
+      "SM_Dagger_01a_west"
+    ],
+    "animations": []
+  },
+  "SM_Dagger_01b": {
+    "type": "weapon",
+    "sheets": [
+      "SM_Dagger_01b_00.png"
+    ],
+    "frames": [
+      "SM_Dagger_01b_east",
+      "SM_Dagger_01b_north",
+      "SM_Dagger_01b_south",
+      "SM_Dagger_01b_west"
+    ],
+    "animations": []
+  },
+  "SM_Dagger_01c": {
+    "type": "weapon",
+    "sheets": [
+      "SM_Dagger_01c_00.png"
+    ],
+    "frames": [
+      "SM_Dagger_01c_east",
+      "SM_Dagger_01c_north",
+      "SM_Dagger_01c_south",
+      "SM_Dagger_01c_west"
+    ],
+    "animations": []
+  },
+  "SM_DemoDivider1": {
+    "type": "prop",
+    "sheets": [
+      "SM_DemoDivider1_00.png"
+    ],
+    "frames": [
+      "SM_DemoDivider1_default"
+    ],
+    "animations": []
+  },
+  "SM_DemoDivider2": {
+    "type": "prop",
+    "sheets": [
+      "SM_DemoDivider2_00.png"
+    ],
+    "frames": [
+      "SM_DemoDivider2_default"
+    ],
+    "animations": []
+  },
+  "SM_DemoRoomBackWall": {
+    "type": "building",
+    "sheets": [
+      "SM_DemoRoomBackWall_00.png"
+    ],
+    "frames": [
+      "SM_DemoRoomBackWall_east",
+      "SM_DemoRoomBackWall_north",
+      "SM_DemoRoomBackWall_south",
+      "SM_DemoRoomBackWall_west"
+    ],
+    "animations": []
+  },
+  "SM_DemoRoomBackWall2": {
+    "type": "building",
+    "sheets": [
+      "SM_DemoRoomBackWall2_00.png"
+    ],
+    "frames": [
+      "SM_DemoRoomBackWall2_east",
+      "SM_DemoRoomBackWall2_north",
+      "SM_DemoRoomBackWall2_south",
+      "SM_DemoRoomBackWall2_west"
+    ],
+    "animations": []
+  },
+  "SM_DemoRoomClamp": {
+    "type": "prop",
+    "sheets": [
+      "SM_DemoRoomClamp_00.png"
+    ],
+    "frames": [
+      "SM_DemoRoomClamp_default"
+    ],
+    "animations": []
+  },
+  "SM_DemoRoomClamp2": {
+    "type": "prop",
+    "sheets": [
+      "SM_DemoRoomClamp2_00.png"
+    ],
+    "frames": [
+      "SM_DemoRoomClamp2_default"
+    ],
+    "animations": []
+  },
+  "SM_DemoRoomL": {
+    "type": "prop",
+    "sheets": [
+      "SM_DemoRoomL_00.png"
+    ],
+    "frames": [
+      "SM_DemoRoomL_default"
+    ],
+    "animations": []
+  },
+  "SM_DemoRoomLTrim": {
+    "type": "prop",
+    "sheets": [
+      "SM_DemoRoomLTrim_00.png"
+    ],
+    "frames": [
+      "SM_DemoRoomLTrim_default"
+    ],
+    "animations": []
+  },
+  "SM_DemoRoomTrim": {
+    "type": "prop",
+    "sheets": [
+      "SM_DemoRoomTrim_00.png"
+    ],
+    "frames": [
+      "SM_DemoRoomTrim_default"
+    ],
+    "animations": []
+  },
+  "SM_DemoRoomTrim2": {
+    "type": "prop",
+    "sheets": [
+      "SM_DemoRoomTrim2_00.png"
+    ],
+    "frames": [
+      "SM_DemoRoomTrim2_default"
+    ],
+    "animations": []
+  },
+  "SM_DemoRoomTrimAdd": {
+    "type": "prop",
+    "sheets": [
+      "SM_DemoRoomTrimAdd_00.png"
+    ],
+    "frames": [
+      "SM_DemoRoomTrimAdd_default"
+    ],
+    "animations": []
+  },
+  "SM_DemoRoomU": {
+    "type": "prop",
+    "sheets": [
+      "SM_DemoRoomU_00.png"
+    ],
+    "frames": [
+      "SM_DemoRoomU_default"
+    ],
+    "animations": []
+  },
+  "SM_DemoRoomU2": {
+    "type": "prop",
+    "sheets": [
+      "SM_DemoRoomU2_00.png"
+    ],
+    "frames": [
+      "SM_DemoRoomU2_default"
+    ],
+    "animations": []
+  },
+  "SM_DemoRoomU_Hole": {
+    "type": "prop",
+    "sheets": [
+      "SM_DemoRoomU_Hole_00.png"
+    ],
+    "frames": [
+      "SM_DemoRoomU_Hole_default"
+    ],
+    "animations": []
+  },
+  "SM_DoorBody_1": {
+    "type": "building",
+    "sheets": [
+      "SM_DoorBody_1_00.png"
+    ],
+    "frames": [
+      "SM_DoorBody_1_east",
+      "SM_DoorBody_1_north",
+      "SM_DoorBody_1_south",
+      "SM_DoorBody_1_west"
+    ],
+    "animations": []
+  },
+  "SM_DoorBody_2": {
+    "type": "building",
+    "sheets": [
+      "SM_DoorBody_2_00.png"
+    ],
+    "frames": [
+      "SM_DoorBody_2_east",
+      "SM_DoorBody_2_north",
+      "SM_DoorBody_2_south",
+      "SM_DoorBody_2_west"
+    ],
+    "animations": []
+  },
+  "SM_DoorBody_3": {
+    "type": "building",
+    "sheets": [
+      "SM_DoorBody_3_00.png"
+    ],
+    "frames": [
+      "SM_DoorBody_3_east",
+      "SM_DoorBody_3_north",
+      "SM_DoorBody_3_south",
+      "SM_DoorBody_3_west"
+    ],
+    "animations": []
+  },
+  "SM_DoorFrame_1": {
+    "type": "building",
+    "sheets": [
+      "SM_DoorFrame_1_00.png"
+    ],
+    "frames": [
+      "SM_DoorFrame_1_east",
+      "SM_DoorFrame_1_north",
+      "SM_DoorFrame_1_south",
+      "SM_DoorFrame_1_west"
+    ],
+    "animations": []
+  },
+  "SM_DoorFrame_2": {
+    "type": "building",
+    "sheets": [
+      "SM_DoorFrame_2_00.png"
+    ],
+    "frames": [
+      "SM_DoorFrame_2_east",
+      "SM_DoorFrame_2_north",
+      "SM_DoorFrame_2_south",
+      "SM_DoorFrame_2_west"
+    ],
+    "animations": []
+  },
+  "SM_DoorFrame_3": {
+    "type": "building",
+    "sheets": [
+      "SM_DoorFrame_3_00.png"
+    ],
+    "frames": [
+      "SM_DoorFrame_3_east",
+      "SM_DoorFrame_3_north",
+      "SM_DoorFrame_3_south",
+      "SM_DoorFrame_3_west"
+    ],
+    "animations": []
+  },
+  "SM_Drawer_1": {
+    "type": "prop",
+    "sheets": [
+      "SM_Drawer_1_00.png"
+    ],
+    "frames": [
+      "SM_Drawer_1_default"
+    ],
+    "animations": []
+  },
+  "SM_Drawer_2": {
+    "type": "prop",
+    "sheets": [
+      "SM_Drawer_2_00.png"
+    ],
+    "frames": [
+      "SM_Drawer_2_default"
+    ],
+    "animations": []
+  },
+  "SM_Drawer_3": {
+    "type": "prop",
+    "sheets": [
+      "SM_Drawer_3_00.png"
+    ],
+    "frames": [
+      "SM_Drawer_3_default"
+    ],
+    "animations": []
+  },
+  "SM_Dungeon_Wall": {
+    "type": "building",
+    "sheets": [
+      "SM_Dungeon_Wall_00.png"
+    ],
+    "frames": [
+      "SM_Dungeon_Wall_east",
+      "SM_Dungeon_Wall_north",
+      "SM_Dungeon_Wall_south",
+      "SM_Dungeon_Wall_west"
+    ],
+    "animations": []
+  },
+  "SM_Fern": {
+    "type": "prop",
+    "sheets": [
+      "SM_Fern_00.png"
+    ],
+    "frames": [
+      "SM_Fern_default"
+    ],
+    "animations": []
+  },
+  "SM_FireBasekd_A": {
+    "type": "building",
+    "sheets": [
+      "SM_FireBasekd_A_00.png"
+    ],
+    "frames": [
+      "SM_FireBasekd_A_east",
+      "SM_FireBasekd_A_north",
+      "SM_FireBasekd_A_south",
+      "SM_FireBasekd_A_west"
+    ],
+    "animations": []
+  },
+  "SM_FireBasekd_A_001": {
+    "type": "building",
+    "sheets": [
+      "SM_FireBasekd_A_001_00.png"
+    ],
+    "frames": [
+      "SM_FireBasekd_A_001_east",
+      "SM_FireBasekd_A_001_north",
+      "SM_FireBasekd_A_001_south",
+      "SM_FireBasekd_A_001_west"
+    ],
+    "animations": []
+  },
+  "SM_FireBasekd_A_002": {
+    "type": "building",
+    "sheets": [
+      "SM_FireBasekd_A_002_00.png"
+    ],
+    "frames": [
+      "SM_FireBasekd_A_002_east",
+      "SM_FireBasekd_A_002_north",
+      "SM_FireBasekd_A_002_south",
+      "SM_FireBasekd_A_002_west"
+    ],
+    "animations": []
+  },
+  "SM_FireBasekd_B": {
+    "type": "building",
+    "sheets": [
+      "SM_FireBasekd_B_00.png"
+    ],
+    "frames": [
+      "SM_FireBasekd_B_east",
+      "SM_FireBasekd_B_north",
+      "SM_FireBasekd_B_south",
+      "SM_FireBasekd_B_west"
+    ],
+    "animations": []
+  },
+  "SM_FireBasekd_B_001": {
+    "type": "building",
+    "sheets": [
+      "SM_FireBasekd_B_001_00.png"
+    ],
+    "frames": [
+      "SM_FireBasekd_B_001_east",
+      "SM_FireBasekd_B_001_north",
+      "SM_FireBasekd_B_001_south",
+      "SM_FireBasekd_B_001_west"
+    ],
+    "animations": []
+  },
+  "SM_FireBasekd_B_002": {
+    "type": "building",
+    "sheets": [
+      "SM_FireBasekd_B_002_00.png"
+    ],
+    "frames": [
+      "SM_FireBasekd_B_002_east",
+      "SM_FireBasekd_B_002_north",
+      "SM_FireBasekd_B_002_south",
+      "SM_FireBasekd_B_002_west"
+    ],
+    "animations": []
+  },
+  "SM_FireBasekd_C_001": {
+    "type": "building",
+    "sheets": [
+      "SM_FireBasekd_C_001_00.png"
+    ],
+    "frames": [
+      "SM_FireBasekd_C_001_east",
+      "SM_FireBasekd_C_001_north",
+      "SM_FireBasekd_C_001_south",
+      "SM_FireBasekd_C_001_west"
+    ],
+    "animations": []
+  },
+  "SM_FireBasekd_C_002": {
+    "type": "building",
+    "sheets": [
+      "SM_FireBasekd_C_002_00.png"
+    ],
+    "frames": [
+      "SM_FireBasekd_C_002_east",
+      "SM_FireBasekd_C_002_north",
+      "SM_FireBasekd_C_002_south",
+      "SM_FireBasekd_C_002_west"
+    ],
+    "animations": []
+  },
+  "SM_FireLightStand_A_001": {
+    "type": "building",
+    "sheets": [
+      "SM_FireLightStand_A_001_00.png"
+    ],
+    "frames": [
+      "SM_FireLightStand_A_001_east",
+      "SM_FireLightStand_A_001_north",
+      "SM_FireLightStand_A_001_south",
+      "SM_FireLightStand_A_001_west"
+    ],
+    "animations": []
+  },
+  "SM_FireLightStand_A_001_on": {
+    "type": "building",
+    "sheets": [
+      "SM_FireLightStand_A_001_on_00.png"
+    ],
+    "frames": [
+      "SM_FireLightStand_A_001_on_east",
+      "SM_FireLightStand_A_001_on_north",
+      "SM_FireLightStand_A_001_on_south",
+      "SM_FireLightStand_A_001_on_west"
+    ],
+    "animations": []
+  },
+  "SM_FireLightStand_B_001": {
+    "type": "building",
+    "sheets": [
+      "SM_FireLightStand_B_001_00.png"
+    ],
+    "frames": [
+      "SM_FireLightStand_B_001_east",
+      "SM_FireLightStand_B_001_north",
+      "SM_FireLightStand_B_001_south",
+      "SM_FireLightStand_B_001_west"
+    ],
+    "animations": []
+  },
+  "SM_FireLightStand_B_001_on": {
+    "type": "building",
+    "sheets": [
+      "SM_FireLightStand_B_001_on_00.png"
+    ],
+    "frames": [
+      "SM_FireLightStand_B_001_on_east",
+      "SM_FireLightStand_B_001_on_north",
+      "SM_FireLightStand_B_001_on_south",
+      "SM_FireLightStand_B_001_on_west"
+    ],
+    "animations": []
+  },
+  "SM_FireLightStand_C_001": {
+    "type": "building",
+    "sheets": [
+      "SM_FireLightStand_C_001_00.png"
+    ],
+    "frames": [
+      "SM_FireLightStand_C_001_east",
+      "SM_FireLightStand_C_001_north",
+      "SM_FireLightStand_C_001_south",
+      "SM_FireLightStand_C_001_west"
+    ],
+    "animations": []
+  },
+  "SM_FireLightStand_C_001_on": {
+    "type": "building",
+    "sheets": [
+      "SM_FireLightStand_C_001_on_00.png"
+    ],
+    "frames": [
+      "SM_FireLightStand_C_001_on_east",
+      "SM_FireLightStand_C_001_on_north",
+      "SM_FireLightStand_C_001_on_south",
+      "SM_FireLightStand_C_001_on_west"
+    ],
+    "animations": []
+  },
+  "SM_FireTorchPot": {
+    "type": "character",
+    "sheets": [
+      "SM_FireTorchPot_00.png"
+    ],
+    "frames": [
+      "SM_FireTorchPot_east",
+      "SM_FireTorchPot_north",
+      "SM_FireTorchPot_south",
+      "SM_FireTorchPot_west"
+    ],
+    "animations": []
+  },
+  "SM_FireTorchPot_AL_01": {
+    "type": "character",
+    "sheets": [
+      "SM_FireTorchPot_AL_01_00.png"
+    ],
+    "frames": [
+      "SM_FireTorchPot_AL_01_east",
+      "SM_FireTorchPot_AL_01_north",
+      "SM_FireTorchPot_AL_01_south",
+      "SM_FireTorchPot_AL_01_west"
+    ],
+    "animations": []
+  },
+  "SM_FireTorchPot_AL_01_on": {
+    "type": "character",
+    "sheets": [
+      "SM_FireTorchPot_AL_01_on_00.png"
+    ],
+    "frames": [
+      "SM_FireTorchPot_AL_01_on_east",
+      "SM_FireTorchPot_AL_01_on_north",
+      "SM_FireTorchPot_AL_01_on_south",
+      "SM_FireTorchPot_AL_01_on_west"
+    ],
+    "animations": []
+  },
+  "SM_FireTorchPot_AL_02": {
+    "type": "character",
+    "sheets": [
+      "SM_FireTorchPot_AL_02_00.png"
+    ],
+    "frames": [
+      "SM_FireTorchPot_AL_02_east",
+      "SM_FireTorchPot_AL_02_north",
+      "SM_FireTorchPot_AL_02_south",
+      "SM_FireTorchPot_AL_02_west"
+    ],
+    "animations": []
+  },
+  "SM_FireTorchPot_AL_02_on": {
+    "type": "character",
+    "sheets": [
+      "SM_FireTorchPot_AL_02_on_00.png"
+    ],
+    "frames": [
+      "SM_FireTorchPot_AL_02_on_east",
+      "SM_FireTorchPot_AL_02_on_north",
+      "SM_FireTorchPot_AL_02_on_south",
+      "SM_FireTorchPot_AL_02_on_west"
+    ],
+    "animations": []
+  },
+  "SM_FireTorchPot_AM_01": {
+    "type": "character",
+    "sheets": [
+      "SM_FireTorchPot_AM_01_00.png"
+    ],
+    "frames": [
+      "SM_FireTorchPot_AM_01_east",
+      "SM_FireTorchPot_AM_01_north",
+      "SM_FireTorchPot_AM_01_south",
+      "SM_FireTorchPot_AM_01_west"
+    ],
+    "animations": []
+  },
+  "SM_FireTorchPot_AM_01_on": {
+    "type": "character",
+    "sheets": [
+      "SM_FireTorchPot_AM_01_on_00.png"
+    ],
+    "frames": [
+      "SM_FireTorchPot_AM_01_on_east",
+      "SM_FireTorchPot_AM_01_on_north",
+      "SM_FireTorchPot_AM_01_on_south",
+      "SM_FireTorchPot_AM_01_on_west"
+    ],
+    "animations": []
+  },
+  "SM_FireTorchPot_AM_02": {
+    "type": "character",
+    "sheets": [
+      "SM_FireTorchPot_AM_02_00.png"
+    ],
+    "frames": [
+      "SM_FireTorchPot_AM_02_east",
+      "SM_FireTorchPot_AM_02_north",
+      "SM_FireTorchPot_AM_02_south",
+      "SM_FireTorchPot_AM_02_west"
+    ],
+    "animations": []
+  },
+  "SM_FireTorchPot_AM_02_on": {
+    "type": "character",
+    "sheets": [
+      "SM_FireTorchPot_AM_02_on_00.png"
+    ],
+    "frames": [
+      "SM_FireTorchPot_AM_02_on_east",
+      "SM_FireTorchPot_AM_02_on_north",
+      "SM_FireTorchPot_AM_02_on_south",
+      "SM_FireTorchPot_AM_02_on_west"
+    ],
+    "animations": []
+  },
+  "SM_FireTorchPot_AS_01": {
+    "type": "character",
+    "sheets": [
+      "SM_FireTorchPot_AS_01_00.png"
+    ],
+    "frames": [
+      "SM_FireTorchPot_AS_01_east",
+      "SM_FireTorchPot_AS_01_north",
+      "SM_FireTorchPot_AS_01_south",
+      "SM_FireTorchPot_AS_01_west"
+    ],
+    "animations": []
+  },
+  "SM_FireTorchPot_AS_01_on": {
+    "type": "character",
+    "sheets": [
+      "SM_FireTorchPot_AS_01_on_00.png"
+    ],
+    "frames": [
+      "SM_FireTorchPot_AS_01_on_east",
+      "SM_FireTorchPot_AS_01_on_north",
+      "SM_FireTorchPot_AS_01_on_south",
+      "SM_FireTorchPot_AS_01_on_west"
+    ],
+    "animations": []
+  },
+  "SM_FireTorchPot_AS_02": {
+    "type": "character",
+    "sheets": [
+      "SM_FireTorchPot_AS_02_00.png"
+    ],
+    "frames": [
+      "SM_FireTorchPot_AS_02_east",
+      "SM_FireTorchPot_AS_02_north",
+      "SM_FireTorchPot_AS_02_south",
+      "SM_FireTorchPot_AS_02_west"
+    ],
+    "animations": []
+  },
+  "SM_FireTorchPot_AS_02_on": {
+    "type": "character",
+    "sheets": [
+      "SM_FireTorchPot_AS_02_on_00.png"
+    ],
+    "frames": [
+      "SM_FireTorchPot_AS_02_on_east",
+      "SM_FireTorchPot_AS_02_on_north",
+      "SM_FireTorchPot_AS_02_on_south",
+      "SM_FireTorchPot_AS_02_on_west"
+    ],
+    "animations": []
+  },
+  "SM_FireTorch_LX_001": {
+    "type": "character",
+    "sheets": [
+      "SM_FireTorch_LX_001_00.png"
+    ],
+    "frames": [
+      "SM_FireTorch_LX_001_east",
+      "SM_FireTorch_LX_001_north",
+      "SM_FireTorch_LX_001_south",
+      "SM_FireTorch_LX_001_west"
+    ],
+    "animations": []
+  },
+  "SM_FireTorch_LX_002": {
+    "type": "character",
+    "sheets": [
+      "SM_FireTorch_LX_002_00.png"
+    ],
+    "frames": [
+      "SM_FireTorch_LX_002_east",
+      "SM_FireTorch_LX_002_north",
+      "SM_FireTorch_LX_002_south",
+      "SM_FireTorch_LX_002_west"
+    ],
+    "animations": []
+  },
+  "SM_FireTorch_LX_003": {
+    "type": "character",
+    "sheets": [
+      "SM_FireTorch_LX_003_00.png"
+    ],
+    "frames": [
+      "SM_FireTorch_LX_003_east",
+      "SM_FireTorch_LX_003_north",
+      "SM_FireTorch_LX_003_south",
+      "SM_FireTorch_LX_003_west"
+    ],
+    "animations": []
+  },
+  "SM_FireTorch_L_001": {
+    "type": "character",
+    "sheets": [
+      "SM_FireTorch_L_001_00.png"
+    ],
+    "frames": [
+      "SM_FireTorch_L_001_east",
+      "SM_FireTorch_L_001_north",
+      "SM_FireTorch_L_001_south",
+      "SM_FireTorch_L_001_west"
+    ],
+    "animations": []
+  },
+  "SM_FireTorch_L_002": {
+    "type": "character",
+    "sheets": [
+      "SM_FireTorch_L_002_00.png"
+    ],
+    "frames": [
+      "SM_FireTorch_L_002_east",
+      "SM_FireTorch_L_002_north",
+      "SM_FireTorch_L_002_south",
+      "SM_FireTorch_L_002_west"
+    ],
+    "animations": []
+  },
+  "SM_FireTorch_L_003": {
+    "type": "character",
+    "sheets": [
+      "SM_FireTorch_L_003_00.png"
+    ],
+    "frames": [
+      "SM_FireTorch_L_003_east",
+      "SM_FireTorch_L_003_north",
+      "SM_FireTorch_L_003_south",
+      "SM_FireTorch_L_003_west"
+    ],
+    "animations": []
+  },
+  "SM_FireTorch_MX_001": {
+    "type": "character",
+    "sheets": [
+      "SM_FireTorch_MX_001_00.png"
+    ],
+    "frames": [
+      "SM_FireTorch_MX_001_east",
+      "SM_FireTorch_MX_001_north",
+      "SM_FireTorch_MX_001_south",
+      "SM_FireTorch_MX_001_west"
+    ],
+    "animations": []
+  },
+  "SM_FireTorch_MX_002": {
+    "type": "character",
+    "sheets": [
+      "SM_FireTorch_MX_002_00.png"
+    ],
+    "frames": [
+      "SM_FireTorch_MX_002_east",
+      "SM_FireTorch_MX_002_north",
+      "SM_FireTorch_MX_002_south",
+      "SM_FireTorch_MX_002_west"
+    ],
+    "animations": []
+  },
+  "SM_FireTorch_MX_003": {
+    "type": "character",
+    "sheets": [
+      "SM_FireTorch_MX_003_00.png"
+    ],
+    "frames": [
+      "SM_FireTorch_MX_003_east",
+      "SM_FireTorch_MX_003_north",
+      "SM_FireTorch_MX_003_south",
+      "SM_FireTorch_MX_003_west"
+    ],
+    "animations": []
+  },
+  "SM_FireTorch_M_001": {
+    "type": "character",
+    "sheets": [
+      "SM_FireTorch_M_001_00.png"
+    ],
+    "frames": [
+      "SM_FireTorch_M_001_east",
+      "SM_FireTorch_M_001_north",
+      "SM_FireTorch_M_001_south",
+      "SM_FireTorch_M_001_west"
+    ],
+    "animations": []
+  },
+  "SM_FireTorch_M_002": {
+    "type": "character",
+    "sheets": [
+      "SM_FireTorch_M_002_00.png"
+    ],
+    "frames": [
+      "SM_FireTorch_M_002_east",
+      "SM_FireTorch_M_002_north",
+      "SM_FireTorch_M_002_south",
+      "SM_FireTorch_M_002_west"
+    ],
+    "animations": []
+  },
+  "SM_FireTorch_M_003": {
+    "type": "character",
+    "sheets": [
+      "SM_FireTorch_M_003_00.png"
+    ],
+    "frames": [
+      "SM_FireTorch_M_003_east",
+      "SM_FireTorch_M_003_north",
+      "SM_FireTorch_M_003_south",
+      "SM_FireTorch_M_003_west"
+    ],
+    "animations": []
+  },
+  "SM_FireTorch_SX_001": {
+    "type": "character",
+    "sheets": [
+      "SM_FireTorch_SX_001_00.png"
+    ],
+    "frames": [
+      "SM_FireTorch_SX_001_east",
+      "SM_FireTorch_SX_001_north",
+      "SM_FireTorch_SX_001_south",
+      "SM_FireTorch_SX_001_west"
+    ],
+    "animations": []
+  },
+  "SM_FireTorch_SX_002": {
+    "type": "character",
+    "sheets": [
+      "SM_FireTorch_SX_002_00.png"
+    ],
+    "frames": [
+      "SM_FireTorch_SX_002_east",
+      "SM_FireTorch_SX_002_north",
+      "SM_FireTorch_SX_002_south",
+      "SM_FireTorch_SX_002_west"
+    ],
+    "animations": []
+  },
+  "SM_FireTorch_SX_003": {
+    "type": "character",
+    "sheets": [
+      "SM_FireTorch_SX_003_00.png"
+    ],
+    "frames": [
+      "SM_FireTorch_SX_003_east",
+      "SM_FireTorch_SX_003_north",
+      "SM_FireTorch_SX_003_south",
+      "SM_FireTorch_SX_003_west"
+    ],
+    "animations": []
+  },
+  "SM_FireTorch_S_001": {
+    "type": "character",
+    "sheets": [
+      "SM_FireTorch_S_001_00.png"
+    ],
+    "frames": [
+      "SM_FireTorch_S_001_east",
+      "SM_FireTorch_S_001_north",
+      "SM_FireTorch_S_001_south",
+      "SM_FireTorch_S_001_west"
+    ],
+    "animations": []
+  },
+  "SM_FireTorch_S_002": {
+    "type": "character",
+    "sheets": [
+      "SM_FireTorch_S_002_00.png"
+    ],
+    "frames": [
+      "SM_FireTorch_S_002_east",
+      "SM_FireTorch_S_002_north",
+      "SM_FireTorch_S_002_south",
+      "SM_FireTorch_S_002_west"
+    ],
+    "animations": []
+  },
+  "SM_FireTorch_S_003": {
+    "type": "character",
+    "sheets": [
+      "SM_FireTorch_S_003_00.png"
+    ],
+    "frames": [
+      "SM_FireTorch_S_003_east",
+      "SM_FireTorch_S_003_north",
+      "SM_FireTorch_S_003_south",
+      "SM_FireTorch_S_003_west"
+    ],
+    "animations": []
+  },
+  "SM_FireWallTorchLamp_AL_0": {
+    "type": "character",
+    "sheets": [
+      "SM_FireWallTorchLamp_AL_0_00.png"
+    ],
+    "frames": [
+      "SM_FireWallTorchLamp_AL_0_east",
+      "SM_FireWallTorchLamp_AL_0_north",
+      "SM_FireWallTorchLamp_AL_0_south",
+      "SM_FireWallTorchLamp_AL_0_west"
+    ],
+    "animations": []
+  },
+  "SM_FireWallTorchLamp_AL_01": {
+    "type": "character",
+    "sheets": [
+      "SM_FireWallTorchLamp_AL_01_00.png"
+    ],
+    "frames": [
+      "SM_FireWallTorchLamp_AL_01_east",
+      "SM_FireWallTorchLamp_AL_01_north",
+      "SM_FireWallTorchLamp_AL_01_south",
+      "SM_FireWallTorchLamp_AL_01_west"
+    ],
+    "animations": []
+  },
+  "SM_FireWallTorchLamp_AL_01_on": {
+    "type": "character",
+    "sheets": [
+      "SM_FireWallTorchLamp_AL_01_on_00.png"
+    ],
+    "frames": [
+      "SM_FireWallTorchLamp_AL_01_on_east",
+      "SM_FireWallTorchLamp_AL_01_on_north",
+      "SM_FireWallTorchLamp_AL_01_on_south",
+      "SM_FireWallTorchLamp_AL_01_on_west"
+    ],
+    "animations": []
+  },
+  "SM_FireWallTorchLamp_AL_02": {
+    "type": "character",
+    "sheets": [
+      "SM_FireWallTorchLamp_AL_02_00.png"
+    ],
+    "frames": [
+      "SM_FireWallTorchLamp_AL_02_east",
+      "SM_FireWallTorchLamp_AL_02_north",
+      "SM_FireWallTorchLamp_AL_02_south",
+      "SM_FireWallTorchLamp_AL_02_west"
+    ],
+    "animations": []
+  },
+  "SM_FireWallTorchLamp_AL_02_on": {
+    "type": "character",
+    "sheets": [
+      "SM_FireWallTorchLamp_AL_02_on_00.png"
+    ],
+    "frames": [
+      "SM_FireWallTorchLamp_AL_02_on_east",
+      "SM_FireWallTorchLamp_AL_02_on_north",
+      "SM_FireWallTorchLamp_AL_02_on_south",
+      "SM_FireWallTorchLamp_AL_02_on_west"
+    ],
+    "animations": []
+  },
+  "SM_FireWallTorchLamp_AL_03": {
+    "type": "character",
+    "sheets": [
+      "SM_FireWallTorchLamp_AL_03_00.png"
+    ],
+    "frames": [
+      "SM_FireWallTorchLamp_AL_03_east",
+      "SM_FireWallTorchLamp_AL_03_north",
+      "SM_FireWallTorchLamp_AL_03_south",
+      "SM_FireWallTorchLamp_AL_03_west"
+    ],
+    "animations": []
+  },
+  "SM_FireWallTorchLamp_AL_03_on": {
+    "type": "character",
+    "sheets": [
+      "SM_FireWallTorchLamp_AL_03_on_00.png"
+    ],
+    "frames": [
+      "SM_FireWallTorchLamp_AL_03_on_east",
+      "SM_FireWallTorchLamp_AL_03_on_north",
+      "SM_FireWallTorchLamp_AL_03_on_south",
+      "SM_FireWallTorchLamp_AL_03_on_west"
+    ],
+    "animations": []
+  },
+  "SM_FireWallTorchLamp_AL_04_on": {
+    "type": "character",
+    "sheets": [
+      "SM_FireWallTorchLamp_AL_04_on_00.png"
+    ],
+    "frames": [
+      "SM_FireWallTorchLamp_AL_04_on_east",
+      "SM_FireWallTorchLamp_AL_04_on_north",
+      "SM_FireWallTorchLamp_AL_04_on_south",
+      "SM_FireWallTorchLamp_AL_04_on_west"
+    ],
+    "animations": []
+  },
+  "SM_FireWallTorchLamp_AM_003": {
+    "type": "character",
+    "sheets": [
+      "SM_FireWallTorchLamp_AM_003_00.png"
+    ],
+    "frames": [
+      "SM_FireWallTorchLamp_AM_003_east",
+      "SM_FireWallTorchLamp_AM_003_north",
+      "SM_FireWallTorchLamp_AM_003_south",
+      "SM_FireWallTorchLamp_AM_003_west"
+    ],
+    "animations": []
+  },
+  "SM_FireWallTorchLamp_AM_01": {
+    "type": "character",
+    "sheets": [
+      "SM_FireWallTorchLamp_AM_01_00.png"
+    ],
+    "frames": [
+      "SM_FireWallTorchLamp_AM_01_east",
+      "SM_FireWallTorchLamp_AM_01_north",
+      "SM_FireWallTorchLamp_AM_01_south",
+      "SM_FireWallTorchLamp_AM_01_west"
+    ],
+    "animations": []
+  },
+  "SM_FireWallTorchLamp_AM_01_on": {
+    "type": "character",
+    "sheets": [
+      "SM_FireWallTorchLamp_AM_01_on_00.png"
+    ],
+    "frames": [
+      "SM_FireWallTorchLamp_AM_01_on_east",
+      "SM_FireWallTorchLamp_AM_01_on_north",
+      "SM_FireWallTorchLamp_AM_01_on_south",
+      "SM_FireWallTorchLamp_AM_01_on_west"
+    ],
+    "animations": []
+  },
+  "SM_FireWallTorchLamp_AM_02": {
+    "type": "character",
+    "sheets": [
+      "SM_FireWallTorchLamp_AM_02_00.png"
+    ],
+    "frames": [
+      "SM_FireWallTorchLamp_AM_02_east",
+      "SM_FireWallTorchLamp_AM_02_north",
+      "SM_FireWallTorchLamp_AM_02_south",
+      "SM_FireWallTorchLamp_AM_02_west"
+    ],
+    "animations": []
+  },
+  "SM_FireWallTorchLamp_AM_02_on": {
+    "type": "character",
+    "sheets": [
+      "SM_FireWallTorchLamp_AM_02_on_00.png"
+    ],
+    "frames": [
+      "SM_FireWallTorchLamp_AM_02_on_east",
+      "SM_FireWallTorchLamp_AM_02_on_north",
+      "SM_FireWallTorchLamp_AM_02_on_south",
+      "SM_FireWallTorchLamp_AM_02_on_west"
+    ],
+    "animations": []
+  },
+  "SM_FireWallTorchLamp_AM_03": {
+    "type": "character",
+    "sheets": [
+      "SM_FireWallTorchLamp_AM_03_00.png"
+    ],
+    "frames": [
+      "SM_FireWallTorchLamp_AM_03_east",
+      "SM_FireWallTorchLamp_AM_03_north",
+      "SM_FireWallTorchLamp_AM_03_south",
+      "SM_FireWallTorchLamp_AM_03_west"
+    ],
+    "animations": []
+  },
+  "SM_FireWallTorchLamp_AM_03_on": {
+    "type": "character",
+    "sheets": [
+      "SM_FireWallTorchLamp_AM_03_on_00.png"
+    ],
+    "frames": [
+      "SM_FireWallTorchLamp_AM_03_on_east",
+      "SM_FireWallTorchLamp_AM_03_on_north",
+      "SM_FireWallTorchLamp_AM_03_on_south",
+      "SM_FireWallTorchLamp_AM_03_on_west"
+    ],
+    "animations": []
+  },
+  "SM_FireWallTorchLamp_AM_04_on": {
+    "type": "character",
+    "sheets": [
+      "SM_FireWallTorchLamp_AM_04_on_00.png"
+    ],
+    "frames": [
+      "SM_FireWallTorchLamp_AM_04_on_east",
+      "SM_FireWallTorchLamp_AM_04_on_north",
+      "SM_FireWallTorchLamp_AM_04_on_south",
+      "SM_FireWallTorchLamp_AM_04_on_west"
+    ],
+    "animations": []
+  },
+  "SM_FireWallTorchLamp_AS_01": {
+    "type": "character",
+    "sheets": [
+      "SM_FireWallTorchLamp_AS_01_00.png"
+    ],
+    "frames": [
+      "SM_FireWallTorchLamp_AS_01_east",
+      "SM_FireWallTorchLamp_AS_01_north",
+      "SM_FireWallTorchLamp_AS_01_south",
+      "SM_FireWallTorchLamp_AS_01_west"
+    ],
+    "animations": []
+  },
+  "SM_FireWallTorchLamp_AS_01_on": {
+    "type": "character",
+    "sheets": [
+      "SM_FireWallTorchLamp_AS_01_on_00.png"
+    ],
+    "frames": [
+      "SM_FireWallTorchLamp_AS_01_on_east",
+      "SM_FireWallTorchLamp_AS_01_on_north",
+      "SM_FireWallTorchLamp_AS_01_on_south",
+      "SM_FireWallTorchLamp_AS_01_on_west"
+    ],
+    "animations": []
+  },
+  "SM_FireWallTorchLamp_AS_02": {
+    "type": "character",
+    "sheets": [
+      "SM_FireWallTorchLamp_AS_02_00.png"
+    ],
+    "frames": [
+      "SM_FireWallTorchLamp_AS_02_east",
+      "SM_FireWallTorchLamp_AS_02_north",
+      "SM_FireWallTorchLamp_AS_02_south",
+      "SM_FireWallTorchLamp_AS_02_west"
+    ],
+    "animations": []
+  },
+  "SM_FireWallTorchLamp_AS_02_on": {
+    "type": "character",
+    "sheets": [
+      "SM_FireWallTorchLamp_AS_02_on_00.png"
+    ],
+    "frames": [
+      "SM_FireWallTorchLamp_AS_02_on_east",
+      "SM_FireWallTorchLamp_AS_02_on_north",
+      "SM_FireWallTorchLamp_AS_02_on_south",
+      "SM_FireWallTorchLamp_AS_02_on_west"
+    ],
+    "animations": []
+  },
+  "SM_FireWallTorchLamp_AS_03": {
+    "type": "character",
+    "sheets": [
+      "SM_FireWallTorchLamp_AS_03_00.png"
+    ],
+    "frames": [
+      "SM_FireWallTorchLamp_AS_03_east",
+      "SM_FireWallTorchLamp_AS_03_north",
+      "SM_FireWallTorchLamp_AS_03_south",
+      "SM_FireWallTorchLamp_AS_03_west"
+    ],
+    "animations": []
+  },
+  "SM_FireWallTorchLamp_AS_03_on": {
+    "type": "character",
+    "sheets": [
+      "SM_FireWallTorchLamp_AS_03_on_00.png"
+    ],
+    "frames": [
+      "SM_FireWallTorchLamp_AS_03_on_east",
+      "SM_FireWallTorchLamp_AS_03_on_north",
+      "SM_FireWallTorchLamp_AS_03_on_south",
+      "SM_FireWallTorchLamp_AS_03_on_west"
+    ],
+    "animations": []
+  },
+  "SM_FireWallTorchLamp_AS_04_on": {
+    "type": "character",
+    "sheets": [
+      "SM_FireWallTorchLamp_AS_04_on_00.png"
+    ],
+    "frames": [
+      "SM_FireWallTorchLamp_AS_04_on_east",
+      "SM_FireWallTorchLamp_AS_04_on_north",
+      "SM_FireWallTorchLamp_AS_04_on_south",
+      "SM_FireWallTorchLamp_AS_04_on_west"
+    ],
+    "animations": []
+  },
+  "SM_FireWallTorchPot_AL_01": {
+    "type": "character",
+    "sheets": [
+      "SM_FireWallTorchPot_AL_01_00.png"
+    ],
+    "frames": [
+      "SM_FireWallTorchPot_AL_01_east",
+      "SM_FireWallTorchPot_AL_01_north",
+      "SM_FireWallTorchPot_AL_01_south",
+      "SM_FireWallTorchPot_AL_01_west"
+    ],
+    "animations": []
+  },
+  "SM_FireWallTorchPot_AL_01_on": {
+    "type": "character",
+    "sheets": [
+      "SM_FireWallTorchPot_AL_01_on_00.png"
+    ],
+    "frames": [
+      "SM_FireWallTorchPot_AL_01_on_east",
+      "SM_FireWallTorchPot_AL_01_on_north",
+      "SM_FireWallTorchPot_AL_01_on_south",
+      "SM_FireWallTorchPot_AL_01_on_west"
+    ],
+    "animations": []
+  },
+  "SM_FireWallTorchPot_AL_03": {
+    "type": "character",
+    "sheets": [
+      "SM_FireWallTorchPot_AL_03_00.png"
+    ],
+    "frames": [
+      "SM_FireWallTorchPot_AL_03_east",
+      "SM_FireWallTorchPot_AL_03_north",
+      "SM_FireWallTorchPot_AL_03_south",
+      "SM_FireWallTorchPot_AL_03_west"
+    ],
+    "animations": []
+  },
+  "SM_FireWallTorchPot_AL_03_on": {
+    "type": "character",
+    "sheets": [
+      "SM_FireWallTorchPot_AL_03_on_00.png"
+    ],
+    "frames": [
+      "SM_FireWallTorchPot_AL_03_on_east",
+      "SM_FireWallTorchPot_AL_03_on_north",
+      "SM_FireWallTorchPot_AL_03_on_south",
+      "SM_FireWallTorchPot_AL_03_on_west"
+    ],
+    "animations": []
+  },
+  "SM_FireWallTorchPot_AM_01": {
+    "type": "character",
+    "sheets": [
+      "SM_FireWallTorchPot_AM_01_00.png"
+    ],
+    "frames": [
+      "SM_FireWallTorchPot_AM_01_east",
+      "SM_FireWallTorchPot_AM_01_north",
+      "SM_FireWallTorchPot_AM_01_south",
+      "SM_FireWallTorchPot_AM_01_west"
+    ],
+    "animations": []
+  },
+  "SM_FireWallTorchPot_AM_01_on": {
+    "type": "character",
+    "sheets": [
+      "SM_FireWallTorchPot_AM_01_on_00.png"
+    ],
+    "frames": [
+      "SM_FireWallTorchPot_AM_01_on_east",
+      "SM_FireWallTorchPot_AM_01_on_north",
+      "SM_FireWallTorchPot_AM_01_on_south",
+      "SM_FireWallTorchPot_AM_01_on_west"
+    ],
+    "animations": []
+  },
+  "SM_FireWallTorchPot_AM_02": {
+    "type": "character",
+    "sheets": [
+      "SM_FireWallTorchPot_AM_02_00.png"
+    ],
+    "frames": [
+      "SM_FireWallTorchPot_AM_02_east",
+      "SM_FireWallTorchPot_AM_02_north",
+      "SM_FireWallTorchPot_AM_02_south",
+      "SM_FireWallTorchPot_AM_02_west"
+    ],
+    "animations": []
+  },
+  "SM_FireWallTorchPot_AM_02_on": {
+    "type": "character",
+    "sheets": [
+      "SM_FireWallTorchPot_AM_02_on_00.png"
+    ],
+    "frames": [
+      "SM_FireWallTorchPot_AM_02_on_east",
+      "SM_FireWallTorchPot_AM_02_on_north",
+      "SM_FireWallTorchPot_AM_02_on_south",
+      "SM_FireWallTorchPot_AM_02_on_west"
+    ],
+    "animations": []
+  },
+  "SM_FireWallTorchPot_AM_03": {
+    "type": "character",
+    "sheets": [
+      "SM_FireWallTorchPot_AM_03_00.png"
+    ],
+    "frames": [
+      "SM_FireWallTorchPot_AM_03_east",
+      "SM_FireWallTorchPot_AM_03_north",
+      "SM_FireWallTorchPot_AM_03_south",
+      "SM_FireWallTorchPot_AM_03_west"
+    ],
+    "animations": []
+  },
+  "SM_FireWallTorchPot_AM_03_on": {
+    "type": "character",
+    "sheets": [
+      "SM_FireWallTorchPot_AM_03_on_00.png"
+    ],
+    "frames": [
+      "SM_FireWallTorchPot_AM_03_on_east",
+      "SM_FireWallTorchPot_AM_03_on_north",
+      "SM_FireWallTorchPot_AM_03_on_south",
+      "SM_FireWallTorchPot_AM_03_on_west"
+    ],
+    "animations": []
+  },
+  "SM_FireWallTorchPot_AM_04": {
+    "type": "character",
+    "sheets": [
+      "SM_FireWallTorchPot_AM_04_00.png"
+    ],
+    "frames": [
+      "SM_FireWallTorchPot_AM_04_east",
+      "SM_FireWallTorchPot_AM_04_north",
+      "SM_FireWallTorchPot_AM_04_south",
+      "SM_FireWallTorchPot_AM_04_west"
+    ],
+    "animations": []
+  },
+  "SM_FireWallTorchPot_AM_04_on": {
+    "type": "character",
+    "sheets": [
+      "SM_FireWallTorchPot_AM_04_on_00.png"
+    ],
+    "frames": [
+      "SM_FireWallTorchPot_AM_04_on_east",
+      "SM_FireWallTorchPot_AM_04_on_north",
+      "SM_FireWallTorchPot_AM_04_on_south",
+      "SM_FireWallTorchPot_AM_04_on_west"
+    ],
+    "animations": []
+  },
+  "SM_FireWallTorchPot_AS_01": {
+    "type": "character",
+    "sheets": [
+      "SM_FireWallTorchPot_AS_01_00.png"
+    ],
+    "frames": [
+      "SM_FireWallTorchPot_AS_01_east",
+      "SM_FireWallTorchPot_AS_01_north",
+      "SM_FireWallTorchPot_AS_01_south",
+      "SM_FireWallTorchPot_AS_01_west"
+    ],
+    "animations": []
+  },
+  "SM_FireWallTorchPot_AS_01_on": {
+    "type": "character",
+    "sheets": [
+      "SM_FireWallTorchPot_AS_01_on_00.png"
+    ],
+    "frames": [
+      "SM_FireWallTorchPot_AS_01_on_east",
+      "SM_FireWallTorchPot_AS_01_on_north",
+      "SM_FireWallTorchPot_AS_01_on_south",
+      "SM_FireWallTorchPot_AS_01_on_west"
+    ],
+    "animations": []
+  },
+  "SM_FireWallTorchPot_AS_02": {
+    "type": "character",
+    "sheets": [
+      "SM_FireWallTorchPot_AS_02_00.png"
+    ],
+    "frames": [
+      "SM_FireWallTorchPot_AS_02_east",
+      "SM_FireWallTorchPot_AS_02_north",
+      "SM_FireWallTorchPot_AS_02_south",
+      "SM_FireWallTorchPot_AS_02_west"
+    ],
+    "animations": []
+  },
+  "SM_FireWallTorchPot_AS_02_on": {
+    "type": "character",
+    "sheets": [
+      "SM_FireWallTorchPot_AS_02_on_00.png"
+    ],
+    "frames": [
+      "SM_FireWallTorchPot_AS_02_on_east",
+      "SM_FireWallTorchPot_AS_02_on_north",
+      "SM_FireWallTorchPot_AS_02_on_south",
+      "SM_FireWallTorchPot_AS_02_on_west"
+    ],
+    "animations": []
+  },
+  "SM_FireWallTorchPot_AS_03_on": {
+    "type": "character",
+    "sheets": [
+      "SM_FireWallTorchPot_AS_03_on_00.png"
+    ],
+    "frames": [
+      "SM_FireWallTorchPot_AS_03_on_east",
+      "SM_FireWallTorchPot_AS_03_on_north",
+      "SM_FireWallTorchPot_AS_03_on_south",
+      "SM_FireWallTorchPot_AS_03_on_west"
+    ],
+    "animations": []
+  },
+  "SM_FireWallTorchPot_AS_04": {
+    "type": "character",
+    "sheets": [
+      "SM_FireWallTorchPot_AS_04_00.png"
+    ],
+    "frames": [
+      "SM_FireWallTorchPot_AS_04_east",
+      "SM_FireWallTorchPot_AS_04_north",
+      "SM_FireWallTorchPot_AS_04_south",
+      "SM_FireWallTorchPot_AS_04_west"
+    ],
+    "animations": []
+  },
+  "SM_FireWallTorchPot_AS_04_on": {
+    "type": "character",
+    "sheets": [
+      "SM_FireWallTorchPot_AS_04_on_00.png"
+    ],
+    "frames": [
+      "SM_FireWallTorchPot_AS_04_on_east",
+      "SM_FireWallTorchPot_AS_04_on_north",
+      "SM_FireWallTorchPot_AS_04_on_south",
+      "SM_FireWallTorchPot_AS_04_on_west"
+    ],
+    "animations": []
+  },
+  "SM_Flag_1": {
+    "type": "prop",
+    "sheets": [
+      "SM_Flag_1_00.png"
+    ],
+    "frames": [
+      "SM_Flag_1_default"
+    ],
+    "animations": []
+  },
+  "SM_Flag_2": {
+    "type": "prop",
+    "sheets": [
+      "SM_Flag_2_00.png"
+    ],
+    "frames": [
+      "SM_Flag_2_default"
+    ],
+    "animations": []
+  },
+  "SM_Floor": {
+    "type": "building",
+    "sheets": [
+      "SM_Floor_00.png"
+    ],
+    "frames": [
+      "SM_Floor_east",
+      "SM_Floor_north",
+      "SM_Floor_south",
+      "SM_Floor_west"
+    ],
+    "animations": []
+  },
+  "SM_Fork": {
+    "type": "prop",
+    "sheets": [
+      "SM_Fork_00.png"
+    ],
+    "frames": [
+      "SM_Fork_default"
+    ],
+    "animations": []
+  },
+  "SM_Frame_1": {
+    "type": "prop",
+    "sheets": [
+      "SM_Frame_1_00.png"
+    ],
+    "frames": [
+      "SM_Frame_1_default"
+    ],
+    "animations": []
+  },
+  "SM_Frame_2": {
+    "type": "prop",
+    "sheets": [
+      "SM_Frame_2_00.png"
+    ],
+    "frames": [
+      "SM_Frame_2_default"
+    ],
+    "animations": []
+  },
+  "SM_Frame_3": {
+    "type": "prop",
+    "sheets": [
+      "SM_Frame_3_00.png"
+    ],
+    "frames": [
+      "SM_Frame_3_default"
+    ],
+    "animations": []
+  },
+  "SM_FruitBox": {
+    "type": "prop",
+    "sheets": [
+      "SM_FruitBox_00.png"
+    ],
+    "frames": [
+      "SM_FruitBox_default"
+    ],
+    "animations": []
+  },
+  "SM_Furnace": {
+    "type": "building",
+    "sheets": [
+      "SM_Furnace_00.png"
+    ],
+    "frames": [
+      "SM_Furnace_east",
+      "SM_Furnace_north",
+      "SM_Furnace_south",
+      "SM_Furnace_west"
+    ],
+    "animations": []
+  },
+  "SM_G67": {
+    "type": "weapon",
+    "sheets": [
+      "SM_G67_00.png"
+    ],
+    "frames": [
+      "SM_G67_default"
+    ],
+    "animations": []
+  },
+  "SM_G67_Thrown": {
+    "type": "weapon",
+    "sheets": [
+      "SM_G67_Thrown_00.png"
+    ],
+    "frames": [
+      "SM_G67_Thrown_east",
+      "SM_G67_Thrown_north",
+      "SM_G67_Thrown_south",
+      "SM_G67_Thrown_west"
+    ],
+    "animations": []
+  },
+  "SM_G67_X": {
+    "type": "weapon",
+    "sheets": [
+      "SM_G67_X_00.png"
+    ],
+    "frames": [
+      "SM_G67_X_default"
+    ],
+    "animations": []
+  },
+  "SM_Gardrobe": {
+    "type": "prop",
+    "sheets": [
+      "SM_Gardrobe_00.png"
+    ],
+    "frames": [
+      "SM_Gardrobe_default"
+    ],
+    "animations": []
+  },
+  "SM_GardrobeCabinet_Left": {
+    "type": "prop",
+    "sheets": [
+      "SM_GardrobeCabinet_Left_00.png"
+    ],
+    "frames": [
+      "SM_GardrobeCabinet_Left_default"
+    ],
+    "animations": []
+  },
+  "SM_GardrobeCabinet_Right": {
+    "type": "prop",
+    "sheets": [
+      "SM_GardrobeCabinet_Right_00.png"
+    ],
+    "frames": [
+      "SM_GardrobeCabinet_Right_default"
+    ],
+    "animations": []
+  },
+  "SM_Gems_01a": {
+    "type": "item",
+    "sheets": [
+      "SM_Gems_01a_00.png"
+    ],
+    "frames": [
+      "SM_Gems_01a_default"
+    ],
+    "animations": []
+  },
+  "SM_Gems_01b": {
+    "type": "item",
+    "sheets": [
+      "SM_Gems_01b_00.png"
+    ],
+    "frames": [
+      "SM_Gems_01b_east",
+      "SM_Gems_01b_north",
+      "SM_Gems_01b_south",
+      "SM_Gems_01b_west"
+    ],
+    "animations": []
+  },
+  "SM_Gems_01c": {
+    "type": "item",
+    "sheets": [
+      "SM_Gems_01c_00.png"
+    ],
+    "frames": [
+      "SM_Gems_01c_default"
+    ],
+    "animations": []
+  },
+  "SM_Gems_01d": {
+    "type": "item",
+    "sheets": [
+      "SM_Gems_01d_00.png"
+    ],
+    "frames": [
+      "SM_Gems_01d_default"
+    ],
+    "animations": []
+  },
+  "SM_Glass_Beer": {
+    "type": "prop",
+    "sheets": [
+      "SM_Glass_Beer_00.png"
+    ],
+    "frames": [
+      "SM_Glass_Beer_default"
+    ],
+    "animations": []
+  },
+  "SM_Glass_Wine": {
+    "type": "prop",
+    "sheets": [
+      "SM_Glass_Wine_00.png"
+    ],
+    "frames": [
+      "SM_Glass_Wine_default"
+    ],
+    "animations": []
+  },
+  "SM_GoldBar_01a": {
+    "type": "prop",
+    "sheets": [
+      "SM_GoldBar_01a_00.png"
+    ],
+    "frames": [
+      "SM_GoldBar_01a_default"
+    ],
+    "animations": []
+  },
+  "SM_GrainBag_1": {
+    "type": "prop",
+    "sheets": [
+      "SM_GrainBag_1_00.png"
+    ],
+    "frames": [
+      "SM_GrainBag_1_default"
+    ],
+    "animations": []
+  },
+  "SM_GrainBag_2": {
+    "type": "prop",
+    "sheets": [
+      "SM_GrainBag_2_00.png"
+    ],
+    "frames": [
+      "SM_GrainBag_2_default"
+    ],
+    "animations": []
+  },
+  "SM_Grass_1": {
+    "type": "terrain",
+    "sheets": [
+      "SM_Grass_1_00.png"
+    ],
+    "frames": [
+      "SM_Grass_1_default"
+    ],
+    "animations": []
+  },
+  "SM_Grass_2": {
+    "type": "terrain",
+    "sheets": [
+      "SM_Grass_2_00.png"
+    ],
+    "frames": [
+      "SM_Grass_2_default"
+    ],
+    "animations": []
+  },
+  "SM_Grass_3": {
+    "type": "terrain",
+    "sheets": [
+      "SM_Grass_3_00.png"
+    ],
+    "frames": [
+      "SM_Grass_3_default"
+    ],
+    "animations": []
+  },
+  "SM_Gruntling_BombDrop_Internal": {
+    "type": "character",
+    "sheets": [
+      "SM_Gruntling_BombDrop_Internal_00.png"
+    ],
+    "frames": [
+      "SM_Gruntling_BombDrop_Internal_east",
+      "SM_Gruntling_BombDrop_Internal_north",
+      "SM_Gruntling_BombDrop_Internal_south",
+      "SM_Gruntling_BombDrop_Internal_west"
+    ],
+    "animations": []
+  },
+  "SM_Gruntling_Torch_Internal": {
+    "type": "character",
+    "sheets": [
+      "SM_Gruntling_Torch_Internal_00.png"
+    ],
+    "frames": [
+      "SM_Gruntling_Torch_Internal_east",
+      "SM_Gruntling_Torch_Internal_north",
+      "SM_Gruntling_Torch_Internal_south",
+      "SM_Gruntling_Torch_Internal_west"
+    ],
+    "animations": []
+  },
+  "SM_Gruntling_Weapon01_Internal": {
+    "type": "character",
+    "sheets": [
+      "SM_Gruntling_Weapon01_Internal_00.png"
+    ],
+    "frames": [
+      "SM_Gruntling_Weapon01_Internal_east",
+      "SM_Gruntling_Weapon01_Internal_north",
+      "SM_Gruntling_Weapon01_Internal_south",
+      "SM_Gruntling_Weapon01_Internal_west"
+    ],
+    "animations": []
+  },
+  "SM_Gruntling_Weapon02_Internal": {
+    "type": "character",
+    "sheets": [
+      "SM_Gruntling_Weapon02_Internal_00.png"
+    ],
+    "frames": [
+      "SM_Gruntling_Weapon02_Internal_east",
+      "SM_Gruntling_Weapon02_Internal_north",
+      "SM_Gruntling_Weapon02_Internal_south",
+      "SM_Gruntling_Weapon02_Internal_west"
+    ],
+    "animations": []
+  },
+  "SM_Helmet_01a": {
+    "type": "item",
+    "sheets": [
+      "SM_Helmet_01a_00.png"
+    ],
+    "frames": [
+      "SM_Helmet_01a_east",
+      "SM_Helmet_01a_north",
+      "SM_Helmet_01a_south",
+      "SM_Helmet_01a_west"
+    ],
+    "animations": []
+  },
+  "SM_KA47": {
+    "type": "weapon",
+    "sheets": [
+      "SM_KA47_00.png"
+    ],
+    "frames": [
+      "SM_KA47_east",
+      "SM_KA47_north",
+      "SM_KA47_south",
+      "SM_KA47_west"
+    ],
+    "animations": []
+  },
+  "SM_KA47_Mag": {
+    "type": "weapon",
+    "sheets": [
+      "SM_KA47_Mag_00.png"
+    ],
+    "frames": [
+      "SM_KA47_Mag_east",
+      "SM_KA47_Mag_north",
+      "SM_KA47_Mag_south",
+      "SM_KA47_Mag_west"
+    ],
+    "animations": []
+  },
+  "SM_KA47_Mag_Empty": {
+    "type": "weapon",
+    "sheets": [
+      "SM_KA47_Mag_Empty_00.png"
+    ],
+    "frames": [
+      "SM_KA47_Mag_Empty_east",
+      "SM_KA47_Mag_Empty_north",
+      "SM_KA47_Mag_Empty_south",
+      "SM_KA47_Mag_Empty_west"
+    ],
+    "animations": []
+  },
+  "SM_KA47_X": {
+    "type": "weapon",
+    "sheets": [
+      "SM_KA47_X_00.png"
+    ],
+    "frames": [
+      "SM_KA47_X_east",
+      "SM_KA47_X_north",
+      "SM_KA47_X_south",
+      "SM_KA47_X_west"
+    ],
+    "animations": []
+  },
+  "SM_KA74U_Mag_Empty_X": {
+    "type": "weapon",
+    "sheets": [
+      "SM_KA74U_Mag_Empty_X_00.png"
+    ],
+    "frames": [
+      "SM_KA74U_Mag_Empty_X_east",
+      "SM_KA74U_Mag_Empty_X_north",
+      "SM_KA74U_Mag_Empty_X_south",
+      "SM_KA74U_Mag_Empty_X_west"
+    ],
+    "animations": []
+  },
+  "SM_KA74U_Mag_Empty_Y": {
+    "type": "weapon",
+    "sheets": [
+      "SM_KA74U_Mag_Empty_Y_00.png"
+    ],
+    "frames": [
+      "SM_KA74U_Mag_Empty_Y_east",
+      "SM_KA74U_Mag_Empty_Y_north",
+      "SM_KA74U_Mag_Empty_Y_south",
+      "SM_KA74U_Mag_Empty_Y_west"
+    ],
+    "animations": []
+  },
+  "SM_KA74U_Mag_X": {
+    "type": "weapon",
+    "sheets": [
+      "SM_KA74U_Mag_X_00.png"
+    ],
+    "frames": [
+      "SM_KA74U_Mag_X_east",
+      "SM_KA74U_Mag_X_north",
+      "SM_KA74U_Mag_X_south",
+      "SM_KA74U_Mag_X_west"
+    ],
+    "animations": []
+  },
+  "SM_KA74U_Mag_Y": {
+    "type": "weapon",
+    "sheets": [
+      "SM_KA74U_Mag_Y_00.png"
+    ],
+    "frames": [
+      "SM_KA74U_Mag_Y_east",
+      "SM_KA74U_Mag_Y_north",
+      "SM_KA74U_Mag_Y_south",
+      "SM_KA74U_Mag_Y_west"
+    ],
+    "animations": []
+  },
+  "SM_KA74U_X": {
+    "type": "weapon",
+    "sheets": [
+      "SM_KA74U_X_00.png"
+    ],
+    "frames": [
+      "SM_KA74U_X_east",
+      "SM_KA74U_X_north",
+      "SM_KA74U_X_south",
+      "SM_KA74U_X_west"
+    ],
+    "animations": []
+  },
+  "SM_KA74U_Y": {
+    "type": "weapon",
+    "sheets": [
+      "SM_KA74U_Y_00.png"
+    ],
+    "frames": [
+      "SM_KA74U_Y_east",
+      "SM_KA74U_Y_north",
+      "SM_KA74U_Y_south",
+      "SM_KA74U_Y_west"
+    ],
+    "animations": []
+  },
+  "SM_KA_Val_MAG_Loaded_Y": {
+    "type": "weapon",
+    "sheets": [
+      "SM_KA_Val_MAG_Loaded_Y_00.png"
+    ],
+    "frames": [
+      "SM_KA_Val_MAG_Loaded_Y_east",
+      "SM_KA_Val_MAG_Loaded_Y_north",
+      "SM_KA_Val_MAG_Loaded_Y_south",
+      "SM_KA_Val_MAG_Loaded_Y_west"
+    ],
+    "animations": []
+  },
+  "SM_KA_Val_Mag_X": {
+    "type": "weapon",
+    "sheets": [
+      "SM_KA_Val_Mag_X_00.png"
+    ],
+    "frames": [
+      "SM_KA_Val_Mag_X_east",
+      "SM_KA_Val_Mag_X_north",
+      "SM_KA_Val_Mag_X_south",
+      "SM_KA_Val_Mag_X_west"
+    ],
+    "animations": []
+  },
+  "SM_KA_Val_Mag_Y": {
+    "type": "weapon",
+    "sheets": [
+      "SM_KA_Val_Mag_Y_00.png"
+    ],
+    "frames": [
+      "SM_KA_Val_Mag_Y_east",
+      "SM_KA_Val_Mag_Y_north",
+      "SM_KA_Val_Mag_Y_south",
+      "SM_KA_Val_Mag_Y_west"
+    ],
+    "animations": []
+  },
+  "SM_KA_Val_X": {
+    "type": "weapon",
+    "sheets": [
+      "SM_KA_Val_X_00.png"
+    ],
+    "frames": [
+      "SM_KA_Val_X_east",
+      "SM_KA_Val_X_north",
+      "SM_KA_Val_X_south",
+      "SM_KA_Val_X_west"
+    ],
+    "animations": []
+  },
+  "SM_KA_Val_Y": {
+    "type": "weapon",
+    "sheets": [
+      "SM_KA_Val_Y_00.png"
+    ],
+    "frames": [
+      "SM_KA_Val_Y_east",
+      "SM_KA_Val_Y_north",
+      "SM_KA_Val_Y_south",
+      "SM_KA_Val_Y_west"
+    ],
+    "animations": []
+  },
+  "SM_Knife": {
+    "type": "prop",
+    "sheets": [
+      "SM_Knife_00.png"
+    ],
+    "frames": [
+      "SM_Knife_default"
+    ],
+    "animations": []
+  },
+  "SM_ky_auraWall_distB_kai": {
+    "type": "building",
+    "sheets": [
+      "SM_ky_auraWall_distB_kai_00.png"
+    ],
+    "frames": [
+      "SM_ky_auraWall_distB_kai_east",
+      "SM_ky_auraWall_distB_kai_north",
+      "SM_ky_auraWall_distB_kai_south",
+      "SM_ky_auraWall_distB_kai_west"
+    ],
+    "animations": []
+  },
+  "SM_ky_circleDist06": {
+    "type": "prop",
+    "sheets": [
+      "SM_ky_circleDist06_00.png"
+    ],
+    "frames": [
+      "SM_ky_circleDist06_default"
+    ],
+    "animations": []
+  },
+  "SM_ky_cylinderBend07": {
+    "type": "prop",
+    "sheets": [
+      "SM_ky_cylinderBend07_00.png"
+    ],
+    "frames": [
+      "SM_ky_cylinderBend07_default"
+    ],
+    "animations": []
+  },
+  "SM_ky_cylinder_lowPoly_dist": {
+    "type": "prop",
+    "sheets": [
+      "SM_ky_cylinder_lowPoly_dist_00.png"
+    ],
+    "frames": [
+      "SM_ky_cylinder_lowPoly_dist_default"
+    ],
+    "animations": []
+  },
+  "SM_ky_cylinder_superLow": {
+    "type": "prop",
+    "sheets": [
+      "SM_ky_cylinder_superLow_00.png"
+    ],
+    "frames": [
+      "SM_ky_cylinder_superLow_default"
+    ],
+    "animations": []
+  },
+  "SM_ky_planeBend": {
+    "type": "prop",
+    "sheets": [
+      "SM_ky_planeBend_00.png"
+    ],
+    "frames": [
+      "SM_ky_planeBend_default"
+    ],
+    "animations": []
+  },
+  "SM_ky_quads": {
+    "type": "prop",
+    "sheets": [
+      "SM_ky_quads_00.png"
+    ],
+    "frames": [
+      "SM_ky_quads_default"
+    ],
+    "animations": []
+  },
+  "SM_ky_quad_centerRot": {
+    "type": "prop",
+    "sheets": [
+      "SM_ky_quad_centerRot_00.png"
+    ],
+    "frames": [
+      "SM_ky_quad_centerRot_default"
+    ],
+    "animations": []
+  },
+  "SM_ky_tornado07": {
+    "type": "prop",
+    "sheets": [
+      "SM_ky_tornado07_00.png"
+    ],
+    "frames": [
+      "SM_ky_tornado07_default"
+    ],
+    "animations": []
+  },
+  "SM_ky_windSmokeVertRot": {
+    "type": "prop",
+    "sheets": [
+      "SM_ky_windSmokeVertRot_00.png"
+    ],
+    "frames": [
+      "SM_ky_windSmokeVertRot_default"
+    ],
+    "animations": []
+  },
+  "SM_LampPost": {
+    "type": "prop",
+    "sheets": [
+      "SM_LampPost_00.png"
+    ],
+    "frames": [
+      "SM_LampPost_default"
+    ],
+    "animations": []
+  },
+  "SM_Lamp_1": {
+    "type": "prop",
+    "sheets": [
+      "SM_Lamp_1_00.png"
+    ],
+    "frames": [
+      "SM_Lamp_1_default"
+    ],
+    "animations": []
+  },
+  "SM_Lamp_2": {
+    "type": "prop",
+    "sheets": [
+      "SM_Lamp_2_00.png"
+    ],
+    "frames": [
+      "SM_Lamp_2_default"
+    ],
+    "animations": []
+  },
+  "SM_Leaf": {
+    "type": "prop",
+    "sheets": [
+      "SM_Leaf_00.png"
+    ],
+    "frames": [
+      "SM_Leaf_default"
+    ],
+    "animations": []
+  },
+  "SM_LightTop_001": {
+    "type": "building",
+    "sheets": [
+      "SM_LightTop_001_00.png"
+    ],
+    "frames": [
+      "SM_LightTop_001_east",
+      "SM_LightTop_001_north",
+      "SM_LightTop_001_south",
+      "SM_LightTop_001_west"
+    ],
+    "animations": []
+  },
+  "SM_LightTop_001_on_A": {
+    "type": "building",
+    "sheets": [
+      "SM_LightTop_001_on_A_00.png"
+    ],
+    "frames": [
+      "SM_LightTop_001_on_A_east",
+      "SM_LightTop_001_on_A_north",
+      "SM_LightTop_001_on_A_south",
+      "SM_LightTop_001_on_A_west"
+    ],
+    "animations": []
+  },
+  "SM_LightTop_001_on_B": {
+    "type": "building",
+    "sheets": [
+      "SM_LightTop_001_on_B_00.png"
+    ],
+    "frames": [
+      "SM_LightTop_001_on_B_east",
+      "SM_LightTop_001_on_B_north",
+      "SM_LightTop_001_on_B_south",
+      "SM_LightTop_001_on_B_west"
+    ],
+    "animations": []
+  },
+  "SM_LightTop_002": {
+    "type": "building",
+    "sheets": [
+      "SM_LightTop_002_00.png"
+    ],
+    "frames": [
+      "SM_LightTop_002_east",
+      "SM_LightTop_002_north",
+      "SM_LightTop_002_south",
+      "SM_LightTop_002_west"
+    ],
+    "animations": []
+  },
+  "SM_LightTop_002_on_A": {
+    "type": "building",
+    "sheets": [
+      "SM_LightTop_002_on_A_00.png"
+    ],
+    "frames": [
+      "SM_LightTop_002_on_A_east",
+      "SM_LightTop_002_on_A_north",
+      "SM_LightTop_002_on_A_south",
+      "SM_LightTop_002_on_A_west"
+    ],
+    "animations": []
+  },
+  "SM_LightTop_002_on_B": {
+    "type": "building",
+    "sheets": [
+      "SM_LightTop_002_on_B_00.png"
+    ],
+    "frames": [
+      "SM_LightTop_002_on_B_east",
+      "SM_LightTop_002_on_B_north",
+      "SM_LightTop_002_on_B_south",
+      "SM_LightTop_002_on_B_west"
+    ],
+    "animations": []
+  },
+  "SM_M9_Knife": {
+    "type": "weapon",
+    "sheets": [
+      "SM_M9_Knife_00.png"
+    ],
+    "frames": [
+      "SM_M9_Knife_east",
+      "SM_M9_Knife_north",
+      "SM_M9_Knife_south",
+      "SM_M9_Knife_west"
+    ],
+    "animations": []
+  },
+  "SM_M9_Knife_X": {
+    "type": "weapon",
+    "sheets": [
+      "SM_M9_Knife_X_00.png"
+    ],
+    "frames": [
+      "SM_M9_Knife_X_east",
+      "SM_M9_Knife_X_north",
+      "SM_M9_Knife_X_south",
+      "SM_M9_Knife_X_west"
+    ],
+    "animations": []
+  },
+  "SM_Map_01a": {
+    "type": "prop",
+    "sheets": [
+      "SM_Map_01a_00.png"
+    ],
+    "frames": [
+      "SM_Map_01a_default"
+    ],
+    "animations": []
+  },
+  "SM_Master_Grunt_Blade_Internal": {
+    "type": "character",
+    "sheets": [
+      "SM_Master_Grunt_Blade_Internal_00.png"
+    ],
+    "frames": [
+      "SM_Master_Grunt_Blade_Internal_east",
+      "SM_Master_Grunt_Blade_Internal_north",
+      "SM_Master_Grunt_Blade_Internal_south",
+      "SM_Master_Grunt_Blade_Internal_west"
+    ],
+    "animations": []
+  },
+  "SM_Meat_Cooked": {
+    "type": "prop",
+    "sheets": [
+      "SM_Meat_Cooked_00.png"
+    ],
+    "frames": [
+      "SM_Meat_Cooked_default"
+    ],
+    "animations": []
+  },
+  "SM_Meat_Raw": {
+    "type": "prop",
+    "sheets": [
+      "SM_Meat_Raw_00.png"
+    ],
+    "frames": [
+      "SM_Meat_Raw_default"
+    ],
+    "animations": []
+  },
+  "SM_NamePlate": {
+    "type": "prop",
+    "sheets": [
+      "SM_NamePlate_00.png"
+    ],
+    "frames": [
+      "SM_NamePlate_default"
+    ],
+    "animations": []
+  },
+  "SM_Necklace_01a": {
+    "type": "prop",
+    "sheets": [
+      "SM_Necklace_01a_00.png"
+    ],
+    "frames": [
+      "SM_Necklace_01a_default"
+    ],
+    "animations": []
+  },
+  "SM_Necklace_01b": {
+    "type": "prop",
+    "sheets": [
+      "SM_Necklace_01b_00.png"
+    ],
+    "frames": [
+      "SM_Necklace_01b_default"
+    ],
+    "animations": []
+  },
+  "SM_OilLamp_01": {
+    "type": "building",
+    "sheets": [
+      "SM_OilLamp_01_00.png"
+    ],
+    "frames": [
+      "SM_OilLamp_01_east",
+      "SM_OilLamp_01_north",
+      "SM_OilLamp_01_south",
+      "SM_OilLamp_01_west"
+    ],
+    "animations": []
+  },
+  "SM_OilLamp_01_on": {
+    "type": "building",
+    "sheets": [
+      "SM_OilLamp_01_on_00.png"
+    ],
+    "frames": [
+      "SM_OilLamp_01_on_east",
+      "SM_OilLamp_01_on_north",
+      "SM_OilLamp_01_on_south",
+      "SM_OilLamp_01_on_west"
+    ],
+    "animations": []
+  },
+  "SM_OrnateChest_01a": {
+    "type": "prop",
+    "sheets": [
+      "SM_OrnateChest_01a_00.png"
+    ],
+    "frames": [
+      "SM_OrnateChest_01a_default"
+    ],
+    "animations": []
+  },
+  "SM_OrnateChest_01b": {
+    "type": "prop",
+    "sheets": [
+      "SM_OrnateChest_01b_00.png"
+    ],
+    "frames": [
+      "SM_OrnateChest_01b_default"
+    ],
+    "animations": []
+  },
+  "SM_OrnateChest_01c": {
+    "type": "prop",
+    "sheets": [
+      "SM_OrnateChest_01c_00.png"
+    ],
+    "frames": [
+      "SM_OrnateChest_01c_default"
+    ],
+    "animations": []
+  },
+  "SM_OrnateChest_01d": {
+    "type": "prop",
+    "sheets": [
+      "SM_OrnateChest_01d_00.png"
+    ],
+    "frames": [
+      "SM_OrnateChest_01d_default"
+    ],
+    "animations": []
+  },
+  "SM_OrnateChest_02a": {
+    "type": "prop",
+    "sheets": [
+      "SM_OrnateChest_02a_00.png"
+    ],
+    "frames": [
+      "SM_OrnateChest_02a_default"
+    ],
+    "animations": []
+  },
+  "SM_OrnateChest_02b": {
+    "type": "prop",
+    "sheets": [
+      "SM_OrnateChest_02b_00.png"
+    ],
+    "frames": [
+      "SM_OrnateChest_02b_default"
+    ],
+    "animations": []
+  },
+  "SM_OrnateChest_02c": {
+    "type": "prop",
+    "sheets": [
+      "SM_OrnateChest_02c_00.png"
+    ],
+    "frames": [
+      "SM_OrnateChest_02c_default"
+    ],
+    "animations": []
+  },
+  "SM_OrnateChest_02d": {
+    "type": "prop",
+    "sheets": [
+      "SM_OrnateChest_02d_00.png"
+    ],
+    "frames": [
+      "SM_OrnateChest_02d_default"
+    ],
+    "animations": []
+  },
+  "SM_Pallet": {
+    "type": "prop",
+    "sheets": [
+      "SM_Pallet_00.png"
+    ],
+    "frames": [
+      "SM_Pallet_default"
+    ],
+    "animations": []
+  },
+  "SM_PavementSide": {
+    "type": "building",
+    "sheets": [
+      "SM_PavementSide_00.png"
+    ],
+    "frames": [
+      "SM_PavementSide_east",
+      "SM_PavementSide_north",
+      "SM_PavementSide_south",
+      "SM_PavementSide_west"
+    ],
+    "animations": []
+  },
+  "SM_Pavement_1": {
+    "type": "building",
+    "sheets": [
+      "SM_Pavement_1_00.png"
+    ],
+    "frames": [
+      "SM_Pavement_1_east",
+      "SM_Pavement_1_north",
+      "SM_Pavement_1_south",
+      "SM_Pavement_1_west"
+    ],
+    "animations": []
+  },
+  "SM_Pavement_2": {
+    "type": "building",
+    "sheets": [
+      "SM_Pavement_2_00.png"
+    ],
+    "frames": [
+      "SM_Pavement_2_east",
+      "SM_Pavement_2_north",
+      "SM_Pavement_2_south",
+      "SM_Pavement_2_west"
+    ],
+    "animations": []
+  },
+  "SM_Pavement_3": {
+    "type": "building",
+    "sheets": [
+      "SM_Pavement_3_00.png"
+    ],
+    "frames": [
+      "SM_Pavement_3_east",
+      "SM_Pavement_3_north",
+      "SM_Pavement_3_south",
+      "SM_Pavement_3_west"
+    ],
+    "animations": []
+  },
+  "SM_Pearls_01a": {
+    "type": "prop",
+    "sheets": [
+      "SM_Pearls_01a_00.png"
+    ],
+    "frames": [
+      "SM_Pearls_01a_default"
+    ],
+    "animations": []
+  },
+  "SM_Pearls_01b": {
+    "type": "prop",
+    "sheets": [
+      "SM_Pearls_01b_00.png"
+    ],
+    "frames": [
+      "SM_Pearls_01b_default"
+    ],
+    "animations": []
+  },
+  "SM_Pearls_01c": {
+    "type": "prop",
+    "sheets": [
+      "SM_Pearls_01c_00.png"
+    ],
+    "frames": [
+      "SM_Pearls_01c_default"
+    ],
+    "animations": []
+  },
+  "SM_Pipe_01": {
+    "type": "building",
+    "sheets": [
+      "SM_Pipe_01_00.png"
+    ],
+    "frames": [
+      "SM_Pipe_01_east",
+      "SM_Pipe_01_north",
+      "SM_Pipe_01_south",
+      "SM_Pipe_01_west"
+    ],
+    "animations": []
+  },
+  "SM_Pipe_02": {
+    "type": "building",
+    "sheets": [
+      "SM_Pipe_02_00.png"
+    ],
+    "frames": [
+      "SM_Pipe_02_east",
+      "SM_Pipe_02_north",
+      "SM_Pipe_02_south",
+      "SM_Pipe_02_west"
+    ],
+    "animations": []
+  },
+  "SM_Pipe_03": {
+    "type": "building",
+    "sheets": [
+      "SM_Pipe_03_00.png"
+    ],
+    "frames": [
+      "SM_Pipe_03_east",
+      "SM_Pipe_03_north",
+      "SM_Pipe_03_south",
+      "SM_Pipe_03_west"
+    ],
+    "animations": []
+  },
+  "SM_Plane_01": {
+    "type": "prop",
+    "sheets": [
+      "SM_Plane_01_00.png"
+    ],
+    "frames": [
+      "SM_Plane_01_default"
+    ],
+    "animations": []
+  },
+  "SM_Pot": {
+    "type": "building",
+    "sheets": [
+      "SM_Pot_00.png"
+    ],
+    "frames": [
+      "SM_Pot_east",
+      "SM_Pot_north",
+      "SM_Pot_south",
+      "SM_Pot_west"
+    ],
+    "animations": []
+  },
+  "SM_Potato": {
+    "type": "prop",
+    "sheets": [
+      "SM_Potato_00.png"
+    ],
+    "frames": [
+      "SM_Potato_default"
+    ],
+    "animations": []
+  },
+  "SM_PotRing": {
+    "type": "building",
+    "sheets": [
+      "SM_PotRing_00.png"
+    ],
+    "frames": [
+      "SM_PotRing_east",
+      "SM_PotRing_north",
+      "SM_PotRing_south",
+      "SM_PotRing_west"
+    ],
+    "animations": []
+  },
+  "SM_PotSide_01": {
+    "type": "building",
+    "sheets": [
+      "SM_PotSide_01_00.png"
+    ],
+    "frames": [
+      "SM_PotSide_01_east",
+      "SM_PotSide_01_north",
+      "SM_PotSide_01_south",
+      "SM_PotSide_01_west"
+    ],
+    "animations": []
+  },
+  "SM_PotSide_02": {
+    "type": "building",
+    "sheets": [
+      "SM_PotSide_02_00.png"
+    ],
+    "frames": [
+      "SM_PotSide_02_east",
+      "SM_PotSide_02_north",
+      "SM_PotSide_02_south",
+      "SM_PotSide_02_west"
+    ],
+    "animations": []
+  },
+  "SM_PotSide_03": {
+    "type": "building",
+    "sheets": [
+      "SM_PotSide_03_00.png"
+    ],
+    "frames": [
+      "SM_PotSide_03_east",
+      "SM_PotSide_03_north",
+      "SM_PotSide_03_south",
+      "SM_PotSide_03_west"
+    ],
+    "animations": []
+  },
+  "SM_PotSide_04": {
+    "type": "building",
+    "sheets": [
+      "SM_PotSide_04_00.png"
+    ],
+    "frames": [
+      "SM_PotSide_04_east",
+      "SM_PotSide_04_north",
+      "SM_PotSide_04_south",
+      "SM_PotSide_04_west"
+    ],
+    "animations": []
+  },
+  "SM_Pot_1": {
+    "type": "prop",
+    "sheets": [
+      "SM_Pot_1_00.png"
+    ],
+    "frames": [
+      "SM_Pot_1_default"
+    ],
+    "animations": []
+  },
+  "SM_Pot_2": {
+    "type": "prop",
+    "sheets": [
+      "SM_Pot_2_00.png"
+    ],
+    "frames": [
+      "SM_Pot_2_default"
+    ],
+    "animations": []
+  },
+  "SM_Railing": {
+    "type": "prop",
+    "sheets": [
+      "SM_Railing_00.png"
+    ],
+    "frames": [
+      "SM_Railing_default"
+    ],
+    "animations": []
+  },
+  "SM_Ring_01": {
+    "type": "building",
+    "sheets": [
+      "SM_Ring_01_00.png"
+    ],
+    "frames": [
+      "SM_Ring_01_east",
+      "SM_Ring_01_north",
+      "SM_Ring_01_south",
+      "SM_Ring_01_west"
+    ],
+    "animations": []
+  },
+  "SM_Ring_01a": {
+    "type": "item",
+    "sheets": [
+      "SM_Ring_01a_00.png"
+    ],
+    "frames": [
+      "SM_Ring_01a_default"
+    ],
+    "animations": []
+  },
+  "SM_Ring_02": {
+    "type": "building",
+    "sheets": [
+      "SM_Ring_02_00.png"
+    ],
+    "frames": [
+      "SM_Ring_02_east",
+      "SM_Ring_02_north",
+      "SM_Ring_02_south",
+      "SM_Ring_02_west"
+    ],
+    "animations": []
+  },
+  "SM_Ring_03": {
+    "type": "building",
+    "sheets": [
+      "SM_Ring_03_00.png"
+    ],
+    "frames": [
+      "SM_Ring_03_east",
+      "SM_Ring_03_north",
+      "SM_Ring_03_south",
+      "SM_Ring_03_west"
+    ],
+    "animations": []
+  },
+  "SM_Ring_04": {
+    "type": "building",
+    "sheets": [
+      "SM_Ring_04_00.png"
+    ],
+    "frames": [
+      "SM_Ring_04_east",
+      "SM_Ring_04_north",
+      "SM_Ring_04_south",
+      "SM_Ring_04_west"
+    ],
+    "animations": []
+  },
+  "SM_Ring_05": {
+    "type": "building",
+    "sheets": [
+      "SM_Ring_05_00.png"
+    ],
+    "frames": [
+      "SM_Ring_05_east",
+      "SM_Ring_05_north",
+      "SM_Ring_05_south",
+      "SM_Ring_05_west"
+    ],
+    "animations": []
+  },
+  "SM_Ring_06": {
+    "type": "building",
+    "sheets": [
+      "SM_Ring_06_00.png"
+    ],
+    "frames": [
+      "SM_Ring_06_east",
+      "SM_Ring_06_north",
+      "SM_Ring_06_south",
+      "SM_Ring_06_west"
+    ],
+    "animations": []
+  },
+  "SM_Ring_07": {
+    "type": "building",
+    "sheets": [
+      "SM_Ring_07_00.png"
+    ],
+    "frames": [
+      "SM_Ring_07_east",
+      "SM_Ring_07_north",
+      "SM_Ring_07_south",
+      "SM_Ring_07_west"
+    ],
+    "animations": []
+  },
+  "SM_Ring_08": {
+    "type": "building",
+    "sheets": [
+      "SM_Ring_08_00.png"
+    ],
+    "frames": [
+      "SM_Ring_08_east",
+      "SM_Ring_08_north",
+      "SM_Ring_08_south",
+      "SM_Ring_08_west"
+    ],
+    "animations": []
+  },
+  "SM_RoofBase_1": {
+    "type": "building",
+    "sheets": [
+      "SM_RoofBase_1_00.png"
+    ],
+    "frames": [
+      "SM_RoofBase_1_east",
+      "SM_RoofBase_1_north",
+      "SM_RoofBase_1_south",
+      "SM_RoofBase_1_west"
+    ],
+    "animations": []
+  },
+  "SM_RoofBase_2": {
+    "type": "building",
+    "sheets": [
+      "SM_RoofBase_2_00.png"
+    ],
+    "frames": [
+      "SM_RoofBase_2_east",
+      "SM_RoofBase_2_north",
+      "SM_RoofBase_2_south",
+      "SM_RoofBase_2_west"
+    ],
+    "animations": []
+  },
+  "SM_RoofFrame_1": {
+    "type": "building",
+    "sheets": [
+      "SM_RoofFrame_1_00.png"
+    ],
+    "frames": [
+      "SM_RoofFrame_1_east",
+      "SM_RoofFrame_1_north",
+      "SM_RoofFrame_1_south",
+      "SM_RoofFrame_1_west"
+    ],
+    "animations": []
+  },
+  "SM_RoofFrame_2": {
+    "type": "building",
+    "sheets": [
+      "SM_RoofFrame_2_00.png"
+    ],
+    "frames": [
+      "SM_RoofFrame_2_east",
+      "SM_RoofFrame_2_north",
+      "SM_RoofFrame_2_south",
+      "SM_RoofFrame_2_west"
+    ],
+    "animations": []
+  },
+  "SM_RoofWall_1": {
+    "type": "building",
+    "sheets": [
+      "SM_RoofWall_1_00.png"
+    ],
+    "frames": [
+      "SM_RoofWall_1_east",
+      "SM_RoofWall_1_north",
+      "SM_RoofWall_1_south",
+      "SM_RoofWall_1_west"
+    ],
+    "animations": []
+  },
+  "SM_RoofWall_2": {
+    "type": "building",
+    "sheets": [
+      "SM_RoofWall_2_00.png"
+    ],
+    "frames": [
+      "SM_RoofWall_2_east",
+      "SM_RoofWall_2_north",
+      "SM_RoofWall_2_south",
+      "SM_RoofWall_2_west"
+    ],
+    "animations": []
+  },
+  "SM_Scope_25x56_X": {
+    "type": "weapon",
+    "sheets": [
+      "SM_Scope_25x56_X_00.png"
+    ],
+    "frames": [
+      "SM_Scope_25x56_X_east",
+      "SM_Scope_25x56_X_north",
+      "SM_Scope_25x56_X_south",
+      "SM_Scope_25x56_X_west"
+    ],
+    "animations": []
+  },
+  "SM_Scope_25x56_Y": {
+    "type": "weapon",
+    "sheets": [
+      "SM_Scope_25x56_Y_00.png"
+    ],
+    "frames": [
+      "SM_Scope_25x56_Y_east",
+      "SM_Scope_25x56_Y_north",
+      "SM_Scope_25x56_Y_south",
+      "SM_Scope_25x56_Y_west"
+    ],
+    "animations": []
+  },
+  "SM_Shelf": {
+    "type": "character",
+    "sheets": [
+      "SM_Shelf_00.png"
+    ],
+    "frames": [
+      "SM_Shelf_east",
+      "SM_Shelf_north",
+      "SM_Shelf_south",
+      "SM_Shelf_west"
+    ],
+    "animations": []
+  },
+  "SM_Shell_12Gauge": {
+    "type": "weapon",
+    "sheets": [
+      "SM_Shell_12Gauge_00.png"
+    ],
+    "frames": [
+      "SM_Shell_12Gauge_east",
+      "SM_Shell_12Gauge_north",
+      "SM_Shell_12Gauge_south",
+      "SM_Shell_12Gauge_west"
+    ],
+    "animations": []
+  },
+  "SM_Shell_12Gauge_Empty": {
+    "type": "weapon",
+    "sheets": [
+      "SM_Shell_12Gauge_Empty_00.png"
+    ],
+    "frames": [
+      "SM_Shell_12Gauge_Empty_east",
+      "SM_Shell_12Gauge_Empty_north",
+      "SM_Shell_12Gauge_Empty_south",
+      "SM_Shell_12Gauge_Empty_west"
+    ],
+    "animations": []
+  },
+  "SM_Shell_40mm_G": {
+    "type": "weapon",
+    "sheets": [
+      "SM_Shell_40mm_G_00.png"
+    ],
+    "frames": [
+      "SM_Shell_40mm_G_east",
+      "SM_Shell_40mm_G_north",
+      "SM_Shell_40mm_G_south",
+      "SM_Shell_40mm_G_west"
+    ],
+    "animations": []
+  },
+  "SM_Shell_40mm_G_Empty": {
+    "type": "weapon",
+    "sheets": [
+      "SM_Shell_40mm_G_Empty_00.png"
+    ],
+    "frames": [
+      "SM_Shell_40mm_G_Empty_east",
+      "SM_Shell_40mm_G_Empty_north",
+      "SM_Shell_40mm_G_Empty_south",
+      "SM_Shell_40mm_G_Empty_west"
+    ],
+    "animations": []
+  },
+  "SM_Shell_45ap": {
+    "type": "weapon",
+    "sheets": [
+      "SM_Shell_45ap_00.png"
+    ],
+    "frames": [
+      "SM_Shell_45ap_east",
+      "SM_Shell_45ap_north",
+      "SM_Shell_45ap_south",
+      "SM_Shell_45ap_west"
+    ],
+    "animations": []
+  },
+  "SM_Shell_45ap_Empty": {
+    "type": "weapon",
+    "sheets": [
+      "SM_Shell_45ap_Empty_00.png"
+    ],
+    "frames": [
+      "SM_Shell_45ap_Empty_east",
+      "SM_Shell_45ap_Empty_north",
+      "SM_Shell_45ap_Empty_south",
+      "SM_Shell_45ap_Empty_west"
+    ],
+    "animations": []
+  },
+  "SM_Shell_545x39": {
+    "type": "weapon",
+    "sheets": [
+      "SM_Shell_545x39_00.png"
+    ],
+    "frames": [
+      "SM_Shell_545x39_east",
+      "SM_Shell_545x39_north",
+      "SM_Shell_545x39_south",
+      "SM_Shell_545x39_west"
+    ],
+    "animations": []
+  },
+  "SM_Shell_545x39_Empty": {
+    "type": "weapon",
+    "sheets": [
+      "SM_Shell_545x39_Empty_00.png"
+    ],
+    "frames": [
+      "SM_Shell_545x39_Empty_east",
+      "SM_Shell_545x39_Empty_north",
+      "SM_Shell_545x39_Empty_south",
+      "SM_Shell_545x39_Empty_west"
+    ],
+    "animations": []
+  },
+  "SM_Shell_556x45": {
+    "type": "weapon",
+    "sheets": [
+      "SM_Shell_556x45_00.png"
+    ],
+    "frames": [
+      "SM_Shell_556x45_east",
+      "SM_Shell_556x45_north",
+      "SM_Shell_556x45_south",
+      "SM_Shell_556x45_west"
+    ],
+    "animations": []
+  },
+  "SM_Shell_556x45_Empty": {
+    "type": "weapon",
+    "sheets": [
+      "SM_Shell_556x45_Empty_00.png"
+    ],
+    "frames": [
+      "SM_Shell_556x45_Empty_east",
+      "SM_Shell_556x45_Empty_north",
+      "SM_Shell_556x45_Empty_south",
+      "SM_Shell_556x45_Empty_west"
+    ],
+    "animations": []
+  },
+  "SM_Shell_762x39": {
+    "type": "weapon",
+    "sheets": [
+      "SM_Shell_762x39_00.png"
+    ],
+    "frames": [
+      "SM_Shell_762x39_east",
+      "SM_Shell_762x39_north",
+      "SM_Shell_762x39_south",
+      "SM_Shell_762x39_west"
+    ],
+    "animations": []
+  },
+  "SM_Shell_762x39_Empty": {
+    "type": "weapon",
+    "sheets": [
+      "SM_Shell_762x39_Empty_00.png"
+    ],
+    "frames": [
+      "SM_Shell_762x39_Empty_east",
+      "SM_Shell_762x39_Empty_north",
+      "SM_Shell_762x39_Empty_south",
+      "SM_Shell_762x39_Empty_west"
+    ],
+    "animations": []
+  },
+  "SM_Shell_762x51": {
+    "type": "weapon",
+    "sheets": [
+      "SM_Shell_762x51_00.png"
+    ],
+    "frames": [
+      "SM_Shell_762x51_east",
+      "SM_Shell_762x51_north",
+      "SM_Shell_762x51_south",
+      "SM_Shell_762x51_west"
+    ],
+    "animations": []
+  },
+  "SM_Shell_762x51_Empty": {
+    "type": "weapon",
+    "sheets": [
+      "SM_Shell_762x51_Empty_00.png"
+    ],
+    "frames": [
+      "SM_Shell_762x51_Empty_east",
+      "SM_Shell_762x51_Empty_north",
+      "SM_Shell_762x51_Empty_south",
+      "SM_Shell_762x51_Empty_west"
+    ],
+    "animations": []
+  },
+  "SM_Shell_9mm": {
+    "type": "weapon",
+    "sheets": [
+      "SM_Shell_9mm_00.png"
+    ],
+    "frames": [
+      "SM_Shell_9mm_east",
+      "SM_Shell_9mm_north",
+      "SM_Shell_9mm_south",
+      "SM_Shell_9mm_west"
+    ],
+    "animations": []
+  },
+  "SM_Shell_9mm_Empty": {
+    "type": "weapon",
+    "sheets": [
+      "SM_Shell_9mm_Empty_00.png"
+    ],
+    "frames": [
+      "SM_Shell_9mm_Empty_east",
+      "SM_Shell_9mm_Empty_north",
+      "SM_Shell_9mm_Empty_south",
+      "SM_Shell_9mm_Empty_west"
+    ],
+    "animations": []
+  },
+  "SM_Shell_9x18": {
+    "type": "weapon",
+    "sheets": [
+      "SM_Shell_9x18_00.png"
+    ],
+    "frames": [
+      "SM_Shell_9x18_east",
+      "SM_Shell_9x18_north",
+      "SM_Shell_9x18_south",
+      "SM_Shell_9x18_west"
+    ],
+    "animations": []
+  },
+  "SM_Shell_9x18_Empty": {
+    "type": "weapon",
+    "sheets": [
+      "SM_Shell_9x18_Empty_00.png"
+    ],
+    "frames": [
+      "SM_Shell_9x18_Empty_east",
+      "SM_Shell_9x18_Empty_north",
+      "SM_Shell_9x18_Empty_south",
+      "SM_Shell_9x18_Empty_west"
+    ],
+    "animations": []
+  },
+  "SM_Shield_01a": {
+    "type": "weapon",
+    "sheets": [
+      "SM_Shield_01a_00.png"
+    ],
+    "frames": [
+      "SM_Shield_01a_east",
+      "SM_Shield_01a_north",
+      "SM_Shield_01a_south",
+      "SM_Shield_01a_west"
+    ],
+    "animations": []
+  },
+  "SM_SMG11_Mag_Empty_X": {
+    "type": "weapon",
+    "sheets": [
+      "SM_SMG11_Mag_Empty_X_00.png"
+    ],
+    "frames": [
+      "SM_SMG11_Mag_Empty_X_east",
+      "SM_SMG11_Mag_Empty_X_north",
+      "SM_SMG11_Mag_Empty_X_south",
+      "SM_SMG11_Mag_Empty_X_west"
+    ],
+    "animations": []
+  },
+  "SM_SMG11_Mag_Empty_Y": {
+    "type": "weapon",
+    "sheets": [
+      "SM_SMG11_Mag_Empty_Y_00.png"
+    ],
+    "frames": [
+      "SM_SMG11_Mag_Empty_Y_east",
+      "SM_SMG11_Mag_Empty_Y_north",
+      "SM_SMG11_Mag_Empty_Y_south",
+      "SM_SMG11_Mag_Empty_Y_west"
+    ],
+    "animations": []
+  },
+  "SM_SMG11_Mag_X": {
+    "type": "weapon",
+    "sheets": [
+      "SM_SMG11_Mag_X_00.png"
+    ],
+    "frames": [
+      "SM_SMG11_Mag_X_east",
+      "SM_SMG11_Mag_X_north",
+      "SM_SMG11_Mag_X_south",
+      "SM_SMG11_Mag_X_west"
+    ],
+    "animations": []
+  },
+  "SM_SMG11_Nostock_X": {
+    "type": "weapon",
+    "sheets": [
+      "SM_SMG11_Nostock_X_00.png"
+    ],
+    "frames": [
+      "SM_SMG11_Nostock_X_east",
+      "SM_SMG11_Nostock_X_north",
+      "SM_SMG11_Nostock_X_south",
+      "SM_SMG11_Nostock_X_west"
+    ],
+    "animations": []
+  },
+  "SM_SMG11_Nostock_Y": {
+    "type": "weapon",
+    "sheets": [
+      "SM_SMG11_Nostock_Y_00.png"
+    ],
+    "frames": [
+      "SM_SMG11_Nostock_Y_east",
+      "SM_SMG11_Nostock_Y_north",
+      "SM_SMG11_Nostock_Y_south",
+      "SM_SMG11_Nostock_Y_west"
+    ],
+    "animations": []
+  },
+  "SM_SMG11_X": {
+    "type": "weapon",
+    "sheets": [
+      "SM_SMG11_X_00.png"
+    ],
+    "frames": [
+      "SM_SMG11_X_east",
+      "SM_SMG11_X_north",
+      "SM_SMG11_X_south",
+      "SM_SMG11_X_west"
+    ],
+    "animations": []
+  },
+  "SM_SMG11_Y": {
+    "type": "weapon",
+    "sheets": [
+      "SM_SMG11_Y_00.png"
+    ],
+    "frames": [
+      "SM_SMG11_Y_east",
+      "SM_SMG11_Y_north",
+      "SM_SMG11_Y_south",
+      "SM_SMG11_Y_west"
+    ],
+    "animations": []
+  },
+  "SM_Sphere_01": {
+    "type": "prop",
+    "sheets": [
+      "SM_Sphere_01_00.png"
+    ],
+    "frames": [
+      "SM_Sphere_01_default"
+    ],
+    "animations": []
+  },
+  "SM_Stair": {
+    "type": "building",
+    "sheets": [
+      "SM_Stair_00.png"
+    ],
+    "frames": [
+      "SM_Stair_east",
+      "SM_Stair_north",
+      "SM_Stair_south",
+      "SM_Stair_west"
+    ],
+    "animations": []
+  },
+  "SM_Staircase": {
+    "type": "building",
+    "sheets": [
+      "SM_Staircase_00.png"
+    ],
+    "frames": [
+      "SM_Staircase_east",
+      "SM_Staircase_north",
+      "SM_Staircase_south",
+      "SM_Staircase_west"
+    ],
+    "animations": []
+  },
+  "SM_Statue_01a": {
+    "type": "prop",
+    "sheets": [
+      "SM_Statue_01a_00.png"
+    ],
+    "frames": [
+      "SM_Statue_01a_default"
+    ],
+    "animations": []
+  },
+  "SM_Statue_02a": {
+    "type": "prop",
+    "sheets": [
+      "SM_Statue_02a_00.png"
+    ],
+    "frames": [
+      "SM_Statue_02a_default"
+    ],
+    "animations": []
+  },
+  "SM_Statue_Hooded_Metal": {
+    "type": "building",
+    "sheets": [
+      "SM_Statue_Hooded_Metal_00.png"
+    ],
+    "frames": [
+      "SM_Statue_Hooded_Metal_east",
+      "SM_Statue_Hooded_Metal_north",
+      "SM_Statue_Hooded_Metal_south",
+      "SM_Statue_Hooded_Metal_west"
+    ],
+    "animations": []
+  },
+  "SM_Step_Large": {
+    "type": "building",
+    "sheets": [
+      "SM_Step_Large_00.png"
+    ],
+    "frames": [
+      "SM_Step_Large_east",
+      "SM_Step_Large_north",
+      "SM_Step_Large_south",
+      "SM_Step_Large_west"
+    ],
+    "animations": []
+  },
+  "SM_Step_Medium": {
+    "type": "building",
+    "sheets": [
+      "SM_Step_Medium_00.png"
+    ],
+    "frames": [
+      "SM_Step_Medium_east",
+      "SM_Step_Medium_north",
+      "SM_Step_Medium_south",
+      "SM_Step_Medium_west"
+    ],
+    "animations": []
+  },
+  "SM_Step_Small": {
+    "type": "building",
+    "sheets": [
+      "SM_Step_Small_00.png"
+    ],
+    "frames": [
+      "SM_Step_Small_east",
+      "SM_Step_Small_north",
+      "SM_Step_Small_south",
+      "SM_Step_Small_west"
+    ],
+    "animations": []
+  },
+  "SM_Stool": {
+    "type": "prop",
+    "sheets": [
+      "SM_Stool_00.png"
+    ],
+    "frames": [
+      "SM_Stool_default"
+    ],
+    "animations": []
+  },
+  "SM_StructuralFrame": {
+    "type": "building",
+    "sheets": [
+      "SM_StructuralFrame_00.png"
+    ],
+    "frames": [
+      "SM_StructuralFrame_east",
+      "SM_StructuralFrame_north",
+      "SM_StructuralFrame_south",
+      "SM_StructuralFrame_west"
+    ],
+    "animations": []
+  },
+  "SM_Suppressor5": {
+    "type": "weapon",
+    "sheets": [
+      "SM_Suppressor5_00.png"
+    ],
+    "frames": [
+      "SM_Suppressor5_east",
+      "SM_Suppressor5_north",
+      "SM_Suppressor5_south",
+      "SM_Suppressor5_west"
+    ],
+    "animations": []
+  },
+  "SM_Sword_01a": {
+    "type": "weapon",
+    "sheets": [
+      "SM_Sword_01a_00.png"
+    ],
+    "frames": [
+      "SM_Sword_01a_east",
+      "SM_Sword_01a_north",
+      "SM_Sword_01a_south",
+      "SM_Sword_01a_west"
+    ],
+    "animations": []
+  },
+  "SM_T4_Sight": {
+    "type": "weapon",
+    "sheets": [
+      "SM_T4_Sight_00.png"
+    ],
+    "frames": [
+      "SM_T4_Sight_east",
+      "SM_T4_Sight_north",
+      "SM_T4_Sight_south",
+      "SM_T4_Sight_west"
+    ],
+    "animations": []
+  },
+  "SM_Table_1": {
+    "type": "prop",
+    "sheets": [
+      "SM_Table_1_00.png"
+    ],
+    "frames": [
+      "SM_Table_1_default"
+    ],
+    "animations": []
+  },
+  "SM_Table_2": {
+    "type": "prop",
+    "sheets": [
+      "SM_Table_2_00.png"
+    ],
+    "frames": [
+      "SM_Table_2_default"
+    ],
+    "animations": []
+  },
+  "SM_Table_3": {
+    "type": "prop",
+    "sheets": [
+      "SM_Table_3_00.png"
+    ],
+    "frames": [
+      "SM_Table_3_default"
+    ],
+    "animations": []
+  },
+  "SM_Throwing": {
+    "type": "weapon",
+    "sheets": [
+      "SM_Throwing_00.png"
+    ],
+    "frames": [
+      "SM_Throwing_east",
+      "SM_Throwing_north",
+      "SM_Throwing_south",
+      "SM_Throwing_west"
+    ],
+    "animations": []
+  },
+  "SM_TimberColumn": {
+    "type": "building",
+    "sheets": [
+      "SM_TimberColumn_00.png"
+    ],
+    "frames": [
+      "SM_TimberColumn_east",
+      "SM_TimberColumn_north",
+      "SM_TimberColumn_south",
+      "SM_TimberColumn_west"
+    ],
+    "animations": []
+  },
+  "SM_Torch_01a": {
+    "type": "character",
+    "sheets": [
+      "SM_Torch_01a_00.png"
+    ],
+    "frames": [
+      "SM_Torch_01a_east",
+      "SM_Torch_01a_north",
+      "SM_Torch_01a_south",
+      "SM_Torch_01a_west"
+    ],
+    "animations": []
+  },
+  "SM_Tower": {
+    "type": "building",
+    "sheets": [
+      "SM_Tower_00.png"
+    ],
+    "frames": [
+      "SM_Tower_east",
+      "SM_Tower_north",
+      "SM_Tower_south",
+      "SM_Tower_west"
+    ],
+    "animations": []
+  },
+  "SM_Tree_1": {
+    "type": "prop",
+    "sheets": [
+      "SM_Tree_1_00.png"
+    ],
+    "frames": [
+      "SM_Tree_1_default"
+    ],
+    "animations": []
+  },
+  "SM_Tree_2": {
+    "type": "prop",
+    "sheets": [
+      "SM_Tree_2_00.png"
+    ],
+    "frames": [
+      "SM_Tree_2_default"
+    ],
+    "animations": []
+  },
+  "SM_Tree_3": {
+    "type": "prop",
+    "sheets": [
+      "SM_Tree_3_00.png"
+    ],
+    "frames": [
+      "SM_Tree_3_default"
+    ],
+    "animations": []
+  },
+  "SM_Troll_hammer": {
+    "type": "character",
+    "sheets": [
+      "SM_Troll_hammer_00.png"
+    ],
+    "frames": [
+      "SM_Troll_hammer_east",
+      "SM_Troll_hammer_north",
+      "SM_Troll_hammer_south",
+      "SM_Troll_hammer_west"
+    ],
+    "animations": []
+  },
+  "SM_Urn_01a": {
+    "type": "prop",
+    "sheets": [
+      "SM_Urn_01a_00.png"
+    ],
+    "frames": [
+      "SM_Urn_01a_default"
+    ],
+    "animations": []
+  },
+  "SM_Urn_02": {
+    "type": "prop",
+    "sheets": [
+      "SM_Urn_02_00.png"
+    ],
+    "frames": [
+      "SM_Urn_02_default"
+    ],
+    "animations": []
+  },
+  "SM_Urn_04a": {
+    "type": "prop",
+    "sheets": [
+      "SM_Urn_04a_00.png"
+    ],
+    "frames": [
+      "SM_Urn_04a_default"
+    ],
+    "animations": []
+  },
+  "SM_URoom_Wall": {
+    "type": "building",
+    "sheets": [
+      "SM_URoom_Wall_00.png"
+    ],
+    "frames": [
+      "SM_URoom_Wall_east",
+      "SM_URoom_Wall_north",
+      "SM_URoom_Wall_south",
+      "SM_URoom_Wall_west"
+    ],
+    "animations": []
+  },
+  "SM_URoom_Wall2": {
+    "type": "building",
+    "sheets": [
+      "SM_URoom_Wall2_00.png"
+    ],
+    "frames": [
+      "SM_URoom_Wall2_east",
+      "SM_URoom_Wall2_north",
+      "SM_URoom_Wall2_south",
+      "SM_URoom_Wall2_west"
+    ],
+    "animations": []
+  },
+  "SM_Vase_1": {
+    "type": "prop",
+    "sheets": [
+      "SM_Vase_1_00.png"
+    ],
+    "frames": [
+      "SM_Vase_1_default"
+    ],
+    "animations": []
+  },
+  "SM_Vase_2": {
+    "type": "prop",
+    "sheets": [
+      "SM_Vase_2_00.png"
+    ],
+    "frames": [
+      "SM_Vase_2_default"
+    ],
+    "animations": []
+  },
+  "SM_Vase_3": {
+    "type": "prop",
+    "sheets": [
+      "SM_Vase_3_00.png"
+    ],
+    "frames": [
+      "SM_Vase_3_default"
+    ],
+    "animations": []
+  },
+  "SM_Vase_4": {
+    "type": "prop",
+    "sheets": [
+      "SM_Vase_4_00.png"
+    ],
+    "frames": [
+      "SM_Vase_4_default"
+    ],
+    "animations": []
+  },
+  "SM_Vase_5": {
+    "type": "prop",
+    "sheets": [
+      "SM_Vase_5_00.png"
+    ],
+    "frames": [
+      "SM_Vase_5_default"
+    ],
+    "animations": []
+  },
+  "SM_Vertgrip": {
+    "type": "weapon",
+    "sheets": [
+      "SM_Vertgrip_00.png"
+    ],
+    "frames": [
+      "SM_Vertgrip_east",
+      "SM_Vertgrip_north",
+      "SM_Vertgrip_south",
+      "SM_Vertgrip_west"
+    ],
+    "animations": []
+  },
+  "SM_WallHolder_001": {
+    "type": "building",
+    "sheets": [
+      "SM_WallHolder_001_00.png"
+    ],
+    "frames": [
+      "SM_WallHolder_001_east",
+      "SM_WallHolder_001_north",
+      "SM_WallHolder_001_south",
+      "SM_WallHolder_001_west"
+    ],
+    "animations": []
+  },
+  "SM_WallHolder_002": {
+    "type": "building",
+    "sheets": [
+      "SM_WallHolder_002_00.png"
+    ],
+    "frames": [
+      "SM_WallHolder_002_east",
+      "SM_WallHolder_002_north",
+      "SM_WallHolder_002_south",
+      "SM_WallHolder_002_west"
+    ],
+    "animations": []
+  },
+  "SM_WallHolder_003": {
+    "type": "building",
+    "sheets": [
+      "SM_WallHolder_003_00.png"
+    ],
+    "frames": [
+      "SM_WallHolder_003_east",
+      "SM_WallHolder_003_north",
+      "SM_WallHolder_003_south",
+      "SM_WallHolder_003_west"
+    ],
+    "animations": []
+  },
+  "SM_WallHolder_004": {
+    "type": "building",
+    "sheets": [
+      "SM_WallHolder_004_00.png"
+    ],
+    "frames": [
+      "SM_WallHolder_004_east",
+      "SM_WallHolder_004_north",
+      "SM_WallHolder_004_south",
+      "SM_WallHolder_004_west"
+    ],
+    "animations": []
+  },
+  "SM_WallHolder_005": {
+    "type": "building",
+    "sheets": [
+      "SM_WallHolder_005_00.png"
+    ],
+    "frames": [
+      "SM_WallHolder_005_east",
+      "SM_WallHolder_005_north",
+      "SM_WallHolder_005_south",
+      "SM_WallHolder_005_west"
+    ],
+    "animations": []
+  },
+  "SM_Wall_Stone_1": {
+    "type": "building",
+    "sheets": [
+      "SM_Wall_Stone_1_00.png"
+    ],
+    "frames": [
+      "SM_Wall_Stone_1_east",
+      "SM_Wall_Stone_1_north",
+      "SM_Wall_Stone_1_south",
+      "SM_Wall_Stone_1_west"
+    ],
+    "animations": []
+  },
+  "SM_Wall_Stone_2": {
+    "type": "building",
+    "sheets": [
+      "SM_Wall_Stone_2_00.png"
+    ],
+    "frames": [
+      "SM_Wall_Stone_2_east",
+      "SM_Wall_Stone_2_north",
+      "SM_Wall_Stone_2_south",
+      "SM_Wall_Stone_2_west"
+    ],
+    "animations": []
+  },
+  "SM_Wall_Stone_3": {
+    "type": "building",
+    "sheets": [
+      "SM_Wall_Stone_3_00.png"
+    ],
+    "frames": [
+      "SM_Wall_Stone_3_east",
+      "SM_Wall_Stone_3_north",
+      "SM_Wall_Stone_3_south",
+      "SM_Wall_Stone_3_west"
+    ],
+    "animations": []
+  },
+  "SM_Wall_Stone_4": {
+    "type": "building",
+    "sheets": [
+      "SM_Wall_Stone_4_00.png"
+    ],
+    "frames": [
+      "SM_Wall_Stone_4_east",
+      "SM_Wall_Stone_4_north",
+      "SM_Wall_Stone_4_south",
+      "SM_Wall_Stone_4_west"
+    ],
+    "animations": []
+  },
+  "SM_Wall_Stone_5": {
+    "type": "building",
+    "sheets": [
+      "SM_Wall_Stone_5_00.png"
+    ],
+    "frames": [
+      "SM_Wall_Stone_5_east",
+      "SM_Wall_Stone_5_north",
+      "SM_Wall_Stone_5_south",
+      "SM_Wall_Stone_5_west"
+    ],
+    "animations": []
+  },
+  "SM_Wall_Wood_1": {
+    "type": "building",
+    "sheets": [
+      "SM_Wall_Wood_1_00.png"
+    ],
+    "frames": [
+      "SM_Wall_Wood_1_east",
+      "SM_Wall_Wood_1_north",
+      "SM_Wall_Wood_1_south",
+      "SM_Wall_Wood_1_west"
+    ],
+    "animations": []
+  },
+  "SM_Wall_Wood_10": {
+    "type": "building",
+    "sheets": [
+      "SM_Wall_Wood_10_00.png"
+    ],
+    "frames": [
+      "SM_Wall_Wood_10_east",
+      "SM_Wall_Wood_10_north",
+      "SM_Wall_Wood_10_south",
+      "SM_Wall_Wood_10_west"
+    ],
+    "animations": []
+  },
+  "SM_Wall_Wood_11": {
+    "type": "building",
+    "sheets": [
+      "SM_Wall_Wood_11_00.png"
+    ],
+    "frames": [
+      "SM_Wall_Wood_11_east",
+      "SM_Wall_Wood_11_north",
+      "SM_Wall_Wood_11_south",
+      "SM_Wall_Wood_11_west"
+    ],
+    "animations": []
+  },
+  "SM_Wall_Wood_2": {
+    "type": "building",
+    "sheets": [
+      "SM_Wall_Wood_2_00.png"
+    ],
+    "frames": [
+      "SM_Wall_Wood_2_east",
+      "SM_Wall_Wood_2_north",
+      "SM_Wall_Wood_2_south",
+      "SM_Wall_Wood_2_west"
+    ],
+    "animations": []
+  },
+  "SM_Wall_Wood_3": {
+    "type": "building",
+    "sheets": [
+      "SM_Wall_Wood_3_00.png"
+    ],
+    "frames": [
+      "SM_Wall_Wood_3_east",
+      "SM_Wall_Wood_3_north",
+      "SM_Wall_Wood_3_south",
+      "SM_Wall_Wood_3_west"
+    ],
+    "animations": []
+  },
+  "SM_Wall_Wood_4": {
+    "type": "building",
+    "sheets": [
+      "SM_Wall_Wood_4_00.png"
+    ],
+    "frames": [
+      "SM_Wall_Wood_4_east",
+      "SM_Wall_Wood_4_north",
+      "SM_Wall_Wood_4_south",
+      "SM_Wall_Wood_4_west"
+    ],
+    "animations": []
+  },
+  "SM_Wall_Wood_5": {
+    "type": "building",
+    "sheets": [
+      "SM_Wall_Wood_5_00.png"
+    ],
+    "frames": [
+      "SM_Wall_Wood_5_east",
+      "SM_Wall_Wood_5_north",
+      "SM_Wall_Wood_5_south",
+      "SM_Wall_Wood_5_west"
+    ],
+    "animations": []
+  },
+  "SM_Wall_Wood_6": {
+    "type": "building",
+    "sheets": [
+      "SM_Wall_Wood_6_00.png"
+    ],
+    "frames": [
+      "SM_Wall_Wood_6_east",
+      "SM_Wall_Wood_6_north",
+      "SM_Wall_Wood_6_south",
+      "SM_Wall_Wood_6_west"
+    ],
+    "animations": []
+  },
+  "SM_Wall_Wood_7": {
+    "type": "building",
+    "sheets": [
+      "SM_Wall_Wood_7_00.png"
+    ],
+    "frames": [
+      "SM_Wall_Wood_7_east",
+      "SM_Wall_Wood_7_north",
+      "SM_Wall_Wood_7_south",
+      "SM_Wall_Wood_7_west"
+    ],
+    "animations": []
+  },
+  "SM_Wall_Wood_8": {
+    "type": "building",
+    "sheets": [
+      "SM_Wall_Wood_8_00.png"
+    ],
+    "frames": [
+      "SM_Wall_Wood_8_east",
+      "SM_Wall_Wood_8_north",
+      "SM_Wall_Wood_8_south",
+      "SM_Wall_Wood_8_west"
+    ],
+    "animations": []
+  },
+  "SM_Wall_Wood_9": {
+    "type": "building",
+    "sheets": [
+      "SM_Wall_Wood_9_00.png"
+    ],
+    "frames": [
+      "SM_Wall_Wood_9_east",
+      "SM_Wall_Wood_9_north",
+      "SM_Wall_Wood_9_south",
+      "SM_Wall_Wood_9_west"
+    ],
+    "animations": []
+  },
+  "SM_WaterPot_01a": {
+    "type": "terrain",
+    "sheets": [
+      "SM_WaterPot_01a_00.png"
+    ],
+    "frames": [
+      "SM_WaterPot_01a_default"
+    ],
+    "animations": []
+  },
+  "SM_Weed": {
+    "type": "prop",
+    "sheets": [
+      "SM_Weed_00.png"
+    ],
+    "frames": [
+      "SM_Weed_default"
+    ],
+    "animations": []
+  },
+  "SM_Well": {
+    "type": "prop",
+    "sheets": [
+      "SM_Well_00.png"
+    ],
+    "frames": [
+      "SM_Well_default"
+    ],
+    "animations": []
+  },
+  "SM_Window_1": {
+    "type": "building",
+    "sheets": [
+      "SM_Window_1_00.png"
+    ],
+    "frames": [
+      "SM_Window_1_east",
+      "SM_Window_1_north",
+      "SM_Window_1_south",
+      "SM_Window_1_west"
+    ],
+    "animations": []
+  },
+  "SM_Window_2": {
+    "type": "building",
+    "sheets": [
+      "SM_Window_2_00.png"
+    ],
+    "frames": [
+      "SM_Window_2_east",
+      "SM_Window_2_north",
+      "SM_Window_2_south",
+      "SM_Window_2_west"
+    ],
+    "animations": []
+  },
+  "SM_WoodStaff_01": {
+    "type": "building",
+    "sheets": [
+      "SM_WoodStaff_01_00.png"
+    ],
+    "frames": [
+      "SM_WoodStaff_01_east",
+      "SM_WoodStaff_01_north",
+      "SM_WoodStaff_01_south",
+      "SM_WoodStaff_01_west"
+    ],
+    "animations": []
+  },
+  "SM_WoodStaff_011": {
+    "type": "building",
+    "sheets": [
+      "SM_WoodStaff_011_00.png"
+    ],
+    "frames": [
+      "SM_WoodStaff_011_east",
+      "SM_WoodStaff_011_north",
+      "SM_WoodStaff_011_south",
+      "SM_WoodStaff_011_west"
+    ],
+    "animations": []
+  },
+  "SM_WoodStaff_02": {
+    "type": "building",
+    "sheets": [
+      "SM_WoodStaff_02_00.png"
+    ],
+    "frames": [
+      "SM_WoodStaff_02_east",
+      "SM_WoodStaff_02_north",
+      "SM_WoodStaff_02_south",
+      "SM_WoodStaff_02_west"
+    ],
+    "animations": []
+  },
+  "SM_WoodStaff_03": {
+    "type": "building",
+    "sheets": [
+      "SM_WoodStaff_03_00.png"
+    ],
+    "frames": [
+      "SM_WoodStaff_03_east",
+      "SM_WoodStaff_03_north",
+      "SM_WoodStaff_03_south",
+      "SM_WoodStaff_03_west"
+    ],
+    "animations": []
+  },
+  "SM_WoodStaff_04": {
+    "type": "building",
+    "sheets": [
+      "SM_WoodStaff_04_00.png"
+    ],
+    "frames": [
+      "SM_WoodStaff_04_east",
+      "SM_WoodStaff_04_north",
+      "SM_WoodStaff_04_south",
+      "SM_WoodStaff_04_west"
+    ],
+    "animations": []
+  },
+  "SM_WoodStaff_05": {
+    "type": "building",
+    "sheets": [
+      "SM_WoodStaff_05_00.png"
+    ],
+    "frames": [
+      "SM_WoodStaff_05_east",
+      "SM_WoodStaff_05_north",
+      "SM_WoodStaff_05_south",
+      "SM_WoodStaff_05_west"
+    ],
+    "animations": []
+  },
+  "SM_WoodStaff_06": {
+    "type": "building",
+    "sheets": [
+      "SM_WoodStaff_06_00.png"
+    ],
+    "frames": [
+      "SM_WoodStaff_06_east",
+      "SM_WoodStaff_06_north",
+      "SM_WoodStaff_06_south",
+      "SM_WoodStaff_06_west"
+    ],
+    "animations": []
+  },
+  "SM_WoodStaff_07": {
+    "type": "building",
+    "sheets": [
+      "SM_WoodStaff_07_00.png"
+    ],
+    "frames": [
+      "SM_WoodStaff_07_east",
+      "SM_WoodStaff_07_north",
+      "SM_WoodStaff_07_south",
+      "SM_WoodStaff_07_west"
+    ],
+    "animations": []
+  },
+  "SM_WoodStaff_08": {
+    "type": "building",
+    "sheets": [
+      "SM_WoodStaff_08_00.png"
+    ],
+    "frames": [
+      "SM_WoodStaff_08_east",
+      "SM_WoodStaff_08_north",
+      "SM_WoodStaff_08_south",
+      "SM_WoodStaff_08_west"
+    ],
+    "animations": []
+  },
+  "SM_WoodStaff_09": {
+    "type": "building",
+    "sheets": [
+      "SM_WoodStaff_09_00.png"
+    ],
+    "frames": [
+      "SM_WoodStaff_09_east",
+      "SM_WoodStaff_09_north",
+      "SM_WoodStaff_09_south",
+      "SM_WoodStaff_09_west"
+    ],
+    "animations": []
+  },
+  "SM_WoodStaff_10": {
+    "type": "building",
+    "sheets": [
+      "SM_WoodStaff_10_00.png"
+    ],
+    "frames": [
+      "SM_WoodStaff_10_east",
+      "SM_WoodStaff_10_north",
+      "SM_WoodStaff_10_south",
+      "SM_WoodStaff_10_west"
+    ],
+    "animations": []
+  },
+  "SM_WoodStaff_11": {
+    "type": "building",
+    "sheets": [
+      "SM_WoodStaff_11_00.png"
+    ],
+    "frames": [
+      "SM_WoodStaff_11_east",
+      "SM_WoodStaff_11_north",
+      "SM_WoodStaff_11_south",
+      "SM_WoodStaff_11_west"
+    ],
+    "animations": []
+  },
+  "SM_Wood_001": {
+    "type": "building",
+    "sheets": [
+      "SM_Wood_001_00.png"
+    ],
+    "frames": [
+      "SM_Wood_001_east",
+      "SM_Wood_001_north",
+      "SM_Wood_001_south",
+      "SM_Wood_001_west"
+    ],
+    "animations": []
+  },
+  "SM_Wood_002": {
+    "type": "building",
+    "sheets": [
+      "SM_Wood_002_00.png"
+    ],
+    "frames": [
+      "SM_Wood_002_east",
+      "SM_Wood_002_north",
+      "SM_Wood_002_south",
+      "SM_Wood_002_west"
+    ],
+    "animations": []
+  },
+  "SM_Wood_003": {
+    "type": "building",
+    "sheets": [
+      "SM_Wood_003_00.png"
+    ],
+    "frames": [
+      "SM_Wood_003_east",
+      "SM_Wood_003_north",
+      "SM_Wood_003_south",
+      "SM_Wood_003_west"
+    ],
+    "animations": []
+  },
+  "SM_Wood_004": {
+    "type": "building",
+    "sheets": [
+      "SM_Wood_004_00.png"
+    ],
+    "frames": [
+      "SM_Wood_004_east",
+      "SM_Wood_004_north",
+      "SM_Wood_004_south",
+      "SM_Wood_004_west"
+    ],
+    "animations": []
+  },
+  "SM_Wood_005": {
+    "type": "building",
+    "sheets": [
+      "SM_Wood_005_00.png"
+    ],
+    "frames": [
+      "SM_Wood_005_east",
+      "SM_Wood_005_north",
+      "SM_Wood_005_south",
+      "SM_Wood_005_west"
+    ],
+    "animations": []
+  },
+  "SM_ZBackdrop_01a": {
+    "type": "prop",
+    "sheets": [
+      "SM_ZBackdrop_01a_00.png"
+    ],
+    "frames": [
+      "SM_ZBackdrop_01a_default"
+    ],
+    "animations": []
+  },
+  "SM_Z_Sphere_01": {
+    "type": "prop",
+    "sheets": [
+      "SM_Z_Sphere_01_00.png"
+    ],
+    "frames": [
+      "SM_Z_Sphere_01_default"
+    ],
+    "animations": []
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SM_DemoDivider1",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SM_DemoDivider1_00.png"
+  ],
+  "frames": {
+    "SM_DemoDivider1_default": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 33,
+        "h": 39
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 0,
+        "y": 22
+      },
+      "source": {
+        "w": 64,
+        "h": 64
+      }
+    }
+  },
+  "animations": {}
+}

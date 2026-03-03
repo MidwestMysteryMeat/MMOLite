@@ -1,0 +1,10 @@
+{
+  "asset": "SM_RoofBase_2",
+  "type": "building",
+  "frames": {
+    "SM_RoofBase_2_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_RoofBase_2\\SM_RoofBase_2_south.png",
+    "SM_RoofBase_2_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_RoofBase_2\\SM_RoofBase_2_west.png",
+    "SM_RoofBase_2_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_RoofBase_2\\SM_RoofBase_2_north.png",
+    "SM_RoofBase_2_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_RoofBase_2\\SM_RoofBase_2_east.png"
+  }
+}

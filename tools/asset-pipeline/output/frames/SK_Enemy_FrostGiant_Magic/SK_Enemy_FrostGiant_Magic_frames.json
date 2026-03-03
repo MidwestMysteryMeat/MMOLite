@@ -1,0 +1,10 @@
+{
+  "asset": "SK_Enemy_FrostGiant_Magic",
+  "type": "character",
+  "frames": {
+    "SK_Enemy_FrostGiant_Magic_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Enemy_FrostGiant_Magic\\SK_Enemy_FrostGiant_Magic_south.png",
+    "SK_Enemy_FrostGiant_Magic_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Enemy_FrostGiant_Magic\\SK_Enemy_FrostGiant_Magic_west.png",
+    "SK_Enemy_FrostGiant_Magic_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Enemy_FrostGiant_Magic\\SK_Enemy_FrostGiant_Magic_north.png",
+    "SK_Enemy_FrostGiant_Magic_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Enemy_FrostGiant_Magic\\SK_Enemy_FrostGiant_Magic_east.png"
+  }
+}

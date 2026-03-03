@@ -1,0 +1,10 @@
+{
+  "asset": "SK_Greater_Spider",
+  "type": "character",
+  "frames": {
+    "SK_Greater_Spider_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Greater_Spider\\SK_Greater_Spider_south.png",
+    "SK_Greater_Spider_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Greater_Spider\\SK_Greater_Spider_west.png",
+    "SK_Greater_Spider_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Greater_Spider\\SK_Greater_Spider_north.png",
+    "SK_Greater_Spider_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Greater_Spider\\SK_Greater_Spider_east.png"
+  }
+}

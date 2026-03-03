@@ -1,0 +1,7 @@
+{
+  "asset": "SM_ClayPot_03a",
+  "type": "prop",
+  "frames": {
+    "SM_ClayPot_03a_default": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_ClayPot_03a\\SM_ClayPot_03a_default.png"
+  }
+}

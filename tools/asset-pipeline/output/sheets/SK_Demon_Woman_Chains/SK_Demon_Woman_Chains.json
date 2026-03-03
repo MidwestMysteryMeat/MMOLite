@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SK_Demon_Woman_Chains",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SK_Demon_Woman_Chains_00.png"
+  ],
+  "frames": {
+    "SK_Demon_Woman_Chains_east": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 18,
+        "h": 30
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 56,
+        "y": 3
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Demon_Woman_Chains_north": {
+      "sheet": 0,
+      "frame": {
+        "x": 18,
+        "y": 0,
+        "w": 18,
+        "h": 30
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 56,
+        "y": 3
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Demon_Woman_Chains_south": {
+      "sheet": 0,
+      "frame": {
+        "x": 36,
+        "y": 0,
+        "w": 18,
+        "h": 30
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 56,
+        "y": 3
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Demon_Woman_Chains_west": {
+      "sheet": 0,
+      "frame": {
+        "x": 54,
+        "y": 0,
+        "w": 18,
+        "h": 30
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 56,
+        "y": 3
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    }
+  },
+  "animations": {}
+}

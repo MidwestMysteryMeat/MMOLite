@@ -1,0 +1,7 @@
+{
+  "asset": "SM_DemoDivider1",
+  "type": "prop",
+  "frames": {
+    "SM_DemoDivider1_default": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_DemoDivider1\\SM_DemoDivider1_default.png"
+  }
+}

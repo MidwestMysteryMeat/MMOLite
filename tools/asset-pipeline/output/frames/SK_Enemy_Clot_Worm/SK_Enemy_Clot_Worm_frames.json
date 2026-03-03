@@ -1,0 +1,10 @@
+{
+  "asset": "SK_Enemy_Clot_Worm",
+  "type": "character",
+  "frames": {
+    "SK_Enemy_Clot_Worm_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Enemy_Clot_Worm\\SK_Enemy_Clot_Worm_south.png",
+    "SK_Enemy_Clot_Worm_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Enemy_Clot_Worm\\SK_Enemy_Clot_Worm_west.png",
+    "SK_Enemy_Clot_Worm_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Enemy_Clot_Worm\\SK_Enemy_Clot_Worm_north.png",
+    "SK_Enemy_Clot_Worm_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Enemy_Clot_Worm\\SK_Enemy_Clot_Worm_east.png"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "asset": "SM_WoodStaff_10",
+  "type": "building",
+  "frames": {
+    "SM_WoodStaff_10_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_WoodStaff_10\\SM_WoodStaff_10_south.png",
+    "SM_WoodStaff_10_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_WoodStaff_10\\SM_WoodStaff_10_west.png",
+    "SM_WoodStaff_10_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_WoodStaff_10\\SM_WoodStaff_10_north.png",
+    "SM_WoodStaff_10_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_WoodStaff_10\\SM_WoodStaff_10_east.png"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "asset": "SM_Chair_2",
+  "type": "prop",
+  "frames": {
+    "SM_Chair_2_default": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Chair_2\\SM_Chair_2_default.png"
+  }
+}

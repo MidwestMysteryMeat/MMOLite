@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SM_FireBasekd_C_001",
+    "max_size": 4096
+  },
+  "sheets": [
+    "SM_FireBasekd_C_001_00.png"
+  ],
+  "frames": {
+    "SM_FireBasekd_C_001_east": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 192,
+        "h": 246
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 32,
+        "y": 0
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_FireBasekd_C_001_north": {
+      "sheet": 0,
+      "frame": {
+        "x": 192,
+        "y": 0,
+        "w": 192,
+        "h": 246
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 32,
+        "y": 0
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_FireBasekd_C_001_south": {
+      "sheet": 0,
+      "frame": {
+        "x": 384,
+        "y": 0,
+        "w": 192,
+        "h": 246
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 32,
+        "y": 0
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_FireBasekd_C_001_west": {
+      "sheet": 0,
+      "frame": {
+        "x": 576,
+        "y": 0,
+        "w": 192,
+        "h": 246
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 32,
+        "y": 0
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    }
+  },
+  "animations": {}
+}

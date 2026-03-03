@@ -1,0 +1,7 @@
+{
+  "asset": "SM_Fork",
+  "type": "prop",
+  "frames": {
+    "SM_Fork_default": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Fork\\SM_Fork_default.png"
+  }
+}

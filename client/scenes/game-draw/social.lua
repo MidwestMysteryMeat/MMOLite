@@ -2620,6 +2620,151 @@ local function drawEnvironmentPanel(W, H)
     love.graphics.printf("F7 to close", px, py + panelH - 16, panelW, "center")
 end
 
+-- =========================================================================
+-- Quest Log Panel (J key)
+-- =========================================================================
+local function drawQuestLog(W, H)
+    local ql = game._questLog
+    if not ql then return end
+
+    local panelW = 420
+    local panelH = math.min(H - 60, 520)
+    local px = (W - panelW) / 2
+    local py = (H - panelH) / 2
+
+    love.graphics.setColor(0.05, 0.06, 0.12, 0.96)
+    love.graphics.rectangle("fill", px, py, panelW, panelH, 8, 8)
+    love.graphics.setColor(0.40, 0.35, 0.60, 0.75)
+    love.graphics.setLineWidth(2)
+    love.graphics.rectangle("line", px, py, panelW, panelH, 8, 8)
+    love.graphics.setLineWidth(1)
+
+    -- Title
+    love.graphics.setFont(fonts.bold or fonts.ui or love.graphics.getFont())
+    love.graphics.setColor(0.90, 0.80, 0.40, 1)
+    love.graphics.printf("Quest Log", px, py + 10, panelW, "center")
+
+    local font      = fonts.main or love.graphics.getFont()
+    local smallFont = fonts.small or fonts.chat or love.graphics.getFont()
+    local cy = py + 36
+    local mx, my = love.mouse.getPosition()
+    local activeList  = ql.active   or {}
+    local completedList = ql.completed or {}
+
+    -- Active quests
+    love.graphics.setFont(smallFont)
+    love.graphics.setColor(0.70, 0.75, 0.90, 0.8)
+    love.graphics.print("Active (" .. #activeList .. ")", px + 14, cy)
+    cy = cy + 18
+
+    if #activeList == 0 then
+        love.graphics.setFont(smallFont)
+        love.graphics.setColor(0.45, 0.45, 0.55, 0.6)
+        love.graphics.print("  No active quests.", px + 14, cy)
+        cy = cy + 18
+    else
+        for _, q in ipairs(activeList) do
+            if cy + 58 > py + panelH - 30 then break end
+            -- Quest name
+            love.graphics.setFont(font)
+            love.graphics.setColor(0.90, 0.88, 0.70, 1)
+            love.graphics.print(q.name or q.questId, px + 14, cy)
+            cy = cy + 18
+            -- Description (truncated)
+            if q.description and q.description ~= "" then
+                love.graphics.setFont(smallFont)
+                love.graphics.setColor(0.60, 0.60, 0.70, 0.75)
+                love.graphics.printf(q.description, px + 18, cy, panelW - 50, "left")
+                cy = cy + 14
+            end
+            -- Progress bar
+            local progress    = q.progress    or 0
+            local targetCount = q.targetCount or 1
+            local ratio       = math.min(1, math.max(0, progress / targetCount))
+            local barX = px + 18
+            local barW = panelW - 80
+            love.graphics.setColor(0.12, 0.12, 0.18, 0.8)
+            love.graphics.rectangle("fill", barX, cy + 1, barW, 9, 3, 3)
+            local barColor = ratio >= 1 and {0.3, 0.9, 0.3} or {0.3, 0.55, 0.9}
+            love.graphics.setColor(barColor[1], barColor[2], barColor[3], 0.85)
+            love.graphics.rectangle("fill", barX, cy + 1, barW * ratio, 9, 3, 3)
+            love.graphics.setColor(0.4, 0.4, 0.55, 0.5)
+            love.graphics.rectangle("line", barX, cy + 1, barW, 9, 3, 3)
+            -- Progress label
+            love.graphics.setFont(smallFont)
+            love.graphics.setColor(0.70, 0.80, 0.70, 1)
+            love.graphics.print(progress .. "/" .. targetCount, barX + barW + 4, cy)
+            cy = cy + 16
+
+            -- Separator
+            love.graphics.setColor(0.25, 0.25, 0.35, 0.5)
+            love.graphics.line(px + 14, cy, px + panelW - 14, cy)
+            cy = cy + 6
+        end
+    end
+
+    -- Completed count
+    love.graphics.setFont(smallFont)
+    love.graphics.setColor(0.45, 0.75, 0.45, 0.75)
+    love.graphics.print("Completed: " .. #completedList, px + 14, py + panelH - 26)
+
+    -- Close hint
+    love.graphics.setColor(0.40, 0.40, 0.50, 0.5)
+    love.graphics.printf("J or ESC to close", px, py + panelH - 16, panelW, "center")
+end
+
+-- =========================================================================
+-- Quest Tracker HUD (always visible when quests are active)
+-- =========================================================================
+local function drawQuestTrackerHUD(W, H)
+    local ql = game._questLog
+    if not ql or not ql.active or #ql.active == 0 then return end
+
+    -- Show only the first active quest as a compact indicator (top-right)
+    local q       = ql.active[1]
+    local progress    = q.progress    or 0
+    local targetCount = q.targetCount or 1
+    local ratio       = math.min(1, math.max(0, progress / targetCount))
+
+    local boxW = 220
+    local boxH = 36
+    local bx   = W - boxW - 10
+    local by   = 10
+
+    love.graphics.setColor(0.04, 0.04, 0.10, 0.82)
+    love.graphics.rectangle("fill", bx, by, boxW, boxH, 5, 5)
+    love.graphics.setColor(0.35, 0.30, 0.55, 0.65)
+    love.graphics.setLineWidth(1)
+    love.graphics.rectangle("line", bx, by, boxW, boxH, 5, 5)
+
+    local font = fonts.small or fonts.chat or love.graphics.getFont()
+    love.graphics.setFont(font)
+    love.graphics.setColor(0.85, 0.80, 0.50, 1)
+    love.graphics.printf(q.name or q.questId, bx + 4, by + 4, boxW - 8, "left")
+
+    -- Progress bar
+    local barX = bx + 4
+    local barW = boxW - 8
+    love.graphics.setColor(0.10, 0.10, 0.16, 0.8)
+    love.graphics.rectangle("fill", barX, by + 22, barW, 7, 2, 2)
+    local barColor = ratio >= 1 and {0.3, 0.9, 0.3} or {0.4, 0.6, 0.95}
+    love.graphics.setColor(barColor[1], barColor[2], barColor[3], 0.85)
+    love.graphics.rectangle("fill", barX, by + 22, barW * ratio, 7, 2, 2)
+
+    -- Progress text (right side)
+    love.graphics.setColor(0.65, 0.75, 0.65, 0.9)
+    love.graphics.printf(progress .. "/" .. targetCount, bx, by + 19, boxW - 4, "right")
+
+    -- More indicator
+    if #ql.active > 1 then
+        love.graphics.setColor(0.50, 0.50, 0.60, 0.6)
+        love.graphics.printf("+" .. (#ql.active - 1) .. " more  (J)", bx, by + boxH + 1, boxW, "right")
+    else
+        love.graphics.setColor(0.40, 0.40, 0.50, 0.45)
+        love.graphics.printf("J for quest log", bx, by + boxH + 1, boxW, "right")
+    end
+end
+
 function social.init(gameRef, ctx)
     game      = gameRef
     fonts     = ctx.fonts
@@ -2659,6 +2804,8 @@ function social.init(gameRef, ctx)
     gameRef.drawBountiesPanel      = drawBountiesPanel
     gameRef.drawRumorsPanel        = drawRumorsPanel
     gameRef.drawEnvironmentPanel   = drawEnvironmentPanel
+    gameRef.drawQuestLog           = drawQuestLog
+    gameRef.drawQuestTrackerHUD    = drawQuestTrackerHUD
 end
 
 return social

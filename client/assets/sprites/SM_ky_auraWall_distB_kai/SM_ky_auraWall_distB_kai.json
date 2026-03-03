@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SM_ky_auraWall_distB_kai",
+    "max_size": 4096
+  },
+  "sheets": [
+    "SM_ky_auraWall_distB_kai_00.png"
+  ],
+  "frames": {
+    "SM_ky_auraWall_distB_kai_east": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 220,
+        "h": 130
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 18,
+        "y": 89
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_ky_auraWall_distB_kai_north": {
+      "sheet": 0,
+      "frame": {
+        "x": 220,
+        "y": 0,
+        "w": 220,
+        "h": 130
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 18,
+        "y": 89
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_ky_auraWall_distB_kai_south": {
+      "sheet": 0,
+      "frame": {
+        "x": 440,
+        "y": 0,
+        "w": 220,
+        "h": 130
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 18,
+        "y": 89
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_ky_auraWall_distB_kai_west": {
+      "sheet": 0,
+      "frame": {
+        "x": 660,
+        "y": 0,
+        "w": 220,
+        "h": 130
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 18,
+        "y": 89
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    }
+  },
+  "animations": {}
+}

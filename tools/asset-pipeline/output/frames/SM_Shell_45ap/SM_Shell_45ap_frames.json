@@ -1,0 +1,10 @@
+{
+  "asset": "SM_Shell_45ap",
+  "type": "weapon",
+  "frames": {
+    "SM_Shell_45ap_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Shell_45ap\\SM_Shell_45ap_south.png",
+    "SM_Shell_45ap_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Shell_45ap\\SM_Shell_45ap_west.png",
+    "SM_Shell_45ap_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Shell_45ap\\SM_Shell_45ap_north.png",
+    "SM_Shell_45ap_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Shell_45ap\\SM_Shell_45ap_east.png"
+  }
+}

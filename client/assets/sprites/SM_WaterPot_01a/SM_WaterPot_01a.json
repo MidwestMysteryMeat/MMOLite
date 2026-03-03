@@ -1,0 +1,32 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SM_WaterPot_01a",
+    "max_size": 4096
+  },
+  "sheets": [
+    "SM_WaterPot_01a_00.png"
+  ],
+  "frames": {
+    "SM_WaterPot_01a_default": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 70,
+        "h": 56
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 29,
+        "y": 36
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    }
+  },
+  "animations": {}
+}

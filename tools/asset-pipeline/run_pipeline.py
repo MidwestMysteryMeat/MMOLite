@@ -69,13 +69,13 @@ def save_progress(path: str, progress: dict):
 
 
 def classify_fbx(fbx_root: str, config: dict) -> dict:
-    """Walk fbx_root, assign each .fbx to an asset type bucket."""
+    """Walk fbx_root, assign each .gltf/.glb/.fbx to an asset type bucket."""
     buckets = {t: [] for t in config["asset_types"]}
     buckets["unknown"] = []
 
     for root, _, files in os.walk(fbx_root):
         for fn in files:
-            if not fn.lower().endswith(".fbx"):
+            if not fn.lower().endswith((".gltf", ".glb", ".fbx")):
                 continue
             full     = os.path.join(root, fn)
             name_low = fn.lower()
@@ -176,10 +176,12 @@ def pack_asset(asset_name: str, frames_dir: str, sheets_dir: str, love_dir: str,
     # Determine asset type from frames marker
     marker = os.path.join(frame_dir, f"{asset_name}_frames.json")
     asset_type = "prop"
+    padding    = 1.15
     if os.path.exists(marker):
         with open(marker) as f:
             data = json.load(f)
         asset_type = data.get("type", "prop")
+        padding    = data.get("padding", 1.15)
 
     ac       = config["asset_types"].get(asset_type, {})
     max_size = ac.get("sheet_max_size", 2048)
@@ -190,6 +192,7 @@ def pack_asset(asset_name: str, frames_dir: str, sheets_dir: str, love_dir: str,
         sheet_name = asset_name,
         max_sheet  = max_size,
         trim       = True,
+        padding    = padding,
     )
     if manifest:
         sprite_packer.copy_sheets_to_love(
@@ -203,20 +206,30 @@ def pack_asset(asset_name: str, frames_dir: str, sheets_dir: str, love_dir: str,
 # Build global manifest (index of all sprite sheets for LÖVE)
 # ────────────────────────────────────────────────────────────────────────────
 
-def build_global_manifest(love_dir: str):
+def build_global_manifest(love_dir: str, frames_dir: str = None):
     index = {}
     for entry in os.scandir(love_dir):
         if not entry.is_dir():
             continue
         json_path = os.path.join(entry.path, f"{entry.name}.json")
-        if os.path.exists(json_path):
-            with open(json_path) as f:
-                data = json.load(f)
-            index[entry.name] = {
-                "sheets":     data.get("sheets", []),
-                "frames":     list(data.get("frames", {}).keys()),
-                "animations": list(data.get("animations", {}).keys()),
-            }
+        if not os.path.exists(json_path):
+            continue
+        with open(json_path) as f:
+            data = json.load(f)
+        asset_type = data.get("type", "unknown")
+        # Prefer the type recorded in the frames marker (more reliable)
+        if frames_dir:
+            marker = os.path.join(frames_dir, entry.name, f"{entry.name}_frames.json")
+            if os.path.exists(marker):
+                with open(marker) as f:
+                    mdata = json.load(f)
+                asset_type = mdata.get("type", asset_type)
+        index[entry.name] = {
+            "type":       asset_type,
+            "sheets":     data.get("sheets", []),
+            "frames":     list(data.get("frames", {}).keys()),
+            "animations": list(data.get("animations", {}).keys()),
+        }
     out_path = os.path.join(love_dir, "sprite_index.json")
     with open(out_path, "w") as f:
         json.dump(index, f, indent=2)
@@ -229,7 +242,7 @@ def build_global_manifest(love_dir: str):
 
 def main():
     parser = argparse.ArgumentParser(description="3D → 2D sprite pipeline runner")
-    parser.add_argument("--fbx-root",  help="Root directory of exported FBX files")
+    parser.add_argument("--fbx-root",  help="Root directory of exported gltf/fbx files")
     parser.add_argument("--blender",   help="Path to blender.exe", default="blender")
     parser.add_argument("--config",    default="config.json")
     parser.add_argument("--workers",   type=int, default=2, help="Parallel Blender processes")
@@ -240,12 +253,13 @@ def main():
     parser.add_argument("--type",      default="prop", help="Asset type for --single")
     args = parser.parse_args()
 
+    script_dir  = os.path.dirname(os.path.abspath(__file__))
     config      = load_config(args.config)
-    frames_dir  = config["output"]["frames_dir"]
-    sheets_dir  = config["output"]["sheets_dir"]
-    love_dir    = config["output"]["love_assets_dir"]
-    progress_f  = "pipeline_progress.json"
-    script_path = os.path.join(os.path.dirname(__file__), "blender_render.py")
+    frames_dir  = os.path.join(script_dir, config["output"]["frames_dir"])
+    sheets_dir  = os.path.join(script_dir, config["output"]["sheets_dir"])
+    love_dir    = os.path.join(script_dir, config["output"]["love_assets_dir"])
+    progress_f  = os.path.join(script_dir, "pipeline_progress.json")
+    script_path = os.path.join(script_dir, "blender_render.py")
     config_path = os.path.abspath(args.config)
 
     progress = load_progress(progress_f)
@@ -264,7 +278,7 @@ def main():
         if success:
             asset_name = Path(args.single).stem
             pack_asset(asset_name, frames_dir, sheets_dir, love_dir, config)
-            build_global_manifest(love_dir)
+            build_global_manifest(love_dir, frames_dir)
         sys.exit(0 if success else 1)
 
     # ── Render stage ──────────────────────────────────────────────────────
@@ -327,7 +341,7 @@ def main():
     log.info(f"Packed {packed_count} assets")
 
     # ── Global index ───────────────────────────────────────────────────────
-    build_global_manifest(love_dir)
+    build_global_manifest(love_dir, frames_dir)
     log.info("Pipeline complete.")
 
     if progress["failed"]:

@@ -1,0 +1,10 @@
+{
+  "asset": "SK_Gruntling_Scud",
+  "type": "character",
+  "frames": {
+    "SK_Gruntling_Scud_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Gruntling_Scud\\SK_Gruntling_Scud_south.png",
+    "SK_Gruntling_Scud_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Gruntling_Scud\\SK_Gruntling_Scud_west.png",
+    "SK_Gruntling_Scud_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Gruntling_Scud\\SK_Gruntling_Scud_north.png",
+    "SK_Gruntling_Scud_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Gruntling_Scud\\SK_Gruntling_Scud_east.png"
+  }
+}

@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SM_Dungeon_Wall",
+    "max_size": 4096
+  },
+  "sheets": [
+    "SM_Dungeon_Wall_00.png"
+  ],
+  "frames": {
+    "SM_Dungeon_Wall_east": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 123,
+        "h": 224
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 133,
+        "y": 0
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_Dungeon_Wall_north": {
+      "sheet": 0,
+      "frame": {
+        "x": 123,
+        "y": 0,
+        "w": 123,
+        "h": 224
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 133,
+        "y": 0
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_Dungeon_Wall_south": {
+      "sheet": 0,
+      "frame": {
+        "x": 246,
+        "y": 0,
+        "w": 123,
+        "h": 224
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 133,
+        "y": 0
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "SM_Dungeon_Wall_west": {
+      "sheet": 0,
+      "frame": {
+        "x": 369,
+        "y": 0,
+        "w": 123,
+        "h": 224
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 133,
+        "y": 0
+      },
+      "source": {
+        "w": 256,
+        "h": 256
+      }
+    }
+  },
+  "animations": {}
+}

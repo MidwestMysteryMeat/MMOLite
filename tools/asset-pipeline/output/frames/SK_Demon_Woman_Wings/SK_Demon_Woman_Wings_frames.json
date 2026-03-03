@@ -1,0 +1,10 @@
+{
+  "asset": "SK_Demon_Woman_Wings",
+  "type": "character",
+  "frames": {
+    "SK_Demon_Woman_Wings_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Demon_Woman_Wings\\SK_Demon_Woman_Wings_south.png",
+    "SK_Demon_Woman_Wings_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Demon_Woman_Wings\\SK_Demon_Woman_Wings_west.png",
+    "SK_Demon_Woman_Wings_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Demon_Woman_Wings\\SK_Demon_Woman_Wings_north.png",
+    "SK_Demon_Woman_Wings_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Demon_Woman_Wings\\SK_Demon_Woman_Wings_east.png"
+  }
+}

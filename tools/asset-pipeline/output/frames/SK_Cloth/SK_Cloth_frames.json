@@ -1,0 +1,10 @@
+{
+  "asset": "SK_Cloth",
+  "type": "character",
+  "frames": {
+    "SK_Cloth_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Cloth\\SK_Cloth_south.png",
+    "SK_Cloth_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Cloth\\SK_Cloth_west.png",
+    "SK_Cloth_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Cloth\\SK_Cloth_north.png",
+    "SK_Cloth_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Cloth\\SK_Cloth_east.png"
+  }
+}

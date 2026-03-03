@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SK_Demon_Woman_DemForm_AB",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SK_Demon_Woman_DemForm_AB_00.png"
+  ],
+  "frames": {
+    "SK_Demon_Woman_DemForm_AB_east": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 44,
+        "h": 51
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 44,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Demon_Woman_DemForm_AB_north": {
+      "sheet": 0,
+      "frame": {
+        "x": 44,
+        "y": 0,
+        "w": 44,
+        "h": 51
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 44,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Demon_Woman_DemForm_AB_south": {
+      "sheet": 0,
+      "frame": {
+        "x": 88,
+        "y": 0,
+        "w": 44,
+        "h": 51
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 44,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SK_Demon_Woman_DemForm_AB_west": {
+      "sheet": 0,
+      "frame": {
+        "x": 132,
+        "y": 0,
+        "w": 44,
+        "h": 51
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 44,
+        "y": 0
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    }
+  },
+  "animations": {}
+}

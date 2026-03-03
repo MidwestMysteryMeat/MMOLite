@@ -1,0 +1,32 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SM_Pearls_01c",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SM_Pearls_01c_00.png"
+  ],
+  "frames": {
+    "SM_Pearls_01c_default": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 54,
+        "h": 35
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 4,
+        "y": 14
+      },
+      "source": {
+        "w": 64,
+        "h": 64
+      }
+    }
+  },
+  "animations": {}
+}

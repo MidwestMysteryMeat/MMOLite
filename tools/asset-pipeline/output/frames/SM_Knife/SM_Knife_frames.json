@@ -1,0 +1,7 @@
+{
+  "asset": "SM_Knife",
+  "type": "prop",
+  "frames": {
+    "SM_Knife_default": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Knife\\SM_Knife_default.png"
+  }
+}

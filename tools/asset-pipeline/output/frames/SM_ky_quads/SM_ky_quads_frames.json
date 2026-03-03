@@ -1,0 +1,7 @@
+{
+  "asset": "SM_ky_quads",
+  "type": "prop",
+  "frames": {
+    "SM_ky_quads_default": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_ky_quads\\SM_ky_quads_default.png"
+  }
+}

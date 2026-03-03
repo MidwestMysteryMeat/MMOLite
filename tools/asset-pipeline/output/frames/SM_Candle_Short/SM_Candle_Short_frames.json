@@ -1,0 +1,7 @@
+{
+  "asset": "SM_Candle_Short",
+  "type": "prop",
+  "frames": {
+    "SM_Candle_Short_default": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Candle_Short\\SM_Candle_Short_default.png"
+  }
+}

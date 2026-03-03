@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SM_CoinMaterial_01b",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SM_CoinMaterial_01b_00.png"
+  ],
+  "frames": {
+    "SM_CoinMaterial_01b_east": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 128,
+        "h": 93
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 0,
+        "y": 18
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SM_CoinMaterial_01b_north": {
+      "sheet": 0,
+      "frame": {
+        "x": 128,
+        "y": 0,
+        "w": 128,
+        "h": 93
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 0,
+        "y": 18
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SM_CoinMaterial_01b_south": {
+      "sheet": 0,
+      "frame": {
+        "x": 256,
+        "y": 0,
+        "w": 128,
+        "h": 93
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 0,
+        "y": 18
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SM_CoinMaterial_01b_west": {
+      "sheet": 0,
+      "frame": {
+        "x": 384,
+        "y": 0,
+        "w": 128,
+        "h": 93
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 0,
+        "y": 18
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    }
+  },
+  "animations": {}
+}

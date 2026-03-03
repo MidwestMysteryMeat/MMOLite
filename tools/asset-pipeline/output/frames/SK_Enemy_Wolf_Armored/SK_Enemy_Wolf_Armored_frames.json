@@ -1,0 +1,10 @@
+{
+  "asset": "SK_Enemy_Wolf_Armored",
+  "type": "character",
+  "frames": {
+    "SK_Enemy_Wolf_Armored_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Enemy_Wolf_Armored\\SK_Enemy_Wolf_Armored_south.png",
+    "SK_Enemy_Wolf_Armored_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Enemy_Wolf_Armored\\SK_Enemy_Wolf_Armored_west.png",
+    "SK_Enemy_Wolf_Armored_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Enemy_Wolf_Armored\\SK_Enemy_Wolf_Armored_north.png",
+    "SK_Enemy_Wolf_Armored_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Enemy_Wolf_Armored\\SK_Enemy_Wolf_Armored_east.png"
+  }
+}

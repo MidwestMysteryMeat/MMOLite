@@ -1,0 +1,10 @@
+{
+  "asset": "SK_Gruntling_Guardian",
+  "type": "character",
+  "frames": {
+    "SK_Gruntling_Guardian_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Gruntling_Guardian\\SK_Gruntling_Guardian_south.png",
+    "SK_Gruntling_Guardian_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Gruntling_Guardian\\SK_Gruntling_Guardian_west.png",
+    "SK_Gruntling_Guardian_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Gruntling_Guardian\\SK_Gruntling_Guardian_north.png",
+    "SK_Gruntling_Guardian_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Gruntling_Guardian\\SK_Gruntling_Guardian_east.png"
+  }
+}

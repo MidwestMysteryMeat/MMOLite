@@ -1,0 +1,10 @@
+{
+  "asset": "SM_G67_Thrown",
+  "type": "weapon",
+  "frames": {
+    "SM_G67_Thrown_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_G67_Thrown\\SM_G67_Thrown_south.png",
+    "SM_G67_Thrown_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_G67_Thrown\\SM_G67_Thrown_west.png",
+    "SM_G67_Thrown_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_G67_Thrown\\SM_G67_Thrown_north.png",
+    "SM_G67_Thrown_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_G67_Thrown\\SM_G67_Thrown_east.png"
+  }
+}

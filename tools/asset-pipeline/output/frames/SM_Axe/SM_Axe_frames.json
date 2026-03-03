@@ -1,0 +1,10 @@
+{
+  "asset": "SM_Axe",
+  "type": "weapon",
+  "frames": {
+    "SM_Axe_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Axe\\SM_Axe_south.png",
+    "SM_Axe_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Axe\\SM_Axe_west.png",
+    "SM_Axe_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Axe\\SM_Axe_north.png",
+    "SM_Axe_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Axe\\SM_Axe_east.png"
+  }
+}

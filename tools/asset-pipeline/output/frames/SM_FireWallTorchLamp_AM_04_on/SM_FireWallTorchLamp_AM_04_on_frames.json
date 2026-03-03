@@ -1,0 +1,10 @@
+{
+  "asset": "SM_FireWallTorchLamp_AM_04_on",
+  "type": "character",
+  "frames": {
+    "SM_FireWallTorchLamp_AM_04_on_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_FireWallTorchLamp_AM_04_on\\SM_FireWallTorchLamp_AM_04_on_south.png",
+    "SM_FireWallTorchLamp_AM_04_on_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_FireWallTorchLamp_AM_04_on\\SM_FireWallTorchLamp_AM_04_on_west.png",
+    "SM_FireWallTorchLamp_AM_04_on_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_FireWallTorchLamp_AM_04_on\\SM_FireWallTorchLamp_AM_04_on_north.png",
+    "SM_FireWallTorchLamp_AM_04_on_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_FireWallTorchLamp_AM_04_on\\SM_FireWallTorchLamp_AM_04_on_east.png"
+  }
+}

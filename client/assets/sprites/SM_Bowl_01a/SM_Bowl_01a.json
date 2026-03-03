@@ -1,0 +1,32 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SM_Bowl_01a",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SM_Bowl_01a_00.png"
+  ],
+  "frames": {
+    "SM_Bowl_01a_default": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 58,
+        "h": 54
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 3,
+        "y": 5
+      },
+      "source": {
+        "w": 64,
+        "h": 64
+      }
+    }
+  },
+  "animations": {}
+}

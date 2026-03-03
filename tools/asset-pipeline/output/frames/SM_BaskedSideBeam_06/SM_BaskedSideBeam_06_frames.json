@@ -1,0 +1,10 @@
+{
+  "asset": "SM_BaskedSideBeam_06",
+  "type": "building",
+  "frames": {
+    "SM_BaskedSideBeam_06_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_BaskedSideBeam_06\\SM_BaskedSideBeam_06_south.png",
+    "SM_BaskedSideBeam_06_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_BaskedSideBeam_06\\SM_BaskedSideBeam_06_west.png",
+    "SM_BaskedSideBeam_06_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_BaskedSideBeam_06\\SM_BaskedSideBeam_06_north.png",
+    "SM_BaskedSideBeam_06_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_BaskedSideBeam_06\\SM_BaskedSideBeam_06_east.png"
+  }
+}

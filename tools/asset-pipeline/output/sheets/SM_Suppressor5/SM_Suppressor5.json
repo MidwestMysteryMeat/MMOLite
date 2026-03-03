@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "version": "1.0",
+    "generator": "MMOLite Asset Pipeline",
+    "sheet_name": "SM_Suppressor5",
+    "max_size": 2048
+  },
+  "sheets": [
+    "SM_Suppressor5_00.png"
+  ],
+  "frames": {
+    "SM_Suppressor5_east": {
+      "sheet": 0,
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 76,
+        "h": 65
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 0,
+        "y": 3
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SM_Suppressor5_north": {
+      "sheet": 0,
+      "frame": {
+        "x": 76,
+        "y": 0,
+        "w": 76,
+        "h": 65
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 0,
+        "y": 3
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SM_Suppressor5_south": {
+      "sheet": 0,
+      "frame": {
+        "x": 152,
+        "y": 0,
+        "w": 76,
+        "h": 65
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 0,
+        "y": 3
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "SM_Suppressor5_west": {
+      "sheet": 0,
+      "frame": {
+        "x": 228,
+        "y": 0,
+        "w": 76,
+        "h": 65
+      },
+      "trimmed": true,
+      "offset": {
+        "x": 0,
+        "y": 3
+      },
+      "source": {
+        "w": 128,
+        "h": 128
+      }
+    }
+  },
+  "animations": {}
+}

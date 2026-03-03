@@ -1,0 +1,10 @@
+{
+  "asset": "SK_Demon_Woman_Bra",
+  "type": "character",
+  "frames": {
+    "SK_Demon_Woman_Bra_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Demon_Woman_Bra\\SK_Demon_Woman_Bra_south.png",
+    "SK_Demon_Woman_Bra_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Demon_Woman_Bra\\SK_Demon_Woman_Bra_west.png",
+    "SK_Demon_Woman_Bra_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Demon_Woman_Bra\\SK_Demon_Woman_Bra_north.png",
+    "SK_Demon_Woman_Bra_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Demon_Woman_Bra\\SK_Demon_Woman_Bra_east.png"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "asset": "SM_Throwing",
+  "type": "weapon",
+  "frames": {
+    "SM_Throwing_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Throwing\\SM_Throwing_south.png",
+    "SM_Throwing_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Throwing\\SM_Throwing_west.png",
+    "SM_Throwing_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Throwing\\SM_Throwing_north.png",
+    "SM_Throwing_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Throwing\\SM_Throwing_east.png"
+  }
+}

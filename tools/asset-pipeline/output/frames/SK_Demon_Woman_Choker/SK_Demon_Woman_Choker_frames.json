@@ -1,0 +1,10 @@
+{
+  "asset": "SK_Demon_Woman_Choker",
+  "type": "character",
+  "frames": {
+    "SK_Demon_Woman_Choker_south": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Demon_Woman_Choker\\SK_Demon_Woman_Choker_south.png",
+    "SK_Demon_Woman_Choker_west": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Demon_Woman_Choker\\SK_Demon_Woman_Choker_west.png",
+    "SK_Demon_Woman_Choker_north": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Demon_Woman_Choker\\SK_Demon_Woman_Choker_north.png",
+    "SK_Demon_Woman_Choker_east": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SK_Demon_Woman_Choker\\SK_Demon_Woman_Choker_east.png"
+  }
+}

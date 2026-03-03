@@ -1,0 +1,7 @@
+{
+  "asset": "SM_Book_Open",
+  "type": "prop",
+  "frames": {
+    "SM_Book_Open_default": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Book_Open\\SM_Book_Open_default.png"
+  }
+}
