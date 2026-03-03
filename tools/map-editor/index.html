@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MMOLite City Map Editor</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #1a1a2e; color: #e0e0e0; font-family: monospace; display: flex; height: 100vh; overflow: hidden; }
+
+#sidebar { width: 270px; min-width: 270px; background: #16213e; border-right: 1px solid #333; display: flex; flex-direction: column; overflow: hidden; }
+#sidebar h2 { padding: 10px 12px; background: #0f3460; font-size: 13px; letter-spacing: 1px; text-transform: uppercase; }
+#tabs { display: flex; background: #0f2444; }
+.tab-btn { flex: 1; padding: 6px; font-size: 11px; border: none; background: transparent; color: #aaa; cursor: pointer; border-bottom: 2px solid transparent; }
+.tab-btn.active { color: #e2b96f; border-bottom-color: #e2b96f; }
+#tab-content { flex: 1; overflow-y: auto; padding: 8px; }
+
+.palette-item { display: flex; align-items: center; gap: 8px; padding: 5px; border-radius: 4px; cursor: pointer; margin-bottom: 3px; border: 1px solid transparent; font-size: 12px; }
+.palette-item:hover { background: #2a3f6a; border-color: #4a6a9a; }
+.palette-item.selected { background: #1a3a5c; border-color: #e2b96f; }
+.palette-thumb { width: 36px; height: 36px; background: #2a2a4a; border-radius: 3px; object-fit: contain; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #555; font-size: 18px; }
+.palette-name { font-size: 11px; line-height: 1.3; }
+.palette-type { font-size: 10px; color: #888; }
+.section-header { font-size: 10px; color: #e2b96f; text-transform: uppercase; letter-spacing: 1px; margin: 10px 0 4px; padding-bottom: 3px; border-bottom: 1px solid #333; }
+
+.tile-row { display: flex; flex-wrap: wrap; gap: 4px; padding: 4px 0; }
+.tile-swatch { width: 46px; height: 46px; border-radius: 4px; cursor: pointer; border: 2px solid transparent; position: relative; display: flex; align-items: center; justify-content: center; }
+.tile-swatch:hover { border-color: #aaa !important; }
+.tile-swatch.selected { border-color: #e2b96f !important; }
+.tile-label { position: absolute; bottom: 2px; left: 0; right: 0; text-align: center; font-size: 8px; color: rgba(255,255,255,0.85); text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
+
+#prop-panel { padding: 8px; font-size: 12px; }
+.prop-row { display: flex; gap: 6px; align-items: center; margin-bottom: 5px; }
+.prop-row label { width: 82px; color: #999; flex-shrink: 0; font-size: 11px; }
+.prop-row input, .prop-row select { flex: 1; background: #0d1b2e; border: 1px solid #333; color: #eee; padding: 3px 6px; border-radius: 3px; font-family: monospace; font-size: 12px; }
+.prop-row input:focus { outline: none; border-color: #4a90d9; }
+.prop-row textarea { flex: 1; background: #0d1b2e; border: 1px solid #333; color: #eee; padding: 3px 6px; border-radius: 3px; font-family: monospace; font-size: 11px; resize: vertical; min-height: 50px; }
+.prop-section { margin-top: 8px; padding-top: 6px; border-top: 1px solid #2a3a5a; font-size: 10px; color: #6a9adf; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+.conn-badge { display: inline-block; background: #1a3a6a; color: #7aafef; font-size: 10px; padding: 2px 6px; border-radius: 3px; margin-bottom: 8px; }
+
+#toolbar { display: flex; align-items: center; gap: 6px; padding: 6px 10px; background: #0f3460; border-bottom: 1px solid #333; flex-shrink: 0; font-size: 12px; flex-wrap: wrap; }
+.tool-btn { padding: 4px 9px; background: #1a3a5c; border: 1px solid #3a5a8c; color: #ccc; cursor: pointer; border-radius: 3px; font-size: 11px; }
+.tool-btn:hover { background: #2a4a6c; }
+.tool-btn.active { background: #0f5280; border-color: #e2b96f; color: #e2b96f; }
+.tool-sep { width: 1px; height: 20px; background: #333; }
+#status { margin-left: auto; color: #888; font-size: 11px; }
+
+#main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+#canvas-wrap { flex: 1; overflow: hidden; position: relative; cursor: crosshair; }
+canvas#cv { position: absolute; top: 0; left: 0; }
+
+#minimap { position: absolute; bottom: 12px; right: 12px; width: 160px; height: 120px; background: rgba(0,0,0,0.7); border: 1px solid #333; }
+
+#modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; align-items: center; justify-content: center; }
+#modal.open { display: flex; }
+#modal-box { background: #16213e; border: 1px solid #3a5a8c; border-radius: 6px; padding: 20px; width: 520px; max-height: 80vh; overflow-y: auto; }
+#modal-box h3 { margin-bottom: 12px; color: #e2b96f; }
+textarea#json-out { width: 100%; height: 300px; background: #0d1b2e; color: #7fdf7f; font-family: monospace; font-size: 11px; border: 1px solid #333; padding: 8px; resize: vertical; }
+.modal-btns { display: flex; gap: 8px; margin-top: 10px; justify-content: flex-end; }
+.btn { padding: 6px 14px; border: none; border-radius: 3px; cursor: pointer; font-family: monospace; font-size: 12px; }
+.btn-primary { background: #0f5280; color: #e2b96f; }
+.btn-cancel  { background: #2a2a4a; color: #aaa; }
+
+.layer-row { display: flex; align-items: center; gap: 8px; padding: 4px 6px; border-radius: 3px; margin-bottom: 2px; background: #0d1b2e; font-size: 11px; }
+.layer-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<div id="sidebar">
+  <h2>City Map Editor</h2>
+  <div id="tabs">
+    <button class="tab-btn active" onclick="showTab('assets')">Assets</button>
+    <button class="tab-btn" onclick="showTab('props')">Properties</button>
+    <button class="tab-btn" onclick="showTab('map')">Map</button>
+  </div>
+  <div id="tab-content">
+
+    <!-- ASSETS TAB -->
+    <div id="tab-assets">
+      <div class="section-header">Tiles (T)</div>
+      <div class="tile-row" id="tile-palette"></div>
+
+      <div class="section-header">Buildings</div>
+      <div id="palette-buildings"></div>
+      <div class="section-header">Props — Town</div>
+      <div id="palette-props"></div>
+      <div class="section-header">Props — Dungeon</div>
+      <div id="palette-dungeon"></div>
+      <div class="section-header">NPCs</div>
+      <div id="palette-npcs"></div>
+      <div style="margin-top:10px">
+        <button class="tool-btn" style="width:100%" onclick="loadSpriteIndex()">↺ Reload sprite_index.json</button>
+      </div>
+    </div>
+
+    <!-- PROPERTIES TAB -->
+    <div id="tab-props" style="display:none">
+      <div id="prop-panel">
+        <div style="color:#888;font-size:11px" id="prop-hint">Select an object to edit its properties.</div>
+
+        <!-- Object fields -->
+        <div id="prop-object" style="display:none">
+          <div class="prop-row"><label>ID</label><input id="p-id" type="text" oninput="updateObj('id',this.value)"></div>
+          <div class="prop-row"><label>Asset</label><input id="p-asset" type="text" readonly></div>
+          <div class="prop-row"><label>X</label><input id="p-x" type="number" oninput="updateObj('x',+this.value)"></div>
+          <div class="prop-row"><label>Y</label><input id="p-y" type="number" oninput="updateObj('y',+this.value)"></div>
+          <div class="prop-row"><label>Layer</label>
+            <select id="p-layer" onchange="updateObj('layer',+this.value)">
+              <option value="0">0 – Ground Deco</option>
+              <option value="1" selected>1 – Buildings (default)</option>
+              <option value="2">2 – Overhead</option>
+            </select>
+          </div>
+          <div class="prop-row"><label>Direction</label>
+            <select id="p-dir" onchange="updateObj('dir',this.value)">
+              <option>south</option><option>west</option><option>north</option><option>east</option>
+            </select>
+          </div>
+          <div class="prop-row"><label>Scale</label><input id="p-scale" type="number" step="0.1" value="1" oninput="updateObj('scale',+this.value)"></div>
+          <div class="prop-row"><label>Enterable</label><input id="p-enter" type="checkbox" onchange="updateObj('enterable',this.checked)"></div>
+          <div class="prop-row"><label>Target Zone</label><input id="p-zone" type="text" placeholder="e.g. zone_tavern_int" oninput="updateObj('targetZone',this.value)"></div>
+          <div class="prop-row"><label>Collision W</label><input id="p-cw" type="number" oninput="updateObjCollision('w',+this.value)"></div>
+          <div class="prop-row"><label>Collision H</label><input id="p-ch" type="number" oninput="updateObjCollision('h',+this.value)"></div>
+          <div class="prop-row"><label>Label</label><input id="p-label" type="text" oninput="updateObj('label',this.value)"></div>
+
+          <!-- NPC-specific fields (shown only when asset type = npc) -->
+          <div id="npc-fields" style="display:none">
+            <div class="prop-section">NPC Details</div>
+            <div class="prop-row"><label>Race</label>
+              <select id="p-race" onchange="updateObj('race',this.value)">
+                <option value="">— none —</option>
+                <option>human</option><option>elf</option><option>orc</option><option>dwarf</option>
+                <option>gnome</option><option>goblin</option><option>lizardfolk</option><option>catfolk</option>
+              </select>
+            </div>
+            <div class="prop-row"><label>Portrait</label><input id="p-portrait" type="text" placeholder="assets/portraits/name.png" oninput="updateObj('portrait',this.value)"></div>
+            <div class="prop-row"><label>Dialogue</label><input id="p-dialogue" type="text" placeholder="npc_id key" oninput="updateObj('dialogue',this.value)"></div>
+            <div class="prop-row"><label>Shop Type</label>
+              <select id="p-shoptype" onchange="updateObj('shopType',this.value)">
+                <option value="">none</option>
+                <option>general_store</option><option>blacksmith</option><option>magic_shop</option>
+                <option>alchemy</option><option>inn</option><option>stable</option><option>jeweler</option>
+              </select>
+            </div>
+            <div class="prop-row"><label>Quest ID</label><input id="p-questid" type="text" oninput="updateObj('questId',this.value)"></div>
+            <div class="prop-row"><label>Faction ID</label><input id="p-faction" type="text" oninput="updateObj('factionId',this.value)"></div>
+            <div class="prop-row"><label>Sleep Start</label><input id="p-sleep-s" type="number" min="0" max="23" oninput="updateObj('sleepStart',+this.value)"></div>
+            <div class="prop-row"><label>Sleep End</label><input id="p-sleep-e" type="number" min="0" max="23" oninput="updateObj('sleepEnd',+this.value)"></div>
+            <div class="prop-row"><label>NPC File</label>
+              <input id="p-npcfile" type="text" placeholder="npcs/alaric.json" oninput="updateObj('npcFile',this.value)">
+            </div>
+          </div>
+
+          <div style="margin-top:8px">
+            <button class="btn btn-cancel" style="width:100%" onclick="deleteSelected()">Delete Object</button>
+          </div>
+        </div>
+
+        <!-- Connection fields -->
+        <div id="prop-connection" style="display:none">
+          <div class="conn-badge">Zone Connection</div>
+          <div class="prop-row"><label>ID</label><input id="c-id" type="text" readonly></div>
+          <div class="prop-row"><label>Direction</label>
+            <select id="c-direction" onchange="updateConn('direction',this.value)">
+              <option>north</option><option>south</option><option>east</option><option>west</option>
+            </select>
+          </div>
+          <div class="prop-row"><label>Target Zone</label><input id="c-target" type="text" placeholder="zone_forest_1" oninput="updateConn('targetZoneId',this.value)"></div>
+          <div class="prop-row"><label>Label</label><input id="c-label" type="text" oninput="updateConn('label',this.value)"></div>
+          <div class="prop-row"><label>X</label><input id="c-x" type="number" oninput="updateConn('x',+this.value)"></div>
+          <div class="prop-row"><label>Y</label><input id="c-y" type="number" oninput="updateConn('y',+this.value)"></div>
+          <div style="margin-top:8px">
+            <button class="btn btn-cancel" style="width:100%" onclick="deleteSelected()">Delete Connection</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAP TAB -->
+    <div id="tab-map" style="display:none">
+      <div id="prop-panel">
+        <div class="prop-row"><label>Map Name</label><input id="m-name" type="text" value="starter_town" oninput="mapMeta.name=this.value"></div>
+        <div class="prop-row"><label>Zone Type</label>
+          <select id="m-type" onchange="mapMeta.type=this.value">
+            <option value="town">town</option><option value="city">city</option>
+            <option value="village">village</option><option value="dungeon">dungeon</option>
+            <option value="building">building</option><option value="overworld">overworld</option>
+          </select>
+        </div>
+        <div class="prop-row"><label>Width (px)</label><input id="m-w" type="number" value="2048" oninput="resizeMap(+this.value,mapMeta.height)"></div>
+        <div class="prop-row"><label>Height (px)</label><input id="m-h" type="number" value="2048" oninput="resizeMap(mapMeta.width,+this.value)"></div>
+        <div class="prop-row"><label>Tile / Grid</label><input id="m-grid" type="number" value="64" oninput="GRID=+this.value;redraw()"></div>
+        <div class="prop-row"><label>Show Grid</label><input type="checkbox" checked onchange="SHOW_GRID=this.checked;redraw()"></div>
+        <div class="prop-row"><label>Show Iso Lines</label><input type="checkbox" checked onchange="SHOW_ISO=this.checked;redraw()"></div>
+
+        <div class="section-header" style="margin-top:10px">Layers</div>
+        <div id="layer-list">
+          <div class="layer-row"><div class="layer-dot" style="background:#4a8a4a"></div><span style="flex:1">Ground Deco (0)</span><input type="checkbox" checked onchange="toggleLayer(0,this.checked)"></div>
+          <div class="layer-row"><div class="layer-dot" style="background:#4a7aab"></div><span style="flex:1">Buildings (1)</span><input type="checkbox" checked onchange="toggleLayer(1,this.checked)"></div>
+          <div class="layer-row"><div class="layer-dot" style="background:#9a4aab"></div><span style="flex:1">Overhead (2)</span><input type="checkbox" checked onchange="toggleLayer(2,this.checked)"></div>
+        </div>
+
+        <div style="margin-top:10px; display:flex; flex-direction:column; gap:6px">
+          <button class="btn btn-primary" onclick="openExport()">Export JSON</button>
+          <button class="btn btn-cancel" onclick="triggerImport()">Import JSON</button>
+          <button class="btn btn-cancel" onclick="clearMap()" style="color:#f88">Clear Map</button>
+        </div>
+        <div style="margin-top:8px; font-size:11px; color:#888">
+          Objects: <span id="obj-count">0</span><br>
+          Mouse: <span id="mouse-coords">-</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="main">
+  <div id="toolbar">
+    <button class="tool-btn active" id="tool-place"  onclick="setTool('place')">Place (P)</button>
+    <button class="tool-btn"        id="tool-select" onclick="setTool('select')">Select (S)</button>
+    <button class="tool-btn"        id="tool-delete" onclick="setTool('delete')">Delete (D)</button>
+    <button class="tool-btn"        id="tool-tile"   onclick="setTool('tile')">Tile (T)</button>
+    <button class="tool-btn"        id="tool-connect" onclick="setTool('connect')">Connect (C)</button>
+    <div class="tool-sep"></div>
+    <button class="tool-btn" id="snap-btn" onclick="snapToGrid=!snapToGrid;this.classList.toggle('active')" class="active">Snap</button>
+    <button class="tool-btn" onclick="zoomIn()">+</button>
+    <button class="tool-btn" onclick="zoomOut()">−</button>
+    <button class="tool-btn" onclick="resetView()">Reset</button>
+    <div class="tool-sep"></div>
+    <button class="tool-btn" id="btn-undo" onclick="undo()">Undo (0)</button>
+    <button class="tool-btn" id="btn-redo" onclick="redo()">Redo (0)</button>
+    <span id="status">No asset selected</span>
+  </div>
+  <div id="canvas-wrap">
+    <canvas id="cv"></canvas>
+    <canvas id="minimap"></canvas>
+  </div>
+</div>
+
+<div id="modal">
+  <div id="modal-box">
+    <h3 id="modal-title">Export City JSON</h3>
+    <textarea id="json-out"></textarea>
+    <div class="modal-btns">
+      <button class="btn btn-primary" onclick="copyJSON()">Copy</button>
+      <button class="btn btn-primary" onclick="downloadJSON()">Download</button>
+      <button class="btn btn-cancel"  onclick="closeModal()">Close</button>
+    </div>
+  </div>
+</div>
+<input type="file" id="import-file" accept=".json" style="display:none" onchange="importJSON(this)">
+
+<script>
+// ── State ─────────────────────────────────────────────────────────────────────
+let objects     = [];
+let tiles       = [];        // sparse flat array, idx = ty*tileCountX()+tx
+let connections = [];
+let layers      = [
+  {visible: true},   // 0: Ground Deco
+  {visible: true},   // 1: Buildings
+  {visible: true},   // 2: Overhead
+];
+let selected    = null;      // {kind: 'object'|'connection', idx}
+let palette     = [];
+let curAsset    = null;
+let curTile     = 'grass';
+let tool        = 'place';
+let snapToGrid  = true;
+let tilePainting = false;
+let GRID        = 64;
+let SHOW_GRID   = true;
+let SHOW_ISO    = true;
+let mapMeta     = {name:'starter_town', type:'town', width:2048, height:2048};
+let cam         = {x:0, y:0, zoom:1};
+let dragging    = false, dragStart = null, dragCamStart = null;
+let history     = [];
+let future      = [];
+
+const cv   = document.getElementById('cv');
+const ctx  = cv.getContext('2d');
+const mm   = document.getElementById('minimap');
+const mctx = mm.getContext('2d');
+
+// ── Canvas ────────────────────────────────────────────────────────────────────
+function resizeCanvas() {
+  const w = document.getElementById('canvas-wrap');
+  cv.width = w.clientWidth; cv.height = w.clientHeight;
+  redraw();
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+// ── Coord helpers ─────────────────────────────────────────────────────────────
+function screenToWorld(sx, sy) {
+  return {x:(sx - cv.width/2 - cam.x)/cam.zoom, y:(sy - cv.height/2 - cam.y)/cam.zoom};
+}
+function snap(v) { return snapToGrid ? Math.round(v/GRID)*GRID : Math.round(v); }
+function tileCountX() { return Math.ceil(mapMeta.width  / GRID); }
+function tileCountY() { return Math.ceil(mapMeta.height / GRID); }
+function tileIdx(tx, ty) { return ty * tileCountX() + tx; }
+
+// ── Tile palette data ─────────────────────────────────────────────────────────
+const TILE_META = {
+  grass:  {color:'#3a6b2a', label:'Grass'},
+  dirt:   {color:'#7a5032', label:'Dirt'},
+  stone:  {color:'#5a5a5a', label:'Stone'},
+  cobble: {color:'#666860', label:'Cobble'},
+  sand:   {color:'#c8b464', label:'Sand'},
+  water:  {color:'#2a5a8a', label:'Water'},
+  snow:   {color:'#c8d8e0', label:'Snow'},
+  rift:   {color:'#3a1a5c', label:'Rift'},
+  wood:   {color:'#6a4828', label:'Wood'},
+  void:   {color:'#0a0a0a', label:'Void'},
+};
+
+function buildTilePalette() {
+  const c = document.getElementById('tile-palette');
+  c.innerHTML = '';
+  // Erase
+  const e = document.createElement('div');
+  e.className = 'tile-swatch'; e.dataset.type = 'erase';
+  e.style.cssText = 'background:#1a1a2a;border:2px solid #444;';
+  e.innerHTML = '<span style="font-size:16px;color:#666">✕</span><div class="tile-label" style="color:#555">Erase</div>';
+  e.title = 'Erase tile'; e.onclick = () => selectTile('erase');
+  c.appendChild(e);
+  for (const [type, meta] of Object.entries(TILE_META)) {
+    const el = document.createElement('div');
+    el.className = 'tile-swatch'; el.dataset.type = type;
+    el.style.background = meta.color; el.title = meta.label;
+    el.innerHTML = `<div class="tile-label">${meta.label}</div>`;
+    el.onclick = () => selectTile(type);
+    c.appendChild(el);
+  }
+}
+
+function selectTile(type) {
+  curTile = type;
+  document.querySelectorAll('.tile-swatch').forEach(e => e.classList.remove('selected'));
+  document.querySelector(`.tile-swatch[data-type="${type}"]`)?.classList.add('selected');
+  setTool('tile');
+  document.getElementById('status').textContent = type === 'erase' ? 'Erasing tiles' : 'Painting: ' + type;
+}
+
+function paintTile(mx, my) {
+  const tx = Math.floor(mx / GRID), ty = Math.floor(my / GRID);
+  if (tx < 0 || ty < 0 || tx >= tileCountX() || ty >= tileCountY()) return;
+  tiles[tileIdx(tx, ty)] = curTile === 'erase' ? null : {type: curTile};
+  redraw();
+}
+
+// ── Palette ───────────────────────────────────────────────────────────────────
+async function loadSpriteIndex() {
+  try {
+    const r = await fetch('../../client/assets/sprites/sprite_index.json');
+    buildPalette(await r.json());
+  } catch(e) {
+    buildPalette(getPlaceholderPalette());
+  }
+}
+
+function getPlaceholderPalette() {
+  return {
+    'tavern':           {type:'building'},
+    'blacksmith':       {type:'building'},
+    'inn':              {type:'building'},
+    'market_stall':     {type:'building'},
+    'town_gate':        {type:'building'},
+    'guard_post':       {type:'building'},
+    'guild_hall':       {type:'building'},
+    'temple':           {type:'building'},
+    'dungeon_entrance': {type:'building'},
+    'well':             {type:'prop'},
+    'fountain':         {type:'prop'},
+    'lamp_post':        {type:'prop'},
+    'tree_oak':         {type:'prop'},
+    'tree_pine':        {type:'prop'},
+    'banner':           {type:'prop'},
+    'barrel':           {type:'prop'},
+    'cart':             {type:'prop'},
+    'fence_straight':   {type:'prop'},
+    'fence_corner':     {type:'prop'},
+    'wall_torch':       {type:'prop', category:'dungeon'},
+    'floor_torch':      {type:'prop', category:'dungeon'},
+    'brazier':          {type:'prop', category:'dungeon'},
+    'pillar':           {type:'prop', category:'dungeon'},
+    'coffin':           {type:'prop', category:'dungeon'},
+    'altar':            {type:'prop', category:'dungeon'},
+    'bookshelf':        {type:'prop', category:'dungeon'},
+    'chest':            {type:'prop', category:'dungeon'},
+    'dungeon_door':     {type:'prop', category:'dungeon'},
+    'bone_pile':        {type:'prop', category:'dungeon'},
+    'web':              {type:'prop', category:'dungeon'},
+    'statue':           {type:'prop', category:'dungeon'},
+    'vendor_npc':       {type:'npc'},
+    'guard_npc':        {type:'npc'},
+    'innkeeper_npc':    {type:'npc'},
+    'blacksmith_npc':   {type:'npc'},
+    'quest_npc':        {type:'npc'},
+    'healer_npc':       {type:'npc'},
+    'banker_npc':       {type:'npc'},
+  };
+}
+
+function buildPalette(index) {
+  palette = [];
+  const byType = {building:[], prop:[], dungeon:[], npc:[]};
+  for (const [id, data] of Object.entries(index)) {
+    const entry = {id, ...data};
+    palette.push(entry);
+    if (data.category === 'dungeon') byType.dungeon.push(entry);
+    else (byType[data.type] || byType.prop).push(entry);
+  }
+  const render = (cid, items) => {
+    const cont = document.getElementById(cid); if (!cont) return;
+    cont.innerHTML = '';
+    for (const item of items) {
+      const el = document.createElement('div');
+      el.className = 'palette-item'; el.dataset.id = item.id;
+      const thumb = item.sheets?.[0]
+        ? `<img class="palette-thumb" src="../../client/assets/sprites/${item.id}/${item.sheets[0]}">`
+        : `<div class="palette-thumb">▦</div>`;
+      el.innerHTML = thumb + `<div><div class="palette-name">${item.id}</div><div class="palette-type">${item.category||item.type||'prop'}</div></div>`;
+      el.onclick = () => selectPaletteItem(item, el);
+      cont.appendChild(el);
+    }
+  };
+  render('palette-buildings', byType.building);
+  render('palette-props',     byType.prop);
+  render('palette-dungeon',   byType.dungeon);
+  render('palette-npcs',      byType.npc);
+}
+
+function selectPaletteItem(item, el) {
+  document.querySelectorAll('.palette-item').forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+  curAsset = item;
+  document.getElementById('status').textContent = 'Placing: ' + item.id;
+  setTool('place');
+}
+
+// ── Undo / Redo ───────────────────────────────────────────────────────────────
+function snapshot() {
+  return {
+    objects:     JSON.parse(JSON.stringify(objects)),
+    tiles:       [...tiles],
+    connections: JSON.parse(JSON.stringify(connections)),
+  };
+}
+function saveUndo() {
+  history.push(snapshot());
+  if (history.length > 80) history.shift();
+  future = [];
+  updateUndoRedoBtns();
+}
+function undo() {
+  if (!history.length) return;
+  future.push(snapshot()); const s = history.pop();
+  objects = s.objects; tiles = s.tiles; connections = s.connections;
+  selected = null; redraw(); updateUndoRedoBtns();
+}
+function redo() {
+  if (!future.length) return;
+  history.push(snapshot()); const s = future.pop();
+  objects = s.objects; tiles = s.tiles; connections = s.connections;
+  selected = null; redraw(); updateUndoRedoBtns();
+}
+function updateUndoRedoBtns() {
+  document.getElementById('btn-undo').textContent = `Undo (${history.length})`;
+  document.getElementById('btn-redo').textContent = `Redo (${future.length})`;
+}
+
+// ── Rendering ─────────────────────────────────────────────────────────────────
+const ASSET_COLORS = {building:'#4a7a9b', prop:'#5a8a5a', npc:'#9b7a4a', unknown:'#666'};
+const CONN_ARROWS  = {north:'▲', south:'▼', east:'▶', west:'◀'};
+const CONN_COLORS  = {north:'#4a9adf', south:'#4a9adf', east:'#4adf9a', west:'#4adf9a'};
+const LAYER_COLORS = ['#4a8a4a', '#4a7aab', '#9a4aab'];
+
+function redraw() {
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  ctx.save();
+  ctx.translate(cv.width/2 + cam.x, cv.height/2 + cam.y);
+  ctx.scale(cam.zoom, cam.zoom);
+
+  ctx.fillStyle = '#151f10';
+  ctx.fillRect(-mapMeta.width/2, -mapMeta.height/2, mapMeta.width, mapMeta.height);
+
+  drawTileLayer();
+  if (SHOW_GRID) drawGrid();
+  if (SHOW_ISO)  drawIsoLines();
+
+  // Sort all objects by layer then depth
+  const tagged = objects.map((o,i) => ({...o, _idx:i}))
+    .sort((a,b) => {
+      const la = a.layer??1, lb = b.layer??1;
+      return la !== lb ? la - lb : (a.x + a.y) - (b.x + b.y);
+    });
+
+  for (let l = 0; l <= 2; l++) {
+    if (!layers[l].visible) continue;
+    for (const obj of tagged) {
+      if ((obj.layer??1) === l) drawObject(obj, selected?.kind==='object' && selected.idx===obj._idx);
+    }
+  }
+  drawConnections();
+  ctx.restore();
+  drawMinimap();
+  document.getElementById('obj-count').textContent =
+    objects.length + ' obj, ' + tiles.filter(Boolean).length + ' tiles, ' + connections.length + ' conn';
+}
+
+function drawTileLayer() {
+  const hw = GRID/2, hh = GRID/4;
+  for (let ty = 0; ty < tileCountY(); ty++) {
+    for (let tx = 0; tx < tileCountX(); tx++) {
+      const tile = tiles[tileIdx(tx, ty)];
+      if (!tile) continue;
+      const meta = TILE_META[tile.type] || {color:'#333'};
+      const wx = tx*GRID - mapMeta.width/2  + GRID/2;
+      const wy = ty*GRID - mapMeta.height/2 + GRID/2;
+      ctx.fillStyle = meta.color;
+      ctx.beginPath();
+      ctx.moveTo(wx, wy-hh); ctx.lineTo(wx+hw, wy);
+      ctx.lineTo(wx, wy+hh); ctx.lineTo(wx-hw, wy);
+      ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,0.15)'; ctx.lineWidth = 0.5; ctx.stroke();
+    }
+  }
+}
+
+function drawGrid() {
+  ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.lineWidth = 0.5;
+  const hw = mapMeta.width/2, hh = mapMeta.height/2;
+  for (let x = -hw; x <= hw; x += GRID) { ctx.beginPath(); ctx.moveTo(x,-hh); ctx.lineTo(x,hh); ctx.stroke(); }
+  for (let y = -hh; y <= hh; y += GRID) { ctx.beginPath(); ctx.moveTo(-hw,y); ctx.lineTo(hw,y); ctx.stroke(); }
+  ctx.strokeStyle = 'rgba(255,200,100,0.3)'; ctx.lineWidth = 1;
+  ctx.strokeRect(-hw, -hh, mapMeta.width, mapMeta.height);
+}
+
+function drawIsoLines() {
+  ctx.strokeStyle = 'rgba(100,180,255,0.04)'; ctx.lineWidth = 0.5;
+  const hw = mapMeta.width/2, hh = mapMeta.height/2;
+  for (let d = -mapMeta.width; d <= mapMeta.width; d += GRID) {
+    ctx.beginPath(); ctx.moveTo(-hw, d-hw); ctx.lineTo(hw, d+hw); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-hw,-d+hw); ctx.lineTo(hw,-d-hw); ctx.stroke();
+  }
+}
+
+function drawObject(obj, isSel) {
+  const x = obj.x - mapMeta.width/2, y = obj.y - mapMeta.height/2;
+  const type  = palette.find(p => p.id===obj.asset)?.type || 'unknown';
+  const color = ASSET_COLORS[type] || '#666';
+  const s     = (obj.scale||1) * GRID;
+
+  // Shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.22)';
+  ctx.beginPath(); ctx.ellipse(x, y+s*0.15, s*0.42, s*0.14, 0, 0, Math.PI*2); ctx.fill();
+
+  // Body
+  ctx.fillStyle   = isSel ? '#1a5a8c' : color;
+  ctx.strokeStyle = isSel ? '#e2b96f' : 'rgba(255,255,255,0.18)';
+  ctx.lineWidth   = isSel ? 2 : 0.5;
+  const hw2 = s*0.34, hh2 = s*0.58;
+  ctx.beginPath(); ctx.roundRect(x-hw2, y-hh2, hw2*2, hh2, 4); ctx.fill(); ctx.stroke();
+
+  // Footprint diamond
+  ctx.strokeStyle = isSel ? 'rgba(226,185,111,0.55)' : 'rgba(255,255,255,0.07)';
+  ctx.lineWidth = 0.5;
+  const fw = s*0.38, fh = s*0.14;
+  ctx.beginPath();
+  ctx.moveTo(x, y+s*0.1-fh); ctx.lineTo(x+fw, y+s*0.1);
+  ctx.lineTo(x, y+s*0.1+fh); ctx.lineTo(x-fw, y+s*0.1);
+  ctx.closePath(); ctx.stroke();
+
+  // Label
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.font = `${Math.max(8,GRID*0.15)}px monospace`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+  ctx.fillText(obj.label || obj.asset || '?', x, y-hh2-2);
+
+  // Enterable marker
+  if (obj.enterable) { ctx.fillStyle='#e2b96f'; ctx.fillText('⬆', x, y+s*0.1+fh+12); }
+
+  // Layer badge (only non-default layers)
+  const layer = obj.layer??1;
+  if (layer !== 1) {
+    ctx.fillStyle = LAYER_COLORS[layer] || '#888';
+    ctx.font = '9px monospace'; ctx.textAlign = 'right';
+    ctx.fillText(layer===0?'G':'O', x+hw2-2, y-hh2+10);
+  }
+}
+
+function drawConnections() {
+  for (let i = 0; i < connections.length; i++) {
+    const c = connections[i];
+    const x = c.x - mapMeta.width/2, y = c.y - mapMeta.height/2;
+    const isSel = selected?.kind==='connection' && selected.idx===i;
+    const col = CONN_COLORS[c.direction] || '#df4adf';
+    ctx.strokeStyle = isSel ? '#e2b96f' : col; ctx.lineWidth = isSel ? 2 : 1;
+    ctx.beginPath(); ctx.roundRect(x-26, y-26, 52, 52, 7); ctx.stroke();
+    ctx.fillStyle = isSel ? '#e2b96f' : col;
+    ctx.font = 'bold 24px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(CONN_ARROWS[c.direction]||'?', x, y);
+    if (c.targetZoneId) {
+      ctx.fillStyle='rgba(255,255,255,0.65)'; ctx.font='9px monospace'; ctx.textBaseline='top';
+      ctx.fillText(c.targetZoneId.slice(0,16), x, y+28);
+    }
+  }
+}
+
+function drawMinimap() {
+  const mw = mm.width = 160, mh = mm.height = 120;
+  mctx.clearRect(0,0,mw,mh); mctx.fillStyle='#111'; mctx.fillRect(0,0,mw,mh);
+  const sx = mw/mapMeta.width, sy = mh/mapMeta.height;
+  tiles.forEach((tile, idx) => {
+    if (!tile) return;
+    const tx = idx % tileCountX(), ty = Math.floor(idx/tileCountX());
+    mctx.fillStyle = TILE_META[tile.type]?.color || '#333';
+    mctx.fillRect(tx*GRID*sx, ty*GRID*sy, GRID*sx+1, GRID*sy+1);
+  });
+  for (const obj of objects) {
+    mctx.fillStyle = ASSET_COLORS[palette.find(p=>p.id===obj.asset)?.type||'unknown']||'#555';
+    mctx.fillRect(obj.x*sx-2, obj.y*sy-2, 4, 4);
+  }
+  for (const c of connections) {
+    mctx.fillStyle = CONN_COLORS[c.direction]||'#df4adf';
+    mctx.fillRect(c.x*sx-3, c.y*sy-3, 6, 6);
+  }
+  const vx = (-cam.x/cam.zoom + mapMeta.width/2)*sx;
+  const vy = (-cam.y/cam.zoom + mapMeta.height/2)*sy;
+  mctx.strokeStyle='rgba(255,255,255,0.4)'; mctx.lineWidth=1;
+  mctx.strokeRect(vx, vy, (cv.width/cam.zoom)*sx, (cv.height/cam.zoom)*sy);
+}
+
+// ── Input ─────────────────────────────────────────────────────────────────────
+let ghost = null;
+
+cv.addEventListener('mousemove', e => {
+  const rect = cv.getBoundingClientRect();
+  const wx = e.clientX-rect.left, wy = e.clientY-rect.top;
+  const w = screenToWorld(wx, wy);
+  const mx = snap(w.x + mapMeta.width/2), my = snap(w.y + mapMeta.height/2);
+  document.getElementById('mouse-coords').textContent = `${mx}, ${my}`;
+
+  if (dragging && dragStart) {
+    cam.x = dragCamStart.x + (wx - dragStart.x);
+    cam.y = dragCamStart.y + (wy - dragStart.y);
+    redraw(); return;
+  }
+  if (tool==='tile' && tilePainting) { paintTile(mx, my); return; }
+  if (tool==='place' && curAsset) {
+    ghost = {x:mx, y:my}; redraw();
+    ctx.save();
+    ctx.translate(cv.width/2+cam.x, cv.height/2+cam.y); ctx.scale(cam.zoom, cam.zoom);
+    ctx.globalAlpha = 0.45;
+    drawObject({...ghost, asset:curAsset.id, scale:1, layer:1}, false);
+    ctx.restore();
+  }
+});
+
+cv.addEventListener('mousedown', e => {
+  const rect = cv.getBoundingClientRect();
+  const wx = e.clientX-rect.left, wy = e.clientY-rect.top;
+  const w = screenToWorld(wx, wy);
+  const mx = snap(w.x + mapMeta.width/2), my = snap(w.y + mapMeta.height/2);
+
+  if (e.button===1 || (e.button===0 && e.altKey)) {
+    dragging=true; dragStart={x:wx,y:wy}; dragCamStart={...cam}; return;
+  }
+  if (e.button !== 0) return;
+
+  if (tool==='tile') {
+    saveUndo(); tilePainting=true; paintTile(mx,my);
+  } else if (tool==='place' && curAsset) {
+    saveUndo();
+    objects.push({id:curAsset.id+'_'+Date.now().toString(36), asset:curAsset.id,
+      x:mx, y:my, dir:'south', scale:1, layer:1,
+      enterable:false, targetZone:'', collision:{w:GRID,h:GRID}, label:''});
+    redraw();
+  } else if (tool==='connect') {
+    saveUndo();
+    connections.push({id:'conn_'+Date.now().toString(36), x:mx, y:my, direction:'north', targetZoneId:'', label:''});
+    selected = {kind:'connection', idx:connections.length-1};
+    showConnectionProps(connections[selected.idx]); showTab('props'); redraw();
+  } else if (tool==='select') {
+    // Connections first (smaller target)
+    let hitC = null;
+    for (let i=connections.length-1; i>=0; i--) {
+      const c=connections[i];
+      if (Math.abs(mx-c.x)<32 && Math.abs(my-c.y)<32) {hitC=i;break;}
+    }
+    if (hitC!==null) {
+      selected={kind:'connection',idx:hitC}; showConnectionProps(connections[hitC]); showTab('props'); redraw(); return;
+    }
+    let hitO = null;
+    for (let i=objects.length-1; i>=0; i--) {
+      const o=objects[i], s=(o.scale||1)*GRID;
+      if (Math.abs(mx-o.x)<s*0.4 && Math.abs(my-o.y)<s*0.5) {hitO=i;break;}
+    }
+    selected = hitO!==null ? {kind:'object',idx:hitO} : null;
+    if (hitO!==null) {showProps(objects[hitO]); showTab('props');}
+    redraw();
+  } else if (tool==='delete') {
+    for (let i=connections.length-1; i>=0; i--) {
+      const c=connections[i];
+      if (Math.abs(mx-c.x)<32 && Math.abs(my-c.y)<32) {
+        saveUndo(); connections.splice(i,1); if(selected?.kind==='connection'&&selected.idx===i) selected=null; redraw(); return;
+      }
+    }
+    for (let i=objects.length-1; i>=0; i--) {
+      const o=objects[i], s=(o.scale||1)*GRID;
+      if (Math.abs(mx-o.x)<s*0.4 && Math.abs(my-o.y)<s*0.5) {
+        saveUndo(); objects.splice(i,1); if(selected?.kind==='object'&&selected.idx===i) selected=null; redraw(); return;
+      }
+    }
+  }
+});
+
+cv.addEventListener('mouseup', () => { dragging=false; dragStart=null; tilePainting=false; });
+cv.addEventListener('wheel', e => {
+  e.preventDefault();
+  cam.zoom = Math.max(0.1, Math.min(8, cam.zoom*(e.deltaY<0?1.1:0.9))); redraw();
+}, {passive:false});
+
+document.addEventListener('keydown', e => {
+  if (['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)) return;
+  if (e.key==='p') setTool('place');
+  if (e.key==='s') setTool('select');
+  if (e.key==='d') setTool('delete');
+  if (e.key==='t') setTool('tile');
+  if (e.key==='c') setTool('connect');
+  if (e.key==='Delete') deleteSelected();
+  if (e.key==='Escape') { selected=null; redraw(); }
+  if (e.ctrlKey && e.key==='z') { e.preventDefault(); undo(); }
+  if (e.ctrlKey && (e.key==='y'||(e.key==='z'&&e.shiftKey))) { e.preventDefault(); redo(); }
+});
+
+// ── Tools ─────────────────────────────────────────────────────────────────────
+function setTool(t) {
+  tool = t;
+  document.querySelectorAll('[id^=tool-]').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tool-'+t)?.classList.add('active');
+  const cur = {place:'crosshair',select:'pointer',delete:'not-allowed',tile:'cell',connect:'crosshair'};
+  cv.style.cursor = cur[t]||'default';
+}
+function zoomIn()    { cam.zoom=Math.min(8,cam.zoom*1.2); redraw(); }
+function zoomOut()   { cam.zoom=Math.max(0.1,cam.zoom/1.2); redraw(); }
+function resetView() { cam={x:0,y:0,zoom:1}; redraw(); }
+function toggleLayer(idx, vis) { layers[idx].visible=vis; redraw(); }
+
+// ── Properties ────────────────────────────────────────────────────────────────
+function showProps(obj) {
+  document.getElementById('prop-hint').style.display='none';
+  document.getElementById('prop-object').style.display='';
+  document.getElementById('prop-connection').style.display='none';
+  const isNpc = palette.find(p=>p.id===obj.asset)?.type==='npc';
+  document.getElementById('p-id').value      = obj.id;
+  document.getElementById('p-asset').value   = obj.asset;
+  document.getElementById('p-x').value       = obj.x;
+  document.getElementById('p-y').value       = obj.y;
+  document.getElementById('p-layer').value   = obj.layer??1;
+  document.getElementById('p-dir').value     = obj.dir||'south';
+  document.getElementById('p-scale').value   = obj.scale||1;
+  document.getElementById('p-enter').checked = obj.enterable||false;
+  document.getElementById('p-zone').value    = obj.targetZone||'';
+  document.getElementById('p-cw').value      = obj.collision?.w||GRID;
+  document.getElementById('p-ch').value      = obj.collision?.h||GRID;
+  document.getElementById('p-label').value   = obj.label||'';
+  const npcDiv = document.getElementById('npc-fields');
+  npcDiv.style.display = isNpc ? '' : 'none';
+  if (isNpc) {
+    document.getElementById('p-race').value      = obj.race||'';
+    document.getElementById('p-portrait').value  = obj.portrait||'';
+    document.getElementById('p-dialogue').value  = obj.dialogue||obj.asset;
+    document.getElementById('p-shoptype').value  = obj.shopType||'';
+    document.getElementById('p-questid').value   = obj.questId||'';
+    document.getElementById('p-faction').value   = obj.factionId||'';
+    document.getElementById('p-sleep-s').value   = obj.sleepStart??22;
+    document.getElementById('p-sleep-e').value   = obj.sleepEnd??6;
+    document.getElementById('p-npcfile').value   = obj.npcFile||'';
+  }
+}
+
+function showConnectionProps(conn) {
+  document.getElementById('prop-hint').style.display='none';
+  document.getElementById('prop-object').style.display='none';
+  document.getElementById('prop-connection').style.display='';
+  document.getElementById('c-id').value        = conn.id;
+  document.getElementById('c-direction').value = conn.direction||'north';
+  document.getElementById('c-target').value    = conn.targetZoneId||'';
+  document.getElementById('c-label').value     = conn.label||'';
+  document.getElementById('c-x').value         = conn.x;
+  document.getElementById('c-y').value         = conn.y;
+}
+
+function updateObj(key, val) {
+  if (selected?.kind!=='object') return;
+  objects[selected.idx][key] = val; redraw();
+}
+function updateObjCollision(key, val) {
+  if (selected?.kind!=='object') return;
+  objects[selected.idx].collision = objects[selected.idx].collision||{};
+  objects[selected.idx].collision[key] = val;
+}
+function updateConn(key, val) {
+  if (selected?.kind!=='connection') return;
+  connections[selected.idx][key] = val; redraw();
+}
+
+function deleteSelected() {
+  if (!selected) return;
+  saveUndo();
+  if (selected.kind==='object') objects.splice(selected.idx,1);
+  else connections.splice(selected.idx,1);
+  selected=null;
+  document.getElementById('prop-hint').style.display='';
+  document.getElementById('prop-object').style.display='none';
+  document.getElementById('prop-connection').style.display='none';
+  redraw();
+}
+
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+function showTab(name) {
+  ['assets','props','map'].forEach((t,i) => {
+    document.getElementById('tab-'+t).style.display = t===name?'':'none';
+    document.querySelectorAll('.tab-btn')[i].classList.toggle('active', t===name);
+  });
+}
+
+// ── Map ops ───────────────────────────────────────────────────────────────────
+function resizeMap(w,h) { mapMeta.width=w; mapMeta.height=h; redraw(); }
+function clearMap() {
+  if (!confirm('Clear all objects, tiles, and connections?')) return;
+  saveUndo(); objects=[]; tiles=[]; connections=[]; selected=null; redraw();
+}
+
+// ── Export ────────────────────────────────────────────────────────────────────
+function buildExportJSON() {
+  const tileData = [];
+  tiles.forEach((tile, idx) => {
+    if (!tile) return;
+    tileData.push({tx: idx%tileCountX(), ty: Math.floor(idx/tileCountX()), type: tile.type});
+  });
+  return {
+    version: '1.1', generator: 'MMOLite City Map Editor',
+    meta: {name:mapMeta.name, type:mapMeta.type, width:mapMeta.width, height:mapMeta.height, tileSize:GRID},
+    tiles: tileData,
+    connections: connections.map(c=>({id:c.id, direction:c.direction, targetZoneId:c.targetZoneId, x:c.x, y:c.y, label:c.label||null})),
+    objects: objects.map(o=>({
+      id:o.id, asset:o.asset, x:o.x, y:o.y, dir:o.dir||'south', scale:o.scale||1,
+      layer:o.layer??1, enterable:o.enterable||false,
+      targetZone:o.targetZone||null, collision:o.collision||{w:GRID,h:GRID},
+      label:o.label||null, race:o.race||null, portrait:o.portrait||null,
+      dialogue:o.dialogue||null, shopType:o.shopType||null,
+      questId:o.questId||null, factionId:o.factionId||null,
+      sleepStart:o.sleepStart??null, sleepEnd:o.sleepEnd??null,
+      npcFile:o.npcFile||null,
+    })),
+    npcs: objects.filter(o=>palette.find(p=>p.id===o.asset)?.type==='npc').map(o=>({
+      id:o.id, type:o.asset, name:o.label||o.asset, race:o.race||null,
+      portrait:o.portrait||null, x:o.x, y:o.y,
+      dialogue:o.dialogue||o.asset, shopType:o.shopType||null,
+      questId:o.questId||null, factionId:o.factionId||null,
+      sleepStart:o.sleepStart??22, sleepEnd:o.sleepEnd??6,
+      npcFile:o.npcFile||null,
+    })),
+  };
+}
+
+function openExport() {
+  document.getElementById('json-out').value = JSON.stringify(buildExportJSON(),null,2);
+  document.getElementById('modal-title').textContent = 'Export City JSON';
+  document.getElementById('modal').classList.add('open');
+}
+function copyJSON() { navigator.clipboard.writeText(document.getElementById('json-out').value); }
+function downloadJSON() {
+  const blob = new Blob([document.getElementById('json-out').value],{type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = (mapMeta.name||'city')+'.json'; a.click();
+}
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+
+// ── Import ────────────────────────────────────────────────────────────────────
+function triggerImport() { document.getElementById('import-file').click(); }
+function importJSON(input) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      saveUndo();
+      const meta = data.meta || data;
+      mapMeta = {name:meta.name||'city',type:meta.type||'town',width:meta.width||2048,height:meta.height||2048};
+      objects = data.objects || [];
+      connections = data.connections || [];
+      tiles = [];
+      for (const t of (data.tiles||[])) tiles[tileIdx(t.tx,t.ty)] = {type:t.type};
+      document.getElementById('m-name').value = mapMeta.name;
+      document.getElementById('m-type').value = mapMeta.type;
+      document.getElementById('m-w').value = mapMeta.width;
+      document.getElementById('m-h').value = mapMeta.height;
+      selected=null; redraw();
+    } catch(err) { alert('Invalid JSON: '+err.message); }
+  };
+  reader.readAsText(file); input.value='';
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+buildTilePalette();
+loadSpriteIndex();
+updateUndoRedoBtns();
+document.getElementById('snap-btn').classList.add('active');
+redraw();
+</script>
+</body>
+</html>
