@@ -5,6 +5,8 @@ var rpgData = require('../rpg-data');
 var prison = require('./prison');
 var npcLoader = require('./npc-loader');
 var writingTool = require('./writing-tool-admin');
+var questAdlib     = require('../quest-adlib');
+var questLocations = require('../quest-locations');
 
 module.exports = {
   init(io, socket, deps) {
@@ -284,33 +286,74 @@ module.exports = {
         });
       }
 
-      // Emit writing-tool quest offers/turnins for this NPC
+      // Auto-complete procedural fetch quests when player returns to the giver NPC
+      if (account && account.questProgress) {
+        var fetchActive = account.questProgress.active;
+        var fetchSaved  = false;
+        for (var fi = 0; fi < fetchActive.length; fi++) {
+          var fq = fetchActive[fi];
+          if (fq.npcId === enriched.id && fq.progress < fq.targetCount) {
+            var fqTemplate = questAdlib.getGeneratedQuest(fq.questId);
+            if (fqTemplate && fqTemplate.type === 'fetch') {
+              fq.progress  = fq.targetCount;
+              fetchSaved   = true;
+              socket.emit('quest_progress', { questId: fq.questId, progress: fq.targetCount, targetCount: fq.targetCount });
+            }
+          }
+        }
+        if (fetchSaved) accounts.saveAccount(account);
+      }
+
+      // Emit quest offers/turnins for this NPC (authored first, procedural fallback)
+      var activeQ    = (account && account.questProgress && account.questProgress.active)    || [];
+      var completedQ = (account && account.questProgress && account.questProgress.completed) || [];
+      var questOffers  = [];
+      var questTurnins = [];
+
       var linkedQuests = writingTool.getLinkedQuestsForNpc(enriched.id);
-      if (linkedQuests.length) {
-        var activeQ    = (account && account.questProgress && account.questProgress.active)    || [];
-        var completedQ = (account && account.questProgress && account.questProgress.completed) || [];
-        var questOffers  = [];
-        var questTurnins = [];
-        for (var qi = 0; qi < linkedQuests.length; qi++) {
-          var lq   = linkedQuests[qi];
-          var cond = {};
-          try { cond = JSON.parse(lq.completion_condition || '{}'); } catch (_) {}
-          var targetCount  = cond.count || cond.level || cond.minFloor || 1;
-          var activeEntry  = null;
-          for (var ai = 0; ai < activeQ.length; ai++) {
-            if (activeQ[ai].questId === lq.quest_id) { activeEntry = activeQ[ai]; break; }
-          }
-          if (activeEntry && activeEntry.progress >= activeEntry.targetCount) {
-            questTurnins.push({ questId: lq.quest_id, name: lq.name });
-          } else if (!activeEntry && completedQ.indexOf(lq.quest_id) === -1) {
-            var offer = { questId: lq.quest_id, name: lq.name, description: lq.description || '', type: lq.type || 'fetch', targetCount: targetCount, rewards: {} };
-            try { offer.rewards = JSON.parse(lq.rewards || '{}'); } catch (_) {}
-            questOffers.push(offer);
-          }
+      for (var qi = 0; qi < linkedQuests.length; qi++) {
+        var lq   = linkedQuests[qi];
+        var cond = {};
+        try { cond = JSON.parse(lq.completion_condition || '{}'); } catch (_) {}
+        var targetCount  = cond.count || cond.level || cond.minFloor || 1;
+        var activeEntry  = null;
+        for (var ai = 0; ai < activeQ.length; ai++) {
+          if (activeQ[ai].questId === lq.quest_id) { activeEntry = activeQ[ai]; break; }
         }
-        if (questOffers.length || questTurnins.length) {
-          socket.emit('npc_quest_offers', { npcId: enriched.id, npcName: enriched.name, offers: questOffers, turnins: questTurnins });
+        if (activeEntry && activeEntry.progress >= activeEntry.targetCount) {
+          questTurnins.push({ questId: lq.quest_id, name: lq.name });
+        } else if (!activeEntry && completedQ.indexOf(lq.quest_id) === -1) {
+          var offer = { questId: lq.quest_id, name: lq.name, description: lq.description || '', type: lq.type || 'fetch', targetCount: targetCount, rewards: {} };
+          try { offer.rewards = JSON.parse(lq.rewards || '{}'); } catch (_) {}
+          questOffers.push(offer);
         }
+      }
+
+      // Procedural fallback — only when no authored quests are linked
+      if (!questOffers.length && !questTurnins.length && questAdlib.isQuestEligible(enriched)) {
+        var proc = questAdlib.generateQuest(enriched);
+        var procActive = null;
+        for (var pi = 0; pi < activeQ.length; pi++) {
+          if (activeQ[pi].questId === proc.questId) { procActive = activeQ[pi]; break; }
+        }
+        if (procActive && procActive.progress >= procActive.targetCount) {
+          questTurnins.push({ questId: proc.questId, name: proc.name });
+        } else if (!procActive && completedQ.indexOf(proc.questId) === -1) {
+          // Spawn enterable location on the map (idempotent — skips if already placed)
+          questLocations.spawnQuestLocation(proc.questId, proc, zoneId, state, io);
+          questOffers.push({
+            questId:     proc.questId,
+            name:        proc.name,
+            description: proc.description,
+            type:        proc.type,
+            targetCount: proc.target.count || proc.target.minFloor || 1,
+            rewards:     proc.rewards,
+          });
+        }
+      }
+
+      if (questOffers.length || questTurnins.length) {
+        socket.emit('npc_quest_offers', { npcId: enriched.id, npcName: enriched.name, offers: questOffers, turnins: questTurnins });
       }
     });
 
@@ -553,6 +596,9 @@ module.exports = {
         }
       }
       if (!template) {
+        template = questAdlib.getGeneratedQuest(data.questId);
+      }
+      if (!template) {
         socket.emit('quest_error', { message: 'Quest not found' });
         return;
       }
@@ -633,6 +679,14 @@ module.exports = {
         if (authoredTurnin) {
           template = { name: authoredTurnin.name, rewards: {} };
           try { template.rewards = JSON.parse(authoredTurnin.rewards || '{}'); } catch (_) {}
+        }
+      }
+      if (!template) {
+        var procTurnin = questAdlib.getGeneratedQuest(data.questId);
+        if (procTurnin) {
+          template = { name: procTurnin.name, rewards: procTurnin.rewards };
+          // Unlink quest from its site — site stays on map for future quests
+          questLocations.cleanupQuestAssignment(data.questId, state, io);
         }
       }
 

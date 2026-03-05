@@ -32,8 +32,12 @@ local deletePinActive = false
 
 -- New character dialog
 local showNewCharDialog = false
-local newCharName = ""
-local newCharNameActive = false
+local newCharPrefixIdx = 1
+local newCharNameIdx = 1
+local newCharNumber = 1
+local newCharOpenDropdown = nil
+local newCharDropdownScroll = 0
+local newCharDropdownBounds = nil
 local newCharPermadeath = false
 
 -- Hall of Heroes
@@ -112,8 +116,8 @@ function charSelect.load()
     deletePinInput = ""
     deletePinActive = false
     showNewCharDialog = false
-    newCharName = ""
-    newCharNameActive = false
+    newCharOpenDropdown = nil
+    newCharDropdownScroll = 0
     newCharPermadeath = false
     showHallOfHeroes = false
     hallOfHeroesList = {}
@@ -189,7 +193,7 @@ function charSelect.load()
                     maxCharacters = data.characterList.maxCharacters or 4
                 end
                 showNewCharDialog = false
-                newCharName = ""
+                newCharOpenDropdown = nil
                 newCharPermadeath = false
                 -- Auto-switch to the new character and go to race select
                 local newIdx = data.characterIndex
@@ -529,7 +533,7 @@ end
 
 function charSelect.drawDeleteDialog(W, H)
     local dlgW = 320
-    local dlgH = 150
+    local dlgH = 110
     local dlgX = (W - dlgW) / 2
     local dlgY = (H - dlgH) / 2
 
@@ -552,21 +556,7 @@ function charSelect.drawDeleteDialog(W, H)
 
     love.graphics.setFont(fonts.small)
     love.graphics.setColor(0.7, 0.6, 0.5, 0.9)
-    love.graphics.printf("This cannot be undone! Enter PIN to confirm.", dlgX, dlgY + 38, dlgW, "center")
-
-    -- PIN input field
-    local fieldW = 160
-    local fieldH = 28
-    local fieldX = dlgX + (dlgW - fieldW) / 2
-    local fieldY = dlgY + 60
-    love.graphics.setColor(0.15, 0.15, 0.2, 1)
-    love.graphics.rectangle("fill", fieldX, fieldY, fieldW, fieldH, 4, 4)
-    love.graphics.setColor(deletePinActive and {0.8, 0.6, 0.3} or {0.3, 0.3, 0.35})
-    love.graphics.rectangle("line", fieldX, fieldY, fieldW, fieldH, 4, 4)
-    love.graphics.setFont(fonts.main)
-    love.graphics.setColor(1, 1, 1, 1)
-    local displayPin = string.rep("*", #deletePinInput)
-    love.graphics.print(displayPin, fieldX + 6, fieldY + 6)
+    love.graphics.printf("This cannot be undone!", dlgX, dlgY + 38, dlgW, "center")
 
     -- Buttons
     local btnW = 100
@@ -591,8 +581,10 @@ function charSelect.drawDeleteDialog(W, H)
 end
 
 function charSelect.drawNewCharDialog(W, H)
-    local dlgW = 320
-    local dlgH = 190
+    if not nameLists then return end
+
+    local dlgW = 440
+    local dlgH = 240
     local dlgX = (W - dlgW) / 2
     local dlgY = (H - dlgH) / 2
 
@@ -608,32 +600,68 @@ function charSelect.drawNewCharDialog(W, H)
     love.graphics.rectangle("line", dlgX, dlgY, dlgW, dlgH, 8, 8)
     love.graphics.setLineWidth(1)
 
-    -- Text
+    -- Title
     love.graphics.setFont(fonts.button)
     love.graphics.setColor(1, 1, 1, 1)
     love.graphics.printf("New Character", dlgX, dlgY + 12, dlgW, "center")
 
-    -- Name input field
-    local fieldW = 200
-    local fieldH = 28
-    local fieldX = dlgX + (dlgW - fieldW) / 2
-    local fieldY = dlgY + 42
-    love.graphics.setColor(0.15, 0.15, 0.2, 1)
-    love.graphics.rectangle("fill", fieldX, fieldY, fieldW, fieldH, 4, 4)
-    love.graphics.setColor(newCharNameActive and {0.3, 0.6, 0.9} or {0.3, 0.3, 0.35})
-    love.graphics.rectangle("line", fieldX, fieldY, fieldW, fieldH, 4, 4)
-    love.graphics.setFont(fonts.main)
-    if #newCharName > 0 then
+    -- Column positions
+    local col1X = dlgX + 20
+    local col2X = dlgX + 160
+    local col3X = dlgX + 330
+    local labelY = dlgY + 40
+
+    love.graphics.setFont(fonts.small)
+    love.graphics.setColor(0.7, 0.7, 0.8, 0.9)
+    love.graphics.print("Prefix", col1X, labelY)
+    love.graphics.print("Name", col2X, labelY)
+    love.graphics.print("Number", col3X, labelY)
+
+    local fieldH = 26
+    local fieldY = labelY + 16
+    local field1W = 120
+    local field2W = 150
+    local field3W = 70
+
+    local function drawDropdownField(fx, fy, fw, fh, text, isOpen)
+        love.graphics.setColor(0.15, 0.15, 0.2, 1)
+        love.graphics.rectangle("fill", fx, fy, fw, fh, 3, 3)
+        love.graphics.setColor(isOpen and {0.3, 0.6, 0.9} or {0.4, 0.4, 0.5})
+        love.graphics.rectangle("line", fx, fy, fw, fh, 3, 3)
+        love.graphics.setFont(fonts.main)
         love.graphics.setColor(1, 1, 1, 1)
-        love.graphics.print(newCharName, fieldX + 6, fieldY + 6)
-    else
-        love.graphics.setColor(0.4, 0.4, 0.5, 0.7)
-        love.graphics.print("Character name...", fieldX + 6, fieldY + 6)
+        local maxChars = math.floor((fw - 20) / 7)
+        local display = text
+        if #display > maxChars then display = display:sub(1, maxChars) .. ".." end
+        love.graphics.print(display, fx + 6, fy + 5)
+        love.graphics.setColor(0.6, 0.6, 0.7, 0.9)
+        local ax = fx + fw - 14
+        local ay = fy + fh / 2
+        love.graphics.polygon("fill", ax, ay - 3, ax + 6, ay - 3, ax + 3, ay + 3)
     end
 
+    local prefixText = nameLists.prefixes[newCharPrefixIdx] or "?"
+    local nameText = nameLists.names[newCharNameIdx] or "?"
+    local numberText = tostring(newCharNumber)
+
+    drawDropdownField(col1X, fieldY, field1W, fieldH, prefixText, newCharOpenDropdown == "prefix")
+    drawDropdownField(col2X, fieldY, field2W, fieldH, nameText, newCharOpenDropdown == "name")
+    drawDropdownField(col3X, fieldY, field3W, fieldH, numberText, newCharOpenDropdown == "number")
+
+    newCharPrefixField  = { x = col1X, y = fieldY, w = field1W, h = fieldH }
+    newCharNameField    = { x = col2X, y = fieldY, w = field2W, h = fieldH }
+    newCharNumberField  = { x = col3X, y = fieldY, w = field3W, h = fieldH }
+
+    -- Preview
+    local preview = prefixText .. " " .. nameText .. " " .. numberText
+    if #preview > 20 then preview = preview:sub(1, 20) end
+    love.graphics.setFont(fonts.subtitle)
+    love.graphics.setColor(0.4, 0.8, 1, 1)
+    love.graphics.printf(preview, dlgX, fieldY + fieldH + 14, dlgW, "center")
+
     -- Permadeath checkbox
-    local cbX = fieldX
-    local cbY = fieldY + fieldH + 10
+    local cbX = dlgX + 20
+    local cbY = fieldY + fieldH + 42
     local cbSize = 16
     love.graphics.setColor(0.15, 0.15, 0.2, 1)
     love.graphics.rectangle("fill", cbX, cbY, cbSize, cbSize, 2, 2)
@@ -653,26 +681,97 @@ function charSelect.drawNewCharDialog(W, H)
     love.graphics.print("Permadeath (death anywhere is permanent)", cbX + cbSize + 6, cbY + 2)
     newCharPermadeathBtn = { x = cbX, y = cbY, w = cbSize + 200, h = cbSize }
 
-    -- Buttons
-    local btnW = 100
+    -- Buttons: Random, Create, Cancel
+    local btnW = 90
     local btnH = 30
     local btnY = dlgY + dlgH - btnH - 15
-    local cfmX = dlgX + dlgW / 2 - btnW - 10
-    local cnlX = dlgX + dlgW / 2 + 10
+    local totalW = btnW * 3 + 20
+    local startBtnX = dlgX + (dlgW - totalW) / 2
 
-    love.graphics.setColor(0.2, 0.5, 0.7, 0.9)
-    love.graphics.rectangle("fill", cfmX, btnY, btnW, btnH, 4, 4)
+    love.graphics.setColor(0.3, 0.3, 0.5, 0.9)
+    love.graphics.rectangle("fill", startBtnX, btnY, btnW, btnH, 4, 4)
     love.graphics.setFont(fonts.button)
     love.graphics.setColor(1, 1, 1, 1)
-    love.graphics.printf("Create", cfmX, btnY + 6, btnW, "center")
+    love.graphics.printf("Random", startBtnX, btnY + 6, btnW, "center")
+    newCharRandomBtn = { x = startBtnX, y = btnY, w = btnW, h = btnH }
 
+    local cfmX = startBtnX + btnW + 10
+    love.graphics.setColor(0.2, 0.5, 0.7, 0.9)
+    love.graphics.rectangle("fill", cfmX, btnY, btnW, btnH, 4, 4)
+    love.graphics.setColor(1, 1, 1, 1)
+    love.graphics.printf("Create", cfmX, btnY + 6, btnW, "center")
+    newCharConfirmBtn = { x = cfmX, y = btnY, w = btnW, h = btnH }
+
+    local cnlX = cfmX + btnW + 10
     love.graphics.setColor(0.4, 0.4, 0.4, 0.9)
     love.graphics.rectangle("fill", cnlX, btnY, btnW, btnH, 4, 4)
     love.graphics.setColor(1, 1, 1, 1)
     love.graphics.printf("Cancel", cnlX, btnY + 6, btnW, "center")
-
-    newCharConfirmBtn = { x = cfmX, y = btnY, w = btnW, h = btnH }
     newCharCancelBtn = { x = cnlX, y = btnY, w = btnW, h = btnH }
+
+    -- Draw open dropdown list (on top)
+    if newCharOpenDropdown then
+        local items, selIdx, ddX, ddW
+        if newCharOpenDropdown == "prefix" then
+            items = nameLists.prefixes
+            selIdx = newCharPrefixIdx
+            ddX = col1X
+            ddW = field1W
+        elseif newCharOpenDropdown == "name" then
+            items = nameLists.names
+            selIdx = newCharNameIdx
+            ddX = col2X
+            ddW = field2W
+        elseif newCharOpenDropdown == "number" then
+            items = {}
+            for n = 1, 99 do items[n] = tostring(n) end
+            selIdx = newCharNumber
+            ddX = col3X
+            ddW = field3W
+        end
+
+        if items and #items > 0 then
+            local visCount = math.min(#items, DROPDOWN_VISIBLE_ITEMS)
+            local ddH = visCount * DROPDOWN_ITEM_H
+            local ddY = fieldY + fieldH + 2
+
+            local maxScroll = math.max(0, #items - DROPDOWN_VISIBLE_ITEMS)
+            if newCharDropdownScroll > maxScroll then newCharDropdownScroll = maxScroll end
+            if newCharDropdownScroll < 0 then newCharDropdownScroll = 0 end
+
+            love.graphics.setColor(0.08, 0.08, 0.12, 0.97)
+            love.graphics.rectangle("fill", ddX, ddY, ddW, ddH, 3, 3)
+            love.graphics.setColor(0.5, 0.5, 0.6, 0.8)
+            love.graphics.rectangle("line", ddX, ddY, ddW, ddH, 3, 3)
+
+            love.graphics.setFont(fonts.small)
+            love.graphics.setScissor(ddX, ddY, ddW, ddH)
+            for vi = 1, visCount do
+                local itemIdx = vi + newCharDropdownScroll
+                if itemIdx <= #items then
+                    local iy = ddY + (vi - 1) * DROPDOWN_ITEM_H
+                    if itemIdx == selIdx then
+                        love.graphics.setColor(0.15, 0.3, 0.5, 0.8)
+                        love.graphics.rectangle("fill", ddX + 1, iy, ddW - 2, DROPDOWN_ITEM_H)
+                    end
+                    love.graphics.setColor(1, 1, 1, itemIdx == selIdx and 1 or 0.8)
+                    love.graphics.print(items[itemIdx], ddX + 6, iy + 4)
+                end
+            end
+            love.graphics.setScissor()
+
+            if #items > DROPDOWN_VISIBLE_ITEMS then
+                local sbH = ddH * (DROPDOWN_VISIBLE_ITEMS / #items)
+                local sbY = ddY + (newCharDropdownScroll / maxScroll) * (ddH - sbH)
+                love.graphics.setColor(0.5, 0.5, 0.6, 0.5)
+                love.graphics.rectangle("fill", ddX + ddW - 5, sbY, 4, sbH, 2, 2)
+            end
+
+            newCharDropdownBounds = { x = ddX, y = ddY, w = ddW, h = ddH, items = items, visCount = visCount }
+        end
+    else
+        newCharDropdownBounds = nil
+    end
 end
 
 function charSelect.drawHallOfHeroes(W, H)
@@ -964,11 +1063,12 @@ function charSelect.keypressed(key)
 
     if showNewCharDialog then
         if key == "escape" then
-            showNewCharDialog = false
-            newCharName = ""
-            newCharPermadeath = false
-        elseif key == "backspace" then
-            newCharName = newCharName:sub(1, -2)
+            if newCharOpenDropdown then
+                newCharOpenDropdown = nil
+            else
+                showNewCharDialog = false
+                newCharPermadeath = false
+            end
         elseif key == "return" or key == "kpenter" then
             charSelect.confirmNewChar()
         end
@@ -1015,12 +1115,6 @@ function charSelect.textinput(text)
         end
         return
     end
-    if showNewCharDialog then
-        if #newCharName < 20 then
-            newCharName = newCharName .. text
-        end
-        return
-    end
 end
 
 function charSelect.mousepressed(x, y, button)
@@ -1043,11 +1137,56 @@ function charSelect.mousepressed(x, y, button)
     end
 
     if showNewCharDialog then
-        if pointInRect(x, y, newCharConfirmBtn) then
+        -- Dropdown list click (if open)
+        if newCharOpenDropdown and newCharDropdownBounds and pointInRect(x, y, newCharDropdownBounds) then
+            local relY = y - newCharDropdownBounds.y
+            local clickedVis = math.floor(relY / DROPDOWN_ITEM_H) + 1
+            local clickedIdx = clickedVis + newCharDropdownScroll
+            if clickedIdx >= 1 and clickedIdx <= #newCharDropdownBounds.items then
+                if newCharOpenDropdown == "prefix" then
+                    newCharPrefixIdx = clickedIdx
+                elseif newCharOpenDropdown == "name" then
+                    newCharNameIdx = clickedIdx
+                elseif newCharOpenDropdown == "number" then
+                    newCharNumber = clickedIdx
+                end
+            end
+            newCharOpenDropdown = nil
+            newCharDropdownScroll = 0
+            return
+        end
+
+        -- Dropdown field clicks
+        if newCharPrefixField and pointInRect(x, y, newCharPrefixField) then
+            newCharOpenDropdown = newCharOpenDropdown == "prefix" and nil or "prefix"
+            newCharDropdownScroll = newCharOpenDropdown and math.max(0, newCharPrefixIdx - 4) or 0
+            return
+        elseif newCharNameField and pointInRect(x, y, newCharNameField) then
+            newCharOpenDropdown = newCharOpenDropdown == "name" and nil or "name"
+            newCharDropdownScroll = newCharOpenDropdown and math.max(0, newCharNameIdx - 4) or 0
+            return
+        elseif newCharNumberField and pointInRect(x, y, newCharNumberField) then
+            newCharOpenDropdown = newCharOpenDropdown == "number" and nil or "number"
+            newCharDropdownScroll = newCharOpenDropdown and math.max(0, newCharNumber - 4) or 0
+            return
+        end
+
+        -- Close open dropdown on click elsewhere
+        if newCharOpenDropdown then
+            newCharOpenDropdown = nil
+            newCharDropdownScroll = 0
+        end
+
+        if newCharRandomBtn and pointInRect(x, y, newCharRandomBtn) then
+            if nameLists then
+                newCharPrefixIdx = math.random(1, #nameLists.prefixes)
+                newCharNameIdx = math.random(1, #nameLists.names)
+                newCharNumber = math.random(1, 99)
+            end
+        elseif pointInRect(x, y, newCharConfirmBtn) then
             charSelect.confirmNewChar()
         elseif pointInRect(x, y, newCharCancelBtn) then
             showNewCharDialog = false
-            newCharName = ""
             newCharPermadeath = false
         elseif newCharPermadeathBtn and pointInRect(x, y, newCharPermadeathBtn) then
             newCharPermadeath = not newCharPermadeath
@@ -1136,9 +1275,14 @@ function charSelect.mousepressed(x, y, button)
         charSelect.playSelected()
     elseif pointInRect(x, y, newCharBtn) then
         if #characters < maxCharacters then
+            if nameLists then
+                newCharPrefixIdx = math.random(1, #nameLists.prefixes)
+                newCharNameIdx = math.random(1, #nameLists.names)
+                newCharNumber = math.random(1, 99)
+            end
+            newCharOpenDropdown = nil
+            newCharDropdownScroll = 0
             showNewCharDialog = true
-            newCharName = ""
-            newCharNameActive = true
         end
     elseif pointInRect(x, y, renameBtn) then
         if selectedIndex and selectedIndex == activeCharacterIndex and #characters > 0 then
@@ -1162,9 +1306,12 @@ function charSelect.mousepressed(x, y, button)
 end
 
 function charSelect.wheelmoved(x, y)
+    if showNewCharDialog and newCharOpenDropdown then
+        newCharDropdownScroll = newCharDropdownScroll - y
+        return
+    end
     if showRenameDialog and renameOpenDropdown then
         renameDropdownScroll = renameDropdownScroll - y
-        -- Clamp will happen during draw
         return
     end
 end
@@ -1203,7 +1350,6 @@ function charSelect.confirmDelete()
     if not deleteTargetIndex or not client then return end
     client:emit("character_delete", {
         index = deleteTargetIndex,
-        pin = deletePinInput,
     })
 end
 
@@ -1213,10 +1359,20 @@ function charSelect.confirmNewChar()
         errorTimer = 3
         return
     end
-    local name = newCharName
-    if #name == 0 then name = "New Character" end
+    if not nameLists then
+        errorMessage = "Name lists not loaded"
+        errorTimer = 3
+        return
+    end
+    local prefix = nameLists.prefixes[newCharPrefixIdx]
+    local base = nameLists.names[newCharNameIdx]
+    if not prefix or not base then
+        errorMessage = "Invalid name selection"
+        errorTimer = 3
+        return
+    end
+    local name = prefix .. " " .. base .. " " .. tostring(newCharNumber)
     print("[charSelect] confirmNewChar: sending character_create with name=" .. name)
-    print("[charSelect]   client.connected=" .. tostring(client.connected))
     local sent = client:emit("character_create", { name = name, permadeath = newCharPermadeath })
     if sent then
         statusMessage = "Creating character..."

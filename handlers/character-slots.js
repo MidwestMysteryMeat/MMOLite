@@ -192,36 +192,13 @@ module.exports = {
       socket.emit('character_renamed', { success: true, newName: newName, characterList: list });
     });
 
-    // --- character_delete: remove a character slot (requires PIN) ---
+    // --- character_delete: remove a character slot ---
     socket.on('character_delete', function(data) {
       var key = socketAccountMap.get(socket.id);
       if (!key) { socket.emit('character_deleted', { error: 'No account' }); return; }
 
       if (!data || typeof data.index !== 'number') {
         socket.emit('character_deleted', { error: 'Invalid index' });
-        return;
-      }
-
-      var acc = accounts.loadAccount(key);
-      if (!acc) { socket.emit('character_deleted', { error: 'Account not found' }); return; }
-
-      // PIN verification for permanent accounts
-      if (!acc.temp) {
-        if (!acc.pinHash) {
-          socket.emit('character_deleted', { error: 'Set a PIN before deleting characters' });
-          return;
-        }
-        if (!data.pin || typeof data.pin !== 'string') {
-          socket.emit('character_deleted', { error: 'PIN required to delete a character' });
-          return;
-        }
-        accounts.verifyPin(data.pin, acc.pinHash).then(function(valid) {
-          if (!valid) {
-            socket.emit('character_deleted', { error: 'Invalid PIN' });
-            return;
-          }
-          _doDelete(key, data.index);
-        });
         return;
       }
 

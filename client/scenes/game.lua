@@ -1134,6 +1134,7 @@ local function _initModules()
         getSkills  = function() return skills end,
         getAccount = function() return account end,
         getClient  = function() return client end,
+        computeSprintBonuses = computeSprintBonuses,
     })
     -- Wire up input module (keypressed, textinput, mousepressed, mousemoved, wheelmoved)
     gameInputModule.init(game, {
@@ -1668,6 +1669,11 @@ function game.setupListeners()
         wipeTable(resources)
         for k, v in pairs(data.resources or {}) do resources[k] = v end
         placedObjects = data.placedObjects or {}
+
+        -- Clear live-injected zone state from previous zone
+        game._questMarkers      = {}
+        game._zonePlacedObjects = {}
+        game._zoneNpcs          = {}
 
         -- Clear overworld monsters and request fresh list for this zone
         wipeTable(zoneMonsters)

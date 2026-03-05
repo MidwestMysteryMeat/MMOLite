@@ -701,8 +701,14 @@ local function keypressed(key)
                 end
             end
         elseif hoverObject then
+            -- Enterable fixture (quest sites, dungeon entrances with targetZoneId)
+            if hoverObject.enterable and hoverObject.targetZoneId then
+                client:emit("zone_enter", {
+                    zoneId   = hoverObject.targetZoneId,
+                    fromZone = zone and zone.id,
+                })
             -- Interact with placed object
-            if hoverObject.type == "forge" or hoverObject.type == "advanced_forge" or hoverObject.type == "master_forge" then
+            elseif hoverObject.type == "forge" or hoverObject.type == "advanced_forge" or hoverObject.type == "master_forge" then
                 ui.showInventory = true
                 ui.inventoryTab = "crafting"
                 ui.craftingFilter = "forge"

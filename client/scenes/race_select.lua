@@ -59,12 +59,14 @@ local RACES = {
 
 local hoverIndex = nil
 local selectedRace = nil  -- index into RACES when confirmation dialog is showing
+local confirmPermadeath = false
 local errorMessage = nil
 local errorTimer = 0
 
 -- Button bounds stored each frame for hit-testing (avoids duplicating layout math)
 local confirmBtn = nil  -- { x, y, w, h }
 local cancelBtn = nil   -- { x, y, w, h }
+local confirmPermadeathBtn = nil
 
 function raceSelect.load()
     fonts.title = love.graphics.newFont(28)
@@ -80,6 +82,8 @@ function raceSelect.load()
     errorTimer = 0
     confirmBtn = nil
     cancelBtn = nil
+    confirmPermadeathBtn = nil
+    confirmPermadeath = false
 
     client = _G.gameClient
     identity = _G.identity
@@ -250,8 +254,8 @@ function raceSelect.drawConfirmDialog(W, H)
     local race = RACES[selectedRace]
     if not race then return end
 
-    local dlgW = 320
-    local dlgH = 120
+    local dlgW = 340
+    local dlgH = 155
     local dlgX = (W - dlgW) / 2
     local dlgY = (H - dlgH) / 2
 
@@ -278,6 +282,28 @@ function raceSelect.drawConfirmDialog(W, H)
     love.graphics.setFont(fonts.small)
     love.graphics.setColor(0.7, 0.6, 0.5, 0.9)
     love.graphics.printf("This choice is permanent!", dlgX, dlgY + 42, dlgW, "center")
+
+    -- Permadeath checkbox
+    local cbSize = 16
+    local cbX = dlgX + 20
+    local cbY = dlgY + 68
+    love.graphics.setColor(0.15, 0.15, 0.2, 1)
+    love.graphics.rectangle("fill", cbX, cbY, cbSize, cbSize, 2, 2)
+    if confirmPermadeath then
+        love.graphics.setColor(0.9, 0.2, 0.2, 1)
+    else
+        love.graphics.setColor(0.3, 0.3, 0.35, 1)
+    end
+    love.graphics.rectangle("line", cbX, cbY, cbSize, cbSize, 2, 2)
+    if confirmPermadeath then
+        love.graphics.setColor(0.9, 0.2, 0.2, 1)
+        love.graphics.setFont(fonts.small)
+        love.graphics.print("X", cbX + 3, cbY + 1)
+    end
+    love.graphics.setFont(fonts.small)
+    love.graphics.setColor(0.9, 0.3, 0.3, 1)
+    love.graphics.print("Permadeath (death anywhere is permanent)", cbX + cbSize + 6, cbY + 2)
+    confirmPermadeathBtn = { x = cbX, y = cbY, w = cbSize + 220, h = cbSize + 4 }
 
     -- Button geometry
     local btnW = 100
@@ -342,6 +368,9 @@ function raceSelect.mousepressed(x, y, button)
             raceSelect.confirmSelection()
         elseif pointInRect(x, y, cancelBtn) then
             selectedRace = nil
+            confirmPermadeath = false
+        elseif confirmPermadeathBtn and pointInRect(x, y, confirmPermadeathBtn) then
+            confirmPermadeath = not confirmPermadeath
         end
         -- Clicks outside the dialog buttons are intentionally ignored
         -- so the player cannot accidentally pick a different race card
@@ -382,7 +411,7 @@ function raceSelect.confirmSelection()
     if not race then return end
 
     if client then
-        client:emit("race_select", { raceId = race.id })
+        client:emit("race_select", { raceId = race.id, permadeath = confirmPermadeath })
     end
 end
 

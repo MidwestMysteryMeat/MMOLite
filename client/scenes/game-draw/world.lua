@@ -18,6 +18,7 @@ local corruption, doom, sprint  -- not reassigned; no getter needed
 --   placedObjects, riftDestroyVfx
 local getEntityState
 local getZone, getMyId, getFadeIn, getSkills, getAccount, getClient
+local computeSprintBonuses
 
 local _portraitCache = {}
 
@@ -1641,6 +1642,30 @@ local function drawConnections()
             love.graphics.setFont(fonts.npc)
             love.graphics.setColor(0.8, 0.3, 1.0, 0.9)
             love.graphics.printf("The Rift", conn.x - 60, conn.y - 52, 120, "center")
+        elseif conn._proc then
+            -- Procedural quest location — amber pulsing diamond
+            local s = 18 + math.sin(t * 2.5) * 4
+            love.graphics.setColor(0.9, 0.6, 0.1, pulse * 0.25)
+            love.graphics.polygon("fill",
+                conn.x,     conn.y - s,
+                conn.x + s, conn.y,
+                conn.x,     conn.y + s,
+                conn.x - s, conn.y)
+            love.graphics.setColor(1.0, 0.75, 0.2, pulse * 0.9)
+            love.graphics.setLineWidth(2)
+            love.graphics.polygon("line",
+                conn.x,     conn.y - s,
+                conn.x + s, conn.y,
+                conn.x,     conn.y + s,
+                conn.x - s, conn.y)
+            love.graphics.setLineWidth(1)
+            -- Inner glow dot
+            love.graphics.setColor(1.0, 0.9, 0.4, pulse * 0.6)
+            love.graphics.circle("fill", conn.x, conn.y, 5)
+            -- Label
+            love.graphics.setFont(fonts.npc)
+            love.graphics.setColor(1.0, 0.85, 0.3, 0.9)
+            love.graphics.printf(conn.label or "Quest Site", conn.x - 70, conn.y - s - 18, 140, "center")
         else
             -- Portal circle (default)
             love.graphics.setColor(0.3, 0.5, 1.0, pulse * 0.4)
@@ -2667,10 +2692,11 @@ function world_draw.init(gameRef, ctx)
     getEntityState = ctx.getEntityState
     getZone        = ctx.getZone
     getMyId        = ctx.getMyId
-    getFadeIn      = ctx.getFadeIn
-    getSkills      = ctx.getSkills
-    getAccount     = ctx.getAccount
-    getClient      = ctx.getClient
+    getFadeIn            = ctx.getFadeIn
+    getSkills            = ctx.getSkills
+    getAccount           = ctx.getAccount
+    getClient            = ctx.getClient
+    computeSprintBonuses = ctx.computeSprintBonuses
     -- Register draw functions onto the game table
     gameRef.drawZoneMonsters = drawZoneMonsters
     gameRef.drawCorpsesAndContainers = drawCorpsesAndContainers

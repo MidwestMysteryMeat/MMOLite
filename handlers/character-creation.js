@@ -26,6 +26,10 @@ module.exports = {
       }
 
       var acc = accounts.loadAccount(key);
+      if (data.permadeath && acc && !acc.permadeath) {
+        acc.permadeath = true;
+        accounts.saveAccount(acc);
+      }
       socket.emit('race_selected', {
         race: result.race,
         rpgStats: result.rpgStats,

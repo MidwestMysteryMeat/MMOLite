@@ -697,33 +697,273 @@ function pickPortrait(path, name) {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const WB = {
-  npc_name:    ['Aldric','Mira Voss','Theron the Gray','Sova Nightwhisper','Kelven','Brother Aldus','Sera Coldwell','Joss the Wanderer','Unnamed Pilgrim','Elder Wraen'],
-  settlement:  ['the Shattered Peaks','the Vale of Whispers','the Ashen Ruins','Solara\'s Cradle','the Rift Borderlands','the Sunken Marshes','the High Road','the Outer Hold','the Forsaken Shore','the Merchant Quarter'],
-  creature:    ['grave revenant','rift hollow','basilisk','feral lycanthrope','ash wraith','corrupted elder beast','hollow knight','bone collector','plague bear','void leech','risen champion','shard golem'],
-  relic:       ['ancient compass','sealed tome','shattered oathstone','rift shard','stolen regalia','hollow key','elder lens fragment','bound spirit jar','cursed banner','faded covenant scroll'],
-  action:      ['retrieve','destroy','escort safely','investigate','purge','recover','deliver','intercept','protect','track down','negotiate with','steal back from'],
-  consequence: ['The region will fall to ruin without it.','Its absence has already upset the balance.','Others are hunting for the same thing.','The window to act closes at dawn.','Failure means the innocents suffer.','The corruption is spreading fast.'],
-  time_phrase: ['fifty winters past','in the age before the Rift','before the Heaven\'s Atlas fell','when the twin cities still stood','in the early years of the Dominion','three moons ago','in living memory','since the last great war'],
-  faction:     ['The Holy Dominion','The Free Holds of Stone','The Merchant Guilds','The Rift Wardens','The Thieves\' Network','the wandering orders','the remnant survivors','a desperate cell of radicals'],
-  emotion:     ['grief','righteous fury','desperate hope','cold resolve','quiet terror','bitter regret','hollow exhaustion','reckless courage'],
-  rumor_opener:['They say','Word is','I\'ve heard tell','Don\'t repeat this, but','A trader told me','The guards won\'t say it aloud—but'],
-  history_subj:['A great warrior','The old council','A nameless pilgrim','The last survivor','An entire village','A brotherhood of scholars'],
-  lore_event:  ['vanished without trace','made a terrible bargain','unleashed something they couldn\'t control','sealed it away and swore silence','left behind a warning no one heeded','gave everything to stop what came next'],
-  reward_desc: ['gold and supplies','an old favour','a deed to unclaimed land','rare crafting materials','a key to a sealed vault','freedom from a debt','forbidden knowledge','a title among the Holds'],
+  // ── People & Names ──────────────────────────────────────────────────────────
+  npc_name: [
+    'Aldric','Mira Voss','Theron the Gray','Sova Nightwhisper','Kelven',
+    'Brother Aldus','Sera Coldwell','Joss the Wanderer','Elder Wraen','Calla Dune',
+    'Harren Blackfoot','Iselda of Murkmire','Torvin Ashcloak','Pell the Silent',
+    'Warden Ostric','Dagna Ironwright','Ezra Coldwick','Naela of the Fen',
+    'Corporal Marsh','The Confessor','Unnamed Pilgrim','Overseer Thule',
+    'Reva Stonemark','Cassin the Lame','Sister Veyne',
+  ],
+  npc_title: [
+    'the Penitent','the Hollow-Eyed','of Solara','the Last','the Exile',
+    'the Faithless','the Twice-Burned','of the Outer Hold','the Reluctant',
+    'Warden-Rank','the Unnamed','the Pale','of Ironhold','the Grieving',
+  ],
+  occupation: [
+    'a disgraced warden','a travelling physician','a former soldier','a debt-collector',
+    'a rift surveyor','a fence working out of the docks','a disowned noble',
+    'a smuggler with a conscience','a scribe who asks too many questions',
+    'a cartographer who stopped making maps','an innkeeper who hears everything',
+    'a bounty hunter between contracts','a hedge-mage with unpredictable results',
+  ],
+
+  // ── Locations ───────────────────────────────────────────────────────────────
+  settlement: [
+    'the Shattered Peaks','the Vale of Whispers','the Ashen Ruins','the Outer Hold',
+    'the Forsaken Shore','the Merchant Quarter','the Rift Borderlands',
+    'the Sunken Marshes','the Collapsed Waystation','the Glassfield Flats',
+    'the Salt Road','the Lower Warrens','the Disputed Ground','the Pilgrim\'s Rest',
+    'the Old Watch Road','the Bleached Hollow','the Crossroads at Ironmere',
+    'the Waterlogged Quarter','the Ember District','the Forgotten Vaults',
+  ],
+  town: [
+    'the Holy Dominion','Solara','Sylvaris','Ironhold','Kragmor',
+    'Mechspire','Clockwork Harbor','Murkmire','Fortunes Rest','BoneTrap',
+  ],
+  dungeon_place: [
+    'the Rift interior','the lower crypts','the collapsed mine shaft',
+    'the flooded undercroft','the sealed tower','the warded vault',
+    'the bone warrens','the ashen depths','the festering hold',
+    'the iron gaol','the rift-scarred ruin','the hollow spire',
+  ],
+
+  // ── Creatures ───────────────────────────────────────────────────────────────
+  creature: [
+    'grave revenant','rift hollow','feral lycanthrope','ash wraith','shard golem',
+    'bone collector','void leech','risen champion','corrupted elder','hollow knight',
+    'plague bear','wight','pale stalker','rift-touched warden','barrow crawler',
+    'blood-drunk ghoul','iron revenant','collapsed shade','festering brute',
+    'the hollow thing wearing a familiar face','skittering rift spawn',
+    'salt-eaten corpse walker','sunken drowned','venomous deep crawler',
+    'rusted construct','the last of its pack','a thing that used to be human',
+  ],
+  creature_plural: [
+    'revenants','rift hollows','lycanthropes','wraiths','golems',
+    'bone collectors','void leeches','wights','stalkers','barrow crawlers',
+    'ghouls','constructs','shades','rift spawn','drowned things',
+    'pale hunters','collapsed dead','corrupted wardens',
+  ],
+  creature_boss: [
+    'the Pale Matriarch','the Revenant Lord','Hollow-King Osren','the Sunken God',
+    'the Warden Unbound','the Ashen Chancellor','the Last Inquisitor',
+    'Bonelord of the Deep Warrens','the Festering','the Unhallowed Champion',
+    'whatever crawled out of the sealed vault','the thing the Wardens won\'t name',
+  ],
+
+  // ── Items & Relics ──────────────────────────────────────────────────────────
+  relic: [
+    'ancient compass','sealed tome','shattered oathstone','rift shard',
+    'stolen regalia','hollow key','elder lens fragment','bound spirit jar',
+    'cursed banner','faded covenant scroll','cracked warden seal',
+    'bone-inscribed map','iron prayer chain','rift-touched lantern',
+    'the last signed writ','a severed signet ring','bloodstained ledger',
+    'wax-sealed last words','splinter of the first door','voided contract',
+  ],
+  relic_mundane: [
+    'a child\'s wooden token','a letter never sent','a broken compass',
+    'a name carved into stone','a soldier\'s identification tag',
+    'last season\'s merchant ledger','a tavern marker worth a meal',
+    'a lock of hair in a tin box','a faded portrait','an unfinished map',
+  ],
+
+  // ── Verbs & Actions ─────────────────────────────────────────────────────────
+  action: [
+    'retrieve','destroy','escort safely','investigate','purge','recover',
+    'deliver','intercept','protect','track down','negotiate with',
+    'steal back from','document evidence of','extract','silence','expose',
+    'confirm the fate of','find and burn','bring back alive','make contact with',
+  ],
+  action_dark: [
+    'bury','silence permanently','make disappear','ensure never returns',
+    'erase all record of','prevent from speaking','remove from the equation',
+    'take care of quietly','settle the debt with',
+  ],
+
+  // ── Factions ────────────────────────────────────────────────────────────────
+  faction: [
+    'The Holy Dominion','The Rift Wardens','The Iron Vanguard',
+    'The Luminary Inquest','The Khanate','The Veiled Hand',
+    'The Lizard Covenant','The Tinkers Council','The Fortune Guild',
+    'The Merchant League','The Adventure Guild',
+    'a cell of radicals with a grudge','remnant survivors','the wandering orders',
+    'a desperate coalition of the desperate','a faction with no name and no mercy',
+  ],
+  faction_pair: [
+    'The Holy Dominion and The Rift Wardens',
+    'The Iron Vanguard and The Khanate',
+    'The Veiled Hand and The Merchant League',
+    'The Luminary Inquest and The Tinkers Council',
+    'The Fortune Guild and The Adventure Guild',
+    'two factions who cannot agree on anything',
+    'old allies who no longer trust each other',
+  ],
+
+  // ── Emotions & Tone ─────────────────────────────────────────────────────────
+  emotion: [
+    'grief','righteous fury','desperate hope','cold resolve','quiet terror',
+    'bitter regret','hollow exhaustion','reckless courage','numb acceptance',
+    'old guilt finally surfacing','pride that has curdled into shame',
+    'love with nowhere left to go','fear that arrived too late',
+  ],
+  emotion_dark: [
+    'hatred refined over decades','the particular calm that comes after loss',
+    'something that stopped being grief and became purpose',
+    'the exhaustion of being right about everything','a wound that never fully closed',
+    'contempt so deep it reads as patience',
+  ],
+  urgency: [
+    'before the next dawn','before the Rift expands further','by week\'s end',
+    'before the season turns','within the hour if possible','time is already short',
+    'the window has nearly closed','every hour of delay costs lives',
+    'the corruption does not wait','they are already moving',
+  ],
+
+  // ── Narrative & Story ────────────────────────────────────────────────────────
+  consequence: [
+    'The region will not recover from another failure.','Others are already hunting for the same thing.',
+    'The window to act closes at dawn.','The innocents caught between them will pay first.',
+    'The corruption is spreading faster than the reports say.',
+    'Once it reaches the road, it cannot be contained.',
+    'The Wardens know. They have chosen not to act.',
+    'There is no second attempt if this one fails.',
+    'It ends here or it ends everywhere.',
+  ],
+  complication: [
+    'The target is not where the client believes','Someone else has already been paid to do this',
+    'The reward was promised to two different people','The client is not telling the full story',
+    'The creature was someone\'s family','It is not the only one',
+    'The relic has already changed hands once','Getting out may be harder than getting in',
+    'The Wardens have sealed the area for a reason',
+    'What you find there will not match what you were told',
+  ],
+  secret: [
+    'the client is the one who caused this','the target is innocent','the reward does not exist',
+    'this was arranged to remove a witness','someone higher up ordered it buried',
+    'the creature was bound — and someone freed it deliberately',
+    'the relic was never lost, only hidden','two factions are using this to settle a private dispute',
+    'the death was not an accident','the seal was broken from the inside',
+  ],
+  time_phrase: [
+    'fifty winters past','in the age before the Rift opened','before Calidar fell to ruin',
+    'when the old roads were still safe','in the early years of the Dominion',
+    'three moons ago','in living memory','since the last great war',
+    'before the rift-touched began appearing in the settlements',
+    'when the wardens still held the outer roads',
+    'in the years before the silence took the eastern holds',
+    'before the first secondary rift opened','not long after the founding of Ironhold',
+    'in the season of Ashwane','in the deep of Frosthollow',
+  ],
+  history_subj: [
+    'A great warrior','The old council','A nameless pilgrim','The last survivor',
+    'An entire village','A brotherhood of scholars','A disgraced warden',
+    'The third expedition into the Rift','A single soldier acting alone',
+    'The founders of the outer settlements','A faction since dissolved',
+    'A family that no longer exists','The ones who knew the truth first',
+  ],
+  lore_event: [
+    'vanished without trace','made a terrible bargain','unleashed something they couldn\'t control',
+    'sealed it away and swore silence','left behind a warning no one heeded',
+    'gave everything to stop what came next','recorded the truth and hid the record',
+    'chose survival over honesty','destroyed the evidence before others could act',
+    'made it out but were never the same','refused the order and paid for it',
+    'did the thing and have not spoken of it since',
+  ],
+  lie: [
+    'The road is safe.','We lost contact three days ago — it could be nothing.',
+    'The creature has been contained.','No one else knows about this.',
+    'The client has no personal stake in the outcome.',
+    'The previous party returned safely.','The vault was empty when we found it.',
+    'We don\'t know what\'s in there.','This is a simple retrieval.',
+    'You\'re the first one we\'ve asked.',
+  ],
+
+  // ── Rewards & Bribes ────────────────────────────────────────────────────────
+  reward_desc: [
+    'gold and no questions asked','an old favour cashed in',
+    'a deed to unclaimed land in the outer holds','rare crafting materials, delivered in advance',
+    'a key to a sealed vault','freedom from a named debt',
+    'passage out of the city, no record kept','a title with actual weight behind it',
+    'information you have been looking for','a pardon signed and notarised',
+    'enough to disappear if you want to','more than you\'re being told up front',
+  ],
+
+  // ── Atmosphere & Setting ─────────────────────────────────────────────────────
+  weather: [
+    'The fog hasn\'t lifted in three days.','Snow arrived early this season.',
+    'The ash fall is worse near the Flats.','Rain has made the roads impassable.',
+    'Clear skies — which means no cover.','The cold this far out is a different kind of cold.',
+    'The rift light was visible from the city last night.',
+  ],
+  atmosphere: [
+    'The settlement has the feel of a place waiting for something bad.',
+    'Half the buildings are shuttered.','The locals won\'t make eye contact.',
+    'There are more soldiers here than the charter permits.',
+    'The usual traders haven\'t come through this season.',
+    'The children have been sent somewhere else.',
+    'The smell of the place arrives before you do.',
+    'The gates close early now.','No one sleeps with their door unlocked.',
+  ],
+  rumor_opener: [
+    'They say','Word is','I\'ve heard tell','Don\'t repeat this, but',
+    'A trader told me','The guards won\'t say it aloud—but',
+    'You didn\'t hear this from me, but','Three different people have said',
+    'The scouts reported—unofficially—that','What the official account leaves out is',
+    'There\'s a version of this story the Wardens prefer you not know:',
+    'The version they tell in Ironhold is different. Apparently',
+  ],
+  letter_opener: [
+    'If you are reading this, I am likely dead.','I will be brief because time is short.',
+    'By the time this reaches you, I will have already acted.',
+    'I don\'t expect a reply. I only needed someone to know.',
+    'What I am about to write, I cannot say aloud.',
+    'I have carried this long enough. You deserve to know.',
+    'Do not come looking for me.','I was wrong about all of it.',
+  ],
+  sermon_opener: [
+    'The Rift did not open by accident.','We were warned. The records are clear.',
+    'Fortuna does not belong to those who take it by force.',
+    'What they call progress, history will call catastrophe.',
+    'The souls who fell are not forgotten. They are watching.',
+    'There is a reckoning coming. The signs are written plainly.',
+  ],
+  bounty_reason: [
+    'for crimes against the settlements','for unpaid blood debt',
+    'for breach of contract with the Merchant League',
+    'for desertion during active rift incursion',
+    'for theft of sealed records from Solara',
+    'for assault on a warden officer','for trafficking in rift-touched contraband',
+    'for failure to appear before the Iron Vanguard tribunal',
+    'for offenses the issuer declines to specify',
+    'wanted in connection with three unsolved disappearances',
+  ],
 };
 
 function rnd(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function cap(s)   { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
 
 const TEMPLATES = [
+  // ── Quest & Mission ─────────────────────────────────────────────────────────
   {
     id: 'quest_hook',
     label: '⚔️ Quest Hook',
     slots: [
-      { key: 'npc',        label: 'Quest Giver',   type: 'word_bank', wb: 'npc_name'    },
-      { key: 'action',     label: 'Action Verb',   type: 'word_bank', wb: 'action'      },
-      { key: 'target',     label: 'Target Object', type: 'word_bank', wb: 'relic'       },
-      { key: 'place',      label: 'Location',      type: 'word_bank', wb: 'settlement'  },
-      { key: 'reward',     label: 'Reward',        type: 'word_bank', wb: 'reward_desc' },
+      { key: 'npc',     label: 'Quest Giver',    type: 'word_bank', wb: 'npc_name'    },
+      { key: 'action',  label: 'Action Verb',    type: 'word_bank', wb: 'action'      },
+      { key: 'target',  label: 'Target',         type: 'word_bank', wb: 'relic'       },
+      { key: 'place',   label: 'Location',       type: 'word_bank', wb: 'settlement'  },
+      { key: 'reward',  label: 'Reward',         type: 'word_bank', wb: 'reward_desc' },
     ],
     render: v => `${v.npc} needs someone to ${v.action} the ${v.target} from ${v.place}. In return: ${v.reward}.`,
   },
@@ -731,25 +971,156 @@ const TEMPLATES = [
     id: 'quest_desc',
     label: '📜 Quest Description',
     slots: [
-      { key: 'faction',    label: 'Faction',       type: 'word_bank', wb: 'faction'     },
-      { key: 'place',      label: 'Location',      type: 'word_bank', wb: 'settlement'  },
-      { key: 'objective',  label: 'Objective',     type: 'text',      placeholder: 'Describe the objective…' },
-      { key: 'pressure',   label: 'Time Pressure', type: 'word_bank', wb: 'consequence' },
-      { key: 'reward',     label: 'Reward',        type: 'word_bank', wb: 'reward_desc' },
+      { key: 'faction',   label: 'Faction',        type: 'word_bank', wb: 'faction'     },
+      { key: 'place',     label: 'Location',       type: 'word_bank', wb: 'settlement'  },
+      { key: 'objective', label: 'Objective',      type: 'text',      placeholder: 'Describe the objective…' },
+      { key: 'pressure',  label: 'Stakes',         type: 'word_bank', wb: 'consequence' },
+      { key: 'reward',    label: 'Reward',         type: 'word_bank', wb: 'reward_desc' },
     ],
     render: v => `${v.faction} requires action at ${v.place}.\n\n${v.objective || '[objective]'}\n\n${v.pressure} Reward: ${v.reward}.`,
   },
   {
-    id: 'npc_intro',
-    label: '🧑 NPC Intro Dialogue',
+    id: 'quest_complication',
+    label: '🪤 Quest With a Catch',
     slots: [
-      { key: 'name',       label: 'NPC Name',      type: 'word_bank', wb: 'npc_name'    },
-      { key: 'occupation', label: 'Occupation',    type: 'text',      placeholder: 'blacksmith, merchant…' },
-      { key: 'faction',    label: 'Affiliation',   type: 'word_bank', wb: 'faction'     },
-      { key: 'rumor',      label: 'Rumor Hook',    type: 'word_bank', wb: 'rumor_opener'},
+      { key: 'npc',       label: 'Client',         type: 'word_bank', wb: 'npc_name'       },
+      { key: 'action',    label: 'What They Want', type: 'word_bank', wb: 'action'         },
+      { key: 'target',    label: 'Target',         type: 'word_bank', wb: 'relic'          },
+      { key: 'reward',    label: 'Offered Reward', type: 'word_bank', wb: 'reward_desc'    },
+      { key: 'lie',       label: 'What\'s False',  type: 'word_bank', wb: 'lie'            },
+      { key: 'secret',    label: 'Hidden Truth',   type: 'word_bank', wb: 'secret'         },
     ],
-    render: v => `Hail, traveller. I'm ${v.name}, ${v.occupation || 'a local'} sworn to ${v.faction}. ${v.rumor}… there's something strange stirring in these parts. Ask me if you want to know more.`,
+    render: v => `${v.npc} wants you to ${v.action} the ${v.target}. They\'re offering ${v.reward}.\n\nWhat they told you: "${v.lie}"\n\nWhat they didn\'t say: ${v.secret}.`,
   },
+  {
+    id: 'bounty_notice',
+    label: '🪙 Bounty Notice',
+    slots: [
+      { key: 'target',  label: 'Target Name',    type: 'word_bank', wb: 'npc_name'       },
+      { key: 'title',   label: 'Target Title',   type: 'word_bank', wb: 'npc_title'      },
+      { key: 'reason',  label: 'Crime',          type: 'word_bank', wb: 'bounty_reason'  },
+      { key: 'reward',  label: 'Reward',         type: 'word_bank', wb: 'reward_desc'    },
+      { key: 'faction', label: 'Issuing Body',   type: 'word_bank', wb: 'faction'        },
+    ],
+    render: v => `WANTED\n\n${v.target} ${v.title}\n\n${cap(v.reason)}.\n\nReward: ${v.reward}. Dead or alive at the discretion of the recovery party.\n\nIssued by authority of ${v.faction}. Claimants must present verified identification.`,
+  },
+  {
+    id: 'scout_report',
+    label: '🗺️ Scout Report',
+    slots: [
+      { key: 'place',    label: 'Location',     type: 'word_bank', wb: 'dungeon_place'  },
+      { key: 'creature', label: 'Threat',       type: 'word_bank', wb: 'creature_plural'},
+      { key: 'detail',   label: 'Observation',  type: 'word_bank', wb: 'atmosphere'     },
+      { key: 'pressure', label: 'Time Factor',  type: 'word_bank', wb: 'urgency'        },
+    ],
+    render: v => `FIELD REPORT — CLASSIFICATION: ACTIVE THREAT\n\nLocation: ${v.place}\nThreat type: ${v.creature}\n\n${v.detail}\n\nRecommendation: response required ${v.pressure}. Do not send a single operative.`,
+  },
+  {
+    id: 'emergency_notice',
+    label: '🚨 Emergency Notice',
+    slots: [
+      { key: 'place',    label: 'Affected Area', type: 'word_bank', wb: 'settlement'   },
+      { key: 'threat',   label: 'Threat',        type: 'word_bank', wb: 'creature'     },
+      { key: 'pressure', label: 'Urgency',       type: 'word_bank', wb: 'urgency'      },
+    ],
+    render: v => `ALL AVAILABLE WARDENS — IMMEDIATE RESPONSE REQUIRED\n\n${cap(v.place).replace('the ', '')} is under active threat. ${cap(v.threat)} confirmed inside the perimeter.\n\n${v.pressure}. Civilians have not been fully evacuated. Do not wait for orders that are not coming.`,
+  },
+
+  // ── Characters & Dialogue ────────────────────────────────────────────────────
+  {
+    id: 'npc_intro',
+    label: '🧑 NPC Intro — Neutral',
+    slots: [
+      { key: 'name',       label: 'NPC Name',    type: 'word_bank', wb: 'npc_name'    },
+      { key: 'occupation', label: 'Occupation',  type: 'word_bank', wb: 'occupation'  },
+      { key: 'faction',    label: 'Affiliation', type: 'word_bank', wb: 'faction'     },
+      { key: 'rumor',      label: 'Rumor Hook',  type: 'word_bank', wb: 'rumor_opener'},
+    ],
+    render: v => `I'm ${v.name} — ${v.occupation}, affiliated with ${v.faction} when it suits both of us. ${v.rumor}… something has been moving out there that doesn\'t match any of the standard reports. If you want the full version, sit down.`,
+  },
+  {
+    id: 'npc_intro_guarded',
+    label: '🧑 NPC Intro — Guarded',
+    slots: [
+      { key: 'name',    label: 'NPC Name',   type: 'word_bank', wb: 'npc_name'   },
+      { key: 'emotion', label: 'Mood',       type: 'word_bank', wb: 'emotion'    },
+      { key: 'place',   label: 'From Where', type: 'word_bank', wb: 'settlement' },
+    ],
+    render: v => `I don\'t talk to strangers as a rule. And I especially don\'t talk about ${v.place}. Whatever you\'ve heard, whatever you think you know — I\'d strongly suggest you let it go.\n\n[${v.name} — ${v.emotion}. Will open up with sufficient trust.]`,
+  },
+  {
+    id: 'villain_speech',
+    label: '😈 Villain Motivation',
+    slots: [
+      { key: 'name',    label: 'Villain Name', type: 'word_bank', wb: 'npc_name'    },
+      { key: 'faction', label: 'Their Cause',  type: 'word_bank', wb: 'faction'     },
+      { key: 'emotion', label: 'Core Emotion', type: 'word_bank', wb: 'emotion_dark'},
+      { key: 'action',  label: 'Intent',       type: 'word_bank', wb: 'action'      },
+    ],
+    render: v => `${v.name}: "You call it wrong. I call it necessary. ${v.faction} had every opportunity. They chose differently. ${cap(v.emotion)} doesn\'t leave a person — it waits. I will ${v.action} what needs doing. You can judge the result when it\'s finished."`,
+  },
+  {
+    id: 'desperate_plea',
+    label: '🙏 Desperate Plea',
+    slots: [
+      { key: 'npc',     label: 'Requester',    type: 'word_bank', wb: 'npc_name'    },
+      { key: 'target',  label: 'Lost Person',  type: 'word_bank', wb: 'npc_name'    },
+      { key: 'place',   label: 'Last Known',   type: 'word_bank', wb: 'dungeon_place'},
+      { key: 'reward',  label: 'What Offered', type: 'word_bank', wb: 'relic_mundane'},
+      { key: 'emotion', label: 'Their State',  type: 'word_bank', wb: 'emotion'     },
+    ],
+    render: v => `"Please. I know how this sounds. I\'ve been to three different guilds and no one will take the contract.\n\n${v.target} went into ${v.place} six days ago. I\'ve heard nothing. I\'m not offering much — ${v.reward} — it\'s all I have. But I\'m asking you.\n\nIf you\'ve ever lost someone, you know what this is. Please."\n\n[${v.npc} — ${v.emotion}. This is not a trap. The loss is genuine.]`,
+  },
+  {
+    id: 'deathbed_confession',
+    label: '💀 Deathbed Confession',
+    slots: [
+      { key: 'name',   label: 'Confessor',   type: 'word_bank', wb: 'npc_name'   },
+      { key: 'event',  label: 'What They Did',type: 'word_bank', wb: 'lore_event' },
+      { key: 'secret', label: 'Hidden Truth', type: 'word_bank', wb: 'secret'    },
+      { key: 'relic',  label: 'What\'s Left', type: 'word_bank', wb: 'relic'     },
+    ],
+    render: v => `"Listen. I don\'t have long and I don\'t want absolution — I want this out of my chest before I go.\n\nI ${v.event}. The reason everyone was told? It wasn\'t the truth. ${cap(v.secret)}.\n\nThe ${v.relic} — it\'s real. Keep it away from ${rnd(WB.faction)}. That\'s all I ask.\n\nMy name is ${v.name}. Remember it if you want. Forget it if it\'s easier."`,
+  },
+
+  // ── Letters & Documents ───────────────────────────────────────────────────────
+  {
+    id: 'personal_letter',
+    label: '✉️ Personal Letter',
+    slots: [
+      { key: 'opener',  label: 'Opening',    type: 'word_bank', wb: 'letter_opener'},
+      { key: 'place',   label: 'Location',   type: 'word_bank', wb: 'settlement'   },
+      { key: 'event',   label: 'Event',      type: 'word_bank', wb: 'lore_event'   },
+      { key: 'emotion', label: 'Mood',       type: 'word_bank', wb: 'emotion'      },
+      { key: 'name',    label: 'Signed By',  type: 'word_bank', wb: 'npc_name'     },
+    ],
+    render: v => `${v.opener}\n\n${cap(v.place).replace(/^the /, '')} is not what I expected. I arrived to find that ${rnd(WB.history_subj).toLowerCase()} ${v.event}. The locals won\'t speak of it. The ${rnd(WB.faction)} presence here is heavier than the maps suggest.\n\nI am in ${v.emotion}. I don\'t know what I expected to find. I\'m writing this because I may not get another chance.\n\n— ${v.name}`,
+  },
+  {
+    id: 'political_dispatch',
+    label: '🏛️ Political Dispatch',
+    slots: [
+      { key: 'faction1', label: 'Sender Faction',   type: 'word_bank', wb: 'faction'      },
+      { key: 'faction2', label: 'Subject Faction',  type: 'word_bank', wb: 'faction'      },
+      { key: 'action',   label: 'Disputed Action',  type: 'word_bank', wb: 'action'       },
+      { key: 'place',    label: 'Contested Area',   type: 'word_bank', wb: 'settlement'   },
+      { key: 'pressure', label: 'Stakes',           type: 'word_bank', wb: 'consequence'  },
+    ],
+    render: v => `INTERNAL CORRESPONDENCE — NOT FOR DISTRIBUTION\n\n${v.faction1} is formally disputing ${v.faction2}\'s authority to ${v.action} within ${v.place}. The matter has been raised through appropriate channels and received no satisfactory reply.\n\n${v.pressure}\n\nWe do not intend to escalate. We expect the same restraint in return. We are not optimistic.`,
+  },
+  {
+    id: 'faction_broadside',
+    label: '📣 Faction Broadside',
+    slots: [
+      { key: 'faction',  label: 'Our Faction',     type: 'word_bank', wb: 'faction'     },
+      { key: 'enemy',    label: 'Their Faction',   type: 'word_bank', wb: 'faction'     },
+      { key: 'place',    label: 'At Stake',        type: 'word_bank', wb: 'settlement'  },
+      { key: 'emotion',  label: 'Our Position',    type: 'word_bank', wb: 'emotion'     },
+    ],
+    render: v => `THE TRUTH ABOUT ${v.place.toUpperCase().replace(/^THE /, '')}\n\n${v.faction} has protected this region. ${v.enemy} has profited from it. The arrangement ends now.\n\nThis is not aggression. This is ${v.emotion}. Anyone who tells you otherwise is speaking for the side with more to lose.\n\nStand with us, or stay out of it. There is no neutral ground when the stakes are this high.`,
+  },
+
+  // ── Lore & History ─────────────────────────────────────────────────────────
   {
     id: 'lore_entry',
     label: '📖 Lore Entry',
@@ -760,51 +1131,303 @@ const TEMPLATES = [
       { key: 'result',  label: 'Consequence',    type: 'word_bank', wb: 'consequence'  },
       { key: 'belief',  label: 'Legacy Belief',  type: 'text',      placeholder: 'What do people believe now?' },
     ],
-    render: v => `${v.time.charAt(0).toUpperCase() + v.time.slice(1)}, ${v.subject} ${v.event}. ${v.result}\n\n${v.belief || '[legacy belief]'}`,
+    render: v => `${cap(v.time)}, ${v.subject} ${v.event}. ${v.result}\n\n${v.belief || '[legacy belief — what the common people think happened, which may differ from the truth]'}`,
   },
   {
     id: 'book_chapter',
-    label: '📚 Book Chapter',
+    label: '📚 Book Chapter Opening',
     slots: [
-      { key: 'num',    label: 'Chapter Number', type: 'text',      placeholder: 'I, II, III…' },
+      { key: 'num',    label: 'Chapter Number', type: 'text',      placeholder: 'I, II, III…'          },
       { key: 'title',  label: 'Chapter Title',  type: 'text',      placeholder: 'e.g. The Burning Accord' },
-      { key: 'opener', label: 'Opening Line',   type: 'word_bank', wb: 'rumor_opener' },
-      { key: 'event',  label: 'Central Event',  type: 'word_bank', wb: 'lore_event'   },
+      { key: 'time',   label: 'Time Setting',   type: 'word_bank', wb: 'time_phrase'   },
+      { key: 'event',  label: 'Central Event',  type: 'word_bank', wb: 'lore_event'    },
+      { key: 'mood',   label: 'Atmosphere',     type: 'word_bank', wb: 'atmosphere'    },
     ],
-    render: v => `Chapter ${v.num || '?'}: ${v.title || '[Title]'}\n\n${v.opener} — ${v.event}. The full account that follows was transcribed from surviving records, incomplete as they are.`,
+    render: v => `Chapter ${v.num || '?'}: ${v.title || '[Title]'}\n\n${cap(v.time)}, ${rnd(WB.history_subj)} ${v.event}.\n\n${v.mood}\n\nWhat follows was reconstructed from surviving records, partial testimonies, and the accounts of those who were present and willing to speak. Gaps in the record are noted where they occur.`,
   },
   {
-    id: 'villain_speech',
-    label: '😈 Villain Motivation',
+    id: 'ancient_inscription',
+    label: '🪨 Ancient Inscription / Prophecy',
     slots: [
-      { key: 'name',    label: 'Villain Name',  type: 'word_bank', wb: 'npc_name'    },
-      { key: 'faction', label: 'Their Cause',   type: 'word_bank', wb: 'faction'     },
-      { key: 'emotion', label: 'Core Emotion',  type: 'word_bank', wb: 'emotion'     },
-      { key: 'action',  label: 'Intent',        type: 'word_bank', wb: 'action'      },
+      { key: 'subject',  label: 'Subject',       type: 'word_bank', wb: 'creature_boss' },
+      { key: 'action',   label: 'Warning',       type: 'word_bank', wb: 'lore_event'    },
+      { key: 'place',    label: 'Location',      type: 'word_bank', wb: 'dungeon_place'  },
+      { key: 'pressure', label: 'Condition',     type: 'word_bank', wb: 'urgency'       },
     ],
-    render: v => `${v.name}: "You call it wrong. I call it necessary. ${v.faction} abandoned us — left us to rot. ${v.emotion.charAt(0).toUpperCase() + v.emotion.slice(1)} is the only honest response to what they've done. I will ${v.action} what must be done. Whatever it costs."`,
+    render: v => `[Carved into the stone above the threshold — translation approximate]\n\n${cap(v.subject)} ${v.action}.\n\nDo not open ${v.place}. Do not break the seals. Do not speak the name.\n\nIf you are reading this: ${v.pressure}.\n\nWe tried. We failed. Forgive nothing. Forget nothing. Run.`,
   },
+  {
+    id: 'missing_person',
+    label: '🔎 Missing Person Notice',
+    slots: [
+      { key: 'name',    label: 'Missing Person', type: 'word_bank', wb: 'npc_name'     },
+      { key: 'title',   label: 'Description',   type: 'word_bank', wb: 'occupation'   },
+      { key: 'place',   label: 'Last Seen',     type: 'word_bank', wb: 'settlement'   },
+      { key: 'time',    label: 'When',          type: 'word_bank', wb: 'time_phrase'  },
+      { key: 'reward',  label: 'Reward',        type: 'word_bank', wb: 'reward_desc'  },
+    ],
+    render: v => `MISSING\n\n${v.name} — ${v.occupation || v.title}\n\nLast confirmed sighting: ${v.place}, ${v.time}.\n\nAny information on their whereabouts is requested. No questions will be asked. Reward: ${v.reward}.\n\nIf you have seen this person, please speak to any Adventure Guild representative.\n\n[Posted by someone who has not given up.]`,
+  },
+
+  // ── Rumor & Atmosphere ───────────────────────────────────────────────────────
   {
     id: 'rumor',
     label: '💬 Rumor / Gossip',
     slots: [
-      { key: 'opener',  label: 'Opener',         type: 'word_bank', wb: 'rumor_opener'},
-      { key: 'subject', label: 'Subject',         type: 'word_bank', wb: 'history_subj'},
-      { key: 'event',   label: 'What Happened',  type: 'word_bank', wb: 'lore_event'  },
-      { key: 'place',   label: 'Near',            type: 'word_bank', wb: 'settlement'  },
+      { key: 'opener',  label: 'Opener',        type: 'word_bank', wb: 'rumor_opener'},
+      { key: 'subject', label: 'Subject',        type: 'word_bank', wb: 'history_subj'},
+      { key: 'event',   label: 'What Happened', type: 'word_bank', wb: 'lore_event'  },
+      { key: 'place',   label: 'Near',          type: 'word_bank', wb: 'settlement'  },
     ],
-    render: v => `${v.opener} ${v.subject.toLowerCase()} ${v.event} near ${v.place}. Nobody talks about it openly, but you can feel it if you know what to look for.`,
+    render: v => `${v.opener} ${v.subject.toLowerCase()} ${v.event} near ${v.place}. Nobody official will confirm it. But the people who actually live there have started sleeping with their doors barred.`,
   },
+  {
+    id: 'tavern_tale',
+    label: '🍺 Tavern Tale',
+    slots: [
+      { key: 'teller',  label: 'Storyteller',   type: 'word_bank', wb: 'npc_name'    },
+      { key: 'place',   label: 'Setting',       type: 'word_bank', wb: 'settlement'  },
+      { key: 'boss',    label: 'The Monster',   type: 'word_bank', wb: 'creature_boss'},
+      { key: 'twist',   label: 'Twist',         type: 'word_bank', wb: 'secret'      },
+    ],
+    render: v => `"—alright, alright. You want to know what actually happened at ${v.place}? Not the guild version. The real version.\n\n${v.boss}. That\'s what came out. Not a nest of them, not a migration — one thing. One very deliberate thing.\n\nHere\'s the part they cut from the official report: ${v.twist}.\n\n${v.teller} drained the cup. "So next time someone tells you the Rift is stable, you remember what I just told you. Now buy me a drink and I\'ll tell you what happened to the second party."`,
+  },
+  {
+    id: 'environment_detail',
+    label: '🌧️ Environmental Detail',
+    slots: [
+      { key: 'place',      label: 'Location',    type: 'word_bank', wb: 'settlement'  },
+      { key: 'weather',    label: 'Weather',     type: 'word_bank', wb: 'weather'     },
+      { key: 'atmosphere', label: 'Feel',        type: 'word_bank', wb: 'atmosphere'  },
+      { key: 'creature',   label: 'Lurking',     type: 'word_bank', wb: 'creature'    },
+    ],
+    render: v => `${cap(v.place).replace(/^the /, '')}.\n\n${v.weather} ${v.atmosphere}\n\nSomewhere in the middle distance, something moved. Probably just ${rnd(['the wind','a loose shutter','an animal','nothing'])}.\n\nProbably.`,
+  },
+
+  // ── Items & Objects ───────────────────────────────────────────────────────────
   {
     id: 'item_desc',
     label: '🗡️ Item Description',
     slots: [
-      { key: 'relic',   label: 'Item Name',     type: 'word_bank', wb: 'relic'       },
-      { key: 'time',    label: 'Age',            type: 'word_bank', wb: 'time_phrase' },
-      { key: 'faction', label: 'Origin',         type: 'word_bank', wb: 'faction'     },
-      { key: 'emotion', label: 'Feeling',        type: 'word_bank', wb: 'emotion'     },
+      { key: 'relic',   label: 'Item Name',  type: 'word_bank', wb: 'relic'      },
+      { key: 'time',    label: 'Age',        type: 'word_bank', wb: 'time_phrase'},
+      { key: 'faction', label: 'Origin',     type: 'word_bank', wb: 'faction'    },
+      { key: 'emotion', label: 'Feeling',    type: 'word_bank', wb: 'emotion'    },
     ],
-    render: v => `A ${v.relic}, forged ${v.time} by ${v.faction}. Holding it brings an inexplicable sense of ${v.emotion}. The craftsmanship is unlike anything produced today.`,
+    render: v => `A ${v.relic}, recovered from ${v.time}. Made by, or for, ${v.faction}.\n\nHolding it brings ${v.emotion}. Not metaphorically. The sensation is specific and unpleasant in a way that is hard to articulate to someone who hasn\'t experienced it.\n\nCurrent owner unknown. Previous owners: best not to ask.`,
+  },
+  {
+    id: 'item_mundane',
+    label: '📦 Mundane Item (With Weight)',
+    slots: [
+      { key: 'item',    label: 'The Object',  type: 'word_bank', wb: 'relic_mundane'},
+      { key: 'name',    label: 'Prior Owner', type: 'word_bank', wb: 'npc_name'    },
+      { key: 'event',   label: 'What Happened',type: 'word_bank', wb: 'lore_event' },
+    ],
+    render: v => `${cap(v.item)}. Worn. Nothing remarkable about it on inspection.\n\nBelonged to ${v.name}, who ${v.event}. Whether the item was kept intentionally or forgotten is unclear.\n\nIt has no quest marker. No special properties. But someone, at some point, found it worth keeping.`,
+  },
+
+  // ── Religion & Philosophy ────────────────────────────────────────────────────
+  {
+    id: 'devotional_text',
+    label: '⛪ Devotional / Sermon',
+    slots: [
+      { key: 'opener',  label: 'Opening',    type: 'word_bank', wb: 'sermon_opener'},
+      { key: 'faction', label: 'Doctrine',   type: 'word_bank', wb: 'faction'      },
+      { key: 'place',   label: 'Example',    type: 'word_bank', wb: 'settlement'   },
+      { key: 'pressure',label: 'Stakes',     type: 'word_bank', wb: 'consequence'  },
+    ],
+    render: v => `${v.opener}\n\n${v.faction} has carried this burden long enough to know: what happens at ${v.place} does not stay there. It spreads. It teaches. ${v.pressure}\n\nWe do not ask for faith without evidence. We ask for honesty about what the evidence shows. The Rift is not abstract. It is here. It is now.\n\nAct accordingly.`,
+  },
+
+  // ── Personal & Reflective ────────────────────────────────────────────────────
+  {
+    id: 'journal_entry',
+    label: '📓 Personal Journal',
+    slots: [
+      { key: 'place',   label: 'Current Location', type: 'word_bank', wb: 'settlement' },
+      { key: 'event',   label: 'What Happened',    type: 'word_bank', wb: 'lore_event' },
+      { key: 'emotion', label: 'Current State',    type: 'word_bank', wb: 'emotion'    },
+      { key: 'relic',   label: 'What Was Found',   type: 'word_bank', wb: 'relic'      },
+    ],
+    render: v => `Day ${Math.floor(Math.random()*80+12)}. ${cap(v.place).replace(/^the /,'')}, approximately.\n\nWe ${v.event} today. I am not certain how to record that in a way that will make sense to someone reading this later, so I will only say: it happened, and we are still here, and neither of those things feels as good as I thought it would.\n\nFound ${v.relic} in the lower section. Keeping it for now.\n\nMy current state: ${v.emotion}. Which is, under the circumstances, acceptable.\n\nMore tomorrow. If there is a tomorrow.`,
+  },
+  {
+    id: 'fractured_testimony',
+    label: '🧩 Fractured Testimony',
+    slots: [
+      { key: 'creature', label: 'What Was Seen',   type: 'word_bank', wb: 'creature'   },
+      { key: 'place',    label: 'Where',           type: 'word_bank', wb: 'dungeon_place'},
+      { key: 'emotion',  label: 'Witness State',   type: 'word_bank', wb: 'emotion'     },
+    ],
+    render: v => `[Witness account — reliability: uncertain. Recorded by Warden intake officer.]\n\n"It was — there were — I saw ${v.creature}. Not like — it was different from what the briefs say.\n\nIn ${v.place}. I know what I saw.\n\n[pause — 14 seconds]\n\nI don\'t — can you — what I\'m trying to tell you is that the thing I saw wasn\'t acting like anything acts. It wasn\'t confused. It was patient.\n\nI don\'t want to go back."\n\n[Subject: ${v.emotion}. Further questioning suspended pending medical assessment.]`,
+  },
+
+  // ── NPC Direct Speech ─────────────────────────────────────────────────────
+  {
+    id: 'npc_local_warning',
+    label: '🗣️ NPC — Local Warning',
+    slots: [
+      { key: 'place',    label: 'Dangerous Place', type: 'word_bank', wb: 'dungeon_place' },
+      { key: 'creature', label: 'Threat',          type: 'word_bank', wb: 'creature'      },
+      { key: 'time',     label: 'When It Started', type: 'word_bank', wb: 'time_phrase'   },
+      { key: 'name',     label: 'NPC Name',        type: 'word_bank', wb: 'npc_name'      },
+    ],
+    render: v => `"You\'re heading toward ${v.place}? Then stop. Just — stop and listen to me for one moment.\n\n${cap(v.time)}, we lost three people to ${v.creature} out there. Not adventurers. Locals. People who knew the roads. The Wardens came, looked around, and posted a notice that nobody reads.\n\nI\'m not telling you not to go. I can see by your face you\'re going regardless. I\'m telling you: go prepared, go with someone you trust, and for the love of whatever you hold sacred — don\'t go alone at night.\n\nCome back in one piece. We\'re running low on people around here."\n\n— ${v.name}, local resident`,
+  },
+  {
+    id: 'npc_jaded_veteran',
+    label: '🗣️ NPC — Jaded Veteran',
+    slots: [
+      { key: 'name',    label: 'NPC Name',      type: 'word_bank', wb: 'npc_name'    },
+      { key: 'faction', label: 'Who Failed',    type: 'word_bank', wb: 'faction'     },
+      { key: 'place',   label: 'Where',         type: 'word_bank', wb: 'settlement'  },
+      { key: 'relic',   label: 'The Cost',      type: 'word_bank', wb: 'relic'       },
+    ],
+    render: v => `"I did this for twenty years. Twenty. Took every contract ${v.faction} handed me, cleared every dungeon they pointed me at, bled for every ${v.place} that needed bleeding for.\n\nYou know what I have to show for it? This scar, that one, and the ${v.relic} I kept because they forgot to ask for it back.\n\nDo I regret it? Every time the weather changes and my leg reminds me. Do I miss it?\n\n...\n\nAsk me something easier."\n\n— ${v.name}. Will share more with a drink in hand.`,
+  },
+  {
+    id: 'npc_merchant_pitch',
+    label: '🗣️ NPC — Merchant Pitch',
+    slots: [
+      { key: 'name',    label: 'Merchant Name',  type: 'word_bank', wb: 'npc_name'   },
+      { key: 'relic',   label: 'Item For Sale',  type: 'word_bank', wb: 'relic'      },
+      { key: 'time',    label: 'Provenance',     type: 'word_bank', wb: 'time_phrase'},
+      { key: 'faction', label: 'Origin Claim',   type: 'word_bank', wb: 'faction'    },
+    ],
+    render: v => `"Ah. You have good eyes — I noticed you looking at that.\n\nThe ${v.relic}. ${cap(v.time)}, recovered from a ${v.faction} site that won\'t appear on any current map. I won\'t tell you the full provenance because frankly some of it reflects poorly on how I came to have it, and you seem like someone who might ask follow-up questions.\n\nWhat I will tell you is: it works, it\'s genuine, and you won\'t find another one. The price I\'m asking is fair for what it is. Less fair than what the Merchant League would charge you, more fair than what a desperate person would.\n\nI\'m ${v.name}. I have a reputation to maintain. Do we have a deal?"\n\n[Persuasion check available for a discount.]`,
+  },
+  {
+    id: 'npc_innkeeper',
+    label: '🗣️ NPC — Innkeeper Local Info',
+    slots: [
+      { key: 'name',     label: 'Innkeeper',      type: 'word_bank', wb: 'npc_name'   },
+      { key: 'rumor',    label: 'What They Know', type: 'word_bank', wb: 'rumor_opener'},
+      { key: 'place',    label: 'Nearby Danger',  type: 'word_bank', wb: 'settlement' },
+      { key: 'creature', label: 'Threat',         type: 'word_bank', wb: 'creature'   },
+      { key: 'reward',   label: 'Local Tip',      type: 'word_bank', wb: 'reward_desc'},
+    ],
+    render: v => `"Room\'s yours, meal\'s in an hour. You want the honest version of this town or the version I tell people who aren\'t staying long?\n\nAlright. ${v.rumor} — ${v.place} has had trouble. ${cap(v.creature)} moving closer to the road than they used to. Wardens haven\'t come through in two weeks. People are nervous and nervous people do stupid things.\n\nStay out of the lower road after dark. Don\'t buy anything from the man with the green cart — don\'t ask why. And if anyone offers you ${v.reward}, get it in writing.\n\nI\'m ${v.name}. I\'ve run this inn for eleven years. I\'ve buried three guests who didn\'t take advice. I\'d rather not bury a fourth."\n`,
+  },
+  {
+    id: 'npc_guard_checkpoint',
+    label: '🗣️ NPC — Guard Checkpoint',
+    slots: [
+      { key: 'place',   label: 'Restricted Area', type: 'word_bank', wb: 'dungeon_place'},
+      { key: 'faction', label: 'Authority',       type: 'word_bank', wb: 'faction'      },
+      { key: 'reason',  label: 'Official Reason', type: 'word_bank', wb: 'consequence'  },
+    ],
+    render: v => `"This road is closed. ${v.faction} order, issued — look, it doesn\'t matter when it was issued. It\'s closed.\n\n${v.place} is a restricted area. You want the official reason? ${v.reason} That\'s what I\'m authorised to say.\n\nIf you\'ve got a warden clearance, show it now. If you\'ve got a guild contract that covers this area, I can look at it. If you\'ve got neither, you turn around, you go back, and you come back with the right paperwork.\n\nI don\'t make the rules. I just stand here in the cold and enforce them.\n\nAnything else I can help you with today?"`,
+  },
+  {
+    id: 'npc_conspiracy',
+    label: '🗣️ NPC — Conspiracy Theorist',
+    slots: [
+      { key: 'faction1', label: 'Accused Faction',  type: 'word_bank', wb: 'faction'      },
+      { key: 'faction2', label: 'Covering For',     type: 'word_bank', wb: 'faction'      },
+      { key: 'secret',   label: 'The Real Story',   type: 'word_bank', wb: 'secret'       },
+      { key: 'relic',    label: 'The Proof',        type: 'word_bank', wb: 'relic'        },
+    ],
+    render: v => `"No, no, no — you\'re thinking about this wrong. Why would ${v.faction1} do that publicly? They wouldn\'t. That\'s the point.\n\nLook. ${cap(v.secret)}. Right? That\'s what\'s actually happening. ${v.faction2} knows. They\'ve known for — they are actively helping.\n\nI have the ${v.relic}. Right here. You can look at it. Tell me that\'s a coincidence. Tell me that doesn\'t connect directly to what happened at — you know what, I\'m not saying the name out loud here.\n\nI\'m not saying I\'m right about everything. I\'m saying I\'m right about this. There\'s a difference.\n\nDo you want to see the rest of it or not?"`,
+  },
+  {
+    id: 'npc_survivor_guilt',
+    label: '🗣️ NPC — Survivor\'s Account',
+    slots: [
+      { key: 'name',     label: 'NPC Name',       type: 'word_bank', wb: 'npc_name'      },
+      { key: 'place',    label: 'Where It Was',   type: 'word_bank', wb: 'dungeon_place' },
+      { key: 'creature', label: 'What Happened',  type: 'word_bank', wb: 'creature'      },
+      { key: 'emotion',  label: 'Their State',    type: 'word_bank', wb: 'emotion'       },
+    ],
+    render: v => `"There were six of us. Good people. ${rnd(WB.history_subj)}, experienced, well-supplied. We\'d done harder runs than ${v.place}.\n\nThe ${v.creature} — it wasn\'t like the briefing said. Nothing in the briefing was right. I don\'t know if the briefing was wrong on purpose or just out of date. Either way.\n\nI made it out. I don\'t fully understand why. The others—\n\n...\n\nI don\'t talk about this. I\'m talking about it now because you\'re about to go in there, and I\'d rather feel like an idiot for warning you than feel like a coward for saying nothing.\n\nMy name is ${v.name}. Remember it if you come back out."\n\n[${v.emotion}. Will not discuss further unless trust is high.]`,
+  },
+  {
+    id: 'npc_old_timer',
+    label: '🗣️ NPC — Old Timer Remembers',
+    slots: [
+      { key: 'name',    label: 'NPC Name',       type: 'word_bank', wb: 'npc_name'    },
+      { key: 'place',   label: 'Place Changed',  type: 'word_bank', wb: 'town'        },
+      { key: 'time',    label: 'How Long Ago',   type: 'word_bank', wb: 'time_phrase' },
+      { key: 'faction', label: 'Who Ran It',     type: 'word_bank', wb: 'faction'     },
+    ],
+    render: v => `"You\'re too young to remember what ${v.place} used to be.\n\n${cap(v.time)}, ${v.faction} hadn\'t gotten their claws in yet. You could walk the whole market without anyone asking your name. The road south was safe. I mean actually safe, not \'safe with an escort\' safe.\n\nNow look at it. Half the stalls gone, gate guards who weren\'t born here, prices that would\'ve started a riot back when the council had teeth.\n\nI\'m not saying it was perfect. I\'m saying it was ours.\n\nAnyway. You didn\'t come here to listen to an old person be unhappy. What do you need? I\'ll help if I can — I remember when that meant something."\n\n— ${v.name}. Long-term resident. Extensive local knowledge.`,
+  },
+  {
+    id: 'npc_rival_adventurer',
+    label: '🗣️ NPC — Rival Adventurer',
+    slots: [
+      { key: 'name',    label: 'Rival\'s Name',  type: 'word_bank', wb: 'npc_name'    },
+      { key: 'place',   label: 'The Job',        type: 'word_bank', wb: 'dungeon_place'},
+      { key: 'relic',   label: 'Target Item',    type: 'word_bank', wb: 'relic'       },
+      { key: 'reward',  label: 'Their Stake',    type: 'word_bank', wb: 'reward_desc' },
+    ],
+    render: v => `"Oh. You\'re on this contract too.\n\nFine. I\'m ${v.name}. I\'ve been working toward ${v.place} for longer than you\'ve probably been doing this, so let\'s be honest about the hierarchy here.\n\nThe ${v.relic} goes to whoever reaches it first. That\'s the contract. I\'m not going to pretend we\'re a team. I\'m also not going to pretend I wouldn\'t rather you survived — dead competition is just paperwork, and I hate paperwork.\n\nSo here\'s my offer: we don\'t interfere with each other, we share what we find about the layout, and if one of us gets killed the other takes the ${v.reward} without guilt.\n\nDon\'t look at me like that. It\'s a practical arrangement. Do we have a deal?"`,
+  },
+  {
+    id: 'npc_reluctant_informant',
+    label: '🗣️ NPC — Reluctant Informant',
+    slots: [
+      { key: 'name',    label: 'NPC Name',       type: 'word_bank', wb: 'npc_name'   },
+      { key: 'faction', label: 'Who They Fear',  type: 'word_bank', wb: 'faction'    },
+      { key: 'secret',  label: 'What They Know', type: 'word_bank', wb: 'secret'     },
+      { key: 'place',   label: 'The Evidence',   type: 'word_bank', wb: 'settlement' },
+    ],
+    render: v => `"I can\'t talk to you here. Come back after closing, use the side door, don\'t tell anyone you\'re coming.\n\n...\n\nAlright. But if ${v.faction} finds out I spoke to you, I\'m already gone. You understand? I\'m not being dramatic. I\'m describing the actual consequence.\n\nWhat I know: ${cap(v.secret)}. I know this because I was in ${v.place} when it happened. I know this because I kept my mouth shut for two years and it has cost me every night since.\n\nI\'m not asking for protection. I\'m not asking for money. I\'m asking you to do something with this so I can stop carrying it alone.\n\nMy name is ${v.name}. Please don\'t use it."`,
+  },
+  {
+    id: 'npc_zealot',
+    label: '🗣️ NPC — True Believer',
+    slots: [
+      { key: 'faction',  label: 'Their Cause',    type: 'word_bank', wb: 'faction'     },
+      { key: 'place',    label: 'Sacred Ground',  type: 'word_bank', wb: 'settlement'  },
+      { key: 'creature', label: 'The Enemy',      type: 'word_bank', wb: 'creature'    },
+      { key: 'emotion',  label: 'Their Feeling',  type: 'word_bank', wb: 'emotion'     },
+    ],
+    render: v => `"You think this is politics. It isn\'t politics.\n\n${v.faction} is the only reason ${v.place} still exists. The only reason. While everyone else was negotiating and compromising and finding the reasonable middle ground, we were the ones standing between the ${v.creature} and the people who couldn\'t defend themselves.\n\nDo I regret what we\'ve done? No. Not once. ${cap(v.emotion)} — that\'s what powers you when the reasonable people have gone home.\n\nI\'m not asking you to believe what I believe. I\'m asking you to look at what\'s standing and what\'s not, and tell me I\'m wrong about who held the line.\n\nCan you do that? No. I didn\'t think so."`,
+  },
+  {
+    id: 'npc_corrupt_official',
+    label: '🗣️ NPC — Corrupt Official',
+    slots: [
+      { key: 'name',    label: 'Official Name',   type: 'word_bank', wb: 'npc_name'    },
+      { key: 'faction', label: 'Their Office',    type: 'word_bank', wb: 'faction'     },
+      { key: 'action',  label: 'What They Want',  type: 'word_bank', wb: 'action_dark' },
+      { key: 'reward',  label: 'The Offer',       type: 'word_bank', wb: 'reward_desc' },
+    ],
+    render: v => `"Close the door.\n\nI\'m going to speak to you plainly because I think you\'re intelligent enough to understand what I\'m saying and discreet enough not to repeat it.\n\n${v.faction} has official channels. Official channels are slow, public, and leave records. You understand the problem.\n\nWhat I need is for someone to ${v.action} the matter quietly. No paperwork. No witnesses. No connection back to this office.\n\nIn exchange: ${v.reward}. Delivered without questions and without conditions.\n\nI am ${v.name}. I have authority, I have reach, and I have a very good memory for people who help me and people who don\'t.\n\nWhat do you say?"`,
+  },
+  {
+    id: 'npc_mentor_parting',
+    label: '🗣️ NPC — Mentor / Parting Words',
+    slots: [
+      { key: 'name',    label: 'Mentor Name',    type: 'word_bank', wb: 'npc_name'   },
+      { key: 'place',   label: 'Where You\'re Going', type: 'word_bank', wb: 'dungeon_place' },
+      { key: 'relic',   label: 'What They Give', type: 'word_bank', wb: 'relic'      },
+      { key: 'secret',  label: 'Parting Truth',  type: 'word_bank', wb: 'secret'     },
+    ],
+    render: v => `"You\'re ready. I don\'t say that lightly and I\'m not saying it to make you feel better before you walk into ${v.place}.\n\nTake the ${v.relic}. I\'ve carried it long enough and it belongs with someone who\'s still going in, not someone who\'s coming out for the last time.\n\nOne thing I need you to know before you go — and this is the thing I didn\'t tell you when I should have:\n\n${cap(v.secret)}.\n\nI should have told you earlier. I thought I was protecting you. I was protecting myself. Don\'t do that. When you know something, say it.\n\nCome back, ${rnd(WB.npc_name)}. That\'s the whole job. Everything else is details."\n\n— ${v.name}`,
+  },
+  {
+    id: 'npc_street_rumor',
+    label: '🗣️ NPC — Street-Level Rumor',
+    slots: [
+      { key: 'opener',   label: 'How They Start', type: 'word_bank', wb: 'rumor_opener' },
+      { key: 'faction',  label: 'Who\'s Involved', type: 'word_bank', wb: 'faction'     },
+      { key: 'event',    label: 'What Happened',  type: 'word_bank', wb: 'lore_event'   },
+      { key: 'lie',      label: 'The Spin',       type: 'word_bank', wb: 'lie'          },
+    ],
+    render: v => `"Psst. Hey.\n\n${v.opener} ${v.faction.toLowerCase()} ${v.event}. Official story? \'${v.lie}\' Yeah. Sure it does.\n\nI don\'t know what actually happened. Neither does anyone. But I\'ll tell you this: three people who asked those questions last month are not here anymore to keep asking.\n\nMake of that what you will.\n\nDon\'t tell anyone I said anything. I mean it."`,
+  },
+  {
+    id: 'npc_grief',
+    label: '🗣️ NPC — Grief / Loss',
+    slots: [
+      { key: 'name',     label: 'NPC Name',        type: 'word_bank', wb: 'npc_name'   },
+      { key: 'lost',     label: 'Who Was Lost',    type: 'word_bank', wb: 'npc_name'   },
+      { key: 'place',    label: 'Where It Was',    type: 'word_bank', wb: 'dungeon_place'},
+      { key: 'creature', label: 'What Took Them',  type: 'word_bank', wb: 'creature'   },
+    ],
+    render: v => `"${v.lost} was the best person I\'ve known. That\'s not grief talking. Ask anyone.\n\nThey went into ${v.place} because someone had to and no one else was going to. That\'s who they were. That\'s always who they were.\n\nThe ${v.creature} — I don\'t want to know the details. I\'ve been told I should want to know. I don\'t. Knowing won\'t bring them back and it\'ll give me something new to not sleep through.\n\nIf you\'re going in there: you don\'t owe me anything. But if you make it to where they fell, and there\'s something left that was theirs — I\'d be grateful.\n\nYou don\'t have to. I know you don\'t have to."\n\n— ${v.name}. Will provide information about the area if approached gently.`,
   },
 ];
 
