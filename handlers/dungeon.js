@@ -22,6 +22,7 @@ var masteryCore = require('../mastery/mastery-core');
 var lootGen = require('../loot-generator');
 var karma = require('./karma');
 var prison = require('./prison');
+var questAdlib = require('../quest-adlib');
 var companions = require('./companions');
 var petsHandler = require('./pets');
 var factions = require('./factions');
@@ -6191,6 +6192,7 @@ module.exports = {
               for (var wqfi = 0; wqfi < wqFloorAcc.questProgress.active.length; wqfi++) {
                 var wqf = wqFloorAcc.questProgress.active[wqfi];
                 var wqfTmpl = _wqRpg.WORLD_QUEST_TEMPLATES && _wqRpg.WORLD_QUEST_TEMPLATES.find(function(t) { return t.questId === wqf.questId; });
+                if (!wqfTmpl) wqfTmpl = questAdlib.getGeneratedQuest(wqf.questId);
                 if (wqfTmpl && wqfTmpl.type === 'dungeon' && wqfTmpl.target.minFloor && nextFloorNum >= wqfTmpl.target.minFloor) {
                   if (wqf.progress < wqf.targetCount) {
                     wqf.progress = wqf.targetCount;

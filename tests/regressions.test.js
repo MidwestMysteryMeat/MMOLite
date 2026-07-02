@@ -274,3 +274,69 @@ describe('Exploit prevention: prison sentence cannot be bypassed by re-arrest', 
     expect(acc.jailState.releasedAt).toBeLessThan(firstRelease + trespassDef.durationMs * 2);
   });
 });
+
+describe('Regression: deleting the active character promotes the replacement', () => {
+  const accountCharacters = require('../account-characters');
+
+  const FIELDS = ['level', 'gold', 'inventory'];
+  const DEFAULTS = { level: 1, gold: 0, inventory: [] };
+
+  function makeAccount() {
+    return {
+      username: 'Tester',
+      createdAt: 1000,
+      level: 5, gold: 500, inventory: ['sword'],
+      _characterName: 'Alpha',
+      _characterCreatedAt: 1000,
+      activeCharacterIndex: 0,
+      hallOfHeroes: [],
+      characters: [
+        { name: 'Alpha', createdAt: 1000, level: 5, gold: 500, inventory: ['sword'] },
+        { name: 'Beta',  createdAt: 2000, level: 9, gold: 42,  inventory: ['staff'] },
+      ],
+    };
+  }
+
+  let account;
+  let saved;
+
+  beforeEach(() => {
+    account = makeAccount();
+    saved = false;
+    accountCharacters.init({
+      loadAccount: () => account,
+      saveAccount: () => { saved = true; },
+      _getDefaultForField: (f) => DEFAULTS[f],
+      CHARACTER_FIELDS: FIELDS,
+      MAX_CHARACTERS_PER_ACCOUNT: 4,
+      sanitizeName: (n) => n,
+    });
+  });
+
+  test('deleting the active character loads the survivor into top-level fields', () => {
+    const result = accountCharacters.deleteCharacter('key', 0);
+    expect(result.error).toBeUndefined();
+    expect(account.characters.length).toBe(1);
+    expect(account.activeCharacterIndex).toBe(0);
+    // Beta's data must now be live — not deleted Alpha's
+    expect(account._characterName).toBe('Beta');
+    expect(account.level).toBe(9);
+    expect(account.gold).toBe(42);
+    expect(account.inventory).toEqual(['staff']);
+    expect(saved).toBe(true);
+  });
+
+  test('deleting a non-active character leaves the active data untouched', () => {
+    const result = accountCharacters.deleteCharacter('key', 1);
+    expect(result.error).toBeUndefined();
+    expect(account.activeCharacterIndex).toBe(0);
+    expect(account._characterName).toBe('Alpha');
+    expect(account.level).toBe(5);
+  });
+
+  test('deleting the last remaining character is rejected', () => {
+    account.characters.pop();
+    const result = accountCharacters.deleteCharacter('key', 0);
+    expect(result.error).toMatch(/last character/i);
+  });
+});

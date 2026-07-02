@@ -3,6 +3,7 @@
 
 var rpgData = require('../rpg-data');
 var dungeonCombat = require('../dungeon-combat');
+var questAdlib = require('../quest-adlib');
 var placementModule = require('./placement');
 var challengesHandler = require('./challenges');
 var knowledgeHandler = require('./knowledge');
@@ -1191,6 +1192,7 @@ module.exports = {
             var quest = qAcc.questProgress.active[qi];
             var rpgData = require('../rpg-data');
             var tmpl = rpgData.WORLD_QUEST_TEMPLATES ? rpgData.WORLD_QUEST_TEMPLATES.find(function(t) { return t.questId === quest.questId; }) : null;
+            if (!tmpl) tmpl = questAdlib.getGeneratedQuest(quest.questId);
             if (tmpl && tmpl.type === 'gather' && tmpl.target.resource === resource.type) {
               quest.progress = Math.min(quest.progress + harvestAmount, quest.targetCount);
               qChanged = true;

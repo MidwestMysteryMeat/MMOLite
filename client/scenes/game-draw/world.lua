@@ -20,6 +20,8 @@ local getEntityState
 local getZone, getMyId, getFadeIn, getSkills, getAccount, getClient
 local computeSprintBonuses
 
+local TILE_SIZE = 32
+
 local _portraitCache = {}
 
 local function drawZoneMonsters()
