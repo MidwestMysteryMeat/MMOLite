@@ -8,6 +8,7 @@ var dungeonData = require('../dungeon-data');
 var rpgData = require('../rpg-data');
 var masteryCore = require('../mastery/mastery-core');
 var corpseLoot = require('./corpse-loot');
+var questAdlib = require('../quest-adlib');
 var spawner = require('../overworld-monster-spawner');
 
 var BIOME_ELEMENT_MAP = spawner.BIOME_ELEMENT_MAP;
@@ -366,6 +367,7 @@ function _engageMonsterCombat(io, monster, playerSocketId, zoneId) {
               for (var qi = 0; qi < qAcc.questProgress.active.length; qi++) {
                 var quest = qAcc.questProgress.active[qi];
                 var tmpl = rpgData.WORLD_QUEST_TEMPLATES ? rpgData.WORLD_QUEST_TEMPLATES.find(function(t) { return t.questId === quest.questId; }) : null;
+                if (!tmpl) tmpl = questAdlib.getGeneratedQuest(quest.questId);
                 if (tmpl && tmpl.type === 'kill' && (tmpl.target.monster === capturedMonster.baseId || tmpl.target.monster === capturedMonster.templateId)) {
                   quest.progress = Math.min(quest.progress + 1, quest.targetCount);
                   qChanged = true;
@@ -1336,6 +1338,7 @@ module.exports = {
                   for (var qi = 0; qi < qAcc.questProgress.active.length; qi++) {
                     var quest = qAcc.questProgress.active[qi];
                     var tmpl = rpgData.WORLD_QUEST_TEMPLATES ? rpgData.WORLD_QUEST_TEMPLATES.find(function(t) { return t.questId === quest.questId; }) : null;
+                    if (!tmpl) tmpl = questAdlib.getGeneratedQuest(quest.questId);
                     if (tmpl && tmpl.type === 'kill' && (tmpl.target.monster === capturedMonster.baseId || tmpl.target.monster === capturedMonster.templateId)) {
                       quest.progress = Math.min(quest.progress + 1, quest.targetCount);
                       qChanged = true;

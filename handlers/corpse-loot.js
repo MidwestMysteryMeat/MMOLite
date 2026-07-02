@@ -296,6 +296,7 @@ function spawnWorldContainer(zoneId, x, y, zoneLevel) {
 // ---------------------------------------------------------------------------
 
 function tickCorpsesDespawn() {
+  if (!state || !state.zoneCorpses) return;
   var now = Date.now();
   state.zoneCorpses.forEach(function(corpses, zoneId) {
     for (var i = corpses.length - 1; i >= 0; i--) {

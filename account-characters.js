@@ -149,16 +149,20 @@ function deleteCharacter(key, targetIndex) {
   if (targetIndex < 0 || targetIndex >= account.characters.length) {
     return { error: 'Invalid character index' };
   }
-  if (targetIndex === account.activeCharacterIndex) {
-    return { error: 'Cannot delete active character. Switch to another character first.' };
-  }
   account.characters.splice(targetIndex, 1);
-  // Adjust activeCharacterIndex if needed
-  if (account.activeCharacterIndex > targetIndex) {
+  // Adjust activeCharacterIndex after splice
+  if (account.activeCharacterIndex === targetIndex) {
+    // Deleted the active character: promote the replacement to the top-level
+    // fields, same as switchCharacter — otherwise the deleted character's
+    // data stays live and gets written over the new slot on the next switch.
+    var newIdx = targetIndex < account.characters.length ? targetIndex : account.characters.length - 1;
+    account.activeCharacterIndex = newIdx;
+    _applyCharacterData(account, account.characters[newIdx]);
+  } else if (account.activeCharacterIndex > targetIndex) {
     account.activeCharacterIndex--;
   }
   saveAccount(account);
-  return { success: true };
+  return { success: true, activeCharacterIndex: account.activeCharacterIndex };
 }
 
 function getCharacterList(key) {
