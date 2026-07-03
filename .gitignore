@@ -81,3 +81,8 @@ data/writing_tool_token.txt
 *.aiff
 *.xm
 *.mod
+*.zip
+*.7z
+*.rar
+*.tar
+*.gz
