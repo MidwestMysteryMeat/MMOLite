@@ -61,3 +61,18 @@ data/*.db-wal
 data/*.txt
 data/writing_tool_token.txt
 .claude/
+
+# --- Licensed art/audio: stripped from the repo (owner-licensed packs) ---
+# See client/assets/ASSETS_PLACEHOLDER.md. Files live only on the dev machine.
+*.ogg
+*.wav
+*.mp3
+*.flac
+*.m4a
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.bmp
+*.tga
