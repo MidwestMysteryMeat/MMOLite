@@ -60,3 +60,4 @@ data/*.db-shm
 data/*.db-wal
 data/*.txt
 data/writing_tool_token.txt
+.claude/

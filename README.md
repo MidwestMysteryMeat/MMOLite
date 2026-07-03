@@ -1,0 +1,49 @@
+# MMOLite
+
+**A fantasy MMO RPG — Node.js/Socket.IO authoritative server with a Love2D client — featuring gacha card collection, dungeons, raids, guilds, and a player economy.**
+
+## What it does
+
+MMOLite is a small-scale persistent multiplayer RPG. Players create characters (multi-slot, with permadeath and a Hall of Heroes), explore zones, fight tactical turn-based combat and raid bosses, collect and fuse gacha cards, trade on an auction house, join guilds and parties, own plots/housing, farm, tame pets, and grind mastery trees. The server is authoritative and persistent (write-behind encrypted account cache); the client is a Love2D desktop app with LAN discovery and Steam Cloud saves. It's sharded via a master-server and supports VIP/Stripe monetization.
+
+## Status
+
+**Playable, server-solid, content-deep — client UI lags the backend.** 192/192 backend tests pass (`jest`), including an event-contract test that ratchets client↔server desync to zero. Notable rough edges:
+
+- The full TCG **trading + battle-challenge flow is implemented server-side but has no client UI** — a complete dormant feature
+- Gacha cards render as procedural frames (no per-card art) despite 18k+ assets available
+- No tutorial/onboarding; new players face a systems-dense game cold
+- No mail, LFG queue, or guild bank/leveling yet
+
+## How to run
+
+Requires Node 18+ and [LÖVE 11.4](https://love2d.org/) for the client.
+
+```
+npm install
+ACCOUNT_SECRET=<any-random-string> node server.js   # server refuses to boot without this
+
+# tests
+npx jest --testPathPattern="tests/" --forceExit --detectOpenHandles
+
+# client
+love client/
+```
+
+Runtime state (accounts, guilds, plots) is written under `data/` and gitignored.
+
+## Screenshots
+
+_TODO — add client captures (character select, dungeon combat, card collection)._
+
+## Known issues / roadmap
+
+See [`docs/GAP_ANALYSIS.md`](docs/GAP_ANALYSIS.md). Priority order: wire the dormant TCG trade UI (server already done) → CI → tutorial chain → player mail + quest journal → card art → LFG/season pass/guild depth.
+
+## AI development note
+
+This project was built primarily through AI-assisted "vibe coding" with **Anthropic Claude** (via Claude Code) and **OpenAI Codex** as a reviewer, per the workflow in `CLAUDE.md` and `AGENTS.md`. Human direction set the architecture, game design, and priorities; the AI agents did most of the implementation, refactoring, and test authoring under a strict "read before writing / trace the call path / preserve behavior" persona. The 2026-07-02 debug + audit pass (account-corruption fix in `deleteCharacter`, secret cleanup) was done with Claude. Treat the code as AI-generated-then-human-reviewed: reasonably structured and tested, but audit security-sensitive paths (payments, auth, account persistence) yourself before relying on them.
+
+## License
+
+MIT — see [LICENSE](LICENSE). Third-party art/asset packs under `client/assets/` retain their own licenses (see the `LICENSE`/`CREDITS` files alongside them, e.g. the GPL-3.0 bazaar tileset).
