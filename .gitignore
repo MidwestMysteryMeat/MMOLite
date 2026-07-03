@@ -76,3 +76,8 @@ data/writing_tool_token.txt
 *.webp
 *.bmp
 *.tga
+*.psd
+*.aseprite
+*.aiff
+*.xm
+*.mod
