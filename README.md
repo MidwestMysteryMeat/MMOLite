@@ -47,3 +47,12 @@ Developed with AI assistance — **Anthropic Claude** (Claude Code) for implemen
 ## License
 
 MIT — see [LICENSE](LICENSE). Third-party art/asset packs under `client/assets/` retain their own licenses (see the `LICENSE`/`CREDITS` files alongside them, e.g. the GPL-3.0 bazaar tileset).
+
+## Art & audio licensing
+
+This repo intentionally contains **no art or audio**. Those assets are
+purchased packs licensed to the project owner only and are stripped from
+version control (see `client/assets/ASSETS_PLACEHOLDER.md` and
+`tools/asset-pipeline/ASSETS_PLACEHOLDER.md`). The code expects them at
+their original paths on the owner's machine; fresh clones run with
+placeholders/silence where the engine allows.

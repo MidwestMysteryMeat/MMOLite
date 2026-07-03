@@ -1,3 +1,6 @@
+-- NOTE: art/audio are NOT in the repo — owner-licensed packs stripped from
+-- version control (see client/assets/ASSETS_PLACEHOLDER.md). Loaders must
+-- tolerate missing files on fresh clones.
 -- lib/audio.lua
 -- Audio manager: music, ambient, footsteps, SFX, UI sounds, spatial audio.
 -- Pre-decodes footsteps + UI at init. Lazy-loads/streams everything else.

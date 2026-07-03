@@ -1,3 +1,6 @@
+-- NOTE: art/audio are NOT in the repo — owner-licensed packs stripped from
+-- version control (see client/assets/ASSETS_PLACEHOLDER.md). Loaders must
+-- tolerate missing files on fresh clones.
 -- scenes/game-draw/world.lua
 -- Overworld zone rendering: monsters, terrain, resources, objects, players, HUD, chat.
 
