@@ -110,82 +110,21 @@ A massive multiplayer online RPG built with Node.js (Socket.IO) server and LOVE 
 
 ---
 
-## CRITICAL: Production Infrastructure & Deployment
+## Production Infrastructure & Deployment
 
-### Two Separate Physical Servers (Hostinger VPS)
+Official-shard deployment details (server addresses, SSH access, process
+layout, firewall rules, per-shard configs) are **not documented in this
+repository** — they live in the operator's private runbook. What matters
+for anyone reading the code:
 
-| Server | Hostname | IP | Role |
-|--------|----------|----|------|
-| **KVM 1** | <kvm1-host> | **<shard1-ip>** | Master server + Shard 1 (Holy Dominion) |
-| **KVM 2** | <kvm2-host> | **<shard2-ip>** | Shard 2 (The Free Holds of Stone) + BossCord |
-
-**NEVER confuse these servers. They are SEPARATE machines with SEPARATE configs, accounts, and data.**
-
-### SSH Access
-- Key: `~/.ssh/<deploy-key>` (works for BOTH servers)
-- Both servers: `ssh -i ~/.ssh/<deploy-key> root@<IP>`
-- Code location on both: `/opt/mmolite/`
-
-### PM2 Processes
-
-**KVM 1 (<shard1-ip>):**
-| Process | Script | Port | Purpose |
-|---------|--------|------|---------|
-| mmolite-master | master-server/index.js | 4000 (internal only) | Master shard registry |
-| mmolite | server.js | 3001 | Shard 1 "Holy Dominion" |
-
-**KVM 2 (<shard2-ip>):**
-| Process | Script | Port | Purpose |
-|---------|--------|------|---------|
-| mmolite | server.js | 3001 | Shard 2 "The Free Holds of Stone" |
-| bosscord | (legacy) | 8443 | BossCord app |
-
-### Shard Configs (DIFFERENT per server!)
-
-**KVM 1** `/opt/mmolite/shard-config.json`:
-- shardId: "official-1", shardName: "Holy Dominion"
-- masterServerUrl: "http://127.0.0.1:4000" (master is local)
-- host: "<shard1-ip>"
-
-**KVM 2** `/opt/mmolite/shard-config.json`:
-- shardId: "official-2", shardName: "The Free Holds of Stone"
-- masterServerUrl: "http://<shard1-ip>:3001" (proxied through shard 1, port 4000 blocked by firewall)
-- host: "<shard2-ip>"
-
-### Hostinger Firewall (provider-level, NOT ufw)
-Both servers drop all traffic except allowed ports:
-- **KVM 1:** 443, 80, 8443, 22, 3001 (port 4000 NOT open externally)
-- **KVM 2:** 8443, 22, 3001
-
-Port 4000 (master server) is only accessible internally on KVM 1. Shard 2 heartbeats to the master through KVM 1's port 3001 proxy (server.js proxies /api/shards/* to localhost:4000).
-
-### Account Storage
-- **KVM 1:** `/opt/mmolite/data/accounts/` (encrypted JSON files)
-- **KVM 2:** `/opt/mmolite/accounts/` (separate accounts per shard)
-- Accounts are PER-SHARD. Each server has its own account files.
-
-### Deployment Checklist
-When deploying code changes, you MUST deploy to BOTH servers:
-```bash
-# Deploy to KVM 1 (shard 1 + master)
-scp -i ~/.ssh/<deploy-key> *.js root@<shard1-ip>:/opt/mmolite/
-scp -i ~/.ssh/<deploy-key> handlers/*.js root@<shard1-ip>:/opt/mmolite/handlers/
-scp -i ~/.ssh/<deploy-key> director/*.js root@<shard1-ip>:/opt/mmolite/director/
-scp -i ~/.ssh/<deploy-key> master-server/*.js root@<shard1-ip>:/opt/mmolite/master-server/
-scp -i ~/.ssh/<deploy-key> -r client/ root@<shard1-ip>:/opt/mmolite/client/
-ssh -i ~/.ssh/<deploy-key> root@<shard1-ip> "cd /opt/mmolite && pm2 restart mmolite --update-env"
-
-# Deploy to KVM 2 (shard 2)
-scp -i ~/.ssh/<deploy-key> *.js root@<shard2-ip>:/opt/mmolite/
-scp -i ~/.ssh/<deploy-key> handlers/*.js root@<shard2-ip>:/opt/mmolite/handlers/
-scp -i ~/.ssh/<deploy-key> director/*.js root@<shard2-ip>:/opt/mmolite/director/
-scp -i ~/.ssh/<deploy-key> -r client/ root@<shard2-ip>:/opt/mmolite/client/
-ssh -i ~/.ssh/<deploy-key> root@<shard2-ip> "pm2 restart mmolite --update-env"
-```
-
-**NEVER deploy shard-config.json from local to production.** Each server has its own unique shard-config.json. Only update configs directly on the server if needed.
-
-**NEVER deploy ecosystem.config.js from local to production.** Each server has its own PM2 config already set up.
+- The server is a plain Node.js app: `node server.js`, port from
+  `process.env.PORT`. Env secrets load from `MMOLITE_ENV_FILE`.
+- Multi-shard setups run one server process per shard plus a master shard
+  registry; each shard gets its own `shard-config.json` **written on the
+  server, never committed or deployed from a checkout**.
+- `ecosystem.config.js` (PM2) is likewise per-server and never deployed
+  from a checkout.
+- Accounts are per-shard, AES-256-GCM encrypted JSON files.
 
 ### Build (for testers)
 Run `build.bat` from the MMOLite project root on Windows. Creates `build/MMOLite/` with fused LOVE exe + bundled server (esbuild minified). Uses `local-server-config.json` (no master heartbeat) for offline/LAN play.
