@@ -86,3 +86,6 @@ data/writing_tool_token.txt
 *.rar
 *.tar
 *.gz
+
+# local Claude Code permissions — machine-specific, never commit
+.claude/settings.local.json
