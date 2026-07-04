@@ -46,7 +46,7 @@ Developed with AI assistance — **Anthropic Claude** (Claude Code) for implemen
 
 ## License
 
-MIT — see [LICENSE](LICENSE). Third-party art/asset packs under `client/assets/` retain their own licenses (see the `LICENSE`/`CREDITS` files alongside them, e.g. the GPL-3.0 bazaar tileset).
+Proprietary — see [LICENSE](LICENSE). The project's own code is under the **Ephemeral / Proprietary License** (All Rights Reserved with a Sharing Exception). Third-party art/asset packs under `client/assets/` retain their own licenses (see the `LICENSE`/`CREDITS` files alongside them, e.g. the GPL-3.0 bazaar tileset).
 
 ## Art & audio licensing
 
