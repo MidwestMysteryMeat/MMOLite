@@ -2758,7 +2758,7 @@ var CARD_TEMPLATES = [
     selfImmobilize: true, selfCantAttack: false,
     targetType: 'enemy' },
 
-  { cardId: 'suplex', name: 'Suplex', type: 'active_ability', rarity: 'rare', resourceType: 'stamina', archetype: 'tactician',
+  { cardId: 'suplex', name: 'Suplex', type: 'active_ability', rarity: 'rare', resourceType: 'stamina',
     tags: ['melee', 'cc', 'warrior'],
     archetype: 'warrior', skill: 'melee',
     description: 'Grab and slam an adjacent enemy into the ground, dealing heavy physical damage and stunning them for 1 turn. Requires adjacent target.',
@@ -2771,7 +2771,7 @@ var CARD_TEMPLATES = [
     damageType: 'physical',
     targetType: 'enemy' },
 
-  { cardId: 'submission_hold', name: 'Submission Hold', type: 'active_ability', rarity: 'rare', resourceType: 'stamina', archetype: 'tactician',
+  { cardId: 'submission_hold', name: 'Submission Hold', type: 'active_ability', rarity: 'rare', resourceType: 'stamina',
     tags: ['melee', 'cc', 'warrior'],
     archetype: 'warrior', skill: 'melee',
     description: 'Lock an enemy in a crushing hold for 3 turns, dealing damage each turn. Neither you nor the enemy can act. Breaks if you take external damage.',
@@ -2787,7 +2787,7 @@ var CARD_TEMPLATES = [
     targetType: 'enemy' },
 
 
-  { cardId: 'hip_toss', name: 'Hip Toss', type: 'active_ability', rarity: 'uncommon', resourceType: 'stamina', archetype: 'tactician',
+  { cardId: 'hip_toss', name: 'Hip Toss', type: 'active_ability', rarity: 'uncommon', resourceType: 'stamina',
     tags: ['melee', 'cc', 'warrior'],
     archetype: 'warrior', skill: 'melee',
     description: 'Throw an adjacent enemy 3 tiles away, dealing damage on landing. If they collide with a wall, deal bonus damage and stun for 1 turn.',
@@ -2803,7 +2803,7 @@ var CARD_TEMPLATES = [
 
 
 
-  { cardId: 'pile_driver', name: 'Pile Driver', type: 'active_ability', rarity: 'ultra_rare', resourceType: 'stamina', archetype: 'tactician',
+  { cardId: 'pile_driver', name: 'Pile Driver', type: 'active_ability', rarity: 'ultra_rare', resourceType: 'stamina',
     tags: ['melee', 'warrior'],
     archetype: 'warrior', skill: 'melee',
     description: 'Grab an enemy, leap into the air, and slam them headfirst into the ground. Highest grappler damage. AoE shockwave on landing damages nearby enemies.',
@@ -2816,7 +2816,7 @@ var CARD_TEMPLATES = [
     damageType: 'physical',
     targetType: 'enemy' },
 
-  { cardId: 'bear_hug', name: 'Bear Hug', type: 'passive_perk', rarity: 'uncommon', archetype: 'tactician',
+  { cardId: 'bear_hug', name: 'Bear Hug', type: 'passive_perk', rarity: 'uncommon',
     tags: ['melee', 'warrior', 'warrior'],
     archetype: 'warrior', skill: 'melee',
     description: 'When you grapple an enemy, deal 5% of your max HP as bonus physical damage each turn the grapple is held.',
@@ -2826,7 +2826,7 @@ var CARD_TEMPLATES = [
     icon: 'skills/Skill_SwordAttack.PNG',
     combatPassive: { type: 'bear_hug', grappleTickDamageHpPercent: 0.05 } },
 
-  { cardId: 'wrestlers_resilience', name: "Wrestler's Resilience", type: 'passive_perk', rarity: 'rare', archetype: 'tactician',
+  { cardId: 'wrestlers_resilience', name: "Wrestler's Resilience", type: 'passive_perk', rarity: 'rare',
     tags: ['melee', 'warrior', 'defense'],
     archetype: 'warrior', skill: 'melee',
     description: '+20% resistance to stuns and knockbacks. When grappled yourself, break free 30% faster.',
@@ -2854,7 +2854,7 @@ var CARD_TEMPLATES = [
     antiStealth: true, damageAmpFromCaster: 0.15, revealPosition: true,
     targetType: 'enemy' },
 
-  { cardId: 'nocturnal_strike', name: 'Nocturnal Strike', type: 'active_ability', rarity: 'rare', resourceType: 'focus', archetype: 'tactician',
+  { cardId: 'nocturnal_strike', name: 'Nocturnal Strike', type: 'active_ability', rarity: 'rare', resourceType: 'focus',
     tags: ['melee', 'rogue'],
     archetype: 'rogue', skill: 'melee',
     description: 'A vicious attack that deals +40% bonus damage in darkness or at night. Applies the "exposed" debuff, reducing target armor.',
@@ -2868,7 +2868,7 @@ var CARD_TEMPLATES = [
     damageType: 'physical',
     targetType: 'enemy' },
 
-  { cardId: 'hunters_instinct', name: "Hunter's Instinct", type: 'passive_perk', rarity: 'uncommon', archetype: 'tactician',
+  { cardId: 'hunters_instinct', name: "Hunter's Instinct", type: 'passive_perk', rarity: 'uncommon',
     tags: ['rogue', 'offense'],
     archetype: 'rogue', skill: 'none',
     description: '+15% damage against enemies that are debuffed. +10% crit chance against marked targets.',
@@ -2879,7 +2879,7 @@ var CARD_TEMPLATES = [
     icon: 'skills/Enchantment/',
     combatPassive: { type: 'hunters_instinct', damageVsDebuffed: 0.15, critVsMarked: 0.10 } },
 
-  { cardId: 'moonlight_slash', name: 'Moonlight Slash', type: 'active_ability', rarity: 'rare', resourceType: 'focus', archetype: 'tactician',
+  { cardId: 'moonlight_slash', name: 'Moonlight Slash', type: 'active_ability', rarity: 'rare', resourceType: 'focus',
     tags: ['melee', 'rogue', 'holy'],
     archetype: 'rogue', skill: 'melee',
     description: 'A silver-element melee strike. Deals bonus damage against undead, werewolves, and shadow creatures. Reveals hidden enemies on hit.',
@@ -2893,7 +2893,7 @@ var CARD_TEMPLATES = [
     damageType: 'physical',
     targetType: 'enemy' },
 
-  { cardId: 'trap_layer', name: 'Trap Layer', type: 'active_ability', rarity: 'uncommon', resourceType: 'focus', archetype: 'tactician',
+  { cardId: 'trap_layer', name: 'Trap Layer', type: 'active_ability', rarity: 'uncommon', resourceType: 'focus',
     tags: ['rogue', 'cc', 'utility'],
     archetype: 'rogue', skill: 'none',
     description: 'Place an invisible trap on a tile. When an enemy walks over it: root for 2 turns and reveal hidden/stealthed status.',
@@ -2905,7 +2905,7 @@ var CARD_TEMPLATES = [
     trapRevealsHidden: true, trapInvisible: true,
     targetType: 'any' },
 
-  { cardId: 'shadow_sight', name: 'Shadow Sight', type: 'passive_perk', rarity: 'rare', archetype: 'tactician',
+  { cardId: 'shadow_sight', name: 'Shadow Sight', type: 'passive_perk', rarity: 'rare',
     tags: ['rogue', 'utility'],
     archetype: 'rogue', skill: 'none',
     description: 'See all hidden, invisible, and stealthed enemies at all times. Immune to blindness effects. +10% accuracy.',
@@ -2917,7 +2917,7 @@ var CARD_TEMPLATES = [
     icon: 'skills/Enchantment/',
     combatPassive: { type: 'shadow_sight', trueSight: true, blindImmune: true, accuracyBonus: 0.10 } },
 
-  { cardId: 'counterstrike_stance', name: 'Counterstrike Stance', type: 'active_ability', rarity: 'ultra_rare', resourceType: 'stamina', archetype: 'tactician',
+  { cardId: 'counterstrike_stance', name: 'Counterstrike Stance', type: 'active_ability', rarity: 'ultra_rare', resourceType: 'stamina',
     tags: ['rogue', 'melee', 'defense'],
     archetype: 'rogue', skill: 'melee',
     description: 'Enter a counter stance for 3 turns. When attacked in melee, automatically counter-attack for 50% of your normal damage.',
@@ -2929,7 +2929,7 @@ var CARD_TEMPLATES = [
     counterAttackPercent: 0.50, counterOnMelee: true,
     targetType: 'self' },
 
-  { cardId: 'relentless_pursuit', name: 'Relentless Pursuit', type: 'passive_perk', rarity: 'uncommon', archetype: 'tactician',
+  { cardId: 'relentless_pursuit', name: 'Relentless Pursuit', type: 'passive_perk', rarity: 'uncommon',
     tags: ['rogue', 'offense'],
     archetype: 'rogue', skill: 'none',
     description: 'When an enemy tries to flee or disengage from you, gain a free attack of opportunity. +15% movement speed when chasing marked targets.',
@@ -2944,7 +2944,7 @@ var CARD_TEMPLATES = [
   // AQUATIC ARCHETYPE EXPANSION (Water / Ocean / Tidal Combat)
   // ========================================================================
 
-  { cardId: 'depth_charge', name: 'Depth Charge', type: 'active_ability', rarity: 'rare', resourceType: 'mana', archetype: 'mystic',
+  { cardId: 'depth_charge', name: 'Depth Charge', type: 'active_ability', rarity: 'rare', resourceType: 'mana',
     tags: ['aquatic', 'magic'],
     archetype: 'aquatic', skill: 'none',
     description: 'Explosive water blast that deals AoE damage. Deals +100% bonus damage if the target is standing in water.',
@@ -2958,7 +2958,7 @@ var CARD_TEMPLATES = [
     targetType: 'enemy' },
 
 
-  { cardId: 'aquatic_adaptation', name: 'Aquatic Adaptation', type: 'passive_perk', rarity: 'rare', archetype: 'tactician',
+  { cardId: 'aquatic_adaptation', name: 'Aquatic Adaptation', type: 'passive_perk', rarity: 'rare',
     tags: ['aquatic', 'utility'],
     archetype: 'aquatic', skill: 'none',
     description: '+30% to all stats while standing on water tiles. Can breathe underwater. +20% swim speed.',
@@ -2984,7 +2984,7 @@ var CARD_TEMPLATES = [
     damageType: 'water',
     targetType: 'enemy' },
 
-  { cardId: 'tidal_shield', name: 'Tidal Shield', type: 'active_ability', rarity: 'uncommon', resourceType: 'stamina', archetype: 'warrior',
+  { cardId: 'tidal_shield', name: 'Tidal Shield', type: 'active_ability', rarity: 'uncommon', resourceType: 'stamina',
     tags: ['aquatic', 'defense'],
     archetype: 'aquatic', skill: 'none',
     description: 'Conjure a swirling water barrier that absorbs damage. If you are standing in water, the shield absorbs twice as much.',
@@ -3013,7 +3013,7 @@ var CARD_TEMPLATES = [
     invulnerable: true, cantAttack: true, cantMove: true,
     targetType: 'self' },
 
-  { cardId: 'fortify', name: 'Fortify', type: 'active_ability', rarity: 'uncommon', resourceType: 'stamina', archetype: 'tactician',
+  { cardId: 'fortify', name: 'Fortify', type: 'active_ability', rarity: 'uncommon', resourceType: 'stamina',
     tags: ['defense', 'warrior'],
     archetype: 'warrior', skill: 'none',
     description: '+30% armor for 4 turns. If you do not move during the buff, the bonus increases to +50% instead.',
@@ -3025,7 +3025,7 @@ var CARD_TEMPLATES = [
     armorBoostPercent: 0.30, stationaryArmorBoostPercent: 0.50,
     targetType: 'self' },
 
-  { cardId: 'damage_sponge', name: 'Damage Sponge', type: 'passive_perk', rarity: 'rare', archetype: 'tactician',
+  { cardId: 'damage_sponge', name: 'Damage Sponge', type: 'passive_perk', rarity: 'rare',
     tags: ['defense', 'warrior', 'warrior'],
     archetype: 'warrior', skill: 'none',
     description: '+15% max HP. Damage you take is reduced by 1% for each 10% of max HP you are missing.',
@@ -3036,7 +3036,7 @@ var CARD_TEMPLATES = [
     icon: 'skills/Skill_Defence.PNG',
     combatPassive: { type: 'damage_sponge', hpBonusPercent: 0.15, lowHpDamageReduction: 0.01 } },
 
-  { cardId: 'resilient_body', name: 'Resilient Body', type: 'passive_perk', rarity: 'uncommon', archetype: 'tactician',
+  { cardId: 'resilient_body', name: 'Resilient Body', type: 'passive_perk', rarity: 'uncommon',
     tags: ['defense', 'warrior'],
     archetype: 'warrior', skill: 'none',
     description: 'Regenerate 2% of max HP per turn. Regeneration is doubled when below 30% HP.',
@@ -3051,7 +3051,7 @@ var CARD_TEMPLATES = [
   // SCOUT ARCHETYPE EXPANSION (Mobility / Escape / Stealth)
   // ========================================================================
 
-  { cardId: 'shadow_dash', name: 'Shadow Dash', type: 'active_ability', rarity: 'uncommon', resourceType: 'focus', archetype: 'rogue',
+  { cardId: 'shadow_dash', name: 'Shadow Dash', type: 'active_ability', rarity: 'uncommon', resourceType: 'focus',
     tags: ['stealth', 'rogue', 'movement'],
     archetype: 'rogue', skill: 'none',
     description: 'Dash 4 tiles in any direction, passing through enemies. Become stealthed for 1 turn after the dash.',
@@ -3063,7 +3063,7 @@ var CARD_TEMPLATES = [
     onUseStatus: { name: 'stealthed', duration: 1, type: 'buff' },
     targetType: 'any' },
 
-  { cardId: 'escape_artist', name: 'Escape Artist', type: 'passive_perk', rarity: 'rare', archetype: 'rogue',
+  { cardId: 'escape_artist', name: 'Escape Artist', type: 'passive_perk', rarity: 'rare',
     tags: ['stealth', 'rogue', 'defense'],
     archetype: 'rogue', skill: 'none',
     description: 'Automatically break free from roots, grabs, and grapples after 1 turn instead of full duration. +20% dodge while fleeing.',

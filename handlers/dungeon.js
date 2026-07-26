@@ -139,6 +139,7 @@ var _io = null;                     // stored io reference for AI broadcasts
 var _accounts = null;               // stored accounts reference
 var _socketAccountMap = null;       // stored socket->account map
 var _state = null;                  // stored state reference
+var _serverRules = null;            // stored server rules (xpRate/dropRate)
 var _ambushFlushStarted = false;    // singleton flag for ambush flush interval
 
 // Director system references (injected via deps from socket.js)
@@ -1589,7 +1590,9 @@ function buildFloorState(floor, dungeonId, state, zoneId, socketId) {
 // Get pool of possible equipment base types for a given dungeon floor depth
 function getFloorLootPool(floorNum) {
   var pool = [];
-  var weaponTypes = accounts.WEAPON_TYPES;
+  // _accounts, not the bare `accounts`: this helper is module-level, so the
+  // identifier resolved to nothing and threw before the fallback below could run.
+  var weaponTypes = _accounts && _accounts.WEAPON_TYPES;
   if (!weaponTypes) return ['iron_sword'];
   // Build tier-appropriate pool from WEAPON_TYPES
   var rarityForFloor = 'common';
@@ -3414,8 +3417,8 @@ function buildCombatCallbacks(io, state, accounts, socketAccountMap, dungeonId, 
       var allGoldMult = (killSkillBonuses && killSkillBonuses.allGoldMult) ? killSkillBonuses.allGoldMult : 1;
 
       // Apply server rules xpRate/dropRate if configured
-      var serverXpRate = (deps.serverRules && deps.serverRules.xpRate) ? deps.serverRules.xpRate : 1;
-      var serverDropRate = (deps.serverRules && deps.serverRules.dropRate) ? deps.serverRules.dropRate : 1;
+      var serverXpRate = (_serverRules && _serverRules.xpRate) ? _serverRules.xpRate : 1;
+      var serverDropRate = (_serverRules && _serverRules.dropRate) ? _serverRules.dropRate : 1;
 
       var baseXp = enemy.xp || 10;
       // Card: dungeon_xp_bonus — percentage boost to dungeon kill XP
@@ -3568,8 +3571,8 @@ function buildCombatCallbacks(io, state, accounts, socketAccountMap, dungeonId, 
             }
           }
           // Lich corruption cleanse on lich dungeon boss kill
-          if (killInfo && deps.directorLich) {
-            var cleanseResult = deps.directorLich.cleanseCorruption(killInfo.dungeonId);
+          if (killInfo && _directorLich) {
+            var cleanseResult = _directorLich.cleanseCorruption(killInfo.dungeonId);
             if (cleanseResult && cleanseResult.cleansed > 0) {
               io.emit('world_event', {
                 title: 'Corruption Recedes!',
@@ -3603,8 +3606,8 @@ function buildCombatCallbacks(io, state, accounts, socketAccountMap, dungeonId, 
               });
 
               // Cleanse corruption around rift location
-              if (deps.directorLich && typeof deps.directorLich.cleanseRiftCorruption === 'function') {
-                deps.directorLich.cleanseRiftCorruption(mrKillRift.chunkX, mrKillRift.chunkY, mrKillRift.corruptionRadius);
+              if (_directorLich && typeof _directorLich.cleanseRiftCorruption === 'function') {
+                _directorLich.cleanseRiftCorruption(mrKillRift.chunkX, mrKillRift.chunkY, mrKillRift.corruptionRadius);
               }
 
               // Notify clearing player of rewards
@@ -4447,6 +4450,7 @@ module.exports = {
     // Store references for AI tick system (module-level, set once)
     if (!_io) _io = io;
     if (!_accounts) _accounts = accounts;
+    if (!_serverRules && deps.serverRules) _serverRules = deps.serverRules;
     if (!_socketAccountMap) _socketAccountMap = socketAccountMap;
     if (!_state) _state = state;
 

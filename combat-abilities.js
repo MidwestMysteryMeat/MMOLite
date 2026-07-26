@@ -9,6 +9,7 @@ var rpgData = require('./rpg-data');
 var combatGrid = require('./combat-grid');
 var manhattanDist = combatGrid.manhattanDist;
 var isWalkableCombat = combatGrid.isWalkableCombat;
+var getAdjacentTiles = combatGrid.getAdjacentTiles;
 
 var combatPassives = require('./combat-passive-helpers');
 var getUnitCombatPassive = combatPassives.getUnitCombatPassive;
@@ -36,12 +37,14 @@ var _soulstones = _maps.soulstones;
 var handleUnitDeath;
 var FOCUS_CONSECUTIVE_GAIN, FOCUS_BASE_RETAIN;
 var BLOODLUST_ON_TAKE_DAMAGE;
+var PLAYER_BASE_AP;
 
 function init(deps) {
   handleUnitDeath = deps.handleUnitDeath;
   FOCUS_CONSECUTIVE_GAIN = deps.FOCUS_CONSECUTIVE_GAIN;
   FOCUS_BASE_RETAIN = deps.FOCUS_BASE_RETAIN;
   BLOODLUST_ON_TAKE_DAMAGE = deps.BLOODLUST_ON_TAKE_DAMAGE;
+  PLAYER_BASE_AP = deps.PLAYER_BASE_AP;
 }
 
 function executeAbility(combat, unitId, abilityCardId, targetX, targetY) {
@@ -199,7 +202,6 @@ function executeAbility(combat, unitId, abilityCardId, targetX, targetY) {
     teleportDistance: template.teleportDistance,
     // Buff card fields
     shieldBase: template.shieldBase,
-    cantMove: template.cantMove,
     // Pure Defense archetype fields
     armorBoostPercent: template.armorBoostPercent,
     stationaryArmorBoostPercent: template.stationaryArmorBoostPercent,

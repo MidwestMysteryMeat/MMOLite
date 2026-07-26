@@ -406,7 +406,9 @@ function _spawnAbandonedCrypt(io, state, originZoneId, townName) {
 // Lair clearing — called when a vampire_castle boss is defeated
 // ---------------------------------------------------------------------------
 
-function clearLair(dungeonId) {
+// `state` is optional: the crypt-zone cleanup below is skipped without it. It used
+// to be read as a bare undeclared identifier, which threw for any caller.
+function clearLair(dungeonId, state) {
   // Find the source for this dungeon
   var source = null;
   for (var i = 0; i < vampireSources.length; i++) {

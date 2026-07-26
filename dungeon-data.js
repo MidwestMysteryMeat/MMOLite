@@ -1339,8 +1339,7 @@ module.exports = {
   STRUCTURE_ENEMY_POOLS,
   generateStructureFloor,
 
-  // Mini-Rift system
-  MINI_RIFT_SEED_PREFIX,
+  // Mini-Rift system (MINI_RIFT_SEED_PREFIX is exported with the other prefixes above)
   MINI_RIFT_TIER_TABLE,
   MINI_RIFT_BOSS_REWARDS,
   getMiniRiftTier,
