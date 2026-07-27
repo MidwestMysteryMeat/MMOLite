@@ -56,3 +56,9 @@ version control (see `client/assets/ASSETS_PLACEHOLDER.md` and
 `tools/asset-pipeline/ASSETS_PLACEHOLDER.md`). The code expects them at
 their original paths on the owner's machine; fresh clones run with
 placeholders/silence where the engine allows.
+
+---
+
+<sub>Support development — <a href="https://ko-fi.com/midwestmysterymeat">Ko-fi</a></sub>
+
+<img src=".github/donation-qrcode.png" width="120" alt="Donation QR code">
