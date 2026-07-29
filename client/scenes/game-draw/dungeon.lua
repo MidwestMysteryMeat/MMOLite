@@ -7,10 +7,10 @@ local dungeon_draw = {}
 local game
 
 -- Direct table refs (mutated in-place, safe to capture at init time)
-local dungeon, camera, fonts, ui, tcState
+local dungeon, camera, fonts, ui, tcState, rpg, permadeath, corruption
 
 -- Getters for reassignable module-level locals in game.lua
-local getFadeIn, getMyId, getSkills
+local getFadeIn, getMyId, getSkills, getPlayers
 
 -- Tile type constants (mirror game.lua DTILE)
 local DTILE = {
@@ -1636,7 +1636,7 @@ local function drawPartyPanel(W, H)
             love.graphics.print(member.name or "?", nameX, my + 4)
 
             -- Level display (from players table if available)
-            local memberPlayer = players[member.id]
+            local memberPlayer = getPlayers()[member.id]
             if isSelf and rpg.level then
                 love.graphics.setFont(fonts.small)
                 love.graphics.setColor(0.7, 0.7, 0.8, 0.7)
@@ -1948,9 +1948,13 @@ function dungeon_draw.init(gameRef, ctx)
     fonts    = ctx.fonts
     ui       = ctx.ui
     tcState  = ctx.tcState
+    rpg        = ctx.rpg
+    permadeath = ctx.permadeath
+    corruption = ctx.corruption
     getFadeIn = ctx.getFadeIn
     getMyId   = ctx.getMyId
     getSkills = ctx.getSkills
+    getPlayers = ctx.getPlayers
     -- Register all functions onto the game table
     gameRef.revealFog = revealFog
     gameRef.drawDungeonFloor = drawDungeonFloor

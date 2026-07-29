@@ -50,12 +50,16 @@ local function getFirstEmptySlot()
     return nil
 end
 
+function cards.getFirstEmptySlot() return getFirstEmptySlot() end
+
 local function findCardByInstanceId(instanceId)
     for _, c in ipairs(rpg.cards) do
         if c.instanceId == instanceId then return c end
     end
     return nil
 end
+
+function cards.findCardByInstanceId(instanceId) return findCardByInstanceId(instanceId) end
 
 local function getFilteredCards()
     local cards = {}

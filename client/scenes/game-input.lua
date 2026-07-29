@@ -5,6 +5,8 @@ local game_input = {}
 
 local dungeonDrawModule = require("scenes.game-draw.dungeon")
 local worldDrawModule   = require("scenes.game-draw.world")
+local cardsDrawModule   = require("scenes.game-draw.cards")
+local lighting          = require("lib.lighting")
 
 -- 'game' alias: all game._xxx references and game.xxx calls work unchanged
 local game
@@ -12,9 +14,10 @@ local game
 -- Direct table refs (mutated in-place, safe to capture at init time)
 local dungeon, camera, rpg, players, chat, overworld, tcState, ui, knowledge
 local combatUI, combatAnim, gridInv, permadeath, DTILE, CONTEXT_MENU_ITEMS_BASE
+local corruption, mastery
 
 -- Getters for reassignable module-level locals in game.lua
-local getClient, getZone, getMyId, getSkills
+local getClient, getZone, getMyId, getSkills, getZoneList
 local getHoverResource, getHoverObject, getHoverConnection
 local getCorpseLootPanel, getContainerLootPanel, getPackReveal
 local getZoneMonsters, getZoneCorpses, getZoneWorldContainers
@@ -1860,13 +1863,13 @@ local function mousepressed(x, y, button)
                     if btn.id == "close" then
                         ui.selectedCard = nil
                     elseif btn.id == "equip" then
-                        local emptySlot = getFirstEmptySlot()
+                        local emptySlot = cardsDrawModule.getFirstEmptySlot()
                         if emptySlot and client then
                             client:emit("card_equip", { cardInstanceId = ui.selectedCard.instanceId, slotIndex = emptySlot - 1 })
                             ui.selectedCard = nil
                         end
                     elseif btn.id == "unequip" then
-                        local slot = getCardEquipSlot(ui.selectedCard)
+                        local slot = cardsDrawModule.getCardEquipSlot(ui.selectedCard)
                         if slot and client then
                             client:emit("card_unequip", { slotIndex = slot - 1 })
                             ui.selectedCard = nil
@@ -2032,7 +2035,7 @@ local function mousepressed(x, y, button)
     if ui.showCharSheet and button == 1 and ui._charSheetSlots then
         for i, slot in pairs(ui._charSheetSlots) do
             if slot and x >= slot.x and x < slot.x + slot.w and y >= slot.y and y < slot.y + slot.h then
-                local card = findCardByInstanceId(slot.instanceId)
+                local card = cardsDrawModule.findCardByInstanceId(slot.instanceId)
                 if card then
                     ui.selectedCard = card
                     -- Switch to card collection to show the detail view
@@ -2405,7 +2408,7 @@ local function mousepressed(x, y, button)
         local listX = (W - listW) / 2
         local startY = 90
 
-        for i, z in ipairs(zoneList) do
+        for i, z in ipairs(getZoneList()) do
             local zy = startY + (i - 1) * (itemH + 6)
             if x >= listX and x <= listX + listW and y >= zy and y <= zy + itemH then
                 if zone and zone.id ~= z.id then
@@ -2590,8 +2593,11 @@ function game_input.init(gameRef, ctx)
     combatAnim               = ctx.combatAnim
     gridInv                  = ctx.gridInv
     permadeath               = ctx.permadeath
+    corruption               = ctx.corruption
+    mastery                  = ctx.mastery
     DTILE                    = ctx.DTILE
     CONTEXT_MENU_ITEMS_BASE  = ctx.CONTEXT_MENU_ITEMS_BASE
+    getZoneList              = ctx.getZoneList
     getClient                = ctx.getClient
     getZone                  = ctx.getZone
     getMyId                  = ctx.getMyId

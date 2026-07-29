@@ -4,14 +4,16 @@
 
 local social = {}
 
+local lighting = require("lib.lighting")
+
 -- 'game' alias — all game._xxx references work unchanged
 local game
 
 -- Direct table refs (mutated in-place, safe to capture at init time)
-local fonts, ui, knowledge
+local fonts, ui, knowledge, permadeath
 
 -- Getters for reassignable module-level locals in game.lua
-local getClient, getZone
+local getClient, getZone, getResources
 
 -- ---------------------------------------------------------------------------
 -- Farming Panel
@@ -106,6 +108,7 @@ local function _drawCropsTab(px, cy, pw, ch)
         love.graphics.print("Available Seeds:", px + 20, y)
         y = y + 20
         local hasSeed = false
+        local resources = getResources()
         if resources then
             for seedType, seedName in pairs(SEED_NAMES) do
                 local amt = resources[seedType] or 0
@@ -184,6 +187,7 @@ local function _drawCropsTab(px, cy, pw, ch)
         love.graphics.print("Select a seed to plant (click):", px + 25, y + 5)
         local sx = px + 25
         local sy = y + 25
+        local resources = getResources()
         if resources then
             for seedType, seedName in pairs(SEED_NAMES) do
                 local amt = resources[seedType] or 0
@@ -358,6 +362,7 @@ local function handleFarmingClick(mx, my)
     end
 
     -- Seed selection when a plot is selected (crops tab)
+    local resources = getResources()
     if ui.farmingTab == "crops" and ui.farmingPlotId and resources then
         local contentY = tabY + 40
         local contentH = ph - (contentY - py) - 10
@@ -2770,8 +2775,10 @@ function social.init(gameRef, ctx)
     fonts     = ctx.fonts
     ui        = ctx.ui
     knowledge = ctx.knowledge
+    permadeath = ctx.permadeath
     getClient = ctx.getClient
     getZone   = ctx.getZone
+    getResources = ctx.getResources
     -- Register all functions onto the game table
     gameRef.drawFarmingPanel = drawFarmingPanel
     gameRef._drawCropsTab   = _drawCropsTab

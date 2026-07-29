@@ -194,6 +194,13 @@ local sprint = {
 -- Terrain border thickness
 local TERRAIN_BORDER = 48
 
+-- Water mount types that bypass water blocking
+local WATER_MOUNT_TYPES = { raft = true, boat = true, ship = true, sea_mount = true, airship = true, flying_mount = true }
+-- Speed multipliers for water mounts on water tiles
+local WATER_MOUNT_SPEED = { raft = 0.5, boat = 0.8, ship = 1.5, sea_mount = 1.0, airship = 1.0, flying_mount = 1.0 }
+-- Land mount speed multipliers (applied to base walk speed on land tiles)
+local LAND_MOUNT_SPEED = { horse = 2.0, caravan = 0.7 }
+
 -- Chat
 -- Chat state (grouped to reduce upvalues)
 local chat = {
@@ -1037,8 +1044,31 @@ local onboarding = {
 -- UI scale factor (1.0 at 1024px width, scales proportionally for larger/smaller displays)
 local uiScale = 1
 
+-- Snapshot of all reassignable zone-entity locals. File-scope so both the
+-- world draw module and the handler-module ctx can share one closure
+-- (also keeps _initModules' upvalue count down).
+local function getEntityStateSnapshot()
+    return {
+        zoneMonsters          = zoneMonsters,
+        zoneCorpses           = zoneCorpses,
+        zoneWorldContainers   = zoneWorldContainers,
+        connections           = connections,
+        corpseLootPanel       = corpseLootPanel,
+        containerLootPanel    = containerLootPanel,
+        hoverObject           = hoverObject,
+        hoverResource         = hoverResource,
+        identity              = identity,
+        levelUpEffect         = levelUpEffect,
+        miniRifts             = miniRifts,
+        onboarding            = onboarding,
+        packReveal            = packReveal,
+        placedObjects         = placedObjects,
+        riftDestroyVfx        = riftDestroyVfx,
+    }
+end
+
 -- Extracted so game.load() stays under LuaJIT's 60-upvalue limit.
--- All module init calls live here; they capture their own upvalue set (58 vars, < 60).
+-- All module init calls live here; they capture their own upvalue set (< 60 vars).
 local function _initModules()
     -- Wire up card draw module
     cardsDrawModule.init(game, {
@@ -1054,9 +1084,14 @@ local function _initModules()
         fonts = fonts,
         ui = ui,
         rpg = rpg,
+        PORTAL_TOWN_RACE = PORTAL_TOWN_RACE,
         getAccount = function() return account end,
         getMmoInventory = function() return mmoInventory end,
         getClient = function() return client end,
+        getZone     = function() return zone end,
+        getMyId     = function() return myId end,
+        getPlayers  = function() return players end,
+        getIdentity = function() return identity end,
     })
     -- Wire up dungeon draw module (floor, entities, HUD, party, context menu)
     dungeonDrawModule.init(game, {
@@ -1065,17 +1100,23 @@ local function _initModules()
         fonts    = fonts,
         ui       = ui,
         tcState  = tcState,
+        rpg        = rpg,
+        permadeath = permadeath,
+        corruption = corruption,
         getFadeIn = function() return fadeIn end,
         getMyId   = function() return myId end,
         getSkills = function() return skills end,
+        getPlayers = function() return players end,
     })
     -- Wire up social draw module (farming, knowledge, death, karma, factions, etc.)
     socialDrawModule.init(game, {
-        fonts     = fonts,
-        ui        = ui,
-        knowledge = knowledge,
-        getClient = function() return client end,
-        getZone   = function() return zone end,
+        fonts      = fonts,
+        ui         = ui,
+        knowledge  = knowledge,
+        permadeath = permadeath,
+        getClient    = function() return client end,
+        getZone      = function() return zone end,
+        getResources = function() return resources end,
     })
     -- Wire up inventory draw module (inventory, equipment, crafting, compass, map)
     inventoryDrawModule.init(game, {
@@ -1085,12 +1126,16 @@ local function _initModules()
         players  = players,
         camera   = camera,
         zoneList = zoneList,
+        overworld = overworld,
         getMmoInventory = function() return mmoInventory end,
         getEquipment    = function() return equipment end,
         getMyId         = function() return myId end,
         getZone         = function() return zone end,
         getFadeIn       = function() return fadeIn end,
         getMapZoom      = function() return mapZoom end,
+        getDurabilityData = function() return durabilityData end,
+        getRecipes        = function() return recipes end,
+        getTownPosition   = function() return townPosition end,
     })
     -- Wire up world draw module (terrain, monsters, resources, HUD, chat, etc.)
     worldDrawModule.init(game, {
@@ -1109,25 +1154,10 @@ local function _initModules()
         corruption    = corruption,
         doom          = doom,
         sprint        = sprint,
-        getEntityState = function()
-            return {
-                zoneMonsters          = zoneMonsters,
-                zoneCorpses           = zoneCorpses,
-                zoneWorldContainers   = zoneWorldContainers,
-                connections           = connections,
-                corpseLootPanel       = corpseLootPanel,
-                containerLootPanel    = containerLootPanel,
-                hoverObject           = hoverObject,
-                hoverResource         = hoverResource,
-                identity              = identity,
-                levelUpEffect         = levelUpEffect,
-                miniRifts             = miniRifts,
-                onboarding            = onboarding,
-                packReveal            = packReveal,
-                placedObjects         = placedObjects,
-                riftDestroyVfx        = riftDestroyVfx,
-            }
-        end,
+        getEntityState = getEntityStateSnapshot,
+        TERRAIN_BORDER    = TERRAIN_BORDER,
+        WATER_MOUNT_TYPES = WATER_MOUNT_TYPES,
+        LAND_MOUNT_SPEED  = LAND_MOUNT_SPEED,
         getZone    = function() return zone end,
         getMyId    = function() return myId end,
         getFadeIn  = function() return fadeIn end,
@@ -1136,6 +1166,12 @@ local function _initModules()
         getClient  = function() return client end,
         computeSprintBonuses = computeSprintBonuses,
     })
+end
+
+-- Input-module wiring lives in its own function: its ctx captures a large,
+-- mostly-exclusive upvalue set, and together with _initModules it would
+-- exceed LuaJIT's 60-upvalues-per-function limit.
+local function _initInputModule()
     -- Wire up input module (keypressed, textinput, mousepressed, mousemoved, wheelmoved)
     gameInputModule.init(game, {
         dungeon                = dungeon,
@@ -1151,8 +1187,11 @@ local function _initModules()
         combatAnim             = combatAnim,
         gridInv                = gridInv,
         permadeath             = permadeath,
+        corruption             = corruption,
+        mastery                = mastery,
         DTILE                  = DTILE,
         CONTEXT_MENU_ITEMS_BASE = CONTEXT_MENU_ITEMS_BASE,
+        getZoneList            = function() return zoneList end,
         getClient              = function() return client end,
         getZone                = function() return zone end,
         getMyId                = function() return myId end,
@@ -1196,6 +1235,7 @@ function game.load()
     fonts.levelUp = _G.getFont(sf(28))
 
     _initModules()
+    _initInputModule()
 
     game._audio.init()
     game._assets.init()
@@ -1511,6 +1551,8 @@ function game.setupListeners()
         permadeath = permadeath, identity = identity,
         zoneMonsters = zoneMonsters, zoneCorpses = zoneCorpses,
         zoneWorldContainers = zoneWorldContainers,
+        -- Live zone-entity snapshot (shared with the world draw module)
+        getEntityState = getEntityStateSnapshot,
         -- Reassignable locals (need getter/setter)
         getAccount = function() return account end,
         getMmoInventory = function() return mmoInventory end,
@@ -4698,13 +4740,6 @@ function game.getFeatureAtWorld(wx, wy)
     return 0
 end
 
--- Water mount types that bypass water blocking
-local WATER_MOUNT_TYPES = { raft = true, boat = true, ship = true, sea_mount = true, airship = true, flying_mount = true }
--- Speed multipliers for water mounts on water tiles
-local WATER_MOUNT_SPEED = { raft = 0.5, boat = 0.8, ship = 1.5, sea_mount = 1.0, airship = 1.0, flying_mount = 1.0 }
--- Land mount speed multipliers (applied to base walk speed on land tiles)
-local LAND_MOUNT_SPEED = { horse = 2.0, caravan = 0.7 }
-
 -- Helper: check if position is near a placed bridge or raft object
 function game.isNearPlacedBridge(wx, wy)
     if not placedObjects then return false end
@@ -6667,6 +6702,7 @@ function game.draw()
     end
 
     -- Corruption cleanse prompt: show when player is in corrupted chunk
+    local me = myId and players[myId]
     if not dungeon.inDungeon and not ui.showInventory and me then
         local mcx = math.floor(me.x / overworld.chunkSize)
         local mcy = math.floor(me.y / overworld.chunkSize)

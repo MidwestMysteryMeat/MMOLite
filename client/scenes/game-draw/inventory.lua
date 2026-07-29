@@ -7,10 +7,11 @@ local inventory_draw = {}
 local game
 
 -- Direct table refs (mutated in-place, safe to capture at init time)
-local fonts, ui, rpg, players, camera, zoneList
+local fonts, ui, rpg, players, camera, zoneList, overworld
 
 -- Getters for reassignable module-level locals in game.lua
 local getMmoInventory, getEquipment, getMyId, getZone, getFadeIn, getMapZoom
+local getDurabilityData, getRecipes, getTownPosition
 
 -- Populated each frame by draw functions; read by mousepressed via getters
 local equipSlotButtons      = {}
@@ -532,7 +533,7 @@ local function drawEquipmentPanel(W, H)
             end
 
             -- Durability bar
-            local dur = durabilityData[slot]
+            local dur = getDurabilityData()[slot]
             if dur and dur.max and dur.max > 0 then
                 local ratio = dur.current / dur.max
                 local barW = colW - 12
@@ -805,7 +806,7 @@ local function drawCraftingTab(px, py, pw, ph)
     craftingButtons = {}
 
     -- Use server recipes if available, fall back to hardcoded
-    local recipeList = recipes
+    local recipeList = getRecipes()
     if not recipeList or #recipeList == 0 then
         recipeList = {
             { id = "wooden_sword", name = "Wooden Sword", station = "none", materials = { { resource = "wood", amount = 8 } } },
@@ -973,6 +974,7 @@ local function drawCompass(W, H)
     end
 
     -- Town arrow (blue)
+    local townPosition = getTownPosition()
     if townPosition then
         drawCompassArrow(townPosition.x, townPosition.y, { 0.3, 0.6, 1.0 }, "Town")
     end
@@ -1128,6 +1130,7 @@ local function drawWorldMap(W, H)
     end
 
     -- Town marker
+    local townPosition = getTownPosition()
     if townPosition then
         local tx = mapX + townPosition.x * scale
         local ty = mapY + townPosition.y * scale
@@ -1268,12 +1271,16 @@ function inventory_draw.init(gameRef, ctx)
     players         = ctx.players
     camera          = ctx.camera
     zoneList        = ctx.zoneList
+    overworld       = ctx.overworld
     getMmoInventory = ctx.getMmoInventory
     getEquipment    = ctx.getEquipment
     getMyId         = ctx.getMyId
     getZone         = ctx.getZone
     getFadeIn       = ctx.getFadeIn
     getMapZoom      = ctx.getMapZoom
+    getDurabilityData = ctx.getDurabilityData
+    getRecipes        = ctx.getRecipes
+    getTownPosition   = ctx.getTownPosition
     -- Register all functions onto the game table
     gameRef.drawInventory = drawInventory
     gameRef.drawResourcesTab = drawResourcesTab

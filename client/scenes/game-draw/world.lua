@@ -23,6 +23,9 @@ local getEntityState
 local getZone, getMyId, getFadeIn, getSkills, getAccount, getClient
 local computeSprintBonuses
 
+-- Constants mirrored from game.lua (set at init)
+local TERRAIN_BORDER, WATER_MOUNT_TYPES, LAND_MOUNT_SPEED
+
 local TILE_SIZE = 32
 
 local _portraitCache = {}
@@ -1011,7 +1014,9 @@ local function drawResources()
 end
 
 local function drawPlacedObjects()
-    local placedObjects = getEntityState().placedObjects
+    local es = getEntityState()
+    local placedObjects = es.placedObjects
+    local hoverObject = es.hoverObject
     if not placedObjects then return end
     for _, obj in ipairs(placedObjects) do
         if obj.type == "forge" then
@@ -1598,6 +1603,7 @@ local function drawLeviathanPartBars(W, H)
 end
 
 local function drawConnections()
+    local connections = getEntityState().connections
     if not connections then return end
 
     local t = love.timer.getTime()
@@ -2327,6 +2333,7 @@ local function drawHUD(W, H)
     love.graphics.printf(worldText, 0, 7, W - 150, "right")
 
     -- Identity
+    local identity = getEntityState().identity
     if identity then
         love.graphics.setColor(0.5, 0.6, 0.7, fadeIn * 0.5)
         love.graphics.setFont(fonts.npc)
@@ -2695,6 +2702,9 @@ function world_draw.init(gameRef, ctx)
     doom           = ctx.doom
     sprint         = ctx.sprint
     getEntityState = ctx.getEntityState
+    TERRAIN_BORDER    = ctx.TERRAIN_BORDER
+    WATER_MOUNT_TYPES = ctx.WATER_MOUNT_TYPES
+    LAND_MOUNT_SPEED  = ctx.LAND_MOUNT_SPEED
     getZone        = ctx.getZone
     getMyId        = ctx.getMyId
     getFadeIn            = ctx.getFadeIn

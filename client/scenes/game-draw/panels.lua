@@ -6,10 +6,15 @@ local panels = {}
 -- 'game' is an alias for the game table — all function bodies can use game._xxx as before
 local game
 local fonts, ui, rpg
+local PORTAL_TOWN_RACE -- constant table from game.lua (zoneId -> town flavor name)
 
 local getAccount      -- getter: returns current account (reassignable in game.lua)
 local getMmoInventory -- getter: returns current mmoInventory
 local getClient       -- getter: returns current client socket
+local getZone         -- getter: returns current zone
+local getMyId         -- getter: returns my player id
+local getPlayers      -- getter: returns players table
+local getIdentity     -- getter: returns current identity
 
 -- Portal Travel Panel
 -- ---------------------------------------------------------------------------
@@ -69,6 +74,7 @@ local function drawPortalPanel(W, H)
     -- Current zone indicator
     love.graphics.setFont(fonts.npc)
     love.graphics.setColor(0.55, 0.55, 0.7, 0.8)
+    local zone = getZone()
     local currentZoneName = (zone and zone.name) or "Unknown"
     love.graphics.printf("Current zone: " .. currentZoneName, px + 10, py + 34, pw - 20, "left")
 
@@ -1033,6 +1039,7 @@ local function drawBank(W, H)
 
     -- Wallet display
     local walletGold = 0
+    local identity = getIdentity()
     if identity and identity.account then walletGold = identity.account.chips or 0 end
     love.graphics.setColor(1, 0.85, 0.3, 0.8)
     love.graphics.printf("Wallet: " .. walletGold .. "g", px + 10, tabY + 26, pw - 20, "left")
@@ -1062,6 +1069,7 @@ local function drawBankGoldTab(px, py, pw, ph, contentY, contentH)
     local midX = px + pw / 2
     local bankGold = game._bank.data.gold or 0
     local walletGold = 0
+    local identity = getIdentity()
     if identity and identity.account then walletGold = identity.account.chips or 0 end
 
     love.graphics.setFont(fonts.title)
@@ -1413,6 +1421,7 @@ local function handleBankClick(mx, my)
         end
         if _hitTest(game._bank._goldMaxBtn, mx, my) then
             -- Set to max available for the likely action
+            local identity = getIdentity()
             local walletGold = identity and identity.account and identity.account.chips or 0
             local bankGold = game._bank.data and game._bank.data.gold or 0
             game._bank.amount = math.max(walletGold, bankGold)
@@ -1766,7 +1775,7 @@ local function drawTradePanel(W, H)
 
     -- Current coin balance label
     love.graphics.setColor(0.55, 0.55, 0.6, 0.7)
-    love.graphics.printf("Balance: " .. (account and account.coins or 0), leftX, setBtnY + 2, colW - setBtnW - 8, "left")
+    love.graphics.printf("Balance: " .. (getAccount() and getAccount().coins or 0), leftX, setBtnY + 2, colW - setBtnW - 8, "left")
 
     -- Confirm button (right side bottom)
     local confirmW = colW
@@ -1886,7 +1895,7 @@ local function handleTradeClick(mx, my)
         if game._trade.tradeId and client then
             client:emit("trade_cancel", { tradeId = game._trade.tradeId })
         end
-        resetTradeState()
+        game.resetTradeState()
         return true
     end
 
@@ -1897,7 +1906,7 @@ local function handleTradeClick(mx, my)
             if game._trade.tradeId and client then
                 client:emit("trade_cancel", { tradeId = game._trade.tradeId })
             end
-            resetTradeState()
+            game.resetTradeState()
             return true
         end
     end
@@ -1909,7 +1918,7 @@ local function handleTradeClick(mx, my)
             if game._trade.tradeId and client then
                 client:emit("trade_cancel", { tradeId = game._trade.tradeId })
             end
-            resetTradeState()
+            game.resetTradeState()
             return true
         end
     end
@@ -1944,6 +1953,7 @@ local function handleTradeClick(mx, my)
         if mx >= btn.x and mx <= btn.x + btn.w and my >= btn.y and my <= btn.y + btn.h then
             local amount = tonumber(game._trade.coinInput) or 0
             amount = math.floor(amount)
+            local account = getAccount()
             local maxCoins = (account and account.coins) or 0
             amount = math.max(0, math.min(amount, maxCoins))
             game._trade.myOffer.chips = amount
@@ -2100,9 +2110,9 @@ local function drawAdminPanel(W, H)
 
     -- Player list with kick buttons
     local playerCount = 0
-    for id, p in pairs(players) do
+    for id, p in pairs(getPlayers()) do
         playerCount = playerCount + 1
-        local isMe = (id == myId)
+        local isMe = (id == getMyId())
         local pName = p.name or p.username or ("Player " .. tostring(id):sub(1, 8))
 
         -- Player name
@@ -2260,8 +2270,8 @@ local function handleAdminPanelClick(mx, my)
     local y = 12 + lineH + 4 + 8 + smallLineH + 2 + smallLineH + 2
 
     -- Scan player list for kick buttons
-    for id, p in pairs(players) do
-        local isMe = (id == myId)
+    for id, p in pairs(getPlayers()) do
+        local isMe = (id == getMyId())
         if not isMe then
             local btnX = padX + contentW - 50
             local btnY = y - 1
@@ -2336,9 +2346,14 @@ function panels.init(gameRef, ctx)
     fonts = ctx.fonts
     ui = ctx.ui
     rpg = ctx.rpg
+    PORTAL_TOWN_RACE = ctx.PORTAL_TOWN_RACE
     getAccount = ctx.getAccount
     getMmoInventory = ctx.getMmoInventory
     getClient = ctx.getClient
+    getZone = ctx.getZone
+    getMyId = ctx.getMyId
+    getPlayers = ctx.getPlayers
+    getIdentity = ctx.getIdentity
     -- Register draw and input functions onto game table
     gameRef.drawPortalPanel        = drawPortalPanel
     gameRef.handlePortalClick      = handlePortalClick
