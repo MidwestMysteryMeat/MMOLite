@@ -40,6 +40,10 @@ Uninstall.exe
 # Logs
 *.log
 
+# Python bytecode
+__pycache__/
+*.pyc
+
 # System junk
 *.lnk
 .DS_Store
