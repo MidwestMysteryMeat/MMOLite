@@ -1,5 +1,11 @@
 # MMOLite
 
+
+<!-- wip-contact-banner -->
+> **Work in progress.** This is an active side project alongside my main game development, so progress is intermittent — expect bugs, missing features, and rough edges.
+>
+> Bug reports, feedback, or contributions are welcome via GitHub issues/PRs, or email **midwestmysterymeatstudios@gmail.com**. If you'd like to support the work, tips are appreciated but never expected.
+
 **A fantasy MMO RPG — Node.js/Socket.IO authoritative server with a Love2D client — featuring gacha card collection, dungeons, raids, guilds, and a player economy.**
 
 ## What it does
