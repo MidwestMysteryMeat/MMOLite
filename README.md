@@ -46,7 +46,11 @@ Developed with AI assistance — **Anthropic Claude** (Claude Code) for implemen
 
 ## License
 
-Proprietary — see [LICENSE](LICENSE). The project's own code is under the **Ephemeral / Proprietary License** (All Rights Reserved with a Sharing Exception). Third-party art/asset packs under `client/assets/` retain their own licenses (see the `LICENSE`/`CREDITS` files alongside them, e.g. the GPL-3.0 bazaar tileset).
+Licensed under the **[Apache License 2.0](LICENSE)** — free to use, modify, fork and build on, commercially or not.
+
+**Credit is required.** Apache-2.0 §4(c)–(d) obliges you to keep the copyright notice and to reproduce [`NOTICE`](NOTICE) in anything you distribute, including binaries and hosted builds. Credit it as `MMOLite by MysteryMeat` (https://github.com/MidwestMysteryMeat/MMOLite) in your credits screen, About box, or docs. The project name and the MysteryMeat name are not licensed for endorsement or promotion (§6).
+
+Apache-2.0 covers **the project's own code only.** Third-party art/asset packs under `client/assets/` retain their own licenses (see the `LICENSE`/`CREDITS` files alongside them, e.g. the GPL-3.0 bazaar tileset) — honor those too, and note a GPL asset can impose stricter terms than Apache-2.0 on a bundle that ships it.
 
 ## Art & audio licensing
 
