@@ -7,7 +7,7 @@ local inventory_draw = {}
 local game
 
 -- Direct table refs (mutated in-place, safe to capture at init time)
-local fonts, ui, rpg, players, camera, zoneList, overworld
+local fonts, ui, rpg, players, zoneList, overworld
 
 -- Getters for reassignable module-level locals in game.lua
 local getMmoInventory, getEquipment, getMyId, getZone, getFadeIn, getMapZoom
@@ -1269,7 +1269,6 @@ function inventory_draw.init(gameRef, ctx)
     ui              = ctx.ui
     rpg             = ctx.rpg
     players         = ctx.players
-    camera          = ctx.camera
     zoneList        = ctx.zoneList
     overworld       = ctx.overworld
     getMmoInventory = ctx.getMmoInventory

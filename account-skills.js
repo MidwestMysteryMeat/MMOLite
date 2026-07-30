@@ -147,6 +147,7 @@ function addSkillXp(key, skillName, amount, xpRate, existingAccount) {
 module.exports = {
   init,
   setVipStatusFn,
+  SKILL_MAX_LEVEL,
   xpForLevel,
   getSkill,
   addSkillXp,

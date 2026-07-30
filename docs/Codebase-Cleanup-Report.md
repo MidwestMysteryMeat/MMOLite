@@ -2,6 +2,23 @@
 
 **Date:** February 26, 2026
 
+> Historical audit, re-verified 2026-07-30. Line numbers and several conclusions
+> below describe the February snapshot. This status table is authoritative for
+> the current branch.
+
+| Finding | 2026-07-30 verification |
+|---|---|
+| BUG-1 survival-visit leak | Fixed in both disconnect cleanup and `wipeEphemeral`; regression covered. |
+| BUG-2 auction rate limits | Fixed. Every auction query/mutation endpoint now uses `applyRateGrace`; the two market-info endpoints missed by the first fix were added during verification. |
+| BUG-3 auction stale balance | Fixed with synchronous `accounts.trySpendChips`, which combines sufficient-funds validation and deduction. The former non-blocking “lock” was removed because it did not serialize anything. |
+| BUG-4 floor LRU wipe | Fixed; `floorAccessOrder` is cleared with `riftFloors`. |
+| BUG-5 date formatting | Fixed with ISO `YYYY-MM-DD`. |
+| BUG-6 trade locks | Fixed; cancel and execution `finally` paths release locks. |
+| BUG-7 debug logging | Fixed with `love.filesystem.append`. |
+| BUG-8 progression docs | Fixed in `docs/ARCHITECTURE.md#progression-contract`. |
+| BUG-9 disconnect ordering | Fixed with the idempotent `socket.data.cleanupZone` contract; covered by a regression asserting cleanup runs before unlink/removal. |
+| SEC-2 identity payload | Not a demonstrated security defect. It remains a protocol-size optimization opportunity and requires a versioned pagination design, not a hotfix. |
+
 ---
 
 ## Table of Contents

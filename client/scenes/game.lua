@@ -3919,11 +3919,11 @@ function game.setupListeners()
     client:on("tc_corruption_zones", function(data)
         if not data or not data.zones then return end
         game._raid.corruptionZones = {}
-        for _, zone in ipairs(data.zones) do
+        for _, corruptionZone in ipairs(data.zones) do
             table.insert(game._raid.corruptionZones, {
-                x = zone.x or 0, y = zone.y or 0,
-                radius = zone.radius or 1,
-                damage = zone.damage or 20,
+                x = corruptionZone.x or 0, y = corruptionZone.y or 0,
+                radius = corruptionZone.radius or 1,
+                damage = corruptionZone.damage or 20,
                 timer = 2.0,  -- active for 2 turns displayed
             })
         end
@@ -5115,9 +5115,9 @@ function game.update(dt)
     end
 
     -- Check resource respawns (client-side prediction using server timestamps)
-    local now = os.time() * 1000
+    local respawnNow = os.time() * 1000
     for _, r in ipairs(resources) do
-        if r.depleted and r.depletedUntil and r.depletedUntil > 0 and now >= r.depletedUntil then
+        if r.depleted and r.depletedUntil and r.depletedUntil > 0 and respawnNow >= r.depletedUntil then
             r.depleted = false
             r.hp = r.maxHp or 5
         end
@@ -5126,7 +5126,7 @@ function game.update(dt)
         for _, chunk in pairs(overworld.chunks) do
             if chunk.resources then
                 for _, r in ipairs(chunk.resources) do
-                    if r.depleted and r.depletedUntil and r.depletedUntil > 0 and now >= r.depletedUntil then
+                    if r.depleted and r.depletedUntil and r.depletedUntil > 0 and respawnNow >= r.depletedUntil then
                         r.depleted = false
                         r.hp = r.maxHp or 5
                     end
@@ -5892,9 +5892,6 @@ function game.draw()
         end
 
         -- Dungeon HUD (on top of everything)
-        local W = love.graphics.getWidth()
-        local H = love.graphics.getHeight()
-
         if tcState.inCombat then
             -- Combat HUD replaces normal dungeon HUD
             combatUI.drawInitiativeBar(W, H)
@@ -6717,7 +6714,6 @@ function game.draw()
             -- Check if player has an active overworld cleansing card equipped
             local hasCleanseCard = false
             local cleanseCardName = nil
-            local cleanseCardId = nil
             if rpg.equippedCards and rpg.cards then
                 -- Build instanceId -> card lookup
                 local cardLookup = {}
@@ -6731,7 +6727,6 @@ function game.draw()
                             if eff.type == "overworld_cleanse" then
                                 hasCleanseCard = true
                                 cleanseCardName = card.name or card.cardId
-                                cleanseCardId = card.cardId
                                 break
                             end
                         end

@@ -31,19 +31,12 @@ function _G.switchScene(name)
 end
 
 -- Custom error handler: log error, show user-friendly screen, allow recovery
-local errorState = nil
 function love.errorhandler(msg)
     msg = tostring(msg)
     print("[ERROR] " .. msg)
     print(debug.traceback("", 2))
 
     -- Try to return to login on next frame
-    errorState = {
-        message = msg,
-        trace = debug.traceback("", 2),
-        timer = 0,
-    }
-
     -- Minimal error loop
     local errFont = love.graphics.newFont(14)
     local smallFont = love.graphics.newFont(11)
@@ -76,7 +69,6 @@ function love.errorhandler(msg)
                         _G.isServerHost = false
                     end)
                     -- Try to recover: go back to shards
-                    errorState = nil
                     pcall(function()
                         _G.switchScene("shards")
                     end)

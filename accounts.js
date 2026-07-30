@@ -1063,56 +1063,36 @@ function saveAccount(account) {
   return true;
 }
 
-// ─── In-process chip lock to prevent TOCTOU race conditions ───
-// Serializes chip operations per account key so concurrent async callers
-// cannot interleave load-modify-save across await boundaries.
-// The synchronous updateChips/setChips acquire the lock, perform the mutation
-// synchronously (safe in single-threaded Node.js), and return the result.
-// The lock also prevents interleaving if callers yield between operations.
-const _chipLocks = new Map(); // key -> { queue: Promise, depth: number }
-
-// Acquire a per-key lock. Returns a release function.
-// In synchronous code, lock acquisition is non-blocking because Node.js is single-threaded.
-function _acquireChipLock(key) {
-  var entry = _chipLocks.get(key);
-  if (!entry) {
-    entry = { queue: Promise.resolve(), depth: 0 };
-    _chipLocks.set(key, entry);
-  }
-  entry.depth++;
-  return function release() {
-    entry.depth--;
-    if (entry.depth <= 0) {
-      _chipLocks.delete(key);
-    }
-  };
-}
-
+// Chip mutations are deliberately synchronous. Node runs each load/check/save
+// sequence to completion without another socket handler interleaving it.
 function updateChips(key, amount) {
   if (typeof amount !== 'number' || !isFinite(amount) || isNaN(amount)) return null;
-  var release = _acquireChipLock(key);
-  try {
-    const account = loadAccount(key);
-    if (!account) return null;
-    account.chips = Math.min(MAX_CHIPS, Math.max(0, (account.chips || 0) + amount));
-    saveAccount(account);
-    return account.chips;
-  } finally {
-    release();
-  }
+  const account = loadAccount(key);
+  if (!account) return null;
+  account.chips = Math.min(MAX_CHIPS, Math.max(0, (account.chips || 0) + amount));
+  saveAccount(account);
+  return account.chips;
+}
+
+// Atomically check and deduct a positive amount. Keeping the check and mutation
+// in one non-async function prevents callers from accidentally reintroducing a
+// stale-balance check across an await.
+function trySpendChips(key, amount) {
+  if (typeof amount !== 'number' || !isFinite(amount) || isNaN(amount) || amount <= 0) return null;
+  const account = loadAccount(key);
+  if (!account || (account.chips || 0) < amount) return null;
+  account.chips = (account.chips || 0) - amount;
+  saveAccount(account);
+  return account.chips;
 }
 
 function setChips(key, amount) {
-  var release = _acquireChipLock(key);
-  try {
-    const account = loadAccount(key);
-    if (!account) return null;
-    account.chips = Math.min(MAX_CHIPS, Math.max(0, amount));
-    saveAccount(account);
-    return account.chips;
-  } finally {
-    release();
-  }
+  if (typeof amount !== 'number' || !isFinite(amount) || isNaN(amount)) return null;
+  const account = loadAccount(key);
+  if (!account) return null;
+  account.chips = Math.min(MAX_CHIPS, Math.max(0, amount));
+  saveAccount(account);
+  return account.chips;
 }
 
 // ---------------------------------------------------------------------------
@@ -1874,6 +1854,7 @@ module.exports = {
   loadAccount,
   saveAccount,
   updateChips,
+  trySpendChips,
   setChips,
   updateStats,
   deleteAccount,

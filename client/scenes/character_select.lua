@@ -28,7 +28,6 @@ local statusTimer = 0
 local showDeleteConfirm = false
 local deleteTargetIndex = nil
 local deletePinInput = ""
-local deletePinActive = false
 
 -- New character dialog
 local showNewCharDialog = false
@@ -43,7 +42,6 @@ local newCharPermadeath = false
 -- Hall of Heroes
 local showHallOfHeroes = false
 local hallOfHeroesList = {}
-local hallOfHeroesScrollY = 0
 
 -- Rename dialog
 local showRenameDialog = false
@@ -118,14 +116,12 @@ function charSelect.load()
     showDeleteConfirm = false
     deleteTargetIndex = nil
     deletePinInput = ""
-    deletePinActive = false
     showNewCharDialog = false
     newCharOpenDropdown = nil
     newCharDropdownScroll = 0
     newCharPermadeath = false
     showHallOfHeroes = false
     hallOfHeroesList = {}
-    hallOfHeroesScrollY = 0
     showRenameDialog = false
     renameOpenDropdown = nil
     renameDropdownScroll = 0
@@ -1297,7 +1293,6 @@ function charSelect.mousepressed(x, y, button)
             deleteTargetIndex = selectedIndex
             showDeleteConfirm = true
             deletePinInput = ""
-            deletePinActive = true
         end
     elseif hallBtn and pointInRect(x, y, hallBtn) then
         if client then

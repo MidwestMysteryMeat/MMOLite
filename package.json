@@ -5,11 +5,15 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "jest --testPathPattern=tests/ --forceExit --detectOpenHandles",
-    "test:unit": "jest --testPathPattern=tests/(rpg-data|dungeon-combat|regressions|event-contracts) --forceExit",
-    "test:integration": "jest --testPathPattern=tests/socket-integration --forceExit --detectOpenHandles",
+    "test": "jest --testPathPatterns=tests/ --forceExit --detectOpenHandles",
+    "test:unit": "jest --testPathPatterns=tests/(rpg-data|dungeon-combat|regressions|event-contracts) --forceExit",
+    "test:integration": "jest --testPathPatterns=tests/socket-integration --forceExit --detectOpenHandles",
+    "test:client": "lua tests/client/sprite-sheet.test.lua",
     "test:strain": "node tests/bot-strain.js",
-    "lint": "npx --yes eslint ."
+    "lint:js": "eslint .",
+    "lint:lua": "luacheck client",
+    "lint": "npm run lint:js && npm run lint:lua",
+    "verify": "npm run lint && npm test && npm run test:client"
   },
   "jest": {
     "testEnvironment": "node",
@@ -19,7 +23,8 @@
     "node": ">=18"
   },
   "devDependencies": {
-    "jest": "^29.7.0",
+    "eslint": "10.8.0",
+    "jest": "30.4.2",
     "socket.io-client": "^4.8.3"
   },
   "dependencies": {

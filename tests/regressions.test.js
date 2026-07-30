@@ -339,4 +339,31 @@ describe('Regression: deleting the active character promotes the replacement', (
     const result = accountCharacters.deleteCharacter('key', 0);
     expect(result.error).toMatch(/last character/i);
   });
+
+  test('auction purchase checks and deducts through trySpendChips', () => {
+    const src = readSrc('handlers/mmo-auction.js');
+    expect(src).toMatch(/accounts\.trySpendChips\(key,\s*listing\.price\)/);
+    expect(src).not.toMatch(/accounts\.updateChips\(key,\s*-listing\.price\)/);
+  });
+
+  test('trySpendChips performs the balance check and deduction without awaiting', () => {
+    const src = readSrc('accounts.js');
+    const start = src.indexOf('function trySpendChips');
+    const block = src.slice(start, start + 650);
+    expect(start).toBeGreaterThan(-1);
+    expect(block).toMatch(/account\.chips[\s\S]*< amount/);
+    expect(block).toMatch(/account\.chips\s*=\s*\(account\.chips \|\| 0\) - amount/);
+    expect(block).not.toMatch(/\bawait\b/);
+  });
+
+  test.each([
+    'mmo_auction_market_price',
+    'mmo_auction_market_health',
+  ])('%s is rate limited', eventName => {
+    const src = readSrc('handlers/mmo-auction.js');
+    const eventStart = src.indexOf(`socket.on('${eventName}'`);
+    const handlerPrefix = src.slice(eventStart, eventStart + 250);
+    expect(eventStart).toBeGreaterThan(-1);
+    expect(handlerPrefix).toMatch(/applyRateGrace\(socket,\s*'mmo_auction'/);
+  });
 });

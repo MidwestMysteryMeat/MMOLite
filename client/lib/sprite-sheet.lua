@@ -26,10 +26,15 @@ local function parse_manifest(json_path)
     if not raw then
         error("sprite-sheet: cannot read " .. json_path)
     end
-    -- Minimal JSON parser using json.lua or fallback to our bundled one.
-    -- If you have a json library already (dkjson, rxi/json, etc.) swap it in here.
-    local ok, data = pcall(require("lib.json").decode, raw)
-    if not ok then
+    -- Reuse the dependency-free JSON decoder bundled with the network client.
+    -- The former `require("lib.json")` target never existed and also executed
+    -- outside pcall, so the first call to this loader always crashed.
+    local ok_net, net = pcall(require, "lib.net")
+    if not ok_net or not net or not net.json then
+        error("sprite-sheet: bundled JSON decoder unavailable: " .. tostring(net))
+    end
+    local ok, data = pcall(net.json.decode, raw)
+    if not ok or type(data) ~= "table" then
         error("sprite-sheet: JSON parse error in " .. json_path .. ": " .. tostring(data))
     end
     return data

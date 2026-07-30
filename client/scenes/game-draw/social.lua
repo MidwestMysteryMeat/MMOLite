@@ -2666,7 +2666,6 @@ local function drawQuestLog(W, H)
         love.graphics.setFont(smallFont)
         love.graphics.setColor(0.45, 0.45, 0.55, 0.6)
         love.graphics.print("  No active quests.", px + 14, cy)
-        cy = cy + 18
     else
         for _, q in ipairs(activeList) do
             if cy + 58 > py + panelH - 30 then break end

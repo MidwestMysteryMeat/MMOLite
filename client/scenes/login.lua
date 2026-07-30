@@ -31,7 +31,6 @@ local powChallenge = nil
 local powDifficulty = nil
 local powNonce = nil
 local powSolving = false
-local powProgress = 0
 local powBatchSize = 5000  -- keep per-frame batch small to avoid blocking rendering
 local powCurrentAttempt = 0
 local statusMsg = ""
@@ -151,7 +150,6 @@ function login.update(dt)
             end
         end
         powCurrentAttempt = batchEnd + 1
-        powProgress = math.min(powCurrentAttempt / 2000000, 0.99)
         statusMsg = "Loading..."
 
         if powCurrentAttempt > 10000000 then
@@ -705,7 +703,6 @@ function login.startConnect(accountKey, pin)
         powChallenge = challenge.challenge
         powDifficulty = challenge.difficulty
         powCurrentAttempt = 0
-        powProgress = 0
         powSolving = true
         statusMsg = "Loading..."
     end)

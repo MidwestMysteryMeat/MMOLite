@@ -1,6 +1,6 @@
 // Static analysis config for MMOLite.
 //
-//   npx eslint .        -- must exit with 0 errors; run before every commit
+//   npm run lint:js     -- must exit with 0 errors; run before every commit
 //
 // A meaningful gate, not a style bikeshed. Every rule below can catch code that
 // crashes or silently misbehaves at runtime. Formatting rules are deliberately
@@ -14,11 +14,6 @@
 // this config needs no extra dependency and the gate cannot drift when a
 // preset changes.
 //
-// CAVEAT: eslint is not pinned as a devDependency, so `npm run lint` resolves
-// whatever version npx finds. That keeps this audit from rewriting the lockfile
-// on a repo with live deployments, but it does mean the gate is not fully
-// reproducible. Pinning eslint in devDependencies is the right follow-up.
-
 export default [
     {
         ignores: [

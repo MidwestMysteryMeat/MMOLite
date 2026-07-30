@@ -699,7 +699,7 @@ module.exports = {
         var fee = Math.ceil(listing.price * effectiveFee / 100);
         var sellerProceeds = listing.price - fee;
 
-        // Re-verify balance before committing
+        // Re-check card capacity against the current authoritative cache.
         var freshAcc = accounts.loadAccount(key);
         if (!freshAcc || (freshAcc.chips || 0) < listing.price) {
           socket.emit('mmo_auction_error', { message: 'Not enough coins (balance changed)' });
@@ -715,11 +715,18 @@ module.exports = {
           }
         }
 
+        // Check and deduct in one synchronous account operation. This keeps the
+        // balance contract atomic even if this handler later gains an await.
+        var buyerBalance = accounts.trySpendChips(key, listing.price);
+        if (buyerBalance === null) {
+          socket.emit('mmo_auction_error', { message: 'Not enough coins (balance changed)' });
+          return;
+        }
+
         // All checks passed — commit: remove listing, record sale, transfer
         removeListing(data.listingId);
         _recordSale(listing);
 
-        accounts.updateChips(key, -listing.price);
         accounts.updateChips(listing.sellerKey, sellerProceeds);
 
         // Transfer item to buyer
@@ -824,6 +831,7 @@ module.exports = {
 
     // --- mmo_auction_market_price: get dynamic pricing info ---
     socket.on('mmo_auction_market_price', function(data) {
+      if (!applyRateGrace(socket, 'mmo_auction', 60, 10000)) return;
       if (!data || typeof data.itemKey !== 'string') return;
       var price = getMarketPrice(data.itemKey);
       socket.emit('mmo_auction_market_price', {
@@ -834,6 +842,7 @@ module.exports = {
 
     // --- mmo_auction_market_health: get anti-monopoly market health ---
     socket.on('mmo_auction_market_health', function(data) {
+      if (!applyRateGrace(socket, 'mmo_auction', 60, 10000)) return;
       if (!data || typeof data.category !== 'string') return;
       var health = getMarketHealth(data.category);
       socket.emit('mmo_auction_market_health', {

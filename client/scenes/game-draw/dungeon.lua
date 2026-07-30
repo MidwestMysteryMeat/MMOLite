@@ -511,7 +511,7 @@ local function drawDungeonEntities()
                 -- Facing indicator (small triangle)
                 local facing = enemy.facing or "down"
                 love.graphics.setColor(1, 1, 1, 0.6)
-                local fx, fy = 0, 0
+                local fx, fy
                 if facing == "right" then fx, fy = radius + 3, 0
                 elseif facing == "left" then fx, fy = -(radius + 3), 0
                 elseif facing == "up" then fx, fy = 0, -(radius + 3)
@@ -1712,8 +1712,6 @@ local function drawPartyPanel(W, H)
 
         ui._raid.partyInviteInput = { x = inputX, y = inputY, w = inputW, h = inputH }
         ui._partyInviteSendBtn = { x = sendX, y = inputY, w = sendW, h = inputH }
-
-        contentY = inputY + inputH + 12
 
         -- Leave / Disband button
         local isLeader = (game._raid.partyData.leader == myId)

@@ -1808,8 +1808,14 @@ module.exports = {
       });
     });
 
-    // Clean up cooldowns and chunk tracking on disconnect
-    socket.on('disconnect', function() {
+    // Clean up cooldowns and chunk tracking on disconnect. The main disconnect
+    // handler also calls this hook before shared state is removed, so cleanup is
+    // correct regardless of Socket.IO listener registration order.
+    var zoneCleanupDone = false;
+    function cleanupZoneSocket() {
+      if (zoneCleanupDone) return;
+      zoneCleanupDone = true;
+
       // Save final position to account
       var accKey = socketAccountMap.get(socket.id);
       var pos = state.playerPositions.get(socket.id);
@@ -1837,6 +1843,10 @@ module.exports = {
       }
       gridRemove(socket.id);
       _moveBatch.delete(socket.id);
-    });
+    }
+
+    if (!socket.data) socket.data = {};
+    socket.data.cleanupZone = cleanupZoneSocket;
+    socket.on('disconnect', cleanupZoneSocket);
   }
 };

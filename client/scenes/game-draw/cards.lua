@@ -25,7 +25,6 @@ local RARITY_ORDER = { common=1, uncommon=2, rare=3, ultra_rare=4, mythic_rare=5
 local statAllocButtons = {}
 local cardGridRects = {}
 local cardGridCards = {}
-local cardCollectionRect = {}
 local _hoveredCardData = nil
 
 function cards.getStatAllocButtons() return statAllocButtons end
@@ -62,7 +61,7 @@ end
 function cards.findCardByInstanceId(instanceId) return findCardByInstanceId(instanceId) end
 
 local function getFilteredCards()
-    local cards = {}
+    local filteredCards = {}
     for _, card in ipairs(rpg.cards) do
         local pass = true
         if ui.cardFilter == "equipped" then
@@ -74,26 +73,26 @@ local function getFilteredCards()
         elseif ui.cardFilter == "active_ability" then
             pass = card.type == "active_ability"
         end
-        if pass then table.insert(cards, card) end
+        if pass then table.insert(filteredCards, card) end
     end
 
     -- Sort
     if ui.cardSort == "name" then
-        table.sort(cards, function(a, b) return (a.name or "") < (b.name or "") end)
+        table.sort(filteredCards, function(a, b) return (a.name or "") < (b.name or "") end)
     elseif ui.cardSort == "type" then
-        table.sort(cards, function(a, b)
+        table.sort(filteredCards, function(a, b)
             if a.type == b.type then return (a.name or "") < (b.name or "") end
             return (a.type or "") < (b.type or "")
         end)
     else -- rarity (default)
-        table.sort(cards, function(a, b)
+        table.sort(filteredCards, function(a, b)
             local ra = RARITY_ORDER[a.rarity] or 0
             local rb = RARITY_ORDER[b.rarity] or 0
             if ra == rb then return (a.name or "") < (b.name or "") end
             return ra > rb
         end)
     end
-    return cards
+    return filteredCards
 end
 
 local function drawCharSheet(W, H)
@@ -1738,7 +1737,6 @@ local function drawCardDetailView(W, H)
         if card.cooldown then table.insert(combatLines, "CD: " .. card.cooldown .. " turns") end
         love.graphics.setColor(0.7, 0.7, 0.9, 0.85)
         love.graphics.printf("  " .. table.concat(combatLines, "  |  "), dx + 15, cy, dw - 30, "left")
-        cy = cy + 13
     end
 
     -- Action buttons at bottom
@@ -1795,7 +1793,6 @@ local function drawCardCollection(W, H)
     local ph = math.min(560, H - 60)
     local px = (W - pw) / 2
     local py = (H - ph) / 2
-    cardCollectionRect = { px = px, py = py, pw = pw, ph = ph }
 
     -- Background
     love.graphics.setColor(0, 0, 0, 0.7)

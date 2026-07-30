@@ -120,13 +120,14 @@ function _applyCardEvoXp(account, card, xpAmount) {
   }
   card.evolutionXp += Math.floor(xpAmount * evoXpMult);
 
-  // Check for stage advancement (stages 0 -> 3).
-  // ONE stage per call: the body ends in an unconditional `return`, so this was
-  // never a loop. Written as `if` to say so. The return payload is
-  // single-advance shaped (one newStage, one grantedAffix, one mutation), so a
-  // card banking enough XP for two stages advances once and needs another call.
-  if (card.evolutionStage < 3
-      && card.evolutionXp >= template.evolutionThresholds[card.evolutionStage]) {
+  var advancementEvents = [];
+
+  // Consume every earned threshold. The old loop returned from its first
+  // iteration, leaving cards artificially one stage behind after a large XP
+  // grant. A single-stage grant keeps the legacy result shape; multi-advance
+  // grants also expose all individual events in `events`.
+  while (card.evolutionStage < 3
+         && card.evolutionXp >= template.evolutionThresholds[card.evolutionStage]) {
     card.evolutionStage++;
 
     // Apply the additive stage bonus effect (stages 1 and 2 only)
@@ -208,22 +209,21 @@ function _applyCardEvoXp(account, card, xpAmount) {
       viralSpreads = _spreadMutation(account, card, evoLuck);
     }
 
-    return {
+    advancementEvents.push({
       instanceId: card.instanceId,
       newStage: card.evolutionStage,
       pendingChoice: card.evolutionStage === 3,
       mutation: evoMutation || null,
       viralSpreads: viralSpreads,
       grantedAffix: grantedAffix,
-    };
+    });
   }
 
   // Post-max leveling: cards never stop improving — every EVO_POST_MAX_INTERVAL XP
   // beyond the final threshold awards a guaranteed tier-1 procedural bonus.
   if (card.evolutionStage >= 3) {
     var maxThreshold = template.evolutionThresholds[template.evolutionThresholds.length - 1];
-    var nextBonusAt = maxThreshold + (card.evolutionBonusLevel + 1) * EVO_POST_MAX_INTERVAL;
-    if (card.evolutionXp >= nextBonusAt) {
+    while (card.evolutionXp >= maxThreshold + (card.evolutionBonusLevel + 1) * EVO_POST_MAX_INTERVAL) {
       card.evolutionBonusLevel++;
       // Luck from card effects
       var postLuck = 0;
@@ -234,20 +234,30 @@ function _applyCardEvoXp(account, card, xpAmount) {
       var _postRace = account.race && rpgData.RACES && rpgData.RACES[account.race];
       if (_postRace && _postRace.baseLuck) postLuck += _postRace.baseLuck;
       var bonusMut = _forceTier1Mutation(postLuck);
+      var bonusViralSpreads = [];
       if (bonusMut) {
         rpgData.applyMutation(card, bonusMut);
-        var bonusViralSpreads = _spreadMutation(account, card, postLuck);
-        return {
-          instanceId: card.instanceId,
-          bonusLevel: card.evolutionBonusLevel,
-          mutation: bonusMut,
-          viralSpreads: bonusViralSpreads,
-        };
+        bonusViralSpreads = _spreadMutation(account, card, postLuck);
       }
+      advancementEvents.push({
+        instanceId: card.instanceId,
+        bonusLevel: card.evolutionBonusLevel,
+        mutation: bonusMut || null,
+        viralSpreads: bonusViralSpreads,
+      });
     }
   }
 
-  return null; // XP added but no advancement this call
+  if (advancementEvents.length === 0) return null; // XP added but no advancement
+  if (advancementEvents.length === 1) return advancementEvents[0];
+
+  // Preserve the legacy top-level fields using the final event while exposing
+  // the complete ordered history to callers that can render multiple advances.
+  var finalEvent = Object.assign({}, advancementEvents[advancementEvents.length - 1]);
+  finalEvent.newStage = card.evolutionStage;
+  finalEvent.pendingChoice = card.evolutionStage === 3 && !!card.pendingEvolutionChoice;
+  finalEvent.events = advancementEvents;
+  return finalEvent;
 }
 
 // Apply evo XP to a specific card instance and save.

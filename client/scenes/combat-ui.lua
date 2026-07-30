@@ -24,7 +24,6 @@ local initiative = {}          -- Sorted array of {unitId, name, ct, type, isAct
 local turnTimer = 0            -- Seconds remaining in turn
 local turnTimerMax = 15
 local turnBanner = nil         -- {text, elapsed, duration} for "YOUR TURN" etc
-local damageNumbers = {}       -- Tracked here for HUD (combat-anim.lua handles rendering)
 local tileEffects = {}         -- {x, y, type} from server for tile overlay rendering
 local syncAttackRange = {}     -- Green tiles for ally sync range
 local reactionPrompt = nil     -- {attackerId, damage, attackType, options, timer, elapsed}
@@ -276,7 +275,6 @@ function combatUI.init(data)
     attackRange = {}
     abilityRange = {}
     pathPreview = {}
-    damageNumbers = {}
     tileEffects = {}
     syncAttackRange = {}
     reactionPrompt = nil
@@ -1085,12 +1083,12 @@ function combatUI.drawTurnBanner(W, H)
 
     if alpha <= 0 then return end
 
-    local isEnemy = (text == "ENEMY TURN")
+    local isEnemyTurn = (text == "ENEMY TURN")
     local isVictory = (text == "VICTORY")
     local isDefeat = (text == "DEFEAT")
 
     -- Shadow
-    local bigFont = getFont(isEnemy and 28 or 36)
+    local bigFont = getFont(isEnemyTurn and 28 or 36)
     love.graphics.setFont(bigFont)
 
     local textW = bigFont:getWidth(text)
@@ -1098,13 +1096,13 @@ function combatUI.drawTurnBanner(W, H)
     local ty = math_floor(H / 2 - bigFont:getHeight() / 2) - 20
 
     -- Gold shadow for YOUR TURN / VICTORY
-    if not isEnemy and not isDefeat then
+    if not isEnemyTurn and not isDefeat then
         love.graphics.setColor(0.8, 0.6, 0, alpha * 0.5)
         love.graphics.print(text, tx + 2, ty + 2)
     end
 
     -- Main text
-    if isEnemy then
+    if isEnemyTurn then
         love.graphics.setColor(0.9, 0.25, 0.25, alpha)
     elseif isVictory then
         love.graphics.setColor(0.2, 1, 0.3, alpha)
@@ -1449,11 +1447,9 @@ function combatUI.setMyTurn(isTurn, turnData)
         if myUnit then
             local grid = combatData and combatData.grid or nil
             local units = combatData and combatData.units or nil
-            local mp = myUnit.mp or myUnit.maxMp or 3
-
             -- Update unit resources from turnData
             if turnData then
-                if turnData.mp ~= nil then myUnit.mp = turnData.mp; mp = turnData.mp end
+                if turnData.mp ~= nil then myUnit.mp = turnData.mp end
                 if turnData.ap ~= nil then myUnit.ap = turnData.ap end
                 if turnData.rp ~= nil then myUnit.rp = turnData.rp end
             end
@@ -1620,7 +1616,6 @@ function combatUI.cleanup()
     initiative = {}
     turnTimer = 0
     turnBanner = nil
-    damageNumbers = {}
     tileEffects = {}
     syncAttackRange = {}
     reactionPrompt = nil

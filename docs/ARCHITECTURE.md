@@ -48,4 +48,31 @@ Run `build.bat` from the MMOLite project root on Windows. Creates `build/MMOLite
 ### Handler Pattern
 All socket handlers export `{ init(io, socket, deps) }` and are registered in `socket.js`. The `deps` object contains shared state, accounts, utilities, and service instances.
 
+### Disconnect contract
+
+`handlers/disconnect.js` owns shared account/user teardown. Modules with
+per-socket closure state may expose an idempotent cleanup hook through
+`socket.data`; the shared disconnect handler invokes those hooks before it
+unlinks the account or removes state. `handlers/zone.js` uses
+`socket.data.cleanupZone` for final-position persistence, cooldowns, chunk
+tracking, and the spatial grid. Correctness must not depend on Socket.IO
+listener registration order.
+
+## Progression contract
+
+- Skill XP needed to advance from skill level `n` is
+  `floor(80 * n^1.7)`.
+- Skill levels currently have no finite cap (`SKILL_MAX_LEVEL = Infinity`).
+- Ten percent of adjusted skill XP spills into the overall character level,
+  rounded to the nearest integer.
+- Overall XP needed to advance from level `n` is
+  `floor(200 * n^1.6)`.
+- Overall character levels currently have no finite cap
+  (`MAX_OVERALL_LEVEL = Infinity`).
+- Card evolution thresholds are cumulative. One XP grant consumes every
+  threshold it reaches; a grant may therefore produce multiple ordered
+  evolution events.
+- At evolution stage 3, each additional 500 cumulative evolution XP grants a
+  post-max bonus level.
+
 ---

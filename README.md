@@ -8,7 +8,7 @@ MMOLite is a small-scale persistent multiplayer RPG. Players create characters (
 
 ## Status
 
-**Playable, server-solid, content-deep — client UI lags the backend.** 192/192 backend tests pass (`jest`), including an event-contract test that ratchets client↔server desync to zero. Notable rough edges:
+**Playable, server-solid, content-deep — client UI lags the backend.** 205/205 backend and asset assertions pass (`jest`), including an event-contract test that ratchets client↔server desync to zero and referential-integrity checks for all 657 generated sprite manifests. The LÖVE client also has a zero-warning correctness lint gate. Notable rough edges:
 
 - The full TCG **trading + battle-challenge flow is implemented server-side but has no client UI** — a complete dormant feature
 - Gacha cards render as procedural frames (no per-card art) despite 18k+ assets available
@@ -17,20 +17,30 @@ MMOLite is a small-scale persistent multiplayer RPG. Players create characters (
 
 ## How to run
 
-Requires Node 18+ and [LÖVE 11.4](https://love2d.org/) for the client.
+Requires Node 18+, [LÖVE 11.4](https://love2d.org/) for the client, and
+Lua/Luacheck for the complete developer gate.
 
 ```
 npm install
 ACCOUNT_SECRET=<any-random-string> node server.js   # server refuses to boot without this
 
-# tests
-npx jest --testPathPattern="tests/" --forceExit --detectOpenHandles
+# complete pre-commit gate: JavaScript + Lua lint, 205 Jest checks,
+# and a headless sprite-loader smoke test
+npm run verify
+
+# backend/assets only
+npm test
+
+# require every owner-licensed local sprite sheet and validate PNG bounds
+MMOLITE_REQUIRE_LOCAL_ASSETS=1 npm test -- tests/sprite-assets.test.js
 
 # client
 love client/
 ```
 
 Runtime state (accounts, guilds, plots) is written under `data/` and gitignored.
+The real skill and overall-level progression formulas are documented in
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md#progression-contract).
 
 ## Screenshots
 

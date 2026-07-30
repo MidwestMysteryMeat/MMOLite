@@ -15,6 +15,18 @@ module.exports = {
         ratelimit.decrementConnections();
         _removeFromIpTracking();
 
+        // Zone owns per-socket closure state (chunk caches, spatial grid and
+        // final-position persistence). Invoke its idempotent hook before this
+        // handler unlinks the account or removes state, independent of listener
+        // registration order.
+        try {
+          if (socket.data && typeof socket.data.cleanupZone === 'function') {
+            socket.data.cleanupZone();
+          }
+        } catch (zoneErr) {
+          console.error('[disconnect] Zone cleanup error:', zoneErr.message);
+        }
+
         const disconnectingUser = state.users.get(socket.id);
         if (!disconnectingUser) {
           console.log(`[disconnect] Unknown socket ${socket.id} (${reason})`);

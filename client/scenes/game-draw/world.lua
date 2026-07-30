@@ -11,7 +11,7 @@ local game
 
 -- Direct table refs (mutated in-place, safe to capture at init time)
 local dungeon, camera, fonts, ui, rpg, players, resources
-local floatingTexts, world, chat, overworld, tcState
+local floatingTexts, world, chat, overworld
 local corruption, doom, sprint  -- not reassigned; no getter needed
 
 -- getEntityState() returns current snapshot of all reassignable zone-entity locals:
@@ -2310,11 +2310,9 @@ local function drawHUD(W, H)
         if overworld.myPlotId then
             love.graphics.setColor(0.3, 0.9, 0.3, fadeIn * 0.9)
             love.graphics.print("Plot Claimed", hudX, 7)
-            hudX = hudX + fonts.hud:getWidth("Plot Claimed") + 15
         else
             love.graphics.setColor(0.6, 0.5, 0.3, fadeIn * 0.6)
             love.graphics.print("[P] Claim Plot", hudX, 7)
-            hudX = hudX + fonts.hud:getWidth("[P] Claim Plot") + 15
         end
     end
 
@@ -2697,7 +2695,6 @@ function world_draw.init(gameRef, ctx)
     world          = ctx.world
     chat           = ctx.chat
     overworld      = ctx.overworld
-    tcState        = ctx.tcState
     corruption     = ctx.corruption
     doom           = ctx.doom
     sprint         = ctx.sprint

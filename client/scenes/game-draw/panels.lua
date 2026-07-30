@@ -5,7 +5,7 @@ local panels = {}
 
 -- 'game' is an alias for the game table — all function bodies can use game._xxx as before
 local game
-local fonts, ui, rpg
+local fonts, rpg
 local PORTAL_TOWN_RACE -- constant table from game.lua (zoneId -> town flavor name)
 
 local getAccount      -- getter: returns current account (reassignable in game.lua)
@@ -167,7 +167,7 @@ local function drawPortalPanel(W, H)
                 else
                     love.graphics.setColor(0.5, 0.48, 0.65, 0.65)
                 end
-                local flavor = ""
+                local flavor
                 if dest.type == "personal" then
                     flavor = "Personal Portal"
                 else
@@ -441,8 +441,8 @@ local function drawNpcShop(W, H)
     -- Clip region for scrollable list
     love.graphics.setScissor(listX, listY, listW, listH)
 
-    local items = {}
-    local sellItems = nil
+    local items
+    local sellItems
     if game._npcShop.tab == "buy" then
         items = game._npcShop.prices or {}
     else
@@ -791,7 +791,7 @@ local function handleNpcShopClick(mx, my)
     if game._npcShop._maxBtn then
         local btn = game._npcShop._maxBtn
         if mx >= btn.x and mx <= btn.x + btn.w and my >= btn.y and my <= btn.y + btn.h then
-            local items = {}
+            local items
             if game._npcShop.tab == "buy" then
                 items = game._npcShop.prices or {}
             else
@@ -821,7 +821,7 @@ local function handleNpcShopClick(mx, my)
         local btn = game._npcShop._confirmBtn
         if mx >= btn.x and mx <= btn.x + btn.w and my >= btn.y and my <= btn.y + btn.h then
             if not game._npcShop.transactionLock and client then
-                local items = {}
+                local items
                 if game._npcShop.tab == "buy" then
                     items = game._npcShop.prices or {}
                 else
@@ -2344,7 +2344,6 @@ end
 function panels.init(gameRef, ctx)
     game = gameRef
     fonts = ctx.fonts
-    ui = ctx.ui
     rpg = ctx.rpg
     PORTAL_TOWN_RACE = ctx.PORTAL_TOWN_RACE
     getAccount = ctx.getAccount

@@ -416,10 +416,10 @@ function raceSelect.confirmSelection()
 end
 
 function raceSelect.unload()
-    local client = _G.gameClient
-    if client then
-        pcall(function() client:off("race_selected") end)
-        pcall(function() client:off("race_select_error") end)
+    local gameClient = _G.gameClient
+    if gameClient then
+        pcall(function() gameClient:off("race_selected") end)
+        pcall(function() gameClient:off("race_select_error") end)
     end
 end
 

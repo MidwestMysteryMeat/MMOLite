@@ -19,6 +19,7 @@ function makeSocket(id, sessionToken) {
   const listeners = {};
   return {
     id,
+    data: {},
     _mmoliteSessionToken: sessionToken || null,
     on(event, fn) { listeners[event] = fn; },
     emit() {},
@@ -121,6 +122,18 @@ describe('Disconnect cleanup: state.users', () => {
     expect(state._survivalVisitedChunks.has(ACC_KEY)).toBe(true);
     socket._trigger('disconnect', 'transport close');
     expect(state._survivalVisitedChunks.has(ACC_KEY)).toBe(false);
+  });
+
+  test('runs zone cleanup while account and shared state are still available', () => {
+    const cleanupZone = jest.fn(() => {
+      expect(socketAccountMap.has(SOCKET_ID)).toBe(true);
+      expect(state.users.has(SOCKET_ID)).toBe(true);
+    });
+    socket.data.cleanupZone = cleanupZone;
+
+    socket._trigger('disconnect', 'transport close');
+
+    expect(cleanupZone).toHaveBeenCalledTimes(1);
   });
 });
 
