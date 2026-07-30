@@ -425,6 +425,10 @@ function setupSocket(io) {
       }
       if (newAccount) {
         _linkSocket(socket.id, newAccount.key);
+        // `linkedAccount` is a `let` declared inside this handler, so each
+        // invocation owns its own binding and two sockets cannot corrupt each
+        // other's value across the await above.
+        // eslint-disable-next-line require-atomic-updates
         linkedAccount = newAccount;
         _isNewAccount = true;
       }

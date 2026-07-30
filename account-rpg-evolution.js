@@ -120,11 +120,13 @@ function _applyCardEvoXp(account, card, xpAmount) {
   }
   card.evolutionXp += Math.floor(xpAmount * evoXpMult);
 
-  // Check for stage advancement (stages 0 -> 3)
-  while (card.evolutionStage < 3) {
-    var threshold = template.evolutionThresholds[card.evolutionStage];
-    if (card.evolutionXp < threshold) break;
-
+  // Check for stage advancement (stages 0 -> 3).
+  // ONE stage per call: the body ends in an unconditional `return`, so this was
+  // never a loop. Written as `if` to say so. The return payload is
+  // single-advance shaped (one newStage, one grantedAffix, one mutation), so a
+  // card banking enough XP for two stages advances once and needs another call.
+  if (card.evolutionStage < 3
+      && card.evolutionXp >= template.evolutionThresholds[card.evolutionStage]) {
     card.evolutionStage++;
 
     // Apply the additive stage bonus effect (stages 1 and 2 only)

@@ -8,7 +8,8 @@
     "test": "jest --testPathPattern=tests/ --forceExit --detectOpenHandles",
     "test:unit": "jest --testPathPattern=tests/(rpg-data|dungeon-combat|regressions|event-contracts) --forceExit",
     "test:integration": "jest --testPathPattern=tests/socket-integration --forceExit --detectOpenHandles",
-    "test:strain": "node tests/bot-strain.js"
+    "test:strain": "node tests/bot-strain.js",
+    "lint": "npx --yes eslint ."
   },
   "jest": {
     "testEnvironment": "node",

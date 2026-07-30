@@ -1971,11 +1971,11 @@ function lichRaidStartBossCombat() {
   // Get the boss floor (floor 7)
   var bossFloor = null;
   var firstPartyId = null;
-  var partyIter = lichRaidState.parties.keys();
-  var pk = partyIter.next();
-  while (!pk.done) {
+  // Take the first registered party. This was written as a `while` with an
+  // unconditional break, which reads like an iteration but never was one.
+  var pk = lichRaidState.parties.keys().next();
+  if (!pk.done) {
     firstPartyId = pk.value;
-    break;
   }
   if (firstPartyId) {
     bossFloor = lichRaidGetFloor(firstPartyId, 7);
