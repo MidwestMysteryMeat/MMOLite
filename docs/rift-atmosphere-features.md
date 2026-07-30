@@ -516,7 +516,7 @@ Theme-specific (fire when player is within 3 tiles of an unvisited room):
 `clockwork_maze`: *"The gears stop. They're listening."*
 
 **Darkvision racial interaction:**
-Dwarves, Goblins, and Cat Folk have darkvision (per racial data in CLAUDE.md). For these races, the fog-event radius expands by 1 tile — they hear/sense from slightly further. The fog event text changes slightly for darkvision races:
+Dwarves, Goblins, and Cat Folk have darkvision (per the racial data in `client/scenes/race_select.lua` and `client/lib/lighting.lua`). For these races, the fog-event radius expands by 1 tile — they hear/sense from slightly further. The fog event text changes slightly for darkvision races:
 
 Standard: *"Something breathes in the dark ahead."*
 Darkvision: *"You see, barely, the outline of something large. It doesn't see you. Yet."*

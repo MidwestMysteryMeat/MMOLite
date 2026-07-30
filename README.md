@@ -42,7 +42,7 @@ See [`docs/GAP_ANALYSIS.md`](docs/GAP_ANALYSIS.md). Priority order: wire the dor
 
 ## AI development note
 
-Developed with AI assistance — **Anthropic Claude** (Claude Code) for implementation and **OpenAI Codex** for review — per the workflow in `CLAUDE.md` and `AGENTS.md`, under a strict "read before writing / trace the call path / preserve behavior" persona. Human direction set the architecture, game design, and priorities. The 2026-07-02 debug + audit pass (account-corruption fix in `deleteCharacter`, secret cleanup) was done with Claude. The backend is covered by tests, but audit the security-sensitive paths (payments, auth, account persistence) yourself before relying on them.
+Developed with AI assistance — **Anthropic Claude** (Claude Code) for implementation and **OpenAI Codex** for review — under a strict "read before writing / trace the call path / preserve behavior" working standard. Human direction set the architecture, game design, and priorities. Architecture reference: `docs/ARCHITECTURE.md`. The 2026-07-02 debug + audit pass (account-corruption fix in `deleteCharacter`, secret cleanup) was done with Claude. The backend is covered by tests, but audit the security-sensitive paths (payments, auth, account persistence) yourself before relying on them.
 
 ## License
 

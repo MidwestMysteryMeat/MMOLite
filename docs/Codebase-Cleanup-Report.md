@@ -158,9 +158,9 @@ Each `debugLog` call reads the entire debug.log, appends one line, and rewrites 
 ### BUG-8: XP Formula Documentation vs Code Mismatch
 **File:** `accounts.js:1040`, `rpg-data.js:5906` | **Confidence: 86%**
 
-CLAUDE.md says `xpForLevel(n) = 100 * n` (linear). Actual code: `Math.floor(80 * Math.pow(n, 1.7))` (polynomial). Also, `SKILL_MAX_LEVEL = Infinity` not 99 as documented.
+The old CLAUDE.md said `xpForLevel(n) = 100 * n` (linear). Actual code: `Math.floor(80 * Math.pow(n, 1.7))` (polynomial). Also, `SKILL_MAX_LEVEL = Infinity` not 99 as documented. RESOLVED by removal: CLAUDE.md is gone and docs/ARCHITECTURE.md makes no XP claims, so there is no longer a contradiction to fix. The formulas remain undocumented.
 
-**Fix:** Update CLAUDE.md to reflect actual formulas and caps.
+**Fix:** Document the real formulas and caps somewhere authoritative (they are currently only in code).
 
 ### BUG-9: Fragile Disconnect Handler Ordering
 **File:** `handlers/zone.js:1494-1517` | **Confidence: 82%**
@@ -313,7 +313,7 @@ The `identity` event sends the entire card collection + full inventory on every 
 5. **BUG-4:** Clear `floorAccessOrder` on daily wipe
 6. **BUG-5:** Replace `getTodayString` with ISO format
 7. **BUG-6:** Guard trade cancel against active execution locks
-8. **BUG-8:** Update CLAUDE.md XP formulas to match code
+8. **BUG-8:** Document the real XP formulas and skill caps (was: fix CLAUDE.md, now removed)
 
 ### File Cleanup
 9. Delete 13 orphaned/junk files listed in Section 1

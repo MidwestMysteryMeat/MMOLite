@@ -110,7 +110,7 @@
 | 3.2.3 | Enter a zone that is at capacity | `zone_error: Zone is full` |
 | 3.2.4 | Enter a zone while in active combat | `zone_error: Cannot leave while in combat` |
 | 3.2.5 | Enter 5 different zones and check correct zone names/IDs | Each zone displays correct name |
-| 3.2.6 | Visit all 10 anchor towns (see CLAUDE.md) | Each town loads, NPCs visible |
+| 3.2.6 | Visit all 10 anchor towns (list in `director/director-lich.js`) | Each town loads, NPCs visible |
 | 3.2.7 | Press `M` to open the zone list / world map | Map opens; press M again or Esc to close |
 
 ### 3.3 Chunk Streaming (Overworld)

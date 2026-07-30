@@ -1,7 +1,0 @@
-{
-  "asset": "SM_Ring_01a",
-  "type": "item",
-  "frames": {
-    "SM_Ring_01a_default": "F:\\LOVE - Gacha\\MMOLite\\tools\\asset-pipeline\\output/frames\\SM_Ring_01a\\SM_Ring_01a_default.png"
-  }
-}
