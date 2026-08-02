@@ -683,7 +683,8 @@ function setupSocket(io) {
     });
 
     // Snapshot upload: client sends saved snapshot for import into a fresh account.
-    // Only merges into accounts created within the last 30 seconds (prevents abuse).
+    // Only merges into accounts created within the last 2 minutes (prevents abuse).
+    // Imported numeric fields (chips etc.) are clamped in mergeSnapshotIntoAccount.
     socket.on('snapshot_upload', function(snapshotStr) {
       var accKey = socketAccountMap.get(socket.id);
       if (!accKey) return;

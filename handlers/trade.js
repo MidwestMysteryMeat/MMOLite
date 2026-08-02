@@ -206,6 +206,10 @@ module.exports = {
         tradeExecLocks.add(initKey);
         tradeExecLocks.add(targKey);
 
+        // Set when the commit goes async (VIP token legs) — the async chain
+        // then owns lock release instead of the finally block below.
+        var asyncPending = false;
+
         try {
           var initOffer = trade.offers[trade.initiator];
           var targOffer = trade.offers[trade.target];
@@ -306,107 +310,199 @@ module.exports = {
           // All validations passed — proceed with atomic transfers
           // ---------------------------------------------------------------
 
-          // Swap coins — compute net delta per party to avoid crash-window duplication
-          var initNetChips = (targOffer.chips || 0) - (initOffer.chips || 0);
-          var targNetChips = (initOffer.chips || 0) - (targOffer.chips || 0);
-          var initFinalChips = initNetChips !== 0 ? accounts.updateChips(initKey, initNetChips) : ((initAcc || {}).chips || 0);
-          var targFinalChips = targNetChips !== 0 ? accounts.updateChips(targKey, targNetChips) : ((targAcc || {}).chips || 0);
-
-          // Swap resources: each offer.items can contain { type: 'resource', resource: 'wood', amount: 5 }
-          // or { type: 'card', cardInstanceId: 'xxx' }
-          // Collect all card transfers first, then save both accounts once
-          var pendingCardTransfers = [];
-
-          function transferItems(fromKey, toKey, items) {
-            for (var i = 0; i < items.length; i++) {
-              var item = items[i];
-              if (item.type === 'resource' && item.resource && item.amount > 0) {
-                var removed = accounts.removeResource(fromKey, item.resource, item.amount);
-                if (removed !== null) {
-                  accounts.addResource(toKey, item.resource, item.amount);
-                }
-              } else if (item.type === 'card' && item.cardInstanceId) {
-                pendingCardTransfers.push({ fromKey: fromKey, toKey: toKey, cardInstanceId: item.cardInstanceId });
-              } else if (item.type === 'vip_token' && item.amount > 0) {
-                // VIP token transfer — atomic on master
-                if (shardBridge.isMasterMode) {
-                  shardBridge.masterRequest('POST', '/api/vip/transfer-tokens', {
-                    fromKey: fromKey, toKey: toKey, count: item.amount,
-                  }, function(tErr, tData) {
-                    if (tErr || !tData || !tData.success) {
-                      console.error('[trade] VIP token transfer failed:', tErr ? tErr.message : (tData && tData.error));
-                    }
-                  });
-                }
+          // ---------------------------------------------------------------
+          // VIP token legs hit the master server asynchronously. They must
+          // ALL succeed before any local commit (coins/resources/cards) so a
+          // failed token transfer can no longer leave a one-sided trade.
+          // ---------------------------------------------------------------
+          var tokenLegs = [];
+          function collectTokenLegs(fromKey, toKey, items) {
+            for (var tli = 0; tli < items.length; tli++) {
+              var tItem = items[tli];
+              if (tItem.type === 'vip_token' && tItem.amount > 0) {
+                tokenLegs.push({ fromKey: fromKey, toKey: toKey, count: tItem.amount });
               }
             }
           }
+          collectTokenLegs(initKey, targKey, initOffer.items || []);
+          collectTokenLegs(targKey, initKey, targOffer.items || []);
 
-          transferItems(initKey, targKey, initOffer.items || []);
-          transferItems(targKey, initKey, targOffer.items || []);
+          if (tokenLegs.length > 0 && !shardBridge.isMasterMode) {
+            // Previously the token leg was silently dropped in non-master mode
+            // while the rest of the trade committed. Abort instead.
+            io.to(trade.initiator).emit('trade_error', { message: 'Trade failed: VIP token trading unavailable' });
+            io.to(trade.target).emit('trade_error', { message: 'Trade failed: VIP token trading unavailable' });
+            trades.delete(trade.id);
+            return;
+          }
 
-          // Execute card transfers atomically: modify both accounts in memory, then save both
-          if (pendingCardTransfers.length > 0) {
-            if (initAcc && targAcc) {
-              if (!initAcc.rpgCards) initAcc.rpgCards = [];
-              if (!targAcc.rpgCards) targAcc.rpgCards = [];
-              for (var pci = 0; pci < pendingCardTransfers.length; pci++) {
-                var xfer = pendingCardTransfers[pci];
-                var srcAcc = xfer.fromKey === initKey ? initAcc : targAcc;
-                var dstAcc = xfer.toKey === initKey ? initAcc : targAcc;
-                if (!srcAcc.rpgCards || !dstAcc.rpgCards) continue;
-                var cardIdx = -1;
-                for (var ci = 0; ci < srcAcc.rpgCards.length; ci++) {
-                  if (srcAcc.rpgCards[ci].instanceId === xfer.cardInstanceId) {
-                    cardIdx = ci;
-                    break;
+          // Local (synchronous) side of the commit: coins, resources, cards.
+          function commitLocal() {
+            // Swap coins — compute net delta per party to avoid crash-window duplication
+            var initNetChips = (targOffer.chips || 0) - (initOffer.chips || 0);
+            var targNetChips = (initOffer.chips || 0) - (targOffer.chips || 0);
+            var initFinalChips = initNetChips !== 0 ? accounts.updateChips(initKey, initNetChips) : ((initAcc || {}).chips || 0);
+            var targFinalChips = targNetChips !== 0 ? accounts.updateChips(targKey, targNetChips) : ((targAcc || {}).chips || 0);
+
+            // Swap resources: each offer.items can contain { type: 'resource', resource: 'wood', amount: 5 }
+            // or { type: 'card', cardInstanceId: 'xxx' }
+            // Collect all card transfers first, then save both accounts once
+            var pendingCardTransfers = [];
+
+            function transferItems(fromKey, toKey, items) {
+              for (var i = 0; i < items.length; i++) {
+                var item = items[i];
+                if (item.type === 'resource' && item.resource && item.amount > 0) {
+                  var removed = accounts.removeResource(fromKey, item.resource, item.amount);
+                  if (removed !== null) {
+                    accounts.addResource(toKey, item.resource, item.amount);
+                  }
+                } else if (item.type === 'card' && item.cardInstanceId) {
+                  pendingCardTransfers.push({ fromKey: fromKey, toKey: toKey, cardInstanceId: item.cardInstanceId });
+                }
+                // vip_token legs are handled before commitLocal runs
+              }
+            }
+
+            transferItems(initKey, targKey, initOffer.items || []);
+            transferItems(targKey, initKey, targOffer.items || []);
+
+            // Execute card transfers atomically: modify both accounts in memory, then save both
+            if (pendingCardTransfers.length > 0) {
+              if (initAcc && targAcc) {
+                if (!initAcc.rpgCards) initAcc.rpgCards = [];
+                if (!targAcc.rpgCards) targAcc.rpgCards = [];
+                for (var pci = 0; pci < pendingCardTransfers.length; pci++) {
+                  var xfer = pendingCardTransfers[pci];
+                  var srcAcc = xfer.fromKey === initKey ? initAcc : targAcc;
+                  var dstAcc = xfer.toKey === initKey ? initAcc : targAcc;
+                  if (!srcAcc.rpgCards || !dstAcc.rpgCards) continue;
+                  var cardIdx = -1;
+                  for (var ci = 0; ci < srcAcc.rpgCards.length; ci++) {
+                    if (srcAcc.rpgCards[ci].instanceId === xfer.cardInstanceId) {
+                      cardIdx = ci;
+                      break;
+                    }
+                  }
+                  if (cardIdx !== -1) {
+                    var card = srcAcc.rpgCards.splice(cardIdx, 1)[0];
+                    dstAcc.rpgCards.push(card);
                   }
                 }
-                if (cardIdx !== -1) {
-                  var card = srcAcc.rpgCards.splice(cardIdx, 1)[0];
-                  dstAcc.rpgCards.push(card);
+                // Save both accounts together — minimizes crash window
+                try {
+                  accounts.saveAccount(initAcc);
+                  accounts.saveAccount(targAcc);
+                } catch (saveErr) {
+                  console.error('[trade] Card transfer save failed:', saveErr.message);
                 }
               }
-              // Save both accounts together — minimizes crash window
-              try {
-                accounts.saveAccount(initAcc);
-                accounts.saveAccount(targAcc);
-              } catch (saveErr) {
-                console.error('[trade] Card transfer save failed:', saveErr.message);
-              }
+            }
+
+            trade.state = 'completed';
+            trades.delete(trade.id);
+
+            // Send updated inventories
+            var initInv = accounts.getMMOInventory(initKey);
+            var targInv = accounts.getMMOInventory(targKey);
+
+            io.to(trade.initiator).emit('trade_completed', {
+              tradeId: trade.id,
+              inventory: initInv,
+              coins: initFinalChips,
+            });
+            io.to(trade.target).emit('trade_completed', {
+              tradeId: trade.id,
+              inventory: targInv,
+              coins: targFinalChips,
+            });
+
+            // --- Track daily challenge & achievement progress for trades ---
+            var initSocket = io.sockets.sockets.get(trade.initiator);
+            var targSocket = io.sockets.sockets.get(trade.target);
+            challengesHandler.trackChallengeProgress(accounts, initKey, 'trade', 1);
+            challengesHandler.trackChallengeProgress(accounts, targKey, 'trade', 1);
+            var initTradeUnlocks = challengesHandler.trackAchievementProgress(accounts, initKey, 'trade', 1, initSocket);
+            var targTradeUnlocks = challengesHandler.trackAchievementProgress(accounts, targKey, 'trade', 1, targSocket);
+            challengesHandler.emitAchievementUnlocks(initSocket, accounts, initTradeUnlocks);
+            challengesHandler.emitAchievementUnlocks(targSocket, accounts, targTradeUnlocks);
+          }
+
+          if (tokenLegs.length === 0) {
+            commitLocal();
+            return; // finally releases locks
+          }
+
+          // Async path: run token legs sequentially on the master, then commit
+          // locally. Locks stay held until the async chain finishes.
+          asyncPending = true;
+
+          function releaseLocks() {
+            tradeExecLocks.delete(initKey);
+            tradeExecLocks.delete(targKey);
+          }
+
+          function failTokenTrade(completedLegs) {
+            // Roll back any token legs that already committed on the master
+            var remaining = completedLegs.length;
+            function finishFail() {
+              io.to(trade.initiator).emit('trade_error', { message: 'Trade failed: VIP token transfer failed' });
+              io.to(trade.target).emit('trade_error', { message: 'Trade failed: VIP token transfer failed' });
+              trades.delete(trade.id);
+              releaseLocks();
+            }
+            if (remaining === 0) { finishFail(); return; }
+            for (var ri = 0; ri < completedLegs.length; ri++) {
+              (function(rleg) {
+                shardBridge.masterRequest('POST', '/api/vip/transfer-tokens', {
+                  fromKey: rleg.toKey, toKey: rleg.fromKey, count: rleg.count,
+                }, function(rErr, rData) {
+                  if (rErr || !rData || !rData.success) {
+                    console.error('[trade] VIP token ROLLBACK failed (' + rleg.count + ' tokens ' + rleg.toKey.slice(0, 4) + '->' + rleg.fromKey.slice(0, 4) + '):', rErr ? rErr.message : (rData && rData.error));
+                  }
+                  remaining--;
+                  if (remaining === 0) finishFail();
+                });
+              })(completedLegs[ri]);
             }
           }
 
-          trade.state = 'completed';
-          trades.delete(trade.id);
-
-          // Send updated inventories
-          var initInv = accounts.getMMOInventory(initKey);
-          var targInv = accounts.getMMOInventory(targKey);
-
-          io.to(trade.initiator).emit('trade_completed', {
-            tradeId: trade.id,
-            inventory: initInv,
-            coins: initFinalChips,
-          });
-          io.to(trade.target).emit('trade_completed', {
-            tradeId: trade.id,
-            inventory: targInv,
-            coins: targFinalChips,
-          });
-
-          // --- Track daily challenge & achievement progress for trades ---
-          var initSocket = io.sockets.sockets.get(trade.initiator);
-          var targSocket = io.sockets.sockets.get(trade.target);
-          challengesHandler.trackChallengeProgress(accounts, initKey, 'trade', 1);
-          challengesHandler.trackChallengeProgress(accounts, targKey, 'trade', 1);
-          var initTradeUnlocks = challengesHandler.trackAchievementProgress(accounts, initKey, 'trade', 1, initSocket);
-          var targTradeUnlocks = challengesHandler.trackAchievementProgress(accounts, targKey, 'trade', 1, targSocket);
-          challengesHandler.emitAchievementUnlocks(initSocket, accounts, initTradeUnlocks);
-          challengesHandler.emitAchievementUnlocks(targSocket, accounts, targTradeUnlocks);
+          var legIdx = 0;
+          function runNextTokenLeg() {
+            if (legIdx >= tokenLegs.length) {
+              // All token legs committed. If the trade was cancelled while the
+              // transfers were in flight, undo them instead of committing.
+              if (trade.state !== 'active' || !trades.has(trade.id)) {
+                console.warn('[trade] Trade', trade.id, 'cancelled during VIP token transfer — rolling back');
+                failTokenTrade(tokenLegs);
+                return;
+              }
+              try {
+                commitLocal();
+              } finally {
+                releaseLocks();
+              }
+              return;
+            }
+            var leg = tokenLegs[legIdx];
+            shardBridge.masterRequest('POST', '/api/vip/transfer-tokens', {
+              fromKey: leg.fromKey, toKey: leg.toKey, count: leg.count,
+            }, function(tErr, tData) {
+              if (tErr || !tData || !tData.success) {
+                console.error('[trade] VIP token transfer failed:', tErr ? tErr.message : (tData && tData.error));
+                failTokenTrade(tokenLegs.slice(0, legIdx));
+                return;
+              }
+              legIdx++;
+              runNextTokenLeg();
+            });
+          }
+          runNextTokenLeg();
         } finally {
-          tradeExecLocks.delete(initKey);
-          tradeExecLocks.delete(targKey);
+          if (!asyncPending) {
+            tradeExecLocks.delete(initKey);
+            tradeExecLocks.delete(targKey);
+          }
         }
       }
     });

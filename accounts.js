@@ -2136,6 +2136,21 @@ function importAccountFromSnapshot(key, snapshotStr) {
   return snap;
 }
 
+// Numeric character fields that must be validated/clamped on snapshot import.
+// Client snapshots are untrusted JSON — without this, an imported `chips` value
+// bypasses the MAX_CHIPS / non-negative / isFinite clamp that updateChips enforces.
+// Each entry: [min, max]. Invalid types are rejected (existing value kept);
+// valid numbers are clamped, never dropped.
+var _SNAPSHOT_NUMERIC_CLAMPS = {
+  chips: [0, MAX_CHIPS],
+  level: [1, Number.MAX_SAFE_INTEGER],
+  xp: [0, Number.MAX_SAFE_INTEGER],
+  pityPullsSinceLegendary: [0, Number.MAX_SAFE_INTEGER],
+  ascensionCount: [0, Number.MAX_SAFE_INTEGER],
+  ascensionPoints: [0, Number.MAX_SAFE_INTEGER],
+  skillMasteryPoints: [0, Number.MAX_SAFE_INTEGER],
+};
+
 // Merge snapshot data into an existing (fresh) account.
 // Used when the client uploads a snapshot after account creation.
 function mergeSnapshotIntoAccount(key, snapshotStr) {
@@ -2151,7 +2166,14 @@ function mergeSnapshotIntoAccount(key, snapshotStr) {
   for (var fi = 0; fi < CHARACTER_FIELDS.length; fi++) {
     var field = CHARACTER_FIELDS[fi];
     if (snap[field] !== undefined) {
-      acc[field] = snap[field];
+      var clamp = _SNAPSHOT_NUMERIC_CLAMPS[field];
+      if (clamp) {
+        var val = snap[field];
+        if (typeof val !== 'number' || !isFinite(val) || isNaN(val)) continue; // reject bad type, keep existing
+        acc[field] = Math.min(clamp[1], Math.max(clamp[0], Math.floor(val)));
+      } else {
+        acc[field] = snap[field];
+      }
     }
   }
 
