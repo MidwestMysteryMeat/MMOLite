@@ -46,10 +46,24 @@ try {
 if (ENCRYPTION_KEYS.length === 0) {
   var _ACCOUNT_SECRET = process.env.ACCOUNT_SECRET || null;
   if (!_ACCOUNT_SECRET) {
-    console.error('[accounts] FATAL: No ACCOUNT_SECRET environment variable set and no keys file found at ' + KEYS_FILE + '.');
-    console.error('[accounts] Set the ACCOUNT_SECRET env var before starting the server.');
-    console.error('[accounts] Example: ACCOUNT_SECRET=your-random-secret-here node server.js');
-    process.exit(1);
+    if (process.env.NODE_ENV === 'production') {
+      // Production refuses, exactly as before: a server whose account keys
+      // were invented at boot cannot decrypt yesterday's accounts, and in
+      // production that is data loss, not convenience.
+      console.error('[accounts] FATAL: No ACCOUNT_SECRET environment variable set and no keys file found at ' + KEYS_FILE + '.');
+      console.error('[accounts] Set the ACCOUNT_SECRET env var before starting the server.');
+      console.error('[accounts] Example: ACCOUNT_SECRET=your-random-secret-here node server.js');
+      process.exit(1);
+    }
+    // Development: a `node server.js` with no ceremony should come up, so the
+    // strain test and a first clone both work. The key is random per boot —
+    // NOT a fixed dev constant, which would eventually protect a real
+    // account — and the trade-off is said out loud: accounts minted under it
+    // are unreadable after a restart.
+    _ACCOUNT_SECRET = crypto.randomBytes(32).toString('hex');
+    console.warn('[accounts] WARNING: no ACCOUNT_SECRET set — using an ephemeral');
+    console.warn('[accounts] key for this run only. Accounts created now will NOT');
+    console.warn('[accounts] survive a restart. Set ACCOUNT_SECRET for anything real.');
   }
   ENCRYPTION_KEYS.push({
     version: 0,
