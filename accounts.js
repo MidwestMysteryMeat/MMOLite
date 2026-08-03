@@ -2148,8 +2148,74 @@ var _SNAPSHOT_NUMERIC_CLAMPS = {
   pityPullsSinceLegendary: [0, Number.MAX_SAFE_INTEGER],
   ascensionCount: [0, Number.MAX_SAFE_INTEGER],
   ascensionPoints: [0, Number.MAX_SAFE_INTEGER],
-  skillMasteryPoints: [0, Number.MAX_SAFE_INTEGER],
 };
+
+// Length caps for imported collection fields. A snapshot is untrusted client
+// JSON, so without these an import can conjure an unbounded pile of tradeable
+// items and launder them out through trade/auction. Uses the game's own caps
+// where they exist; _SNAPSHOT_LIST_CAP is the fallback for the rest.
+var _SNAPSHOT_LIST_CAP = 500;
+var _SNAPSHOT_LIST_CAPS = {
+  rpgCards: MAX_CARDS,
+  equippedCards: MAX_CARDS,
+  mmoInventory: MAX_INVENTORY,
+  bankVault: MAX_INVENTORY,
+  pocket: MAX_INVENTORY,
+  characters: MAX_CHARACTERS_PER_ACCOUNT,
+};
+
+// Shape-check and bound one imported character field. The field's default
+// (which mirrors createAccount) is the reference shape: an array field must
+// arrive as an array, an object field as a non-array object. A mismatched
+// type is rejected outright (undefined -> caller keeps the existing value)
+// rather than trusted, since the rest of the server reads these fields
+// assuming the shape createAccount produced. Collections are truncated to
+// their cap so an import cannot mint unbounded tradeable state.
+function _sanitizeSnapshotField(field, val) {
+  var def = _getDefaultForField(field);
+  var cap = _SNAPSHOT_LIST_CAPS[field] || _SNAPSHOT_LIST_CAP;
+
+  if (Array.isArray(def)) {
+    if (!Array.isArray(val)) return undefined;
+    return val.length > cap ? val.slice(0, cap) : val;
+  }
+
+  if (def && typeof def === 'object') {
+    if (!val || typeof val !== 'object' || Array.isArray(val)) return undefined;
+    var keys = Object.keys(val);
+    if (keys.length > cap) {
+      keys = keys.slice(0, cap);
+    }
+    var out = {};
+    var bound = _SNAPSHOT_RESOURCE_FIELDS[field];
+    for (var i = 0; i < keys.length; i++) {
+      out[keys[i]] = bound ? _boundResourceValue(val[keys[i]], cap) : val[keys[i]];
+    }
+    return out;
+  }
+
+  return val;
+}
+
+// Resource containers hold spendable/tradeable quantities one level down
+// (mmoInventory.wood, bankVault.gold, plus a nested items list), so bounding
+// only the top-level key count would still let an import mint currency.
+var _SNAPSHOT_RESOURCE_FIELDS = { mmoInventory: true, bankVault: true };
+
+function _boundResourceValue(v, cap) {
+  if (typeof v === 'number') {
+    if (!isFinite(v) || isNaN(v)) return 0;
+    return Math.min(MAX_CHIPS, Math.max(0, Math.floor(v)));
+  }
+  if (Array.isArray(v)) return v.length > cap ? v.slice(0, cap) : v;
+  if (v && typeof v === 'object') {
+    var out = {};
+    var keys = Object.keys(v).slice(0, cap);
+    for (var i = 0; i < keys.length; i++) out[keys[i]] = _boundResourceValue(v[keys[i]], cap);
+    return out;
+  }
+  return v;
+}
 
 // Merge snapshot data into an existing (fresh) account.
 // Used when the client uploads a snapshot after account creation.
@@ -2172,7 +2238,8 @@ function mergeSnapshotIntoAccount(key, snapshotStr) {
         if (typeof val !== 'number' || !isFinite(val) || isNaN(val)) continue; // reject bad type, keep existing
         acc[field] = Math.min(clamp[1], Math.max(clamp[0], Math.floor(val)));
       } else {
-        acc[field] = snap[field];
+        var merged = _sanitizeSnapshotField(field, snap[field]);
+        if (merged !== undefined) acc[field] = merged;
       }
     }
   }
@@ -2181,9 +2248,12 @@ function mergeSnapshotIntoAccount(key, snapshotStr) {
   if (snap.username) acc.username = sanitizeName(snap.username).slice(0, 20) || acc.username;
   if (snap._characterName) acc._characterName = sanitizeName(snap._characterName).slice(0, 20) || acc._characterName;
   if (snap.color) acc.color = snap.color;
-  if (snap.characters) {
-    acc.characters = snap.characters;
-    if (typeof snap.activeCharacterIndex === 'number') acc.activeCharacterIndex = snap.activeCharacterIndex;
+  if (Array.isArray(snap.characters)) {
+    acc.characters = snap.characters.slice(0, MAX_CHARACTERS_PER_ACCOUNT);
+    if (typeof snap.activeCharacterIndex === 'number') {
+      var ci = Math.floor(snap.activeCharacterIndex);
+      acc.activeCharacterIndex = (ci >= 0 && ci < acc.characters.length) ? ci : 0;
+    }
   }
   if (snap.stats) acc.stats = snap.stats;
   if (snap.createdAt) acc.createdAt = snap.createdAt;
