@@ -3,7 +3,7 @@
 // Run: node tests/bot-strain.js [options]
 //
 // Options:
-//   --url      Server URL (default: http://localhost:3000)
+//   --url      Server URL (default: http://localhost:$PORT, else 3001)
 //   --bots     Number of bot accounts (default: 20)
 //   --duration Duration in seconds (default: 30)
 //   --verbose  Print per-bot event counts
@@ -85,7 +85,9 @@ function getArg(name, def) {
   return i !== -1 && args[i + 1] ? args[i + 1] : def;
 }
 
-const SERVER_URL  = getArg('url', 'http://localhost:3000');
+// Mirrors server.js's own resolution (PORT env, then shard-config.json's
+// port, which ships as 3001). The old 3000 default pointed at nothing.
+const SERVER_URL  = getArg('url', 'http://localhost:' + (process.env.PORT || 3001));
 const BOT_COUNT   = parseInt(getArg('bots', '20'), 10);
 const DURATION_S  = parseInt(getArg('duration', '30'), 10);
 const VERBOSE     = args.includes('--verbose');
@@ -153,6 +155,11 @@ function createBot(index) {
 
   function connectWithAuth(powChallenge, powNonce) {
     socket = io(SERVER_URL, {
+      // The server is websocket-only by default (SOCKET_TRANSPORTS in
+      // server.js) because the Love2D client speaks websocket directly.
+      // socket.io-client defaults to polling-then-upgrade, so without this
+      // every bot dies on "xhr poll error" before the upgrade is attempted.
+      transports: ['websocket'],
       timeout: 10000,
       reconnection: false,
       auth: {
